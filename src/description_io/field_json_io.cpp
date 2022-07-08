@@ -965,7 +965,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		}
 	}
 
-	char *className = cmzn_field_type_enum_to_class_name(type);
+	char *className = field.getClassName();
 	switch (type)
 	{
 		case CMZN_FIELD_TYPE_INVALID:
@@ -1140,15 +1140,13 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			typeSettings["Nodeset"] = nodesetName;
 			DEALLOCATE(nodesetName);
 		} break;
-		default:
-		{
-		} break;
 	}
 
-	if (CMZN_FIELD_TYPE_INVALID != type)
+	if (className)
+	{
 		fieldSettings[className] = typeSettings;
-
-	DEALLOCATE(className);
+		DEALLOCATE(className);
+	}
 }
 
 void FieldJsonIO::exportEntries(Json::Value &fieldSettings)

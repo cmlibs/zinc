@@ -156,7 +156,6 @@ public:
 		VALUE_TYPE_MESH_LOCATION = CMZN_FIELD_VALUE_TYPE_MESH_LOCATION
 	};
 
-
 	inline Fieldassignment createFieldassignment(const Field& sourceField);
 
 	bool isManaged() const
@@ -167,6 +166,16 @@ public:
 	int setManaged(bool value)
 	{
 		return cmzn_field_set_managed(id, value);
+	}
+
+	char *getClassName() const
+	{
+		return cmzn_field_get_class_name(this->id);
+	}
+
+	bool hasClassName(const char *className) const
+	{
+		return cmzn_field_has_class_name(this->id, className);
 	}
 
 	char *getComponentName(int componentNumber) const

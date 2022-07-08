@@ -37,6 +37,11 @@ private:
 		return new Computed_field_sin();
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_SIN;
+	};
+
 	const char *get_type_string()
 	{
 		return(computed_field_sin_type_string);
@@ -229,6 +234,11 @@ private:
 	{
 		return new Computed_field_cos();
 	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_COS;
+	};
 
 	const char *get_type_string()
 	{
@@ -423,6 +433,11 @@ private:
 		return new Computed_field_tan();
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_TAN;
+	};
+
 	const char *get_type_string()
 	{
 		return(computed_field_tan_type_string);
@@ -615,6 +630,11 @@ private:
 	{
 		return new Computed_field_asin();
 	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_ASIN;
+	};
 
 	const char *get_type_string()
 	{
@@ -811,6 +831,11 @@ private:
 		return new Computed_field_acos();
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_ACOS;
+	};
+
 	const char *get_type_string()
 	{
 		return(computed_field_acos_type_string);
@@ -1006,6 +1031,11 @@ private:
 		return new Computed_field_atan();
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_ATAN;
+	};
+
 	const char *get_type_string()
 	{
 		return(computed_field_atan_type_string);
@@ -1199,6 +1229,11 @@ private:
 	{
 		return new Computed_field_atan2();
 	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_ATAN2;
+	};
 
 	const char *get_type_string()
 	{

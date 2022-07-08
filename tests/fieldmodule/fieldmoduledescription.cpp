@@ -26,6 +26,7 @@
 #include <opencmiss/zinc/fieldmeshoperators.h>
 #include <opencmiss/zinc/fieldnodesetoperators.h>
 #include <opencmiss/zinc/fieldsubobjectgroup.h>
+#include <opencmiss/zinc/fieldtrigonometry.h>
 #include <opencmiss/zinc/fieldvectoroperators.h>
 #include <opencmiss/zinc/fieldtime.h>
 #include <opencmiss/zinc/mesh.h>
@@ -51,13 +52,16 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 {
 	cmzn_field_id coordinatesField = cmzn_fieldmodule_find_field_by_name(fieldmodule, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinatesField);
+	EXPECT_TRUE(cmzn_field_has_class_name(coordinatesField, "FieldFiniteElement"));
 
 	cmzn_field_id temperatureField = cmzn_fieldmodule_find_field_by_name(fieldmodule, "temperature");
 	EXPECT_NE(static_cast<cmzn_field *>(0), temperatureField);
+	EXPECT_TRUE(cmzn_field_has_class_name(temperatureField, "FieldFiniteElement"));
 
 	cmzn_field_id componentField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "component");
 	EXPECT_NE(static_cast<cmzn_field *>(0), componentField);
+	EXPECT_TRUE(cmzn_field_has_class_name(componentField, "FieldComponent"));
 	EXPECT_TRUE(cmzn_field_is_managed(componentField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(componentField));
 	EXPECT_EQ(2, cmzn_field_get_number_of_components(componentField));
@@ -74,6 +78,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id firstComponentField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "firstComponent");
 	EXPECT_NE(static_cast<cmzn_field *>(0), firstComponentField);
+	EXPECT_TRUE(cmzn_field_has_class_name(firstComponentField, "FieldComponent"));
 	EXPECT_TRUE(cmzn_field_is_managed(firstComponentField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(firstComponentField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_components(firstComponentField));
@@ -81,22 +86,71 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_EQ(temp, coordinatesField);
 	cmzn_field_destroy(&temp);
 
-	cmzn_field_id addField = cmzn_fieldmodule_find_field_by_name(
-		fieldmodule, "add");
-	EXPECT_NE(static_cast<cmzn_field *>(0), addField);
-	EXPECT_TRUE(cmzn_field_is_managed(addField));
-	EXPECT_EQ(2, cmzn_field_get_number_of_source_fields(addField));
-	EXPECT_EQ(1, cmzn_field_get_number_of_components(addField));
-	temp = cmzn_field_get_source_field(addField, 1);
-	EXPECT_EQ(temp, firstComponentField);
-	cmzn_field_destroy(&temp);
-	temp = cmzn_field_get_source_field(addField, 2);
-	EXPECT_EQ(temp, temperatureField);
-	cmzn_field_destroy(&temp);
+	struct
+	{
+		const char *name;
+		const int componentCount;
+	} operators[28] =
+	{
+		// arithmetic operators
+		{ "Abs", 1 },
+		{ "Add", 2 },
+		{ "Divide", 2 },
+		{ "Exp", 1 },
+		{ "Log", 1 },
+		{ "Multiply", 2 },
+		{ "Power", 2 },
+		{ "Sqrt", 1 },
+		{ "Subtract", 2 },
+		// logical operators
+		{ "And", 2 },
+		{ "EqualTo", 2 },
+		{ "GreaterThan", 2 },
+		{ "IsDefined", 1 },
+		{ "LessThan", 2 },
+		{ "Not", 1 },
+		{ "Or", 2 },
+		{ "Xor", 2 },
+		// trigonometric operators
+		{ "Sin", 1 },
+		{ "Cos", 1 },
+		{ "Tan", 1 },
+		{ "Asin", 1 },
+		{ "Acos", 1 },
+		{ "Atan", 1 },
+		{ "Atan2", 2 },
+		// vector operators
+		{ "DotProduct", 2 },
+		{ "Magnitude", 1 },
+		{ "Normalise", 1 },
+		{ "SumComponents", 1 }
+	};
+	for (int f = 0; f < 28; ++f)
+	{
+		const char *name = operators[f].name;
+		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, name);
+		EXPECT_NE(static_cast<cmzn_field *>(0), field);
+		std::string expectedClassName = "Field";
+		expectedClassName += name;
+		EXPECT_TRUE(cmzn_field_has_class_name(field, expectedClassName.c_str()));
+		EXPECT_TRUE(cmzn_field_is_managed(field));
+		EXPECT_EQ(operators[f].componentCount, cmzn_field_get_number_of_source_fields(field));
+		EXPECT_EQ(1, cmzn_field_get_number_of_components(field));
+		temp = cmzn_field_get_source_field(field, 1);
+		EXPECT_EQ(firstComponentField, temp);
+		cmzn_field_destroy(&temp);
+		if (operators[f].componentCount > 1)
+		{
+			temp = cmzn_field_get_source_field(field, 2);
+			EXPECT_EQ(temp, temperatureField);
+			cmzn_field_destroy(&temp);
+		}
+	}
 
 	cmzn_field_id concatenateField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "concatenate");
 	EXPECT_NE(static_cast<cmzn_field *>(0), concatenateField);
+	EXPECT_TRUE(cmzn_field_has_class_name(concatenateField, "FieldConcatenate"));
 	EXPECT_TRUE(cmzn_field_is_managed(concatenateField));
 	EXPECT_EQ(2, cmzn_field_get_number_of_source_fields(concatenateField));
 	EXPECT_EQ(4, cmzn_field_get_number_of_components(concatenateField));
@@ -112,6 +166,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id constantField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "constant");
 	EXPECT_NE(static_cast<cmzn_field *>(0), constantField);
+	EXPECT_TRUE(cmzn_field_has_class_name(constantField, "FieldConstant"));
 	EXPECT_TRUE(cmzn_field_is_managed(constantField));
 	EXPECT_EQ(0, cmzn_field_get_number_of_source_fields(constantField));
 	EXPECT_EQ(3, cmzn_field_get_number_of_components(constantField));
@@ -124,6 +179,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id stringConstantField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "stringConstant");
 	EXPECT_NE(static_cast<cmzn_field *>(0), stringConstantField);
+	EXPECT_TRUE(cmzn_field_has_class_name(stringConstantField, "FieldStringConstant"));
 	EXPECT_TRUE(cmzn_field_is_managed(stringConstantField));
 	EXPECT_EQ(0, cmzn_field_get_number_of_source_fields(stringConstantField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_components(stringConstantField));
@@ -131,28 +187,17 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_STREQ(returned_string, "string_constant");
 	cmzn_deallocate(returned_string);
 
-	cmzn_field_id andField = cmzn_fieldmodule_find_field_by_name(fieldmodule,
-		"and");
-	EXPECT_NE(static_cast<cmzn_field *>(0), andField);
-	EXPECT_TRUE(cmzn_field_is_managed(andField));
-	EXPECT_EQ(2, cmzn_field_get_number_of_source_fields(andField));
-
 	cmzn_field_id edgeDiscontinuityField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "edgeDiscontinuity");
 	EXPECT_NE(static_cast<cmzn_field *>(0), edgeDiscontinuityField);
+	EXPECT_TRUE(cmzn_field_has_class_name(edgeDiscontinuityField, "FieldEdgeDiscontinuity"));
 	EXPECT_TRUE(cmzn_field_is_managed(edgeDiscontinuityField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(edgeDiscontinuityField));
-
-	cmzn_field_id sumComponentField = cmzn_fieldmodule_find_field_by_name(
-		fieldmodule, "sumComponent");
-	EXPECT_NE(static_cast<cmzn_field *>(0), sumComponentField);
-	EXPECT_TRUE(cmzn_field_is_managed(sumComponentField));
-	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(sumComponentField));
-	EXPECT_EQ(1, cmzn_field_get_number_of_components(sumComponentField));
 
 	cmzn_field_id derivativeField = cmzn_fieldmodule_find_field_by_name(fieldmodule,
 		"derivative");
 	EXPECT_NE(static_cast<cmzn_field *>(0), derivativeField);
+	EXPECT_TRUE(cmzn_field_has_class_name(derivativeField, "FieldDerivative"));
 	EXPECT_TRUE(cmzn_field_is_managed(derivativeField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(derivativeField));
 	// check the parameters with type-specific API
@@ -164,6 +209,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id coordinateTransformationField =
 		cmzn_fieldmodule_find_field_by_name(fieldmodule, "coordinateTransformation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinateTransformationField);
+	EXPECT_TRUE(cmzn_field_has_class_name(coordinateTransformationField, "FieldCoordinateTransformation"));
 	EXPECT_TRUE(cmzn_field_is_managed(coordinateTransformationField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(coordinateTransformationField));
 	EXPECT_EQ(CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL,
@@ -173,43 +219,52 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id determinantField =
 		cmzn_fieldmodule_find_field_by_name(fieldmodule, "determinant");
 	EXPECT_NE(static_cast<cmzn_field *>(0), determinantField);
+	EXPECT_TRUE(cmzn_field_has_class_name(determinantField, "FieldDeterminant"));
 	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(determinantField, fieldCache, 1, &values3[0]));
 	EXPECT_EQ(-3.0, values3[0]);
 
 	cmzn_field_id matrixMultiplyField =
 		cmzn_fieldmodule_find_field_by_name(fieldmodule, "matrixMultiply");
 	EXPECT_NE(static_cast<cmzn_field *>(0), matrixMultiplyField);
+	EXPECT_TRUE(cmzn_field_has_class_name(matrixMultiplyField, "FieldMatrixMultiply"));
 	EXPECT_EQ(9, cmzn_field_get_number_of_components(matrixMultiplyField));
 
 	cmzn_field_id eigenvaluesField =
 		cmzn_fieldmodule_find_field_by_name(fieldmodule, "eigenvalues");
 	EXPECT_NE(static_cast<cmzn_field *>(0), eigenvaluesField);
+	EXPECT_TRUE(cmzn_field_has_class_name(eigenvaluesField, "FieldEigenvalues"));
 	EXPECT_EQ(3, cmzn_field_get_number_of_components(eigenvaluesField));
 
 	cmzn_field_id eigenvectorsField =
 		cmzn_fieldmodule_find_field_by_name(fieldmodule, "eigenvectors");
 	EXPECT_NE(static_cast<cmzn_field *>(0), eigenvectorsField);
+	EXPECT_TRUE(cmzn_field_has_class_name(eigenvectorsField, "FieldEigenvectors"));
 	EXPECT_EQ(9, cmzn_field_get_number_of_components(eigenvectorsField));
 
 	cmzn_field_id crossProductField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "crossProduct");
+	EXPECT_TRUE(cmzn_field_has_class_name(crossProductField, "FieldCrossProduct"));
 	EXPECT_NE(static_cast<cmzn_field *>(0), crossProductField);
 
 	cmzn_field_id timeValueField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "timeValue");
+	EXPECT_TRUE(cmzn_field_has_class_name(timeValueField, "FieldTimeValue"));
 	EXPECT_NE(static_cast<cmzn_field *>(0), timeValueField);
 
 	cmzn_field_id timeLookupField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "timeLookup");
+	EXPECT_TRUE(cmzn_field_has_class_name(timeLookupField, "FieldTimeLookup"));
 	EXPECT_NE(static_cast<cmzn_field *>(0), timeLookupField);
 
 	cmzn_field_id transposeField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "transpose");
+	EXPECT_TRUE(cmzn_field_has_class_name(transposeField, "FieldTranspose"));
 	EXPECT_NE(static_cast<cmzn_field *>(0), transposeField);
 
 	cmzn_field_id nodeValueField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "nodeValue");
 	EXPECT_NE(static_cast<cmzn_field *>(0), nodeValueField);
+	EXPECT_TRUE(cmzn_field_has_class_name(nodeValueField, "FieldNodeValue"));
 	// check the parameters with type-specific API
 	cmzn_field_node_value_id nodeValue = cmzn_field_cast_node_value(nodeValueField);
 	EXPECT_NE(static_cast<cmzn_field_node_value *>(0), nodeValue);
@@ -220,6 +275,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id isOnFaceField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "isOnFace");
 	EXPECT_NE(static_cast<cmzn_field *>(0), isOnFaceField);
+	EXPECT_TRUE(cmzn_field_has_class_name(isOnFaceField, "FieldIsOnFace"));
 	// check the element face type with type-specific API
 	cmzn_field_is_on_face_id isOnFace = cmzn_field_cast_is_on_face(isOnFaceField);
 	EXPECT_NE(static_cast<cmzn_field_is_on_face *>(0), isOnFace);
@@ -229,6 +285,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "storedMeshLocation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), storedMeshLocationField);
+	EXPECT_TRUE(cmzn_field_has_class_name(storedMeshLocationField, "FieldStoredMeshLocation"));
 
 	cmzn_mesh_id mesh3d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
 	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 2);
@@ -251,6 +308,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "findMeshLocation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), findMeshLocationField);
+	EXPECT_TRUE(cmzn_field_has_class_name(findMeshLocationField, "FieldFindMeshLocation"));
 	cmzn_field_find_mesh_location_id findMeshLocation = cmzn_field_cast_find_mesh_location(findMeshLocationField);
 	EXPECT_NE(static_cast<cmzn_field_find_mesh_location *>(0), findMeshLocation);
 	mesh = cmzn_field_find_mesh_location_get_mesh(findMeshLocation);
@@ -268,6 +326,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id meshIntegralField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "meshIntegral");
 	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralField);
+	EXPECT_TRUE(cmzn_field_has_class_name(meshIntegralField, "FieldMeshIntegral"));
 	cmzn_field_mesh_integral_id meshIntegral = cmzn_field_cast_mesh_integral(meshIntegralField);
 	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegral);
 	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegral);
@@ -283,6 +342,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id meshIntegralSquaresField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "meshIntegralSquares");
 	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralSquaresField);
+	EXPECT_TRUE(cmzn_field_has_class_name(meshIntegralSquaresField, "FieldMeshIntegralSquares"));
 	cmzn_field_mesh_integral_id meshIntegralSquares = cmzn_field_cast_mesh_integral(meshIntegralSquaresField);
 	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegralSquares);
 	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegralSquares);
@@ -300,8 +360,11 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	{
 		std::string fieldName("nodeset");
 		fieldName += nodesetOperatorNames[i];
+		std::string className("FieldNodeset");
+		className += nodesetOperatorNames[i];
 		cmzn_field_id nodesetOperatorField = cmzn_fieldmodule_find_field_by_name(fieldmodule, fieldName.c_str());
 		EXPECT_NE(static_cast<cmzn_field *>(0), nodesetOperatorField);
+		EXPECT_TRUE(cmzn_field_has_class_name(nodesetOperatorField, className.c_str()));
 		cmzn_field_nodeset_operator_id nodesetOperator = cmzn_field_cast_nodeset_operator(nodesetOperatorField);
 		EXPECT_NE(static_cast<cmzn_field_nodeset_operator *>(0), nodesetOperator);
 		field = cmzn_field_nodeset_operator_get_element_map_field(nodesetOperator);
@@ -337,13 +400,10 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_destroy(&determinantField);
 	cmzn_field_destroy(&coordinateTransformationField);
 	cmzn_field_destroy(&derivativeField);
-	cmzn_field_destroy(&sumComponentField);
 	cmzn_field_destroy(&edgeDiscontinuityField);
-	cmzn_field_destroy(&andField);
 	cmzn_field_destroy(&stringConstantField);
 	cmzn_field_destroy(&constantField);
 	cmzn_field_destroy(&concatenateField);
-	cmzn_field_destroy(&addField);
 	cmzn_field_destroy(&firstComponentField);
 	cmzn_field_destroy(&componentField);
 	cmzn_field_destroy(&temperatureField);
@@ -438,11 +498,56 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_managed(firstComponentField, false);
 	cmzn_field_set_name(firstComponentField, "firstComponent");
 
-	cmzn_field_id addField = cmzn_fieldmodule_create_field_add(
-		fieldmodule, firstComponentField, temperatureField);
-	EXPECT_NE(static_cast<cmzn_field *>(0), addField);
-	cmzn_field_set_managed(addField, true);
-	cmzn_field_set_name(addField, "add");
+	struct
+	{
+		const char *name;
+		cmzn_field_id field;
+	} operators[28] =
+	{
+		{ "Abs", cmzn_fieldmodule_create_field_abs(fieldmodule, firstComponentField) },
+		{ "Add", cmzn_fieldmodule_create_field_add(fieldmodule, firstComponentField, temperatureField) },
+		{ "Divide", cmzn_fieldmodule_create_field_divide(fieldmodule, firstComponentField, temperatureField) },
+		{ "Exp", cmzn_fieldmodule_create_field_exp(fieldmodule, firstComponentField) },
+		{ "Log", cmzn_fieldmodule_create_field_log(fieldmodule, firstComponentField) },
+		{ "Multiply", cmzn_fieldmodule_create_field_multiply(fieldmodule, firstComponentField, temperatureField) },
+		{ "Power", cmzn_fieldmodule_create_field_power(fieldmodule, firstComponentField, temperatureField) },
+		{ "Sqrt", cmzn_fieldmodule_create_field_sqrt(fieldmodule, firstComponentField) },
+		{ "Subtract", cmzn_fieldmodule_create_field_subtract(fieldmodule, firstComponentField, temperatureField) },
+		// logical operators
+		{ "And", cmzn_fieldmodule_create_field_and(fieldmodule, firstComponentField, temperatureField) },
+		{ "EqualTo", cmzn_fieldmodule_create_field_equal_to(fieldmodule, firstComponentField, temperatureField) },
+		{ "GreaterThan", cmzn_fieldmodule_create_field_greater_than(fieldmodule, firstComponentField, temperatureField) },
+		{ "IsDefined", cmzn_fieldmodule_create_field_is_defined(fieldmodule, firstComponentField) },
+		{ "LessThan", cmzn_fieldmodule_create_field_less_than(fieldmodule, firstComponentField, temperatureField) },
+		{ "Not", cmzn_fieldmodule_create_field_not(fieldmodule, firstComponentField) },
+		{ "Or", cmzn_fieldmodule_create_field_or(fieldmodule, firstComponentField, temperatureField) },
+		{ "Xor", cmzn_fieldmodule_create_field_xor(fieldmodule, firstComponentField, temperatureField) },
+		// trigonometric operators
+		{ "Sin", cmzn_fieldmodule_create_field_sin(fieldmodule, firstComponentField) },
+		{ "Cos", cmzn_fieldmodule_create_field_cos(fieldmodule, firstComponentField) },
+		{ "Tan", cmzn_fieldmodule_create_field_tan(fieldmodule, firstComponentField) },
+		{ "Asin", cmzn_fieldmodule_create_field_asin(fieldmodule, firstComponentField) },
+		{ "Acos", cmzn_fieldmodule_create_field_acos(fieldmodule, firstComponentField) },
+		{ "Atan", cmzn_fieldmodule_create_field_atan(fieldmodule, firstComponentField) },
+		{ "Atan2", cmzn_fieldmodule_create_field_atan2(fieldmodule, firstComponentField, temperatureField) },
+		// vector operators
+		{ "DotProduct", cmzn_fieldmodule_create_field_dot_product(fieldmodule, firstComponentField, temperatureField) },
+		{ "Magnitude", cmzn_fieldmodule_create_field_magnitude(fieldmodule, firstComponentField) },
+		{ "Normalise", cmzn_fieldmodule_create_field_normalise(fieldmodule, firstComponentField) },
+		{ "SumComponents", cmzn_fieldmodule_create_field_sum_components(fieldmodule, firstComponentField) }
+	};
+	for (int f = 0; f < 28; ++f)
+	{
+		const char *name = operators[f].name;
+		EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
+		std::string expectedClassName = "Field";
+		expectedClassName += name;
+		EXPECT_TRUE(cmzn_field_has_class_name(operators[f].field, expectedClassName.c_str()));
+		EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
+		cmzn_field_set_managed(operators[f].field, true);
+		cmzn_field_set_name(operators[f].field, operators[f].name);
+		cmzn_field_destroy(&operators[f].field);
+	}
 
 	cmzn_field_id sourceFields[2] = {coordinatesField, temperatureField};
 
@@ -465,23 +570,11 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_name(stringConstantField, "stringConstant");
 	EXPECT_NE(static_cast<cmzn_field *>(0), stringConstantField);
 
-	cmzn_field_id andField =  cmzn_fieldmodule_create_field_and(fieldmodule,
-		constantField, temperatureField);
-	EXPECT_NE(static_cast<cmzn_field *>(0), andField);
-	cmzn_field_set_managed(andField, true);
-	cmzn_field_set_name(andField, "and");
-
 	cmzn_field_id edgeDiscontinuityField = cmzn_fieldmodule_create_field_edge_discontinuity(
 		fieldmodule, coordinatesField);
 	EXPECT_NE(static_cast<cmzn_field *>(0), edgeDiscontinuityField);
 	cmzn_field_set_managed(edgeDiscontinuityField, true);
 	cmzn_field_set_name(edgeDiscontinuityField, "edgeDiscontinuity");
-
-	cmzn_field_id sumComponentField = cmzn_fieldmodule_create_field_sum_components(
-		fieldmodule, coordinatesField);
-	EXPECT_NE(static_cast<cmzn_field *>(0), sumComponentField);
-	cmzn_field_set_managed(sumComponentField, true);
-	cmzn_field_set_name(sumComponentField, "sumComponent");
 
 	cmzn_field_id derivativeField = cmzn_fieldmodule_create_field_derivative(fieldmodule,
 		coordinatesField, 2);
@@ -710,13 +803,10 @@ TEST(fieldmodule_description, write)
 	cmzn_field_destroy(&matrixField);
 	cmzn_field_destroy(&coordinateTransformationField);
 	cmzn_field_destroy(&derivativeField);
-	cmzn_field_destroy(&sumComponentField);
 	cmzn_field_destroy(&edgeDiscontinuityField);
-	cmzn_field_destroy(&andField);
 	cmzn_field_destroy(&stringConstantField);
 	cmzn_field_destroy(&constantField);
 	cmzn_field_destroy(&concatenateField);
-	cmzn_field_destroy(&addField);
 	cmzn_field_destroy(&firstComponentField);
 	cmzn_field_destroy(&componentField);
 	cmzn_field_destroy(&temperatureField);

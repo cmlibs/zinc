@@ -1152,18 +1152,3 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
 	}
 	return field;
 }
-
-int cmzn_field_is_valid_nodeset_operator_element_map(cmzn_field_id field, void *)
-{
-	if (field)
-	{
-		cmzn_field_stored_mesh_location *stored_mesh_location = cmzn_field_cast_stored_mesh_location(field);
-		if (stored_mesh_location)
-		{
-			cmzn_field_stored_mesh_location_destroy(&stored_mesh_location);
-			return 1;
-		}
-	}
-	return 0;
-}
-

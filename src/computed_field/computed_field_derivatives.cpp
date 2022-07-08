@@ -586,39 +586,6 @@ int cmzn_field_derivative_set_xi_index(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Computed_field_get_type_derivative(struct Computed_field *field,
-	struct Computed_field **source_field, int *xi_index)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DERIVATIVE, the
-<source_field> and <xi_index> used by it are returned.
-==============================================================================*/
-{
-	Computed_field_derivative* derivative_core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_derivative);
-	if (field &&
-		(derivative_core = dynamic_cast<Computed_field_derivative*>(field->core))
-		&& source_field)
-	{
-		*source_field = field->source_fields[0];
-		*xi_index = derivative_core->getXiIndex();
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_derivative.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_derivative */
-
 namespace {
 
 const char computed_field_curl_type_string[] = "curl";
@@ -867,38 +834,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_curl(
 
 	return (field);
 }
-
-int Computed_field_get_type_curl(struct Computed_field *field,
-	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CURL, the
-<source_field> and <coordinate_field> used by it are returned.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_curl);
-	if (field&&(dynamic_cast<Computed_field_curl*>(field->core))
-		&&vector_field&&coordinate_field)
-	{
-		/* source_fields: 0=vector, 1=coordinate */
-		*vector_field = field->source_fields[0];
-		*coordinate_field=field->source_fields[1];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_curl.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_curl */
 
 namespace {
 
@@ -1159,38 +1094,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_divergence(
 
 	return (field);
 }
-
-int Computed_field_get_type_divergence(struct Computed_field *field,
-	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DIVERGENCE, the
-<source_field> and <coordinate_field> used by it are returned.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_divergence);
-	if (field&&(dynamic_cast<Computed_field_divergence*>(field->core))
-		&&vector_field&&coordinate_field)
-	{
-		/* source_fields: 0=vector, 1=coordinate */
-		*vector_field = field->source_fields[0];
-		*coordinate_field=field->source_fields[1];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_divergence.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_divergence */
 
 namespace {
 
@@ -1822,36 +1725,3 @@ cmzn_field_id cmzn_fieldmodule_create_field_gradient(
 
 	return (field);
 }
-
-int Computed_field_get_type_gradient(struct Computed_field *field,
-	struct Computed_field **source_field,struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type 'gradient', the <source_field> and <coordinate_field>
-used by it are returned.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_gradient);
-	if (field && (dynamic_cast<Computed_field_gradient*>(field->core)) &&
-		source_field && coordinate_field)
-	{
-		/* source_fields: 0=source, 1=coordinate */
-		*source_field = field->source_fields[0];
-		*coordinate_field=field->source_fields[1];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_gradient.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_gradient */
-

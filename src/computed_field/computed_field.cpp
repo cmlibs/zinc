@@ -2991,7 +2991,7 @@ public:
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_INVALID:
-				enum_string = "INVALID";
+				// no enum string
 				break;
 			case CMZN_FIELD_TYPE_APPLY:
 				enum_string = "APPLY";
@@ -3203,8 +3203,6 @@ public:
 			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
 				enum_string = "NODESET_SUM_SQUARES";
 				break;
-			default:
-				break;
 		}
 		return enum_string;
 	}
@@ -3230,7 +3228,7 @@ public:
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_INVALID:
-				class_name = "Invalid";
+				// no class name
 				break;
 			case CMZN_FIELD_TYPE_APPLY:
 				class_name = "FieldApply";
@@ -3442,8 +3440,6 @@ public:
 			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
 				class_name = "FieldNodesetSumSquares";
 				break;
-			default:
-				break;
 		}
 		return class_name;
 	}
@@ -3463,6 +3459,33 @@ char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field)
 {
 	return field->core->get_type();
+}
+
+char *cmzn_field_get_class_name(cmzn_field_id field)
+{
+	if (field)
+	{
+		cmzn_field_type type = cmzn_field_get_type(field);
+		char *class_name = cmzn_field_type_enum_to_class_name(type);
+		if (!class_name)
+		{
+			display_message(ERROR_MESSAGE, "Field getClassName.  Class name not available for this field");
+		}
+		return class_name;
+	}
+	return nullptr;
+}
+
+bool cmzn_field_has_class_name(cmzn_field_id field,
+	const char *class_name)
+{
+	if ((field) && (class_name))
+	{
+		cmzn_field_type type = cmzn_field_get_type(field);
+		const char *tmp_class_name = cmzn_field_type_class_name_conversion::to_string(type);
+		return (nullptr != tmp_class_name) && (0 == strcmp(class_name, tmp_class_name));
+	}
+	return false;
 }
 
 cmzn_fieldparameters_id cmzn_field_get_fieldparameters(cmzn_field_id field)

@@ -276,6 +276,25 @@ ZINC_API bool cmzn_field_is_type_coordinate(cmzn_field_id field);
 ZINC_API int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value);
 
 /**
+ * Get the C++ style class name e.g. "FieldAdd".
+ *
+ * @param field  The field to query.
+ * @return  On success: allocated string containing field class name.
+ * Up to caller to free using cmzn_deallocate().
+ */
+ZINC_API char *cmzn_field_get_class_name(cmzn_field_id field);
+
+/**
+ * Return true if field has the exact class name string including case.
+ *
+ * @param field  The field to query.
+ * @param class_name  C++ style class name e.g. "FieldAdd".
+ * @return  True if field has exactly matching class name otherwise false.
+ */
+ZINC_API bool cmzn_field_has_class_name(cmzn_field_id field,
+	const char *class_name);
+
+/**
  * Get the name of a component of the field. This is only meaningful for
  * finite element fields; all other fields' component names are the string
  * equivalent of the component number, e.g. 1 -> "1" etc.
