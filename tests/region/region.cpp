@@ -76,25 +76,68 @@ TEST(cmzn_region, build_tree)
 	cmzn_region_destroy(&bob);
 }
 
-TEST(ZincRegion, build_tree)
+class RegioncallbackRecordChange : public Regioncallback
+{
+public:
+	int changeCount;
+
+	RegioncallbackRecordChange() :
+		changeCount(0)
+	{ }
+
+	virtual void operator()(const Regionevent& event)
+	{
+		++(this->changeCount);
+	}
+};
+
+TEST(ZincRegion, build_tree_regionnotifier)
 {
 	ZincTestSetupCpp zinc;
 	int result;
 
+	Regionnotifier rootRegionnotifier = zinc.root_region.createRegionnotifier();
+	EXPECT_TRUE(rootRegionnotifier.isValid());
+	RegioncallbackRecordChange rootRegionChange;
+	EXPECT_EQ(RESULT_OK, rootRegionnotifier.setCallback(rootRegionChange));
+	EXPECT_EQ(0, rootRegionChange.changeCount);
+
 	EXPECT_STREQ("", zinc.root_region.getPath());
 	Region bob = zinc.root_region.createChild("bob");
+	EXPECT_EQ(1, rootRegionChange.changeCount);
 	EXPECT_TRUE(bob.isValid());
 	EXPECT_STREQ("bob", bob.getPath());
 	EXPECT_STREQ("..", zinc.root_region.getRelativePath(bob));
 
+	Regionnotifier bobRegionnotifier = bob.createRegionnotifier();
+	EXPECT_TRUE(bobRegionnotifier.isValid());
+	RegioncallbackRecordChange bobRegionChange;
+	EXPECT_EQ(RESULT_OK, bobRegionnotifier.setCallback(bobRegionChange));
+	EXPECT_EQ(0, bobRegionChange.changeCount);
+
+	EXPECT_EQ(RESULT_OK, bob.setName("bobby"));
+	EXPECT_EQ(1, bobRegionChange.changeCount);
+	EXPECT_EQ(2, rootRegionChange.changeCount);
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	EXPECT_EQ(2, bobRegionChange.changeCount);
+	EXPECT_EQ(3, rootRegionChange.changeCount);
+
 	Region alf = bob.createChild("alf");
+	EXPECT_EQ(3, bobRegionChange.changeCount);  // no change
+	EXPECT_EQ(4, rootRegionChange.changeCount);
 	EXPECT_TRUE(alf.isValid());
 	EXPECT_EQ(bob, alf.getParent());
 
 	Region fred = zinc.root_region.createRegion();
 	EXPECT_TRUE(fred.isValid());
 	EXPECT_EQ(CMZN_OK, result = fred.setName("fred"));
-	EXPECT_EQ(CMZN_OK, result = bob.appendChild(fred));
+	{
+		ChangeManager<Region> rootRegionChangeManager(zinc.root_region);
+		EXPECT_EQ(CMZN_OK, result = bob.appendChild(fred));
+		EXPECT_EQ(4, bobRegionChange.changeCount);
+		EXPECT_EQ(4, rootRegionChange.changeCount);  // no notification yet
+	}
+	EXPECT_EQ(5, rootRegionChange.changeCount);
 
 	EXPECT_EQ(bob, zinc.root_region.getFirstChild());
 	EXPECT_EQ(Region(), bob.getNextSibling());
@@ -107,23 +150,39 @@ TEST(ZincRegion, build_tree)
 	EXPECT_EQ(alf, fred.getPreviousSibling());
 	EXPECT_EQ(fred, zinc.root_region.findSubregionAtPath("bob/fred"));
 
-	EXPECT_EQ(CMZN_OK, result = bob.removeChild(fred));
-	EXPECT_EQ(Region(), zinc.root_region.findSubregionAtPath("bob/fred"));
-	EXPECT_EQ(CMZN_OK, result = bob.insertChildBefore(fred, /*before*/alf));
-	EXPECT_EQ(fred, bob.getFirstChild());
-	EXPECT_EQ(alf, fred.getNextSibling());
+	{
+		ChangeManager<Region> rootRegionChangeManager(zinc.root_region);
+		EXPECT_EQ(CMZN_OK, result = bob.removeChild(fred));
+		EXPECT_EQ(5, bobRegionChange.changeCount);
+		EXPECT_EQ(5, rootRegionChange.changeCount);  // no notification yet
+		EXPECT_EQ(Region(), zinc.root_region.findSubregionAtPath("bob/fred"));
+		EXPECT_EQ(CMZN_OK, result = bob.insertChildBefore(fred, /*before*/alf));
+		EXPECT_EQ(6, bobRegionChange.changeCount);
+		EXPECT_EQ(5, rootRegionChange.changeCount);  // no notification yet
+		EXPECT_EQ(fred, bob.getFirstChild());
+		EXPECT_EQ(alf, fred.getNextSibling());
+	}
+	EXPECT_EQ(6, rootRegionChange.changeCount);
 
 	Region joe = zinc.root_region.createSubregion("bob/joe");
+	EXPECT_EQ(7, bobRegionChange.changeCount);
+	EXPECT_EQ(7, rootRegionChange.changeCount);
 	EXPECT_TRUE(joe.isValid());
 	EXPECT_EQ(joe, alf.getNextSibling());
 	EXPECT_FALSE(zinc.root_region.createSubregion("bob/joe").isValid()); // exists already
+	EXPECT_EQ(7, bobRegionChange.changeCount);  // no change
+	EXPECT_EQ(7, rootRegionChange.changeCount);  // no change
 
 	// test can create intermediate subregions
 	Region harry = bob.createSubregion("wills/harry");
+	EXPECT_EQ(8, bobRegionChange.changeCount);
+	EXPECT_EQ(8, rootRegionChange.changeCount);
 	EXPECT_EQ(harry, zinc.root_region.findSubregionAtPath("bob/wills/harry"));
 
 	// test can create and find subregions from relative paths
 	Region tom = harry.createSubregion("../../tom");
+	EXPECT_EQ(9, bobRegionChange.changeCount);
+	EXPECT_EQ(9, rootRegionChange.changeCount);
 	EXPECT_TRUE(tom.isValid());
 	EXPECT_EQ(tom, harry.findSubregionAtPath("../../tom"));
 	EXPECT_EQ(tom, zinc.root_region.findSubregionAtPath("bob/tom"));
@@ -137,6 +196,8 @@ TEST(ZincRegion, build_tree)
 	EXPECT_FALSE(bob.findSubregionAtPath("../..").isValid());
 	EXPECT_FALSE(harry.findSubregionAtPath("../harry/none").isValid());
 	EXPECT_FALSE(harry.createSubregion("../../tom").isValid());  // already exists so should not succeed
+	EXPECT_EQ(9, bobRegionChange.changeCount);  // no change
+	EXPECT_EQ(9, rootRegionChange.changeCount);  // no change
 
 	// test root
 	EXPECT_EQ(zinc.root_region, harry.getRoot());
@@ -192,32 +253,62 @@ TEST(ZincRegion, getContext)
 	EXPECT_EQ(zinc.context, context);
 }
 
-TEST(ZincRegion, append_insert_region)
+TEST(ZincRegion, region_append_insert_regionnotifier)
 {
 	ZincTestSetupCpp zinc;
+
+	Regionnotifier rootRegionnotifier = zinc.root_region.createRegionnotifier();
+	EXPECT_TRUE(rootRegionnotifier.isValid());
+	RegioncallbackRecordChange rootRegionChange;
+	EXPECT_EQ(RESULT_OK, rootRegionnotifier.setCallback(rootRegionChange));
+	EXPECT_EQ(0, rootRegionChange.changeCount);
 
 	Region r1 = zinc.root_region.createRegion();
 	EXPECT_TRUE(r1.isValid());
 	Region r2 = zinc.root_region.createRegion();
 	EXPECT_TRUE(r2.isValid());
 
+	// can't append an unnamed child
 	EXPECT_EQ(ERROR_ARGUMENT, zinc.root_region.appendChild(r1));
+	EXPECT_EQ(0, rootRegionChange.changeCount);
 	EXPECT_EQ(OK, r1.setName("r1"));
+	EXPECT_EQ(0, rootRegionChange.changeCount);
 	EXPECT_EQ(OK, zinc.root_region.appendChild(r1));
+	EXPECT_EQ(1, rootRegionChange.changeCount);  // already there = no change
 	EXPECT_EQ(OK, r2.setName("r1"));
 	EXPECT_EQ(ERROR_ARGUMENT, zinc.root_region.appendChild(r2));
+	EXPECT_EQ(1, rootRegionChange.changeCount);  // no change
 	EXPECT_EQ(ERROR_ARGUMENT, zinc.root_region.insertChildBefore(r2, r1));
+	EXPECT_EQ(1, rootRegionChange.changeCount);  // no change
 	EXPECT_EQ(OK, r2.setName("r2"));
 	EXPECT_EQ(OK, zinc.root_region.appendChild(r2));
+	EXPECT_EQ(2, rootRegionChange.changeCount);
 	EXPECT_EQ(r1, zinc.root_region.getFirstChild());
 	EXPECT_EQ(OK, zinc.root_region.insertChildBefore(r2, r1));
+	EXPECT_EQ(3, rootRegionChange.changeCount);
 	EXPECT_EQ(r2, zinc.root_region.getFirstChild());
+	// re-parent a region
+	Region r3 = zinc.root_region.createChild("r3");
+	EXPECT_TRUE(r3.isValid());
+	EXPECT_EQ(4, rootRegionChange.changeCount);
+	EXPECT_EQ(OK, r1.appendChild(r3));
+	EXPECT_EQ(6, rootRegionChange.changeCount);  // currently notifies twice; difficult to avoid
+	// test clear notification and restart
+	rootRegionnotifier.clearCallback();
+	rootRegionnotifier.clearCallback();  // test can call twice
+	Region r4 = zinc.root_region.createChild("r4");
+	EXPECT_TRUE(r4.isValid());
+	EXPECT_EQ(6, rootRegionChange.changeCount);  // unchanged as notifications off
+	rootRegionnotifier.setCallback(rootRegionChange);
+	Region r5 = zinc.root_region.createChild("r5");
+	EXPECT_TRUE(r5.isValid());
+	EXPECT_EQ(7, rootRegionChange.changeCount);
 
+	// test can't append or insert a region from another context
 	Context otherContext = Context("other");
 	Region or1 = otherContext.createRegion();
 	EXPECT_TRUE(or1.isValid());
 	EXPECT_EQ(OK, or1.setName("or1"));
-
 	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, zinc.root_region.appendChild(or1));
 	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, zinc.root_region.insertChildBefore(or1, r2));
 }

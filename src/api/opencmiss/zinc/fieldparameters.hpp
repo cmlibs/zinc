@@ -116,6 +116,16 @@ public:
 	{
 		return cmzn_fieldparameters_set_parameters(this->id, valuesCount, valuesIn);
 	}
+
+	double getTime() const
+	{
+		return cmzn_fieldparameters_get_time(this->id);
+	}
+
+	int setTime(double timeIn)
+	{
+		return cmzn_fieldparameters_set_time(this->id, timeIn);
+	}
 };
 
 inline Fieldparameters Field::getFieldparameters() const

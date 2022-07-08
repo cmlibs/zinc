@@ -1,0 +1,150 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=2 (value,d/ds1)
+ y. #Values=2 (value,d/ds1)
+ z. #Values=2 (value,d/ds1)
+2) radius, field, rectangular cartesian, real, #Components=1
+ 1. #Values=1 (value)
+Node template: node1
+Node: 1
+  6.396268559726457e+01 -9.185014230076881e+01
+ -6.308515197735498e+00 -3.959687973145765e+00
+ -6.618391605275458e+01  5.286706562356789e+01
+  1.250000000000000e+00
+Define node template: node2
+Shape. Dimension=0
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=4 (value,d/ds1(3))
+ y. #Values=4 (value,d/ds1(3))
+ z. #Values=4 (value,d/ds1(3))
+2) radius, field, rectangular cartesian, real, #Components=1
+ 1. #Values=3 (value(3))
+Node template: node2
+Node: 2
+  1.206118092712318e+01 -3.077192478282365e+01 -5.562006811772605e+01 -3.475077646688074e+01
+  1.285398850134059e+00  3.426547875050361e+00  1.318428975043372e+01 -6.472757926373354e+00
+ -1.509522332301790e+01  2.808922176658312e+01  4.919750532141146e+01  1.318915890026260e+01
+  1.000000000000000e+00  9.000000000000000e-01  9.000000000000000e-01
+Node template: node1
+Node: 3
+ -3.442212342946033e+01 -2.609366211559166e+01
+  1.019427698202495e+01  1.354182204864699e+01
+  1.311728439189662e+01  1.958421853833854e+01
+  7.200000000000001e-01
+Node: 4
+ -1.836704350626388e+01 -2.483730105103848e+01
+ -2.282159457519580e+01 -3.534062965713202e+01
+ -8.923479729521292e+00 -9.027635165806732e-01
+  7.200000000000001e-01
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1
+  2. #Values=2
+   Value labels: value d/ds1
+ y. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1
+  2. #Values=2
+   Value labels: value d/ds1
+ z. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1
+  2. #Values=2
+   Value labels: value d/ds1
+2) radius, field, rectangular cartesian, real, #Components=1
+ 1. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+Element template: element1
+Element: 1
+ Nodes:
+ 1 2
+Define element template: element2
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1(2)
+  2. #Values=2
+   Value labels: value d/ds1
+ y. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1(2)
+  2. #Values=2
+   Value labels: value d/ds1
+ z. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1(2)
+  2. #Values=2
+   Value labels: value d/ds1
+2) radius, field, rectangular cartesian, real, #Components=1
+ 1. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value(2)
+  2. #Values=1
+   Value labels: value
+Element template: element2
+Element: 2
+ Nodes:
+ 2 3
+Define element template: element3
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1(3)
+  2. #Values=2
+   Value labels: value d/ds1
+ y. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1(3)
+  2. #Values=2
+   Value labels: value d/ds1
+ z. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1(3)
+  2. #Values=2
+   Value labels: value d/ds1
+2) radius, field, rectangular cartesian, real, #Components=1
+ 1. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value(3)
+  2. #Values=1
+   Value labels: value
+Element template: element3
+Element: 3
+ Nodes:
+ 2 4

@@ -49,6 +49,22 @@ void DsLabelsGroup::clear()
 	this->indexLimit = 0;
 }
 
+int DsLabelsGroup::removeGroup(DsLabelsGroup& otherGroup)
+{
+	// This could be made faster by working directly with data blocks
+	int numberRemoved = 0;
+	DsLabelIndex index = -1;  // So first increment gives 0 == first valid index
+	while (this->incrementIndex(index))
+	{
+		if (otherGroup.hasIndex(index))
+		{
+			this->setIndex(index, false);
+			++numberRemoved;
+		}
+	}
+	return numberRemoved;
+}
+
 int DsLabelsGroup::setIndex(DsLabelIndex index, bool inGroup)
 {
 	if (index < 0)
@@ -57,7 +73,7 @@ int DsLabelsGroup::setIndex(DsLabelIndex index, bool inGroup)
 		return CMZN_ERROR_ARGUMENT;
 	}
 	bool wasInGroup;
-	if (values.setBool(index, inGroup, wasInGroup))
+	if (this->values.setBool(index, inGroup, wasInGroup))
 	{
 		if (inGroup != wasInGroup)
 		{

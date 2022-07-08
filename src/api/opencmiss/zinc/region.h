@@ -417,6 +417,90 @@ ZINC_API int cmzn_region_get_time_range(cmzn_region_id region,
 ZINC_API int cmzn_region_get_hierarchical_time_range(cmzn_region_id region,
 	double *minimumValueOut, double *maximumValueOut);
 
+/**
+ * Create a notifier for getting callbacks for changes to the region tree
+ * structure.
+ *
+ * @param region  Handle to the region to get notifications for.
+ * @return  Handle to new region notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_regionnotifier_id cmzn_region_create_regionnotifier(
+	cmzn_region_id region);
+
+/**
+ * Returns a new handle to the region event with reference count
+ * incremented.
+ *
+ * @param event  The region event to obtain a new handle to.
+ * @return  New handle to event, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_regionevent_id cmzn_regionevent_access(
+	cmzn_regionevent_id event);
+
+/**
+ * Destroys this handle to the region event and sets it to NULL.
+ * Internally this decrements the reference count.
+ * Note: Do not destroy the event passed to the user callback function.
+ *
+ * @param event_address  Address of region event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_regionevent_destroy(cmzn_regionevent_id *event_address);
+
+/**
+ * Returns a new handle to the region notifier with reference count
+ * incremented.
+ *
+ * @param notifier  The region notifier to obtain a new handle to.
+ * @return  New handle to region notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_regionnotifier_id cmzn_regionnotifier_access(
+	cmzn_regionnotifier_id notifier);
+
+/**
+ * Destroys handle to the region notifier and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param notifier_address  Address of region notifier handle to destroy.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_regionnotifier_destroy(
+	cmzn_regionnotifier_id *notifier_address);
+
+/**
+ * Stop callbacks and remove the callback function from the region notifier.
+ *
+ * @param notifier  Handle to the region notifier.
+ * @return  Result OK on success, any other error on failure.
+ */
+ZINC_API int cmzn_regionnotifier_clear_callback(
+	cmzn_regionnotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the region notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_regionnotifier_callback_function
+ * @param notifier  Handle to the region notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Result OK on success, any other error on failure.
+ */
+ZINC_API int cmzn_regionnotifier_set_callback(
+	cmzn_regionnotifier_id notifier,
+	cmzn_regionnotifier_callback_function function, void *user_data_in);
+
+/**
+ * Get the user data set when establishing the callback.
+ *
+ * @see cmzn_regionnotifier_set_callback
+ * @param notifier  Handle to the region notifier.
+ * @return  User data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_regionnotifier_get_callback_user_data(
+	cmzn_regionnotifier_id notifier);
+
 #ifdef __cplusplus
 }
 #endif

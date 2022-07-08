@@ -1,0 +1,67 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Time sequence: times1, size=2
+  0.0 1.0
+Define node template: node1
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3, time sequence=times1
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node template: node1
+Node: 1
+  0.0 0.0 0.0
+  0.0 0.0 0.0
+Node: 2
+  0.0 0.0 0.0
+  0.0 0.0 0.0
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ y. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ z. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+Element template: element1
+Element: 1
+ Nodes:
+ 1 2
+!#nodeset datapoints
+Define node template: node2
+Shape. Dimension=0
+#Fields=2
+1) data_coordinates, coordinate, rectangular cartesian, real, #Components=3, time sequence=times1
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+2) host_location, field, element_xi, #Components=1, host mesh=mesh1d, host mesh dimension=1
+ 1. #Values=1 (value)
+Node template: node2
+Node: 1
+ 0.0 0.0 0.0
+ 0.25 0.75 0.75
+ 1 0.25
+Node: 2
+ 1.0 1.0 1.0
+ 0.75 0.25 0.25
+ 1 0.75

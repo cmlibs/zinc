@@ -78,6 +78,19 @@ cmzn_fieldmoduleevent::~cmzn_fieldmoduleevent()
 	cmzn_region::deaccess(this->region);
 }
 
+void cmzn_fieldmoduleevent::deaccess(cmzn_fieldmoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+		{
+			delete event;
+		}
+		event = nullptr;
+	}
+}
+
 void cmzn_fieldmoduleevent::setFeRegionChanges(FE_region_changes *changes)
 {
 	this->feRegionChanges = changes->access();
@@ -255,23 +268,10 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 	return xi_field;
 }
 
-int cmzn_fieldmoduleevent::deaccess(cmzn_fieldmoduleevent* &event)
-{
-	if (event)
-	{
-		--(event->access_count);
-		if (event->access_count <= 0)
-			delete event;
-		event = 0;
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
 cmzn_fieldmodulenotifier::cmzn_fieldmodulenotifier(cmzn_fieldmodule *fieldmodule) :
 	region(fieldmodule->region),
-	function(0),
-	user_data(0),
+	function(nullptr),
+	user_data(nullptr),
 	access_count(1)
 {
 	this->region->addFieldmodulenotifier(this);
@@ -281,26 +281,30 @@ cmzn_fieldmodulenotifier::~cmzn_fieldmodulenotifier()
 {
 }
 
-int cmzn_fieldmodulenotifier::deaccess(cmzn_fieldmodulenotifier* &notifier)
+void cmzn_fieldmodulenotifier::deaccess(cmzn_fieldmodulenotifier* &notifier)
 {
 	if (notifier)
 	{
 		--(notifier->access_count);
 		if (notifier->access_count <= 0)
+		{
 			delete notifier;
+		}
 		else if ((1 == notifier->access_count) && notifier->region)
+		{
 			notifier->region->removeFieldmodulenotifier(notifier);
-		notifier = 0;
-		return CMZN_OK;
+		}
+		notifier = nullptr;
 	}
-	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldmodulenotifier::setCallback(cmzn_fieldmodulenotifier_callback_function function_in,
 	void *user_data_in)
 {
 	if (!function_in)
+	{
 		return CMZN_ERROR_ARGUMENT;
+	}
 	this->function = function_in;
 	this->user_data = user_data_in;
 	return CMZN_OK;
@@ -308,13 +312,13 @@ int cmzn_fieldmodulenotifier::setCallback(cmzn_fieldmodulenotifier_callback_func
 
 void cmzn_fieldmodulenotifier::clearCallback()
 {
-	this->function = 0;
-	this->user_data = 0;
+	this->function = nullptr;
+	this->user_data = nullptr;
 }
 
 void cmzn_fieldmodulenotifier::regionDestroyed()
 {
-	this->region = 0;
+	this->region = nullptr;
 	if (this->function)
 	{
 		cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(static_cast<cmzn_region*>(0));
@@ -338,8 +342,10 @@ int cmzn_fieldmodulenotifier_clear_callback(cmzn_fieldmodulenotifier_id notifier
 int cmzn_fieldmodulenotifier_set_callback(cmzn_fieldmodulenotifier_id notifier,
 	cmzn_fieldmodulenotifier_callback_function function_in, void *user_data_in)
 {
-	if (notifier && function_in)
+	if ((notifier) && (function_in))
+	{
 		return notifier->setCallback(function_in, user_data_in);
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -347,21 +353,30 @@ void *cmzn_fieldmodulenotifier_get_callback_user_data(
  cmzn_fieldmodulenotifier_id notifier)
 {
 	if (notifier)
+	{
 		return notifier->getUserData();
-	return 0;
+	}
+	return nullptr;
 }
 
 cmzn_fieldmodulenotifier_id cmzn_fieldmodulenotifier_access(
 	cmzn_fieldmodulenotifier_id notifier)
 {
 	if (notifier)
+	{
 		return notifier->access();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_fieldmodulenotifier_destroy(cmzn_fieldmodulenotifier_id *notifier_address)
 {
-	return cmzn_fieldmodulenotifier::deaccess(*notifier_address);
+	if (notifier_address)
+	{
+		cmzn_fieldmodulenotifier::deaccess(*notifier_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_fieldmoduleevent_id cmzn_fieldmoduleevent_access(
@@ -374,13 +389,20 @@ cmzn_fieldmoduleevent_id cmzn_fieldmoduleevent_access(
 
 int cmzn_fieldmoduleevent_destroy(cmzn_fieldmoduleevent_id *event_address)
 {
-	return cmzn_fieldmoduleevent::deaccess(*event_address);
+	if (event_address)
+	{
+		cmzn_fieldmoduleevent::deaccess(*event_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_field_change_flags cmzn_fieldmoduleevent_get_summary_field_change_flags(cmzn_fieldmoduleevent_id event)
 {
 	if (event)
+	{
 		return event->getChangeFlags();
+	}
 	return CMZN_FIELD_CHANGE_FLAG_NONE;
 }
 
@@ -388,7 +410,9 @@ cmzn_field_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
 	cmzn_fieldmoduleevent_id event, cmzn_field_id field)
 {
 	if (event)
+	{
 		return event->getFieldChangeFlags(field);
+	}
 	return CMZN_FIELD_CHANGE_FLAG_NONE;
 }
 

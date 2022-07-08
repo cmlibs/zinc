@@ -273,10 +273,7 @@ public:
 		return this->coordinate_system;
 	}
 
-	void setCoordinateSystem(const Coordinate_system& coordinateSystemIn)
-	{
-		this->coordinate_system = coordinateSystemIn;
-	}
+	void setCoordinateSystem(const Coordinate_system& coordinateSystemIn);
 
 	/** Ensure field is not defined on mesh
 	  * Assumes called with FE_region change caching on; records change but doesn't notify */
@@ -434,8 +431,9 @@ PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_field);
  * from <field_list>. Returns 1 (true) if there is either no such field in the
  * list or the two fields return true for FE_fields::compareBasicDefinition(),
  * otherwise returns 0 (false).
+ * Also returns 0 if field has mesh location value type but no host mesh.
  */
-int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
+int FE_field_can_be_merged(struct FE_field *field, void *field_list_void);
 
 /**
  * Return true if any basis functions used by the field is non-linear i.e.
@@ -476,15 +474,6 @@ LAST MODIFIED : 10 May 2000
 DESCRIPTION :
 Sets the name of component <component_no> of <field>. Only sets name if it is
 different from that already returned for field to preserve default names if can.
-==============================================================================*/
-
-int set_FE_field_coordinate_system(struct FE_field *field,
-	const Coordinate_system *coordinate_system);
-/*******************************************************************************
-LAST MODIFIED : 28 January 1999
-
-DESCRIPTION :
-Sets the coordinate system of the <field>.
 ==============================================================================*/
 
 int get_FE_field_number_of_components(struct FE_field *field);

@@ -159,8 +159,50 @@ TEST(ZincField, automaticRenamingFiniteElement)
 	// test can't read model if an incompatible field is using a name from the model
 	EXPECT_EQ(RESULT_OK, temp1b.setName("coordinates"));
 	EXPECT_EQ(RESULT_OK, fieldConstantb.setName("temp1"));
-	EXPECT_EQ(CMZN_RESULT_ERROR_INCOMPATIBLE_DATA, regionb.read(sirb));
+	EXPECT_EQ(RESULT_ERROR_INCOMPATIBLE_DATA, regionb.read(sirb));
 	EXPECT_EQ(RESULT_OK, bobb.setName("fred"));
 	EXPECT_EQ(RESULT_OK, fieldConstantb.setName("bob"));
-	EXPECT_EQ(CMZN_RESULT_ERROR_INCOMPATIBLE_DATA, regionb.read(sirb));
+	EXPECT_EQ(RESULT_ERROR_INCOMPATIBLE_DATA, regionb.read(sirb));
+}
+
+// test can only have NOT_APPLICABLE coordinate system for a non-numeric value type field
+TEST(ZincField, nonNumericFieldCoordinateSystem)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldStringConstant stringConstant = zinc.fm.createFieldStringConstant("string_constant");
+	EXPECT_TRUE(stringConstant.isValid());
+	EXPECT_EQ(RESULT_OK, stringConstant.setName("string_constant"));
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, stringConstant.getCoordinateSystemType());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, stringConstant.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	FieldStoredMeshLocation storedMeshLocation = zinc.fm.createFieldStoredMeshLocation(mesh3d);
+	EXPECT_TRUE(storedMeshLocation.isValid());
+	// set name to force merge later
+	EXPECT_EQ(RESULT_OK, storedMeshLocation.setName("stored_mesh_location"));
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, storedMeshLocation.getCoordinateSystemType());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, storedMeshLocation.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+
+	FieldStoredString storedString = zinc.fm.createFieldStoredString();
+	EXPECT_TRUE(storedString.isValid());
+	// set name to force merge later
+	EXPECT_EQ(RESULT_OK, storedString.setName("stored_string"));
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, storedString.getCoordinateSystemType());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, storedString.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+
+	// check old EX files specifying coordinate system other than NON_APPLICABLE for non-numeric fields
+	// can be read, but these field are read as coordinate system type NON_APPLICABLE
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	Element element1 = mesh3d.createElement(1, elementtemplate);
+	EXPECT_TRUE(element1.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_NON_NUMERIC_COORDINATE_SYSTEM_RESOURCE)));
+	storedMeshLocation = zinc.fm.findFieldByName("stored_mesh_location").castStoredMeshLocation();
+	EXPECT_TRUE(storedMeshLocation.isValid());
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, storedMeshLocation.getCoordinateSystemType());
+
+	storedString = zinc.fm.findFieldByName("stored_string").castStoredString();
+	EXPECT_TRUE(storedString.isValid());
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, storedString.getCoordinateSystemType());
 }

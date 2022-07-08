@@ -475,8 +475,8 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Fieldmoduleevent(cmzn_fieldmoduleevent_id in_fieldmodule_event_id) :
-		id(in_fieldmodule_event_id)
+	explicit Fieldmoduleevent(cmzn_fieldmoduleevent_id in_fieldmoduleevent_id) :
+		id(in_fieldmoduleevent_id)
 	{  }
 
 	Fieldmoduleevent(const Fieldmoduleevent& fieldmoduleEvent) :
