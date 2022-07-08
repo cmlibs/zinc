@@ -158,9 +158,13 @@ DESCRIPTION :
 Returns true if the value_type is an array.
 ==============================================================================*/
 
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\computed_field\computed_field_finite_element.cpp(558):		return_code=Value_type_is_numeric_simple(
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\computed_field\computed_field_finite_element.cpp(1966):		return_code=Value_type_is_numeric_simple(
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\computed_field\computed_field_finite_element.cpp(3238):		return_code=Value_type_is_numeric_simple(
+inline bool Value_type_is_non_numeric(enum Value_type value_type)
+{
+	return (value_type == ELEMENT_XI_VALUE)
+		|| (value_type == STRING_VALUE)
+		|| (value_type == URL_VALUE)
+		|| (value_type == UNKNOWN_VALUE);
+}
 
 int Value_type_is_numeric_simple(enum Value_type value_type);
 /*******************************************************************************

@@ -27,6 +27,7 @@ struct FE_field;
 class FE_field_parameters
 {
 	FE_field *field;  // accessed field owning these parameters
+	FE_value time;  // time at which parameters are held
 	int parameterCount;  // total number of parameters
 	// map from node index to first parameter held at that node or -1 if none
 	// all node parameters are consecutive, components varying slowest
@@ -91,6 +92,7 @@ public:
 	/** @return  Number of parameters >=0, or -1 if error */
 	int getNumberOfElementParameters(cmzn_element *element);
 
+	/** Currently also triggers creation of parameter map */
 	int getNumberOfParameters();
 
 	/* Add incremental values to all field parameters.
@@ -117,6 +119,15 @@ public:
 		return this->perturbationDelta;
 	}
 
+	/** Get time at which parameters are being used. */
+	FE_value getTime() const
+	{
+		return this->time;
+	}
+
+	/** Set time at which parameters are to be used, must match a time held at nodes.
+	 * Client should call getNumberOfParameters() afterwards to re-generate map. */
+	int setTime(FE_value timeIn);
 };
 
 #endif /* !defined (FINITE_ELEMENT_FIELD_PARAMETERS_HPP) */

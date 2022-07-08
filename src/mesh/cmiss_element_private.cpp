@@ -1034,14 +1034,14 @@ protected:
 	int access_count;
 
 	cmzn_mesh(FE_mesh *fe_mesh_in) :
-		fe_mesh(fe_mesh_in->access()),
+		fe_mesh(cmzn::Access(fe_mesh_in)),
 		group(0),
 		access_count(1)
 	{
 	}
 
 	cmzn_mesh(cmzn_field_element_group_id group) :
-		fe_mesh(Computed_field_element_group_core_cast(group)->get_fe_mesh()->access()),
+		fe_mesh(cmzn::Access(Computed_field_element_group_core_cast(group)->getFeMesh())),
 		group(group),
 		access_count(1)
 	{
@@ -1053,7 +1053,7 @@ protected:
 	{
 		if (group)
 			cmzn_field_element_group_destroy(&group);
-		FE_mesh::deaccess(this->fe_mesh);
+		cmzn::Deaccess(this->fe_mesh);
 	}
 
 public:

@@ -17,6 +17,7 @@
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
+#include "finite_element/finite_element_domain.hpp"
 #include "general/block_array.hpp"
 #include "general/enumerator.h"
 #include "general/list.h"
@@ -349,12 +350,11 @@ public:
 /**
  * A set of nodes/datapoints in the FE_region.
  */
-class FE_nodeset
+class FE_nodeset : public FE_domain
 {
-	FE_region *fe_region; // not accessed
-	cmzn_field_domain_type domainType;
+private:
 
-	DsLabels labels; // node identifiers
+	cmzn_field_domain_type domainType;
 
 	// map labels -> cmzn_node (accessed)
 	block_array<DsLabelIndex, cmzn_node*> fe_nodes;
@@ -366,21 +366,22 @@ class FE_nodeset
 	std::list<FE_node_field_info*> node_field_info_list;
 	struct FE_node_field_info *last_fe_node_field_info;
 
-	// log of nodes added, removed or otherwise changed
-	DsLabelsChangeLog *changeLog;
-
 	// list of node iterators to invalidate when nodeset destroyed
 	cmzn_nodeiterator *activeNodeIterators;
 
-	int access_count;
+private:
 
-	FE_nodeset(FE_region *fe_region);
+	FE_nodeset(FE_region *fe_regionIn);
 
-	~FE_nodeset();
+	virtual ~FE_nodeset();
 
-	void createChangeLog();
+	virtual void createChangeLog();
 
-	int remove_FE_node_private(cmzn_node *node);
+	void beginDestroyNodes();
+
+	void destroyNodePrivate(DsLabelIndex nodeIndex);
+
+	int endDestroyNodes();
 
 	struct Merge_FE_node_external_data;
 	int merge_FE_node_external(cmzn_node *node,
@@ -395,29 +396,7 @@ public:
 		return 0;
 	}
 
-	void detach_from_FE_region();
-
-	FE_nodeset *access()
-	{
-		++(this->access_count);
-		return this;
-	}
-
-	static void deaccess(FE_nodeset *&nodeset)
-	{
-		if (nodeset)
-		{
-			--(nodeset->access_count);
-			if (nodeset->access_count <= 0)
-				delete nodeset;
-			nodeset = nullptr;
-		}
-	}
-
-	void clearChangeLog()
-	{
-		this->createChangeLog();
-	}
+	virtual void detach_from_FE_region();
 
 	// in following change is a logical OR of values from enum DsLabelChangeType
 	void nodeChange(DsLabelIndex nodeIndex, int change);
@@ -439,11 +418,6 @@ public:
 		this->nodeChange(node->getIndex(), DS_LABEL_CHANGE_TYPE_REMOVE, node);
 	}
 
-	FE_region *get_FE_region() const
-	{
-		return this->fe_region;
-	}
-
 	cmzn_field_domain_type getFieldDomainType() const
 	{
 		return this->domainType;
@@ -455,23 +429,9 @@ public:
 		this->labels.setName(this->getName());
 	}
 
-	const char *getName() const;
+	virtual const char *getName() const;
 
-	const DsLabels& getLabels() const
-	{
-		return this->labels;
-	}
-
-	void clear();
-
-	/** @return Accessed changes */
-	DsLabelsChangeLog *extractChangeLog();
-
-	/** @retrun non-Accessed changes */
-	DsLabelsChangeLog *getChangeLog()
-	{
-		return this->changeLog;
-	}
+	virtual void clear();
 
 	struct FE_node_field_info *get_FE_node_field_info(int number_of_values,
 		struct LIST(FE_node_field) *fe_node_field_list);
@@ -516,16 +476,11 @@ public:
 		return this->labels.getFirstFreeIdentifier(start_identifier);
 	}
 
-	void list_btree_statistics();
+	virtual void list_btree_statistics();
 
 	bool containsNode(cmzn_node *node) const
 	{
 		return (node) ? (node->getNodeset() == this) && (node->getIndex() >= 0) : false;
-	}
-
-	DsLabelIndex findIndexByIdentifier(DsLabelIdentifier identifier) const
-	{
-		return this->labels.findLabelByIdentifier(identifier);
 	}
 
 	/** @return  Non-accessed node */
@@ -539,8 +494,6 @@ public:
 	cmzn_nodeiterator *createNodeiterator(DsLabelsGroup *labelsGroup = 0);
 
 	int for_each_FE_node(LIST_ITERATOR_FUNCTION(cmzn_node) iterator_function, void *user_data_void);
-
-	DsLabelsGroup *createLabelsGroup();
 
 	int change_FE_node_identifier(cmzn_node *node, DsLabelIdentifier new_identifier);
 
@@ -652,4 +605,4 @@ public:
 	}
 };
 
-#endif /* !defined (FINITE_node_NODESET_HPP) */
+#endif /* !defined (FINITE_ELEMENT_NODESET_HPP) */

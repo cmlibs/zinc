@@ -307,17 +307,17 @@ ZINC_API int cmzn_field_set_component_name(cmzn_field_id field,
  * spheroidal coordinate system types only.
  *
  * @param field  The field to query.
- * @return  The focus length, or 0 if invalid field or current coordinate system type.
+ * @return  The focus length, or 0.0 if invalid field.
  */
 ZINC_API double cmzn_field_get_coordinate_system_focus(cmzn_field_id field);
 
 /**
- * Get the coordinate system focus value, used for prolate and oblate
+ * Set the coordinate system focus value, used for prolate and oblate
  * spheroidal coordinate system types only.
  * @see cmzn_field_set_coordinate_system_type
  *
  * @param field  The field to modify.
- * @param focus  The new focus value, > 0.
+ * @param focus  The new focus value, > 0.0.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus);
@@ -326,7 +326,7 @@ ZINC_API int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double 
  * Get the coordinate system type to interpret field values in.
  *
  * @param field  The field to query.
- * @return  The type of coordinate system.
+ * @return  The type of coordinate system, or INVALID if invalid field.
  */
 ZINC_API enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system_type(
 	cmzn_field_id field);
@@ -338,8 +338,10 @@ ZINC_API enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system
  * @see cmzn_field_set_coordinate_system_focus
  *
  * @param field  The field to modify.
- * @param coordinate_system_type  The type of coordinate system.
- * @return  Status CMZN_OK if successfully set, any other value if failed.
+ * @param coordinate_system_type  The type of coordinate system. Note that
+ * non-numeric value type fields have coordinate system type NOT_APPLICABLE,
+ * which cannot be changed.
+ * @return  Result OK if successfully set, an error code if failed.
  */
 ZINC_API int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 	enum cmzn_field_coordinate_system_type coordinate_system_type);

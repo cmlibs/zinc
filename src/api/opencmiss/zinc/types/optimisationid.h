@@ -139,7 +139,7 @@ enum cmzn_optimisation_attribute
 		*
 		* Default value: 5
 		*/
-	CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 10
+	CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 10,
 	/*!< (Opt++ globalisation strategy parameter) Only relevant when you are using an algorithm with a trust-region
 		* or a trustpds search strategy. The value initialises the size of the trust region.
 		*
@@ -149,6 +149,15 @@ enum cmzn_optimisation_attribute
 		* larger value.
 		* @todo Reserving this one for when trust region methods are available via the API. Currently everything
 		* uses linesearch methods only.
+		*/
+	CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME = 11
+	/*!< Time at which finite element field parameters are to be optimised, and objective fields are evaluated.
+		* Default 0.0.
+		* Only set to a time from a timesequence defined for dependent field at nodes.
+		* This is not currently checked; setting a time at which dependent field parameters are not held
+		* will result in failure when the optimisation is run.
+		* Ignored if field parameters are not time-varying.
+		* Currently only supported for optimisation METHOD_NEWTON.
 		*/
 };
 

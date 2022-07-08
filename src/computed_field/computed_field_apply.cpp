@@ -40,13 +40,15 @@ public:
 	std::vector<cmzn_fieldcache *> sourceCaches;
 	std::vector<int> sourceCounts;
 	unsigned int currentIndex;
+	int lastLocationCounter;
 
 	ArgumentRealFieldValueCache(int componentCount) :
 		RealFieldValueCache(componentCount),
 		sourceFields(1, nullptr),
 		sourceCaches(1, nullptr),
 		sourceCounts(1, 0),
-		currentIndex(0)
+		currentIndex(0),
+		lastLocationCounter(-1)
 	{
 	}
 
@@ -74,6 +76,7 @@ public:
 		this->sourceCaches.resize(1);
 		this->sourceCounts.resize(1);
 		this->currentIndex = 0;
+		this->lastLocationCounter = -1;
 		this->sourceFields[this->currentIndex] = nullptr;
 		this->sourceCaches[this->currentIndex] = nullptr;
 		this->sourceCounts[this->currentIndex] = 0;
@@ -81,7 +84,7 @@ public:
 	}
 
 	/** Bind the source field, pushing it onto the stack.
-	 * Must pop it with unbindSourceField after evaluating.
+	 * Must pop it with unbindSource() after evaluating.
 	 * @return  Boolean true if source field changed => invalidate cache */
 	bool bindSource(cmzn_field *sourceFieldIn, cmzn_fieldcache *sourceCacheIn)
 	{
@@ -89,6 +92,12 @@ public:
 		if (this->sourceFields[this->currentIndex] == sourceFieldIn)
 		{
 			++sourceCounts[this->currentIndex];
+			const int sourceCacheLocationCounter = this->sourceCaches[this->currentIndex]->getLocationCounter();
+			if (sourceCacheLocationCounter != this->lastLocationCounter)
+			{
+				this->lastLocationCounter = sourceCacheLocationCounter;
+				return true;
+			}
 			return false;
 		}
 		if (this->sourceCounts[this->currentIndex] > 0)
@@ -105,10 +114,13 @@ public:
 		this->sourceFields[this->currentIndex] = sourceFieldIn;
 		// fields depending on arguments must be evaluated in the shared extra cache
 		// check gives a small performance hit, but only when bound source field changes
+		cmzn_fieldcache *sourceCache = nullptr;
 		if (sourceFieldIn->dependsOnArgument())
-			this->sourceCaches[this->currentIndex] = sourceCacheIn->getSharedWorkingCache();
+			sourceCache = sourceCacheIn->getSharedWorkingCache();
 		else
-			this->sourceCaches[this->currentIndex] = sourceCacheIn;
+			sourceCache = sourceCacheIn;
+		this->sourceCaches[this->currentIndex] = sourceCache;
+		this->lastLocationCounter = sourceCache->getLocationCounter();
 		this->sourceCounts[this->currentIndex] = 1;
 		return true;
 	}
@@ -123,6 +135,7 @@ public:
 				if (this->currentIndex > 0)
 				{
 					--(this->currentIndex);
+					this->lastLocationCounter = -1;  // so not comparing with a different cache
 					return true;
 				}
 			}

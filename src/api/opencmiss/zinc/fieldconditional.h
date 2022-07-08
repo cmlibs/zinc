@@ -21,18 +21,25 @@ extern "C" {
 #endif
 
 /**
- * Creates a conditional field with the same number of components as each of the
- * source_fields. For each component, if the value of source_field_one is TRUE
- * (non-zero) then the result will be the value of source_field_two, otherwise the
- * component result will be taken from source_field_three.
+ * Creates a conditional field returning component values from source field two
+ * if the condition source field one is true, otherwise source field three.
+ * The field has the value type and number of components from source fields two
+ * and three, which must match. Source fields two and three of mesh location
+ * value type must have matching host mesh.
+ * For real value type, the condition field may be a vector of same length as
+ * the other two source fields, in which case the condition is applied per-
+ * component: a non-zero/true component gives the corresponding component value
+ * from source field two, zero/false gives the value from source field three.
  *
- * @param field_module  Region field module which will own new field.
- * @param source_field_one  Conditional field.
- * @param source_field_two  TRUE = non-zero conditional component results.
- * @param source_field_three  FALSE = zero conditional component results.
+ * @param fieldmodule  Region field module which will own new field.
+ * @param source_field_one  Condition field.
+ * @param source_field_two  Field components returned on true condition.
+ * Must have same value type and number of components as source_field_three.
+ * @param source_field_three  Field components returned on false condition.
+ * Must have same value type and number of components as source_field_two.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
-ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two,
 	cmzn_field_id source_field_three);

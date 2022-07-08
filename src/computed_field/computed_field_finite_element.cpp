@@ -389,6 +389,14 @@ public:
 
 	virtual ~Computed_field_finite_element();
 
+	virtual void inherit_source_field_attributes()
+	{
+		if (this->field)
+		{
+			this->field->setCoordinateSystem(fe_field->getCoordinateSystem(), /*notifyChange*/false);
+		}
+	}
+
 	/** @param componentNumber  Component number >= 0 or negative to get all components
 	  * @param versionNumber  Version number >= 0 */
 	int getNodeParameters(cmzn_fieldcache& cache, int componentNumber,
@@ -1511,8 +1519,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 		fe_region, fieldName, value_type, number_of_components);
 	if (fe_field)
 	{
-		Coordinate_system coordinate_system((value_type == FE_VALUE_VALUE) ? RECTANGULAR_CARTESIAN : NOT_APPLICABLE);
-		fe_field->setCoordinateSystem(coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true, number_of_components,
 			/*number_of_source_fields*/0, NULL,
@@ -3975,23 +3981,14 @@ int cmzn_field_add_source_FE_field_to_list(cmzn_field *field, void *fe_field_lis
 
 struct LIST(FE_field)
 	*Computed_field_get_defining_FE_field_list(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns the list of FE_fields that <field> depends on.
-==============================================================================*/
 {
-	struct LIST(FE_field) *fe_field_list;
-
-	ENTER(Computed_field_get_defining_FE_field_list);
-	fe_field_list = (struct LIST(FE_field) *)NULL;
+	struct LIST(FE_field) *fe_field_list = nullptr;
 	if (field)
 	{
 		fe_field_list = CREATE(LIST(FE_field))();
 		if (fe_field_list)
 		{
-			if (!Computed_field_for_each_ancestor(field,
+			if (!Computed_field_for_each_ancestor_same_region(field,
 				cmzn_field_add_source_FE_field_to_list, (void *)fe_field_list))
 			{
 				display_message(ERROR_MESSAGE,
@@ -4005,33 +4002,21 @@ Returns the list of FE_fields that <field> depends on.
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_defining_FE_field_list.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (fe_field_list);
-} /* Computed_field_get_defining_FE_field_list */
+}
 
 struct LIST(FE_field)
 	*Computed_field_array_get_defining_FE_field_list(
 		int number_of_fields, struct Computed_field **field_array)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns the compiled list of FE_fields that are required by any of
-the <number_of_fields> fields in <field_array>.
-==============================================================================*/
 {
-	int i;
-	struct LIST(FE_field) *additional_fe_field_list, *fe_field_list;
-
-	ENTER(Computed_field_get_defining_FE_field_list);
-	fe_field_list = (struct LIST(FE_field) *)NULL;
-	if ((0 < number_of_fields) && field_array)
+	struct LIST(FE_field) *fe_field_list = nullptr;
+	if ((0 < number_of_fields) && (field_array))
 	{
 		fe_field_list = Computed_field_get_defining_FE_field_list(field_array[0]);
-		for (i = 1 ; i < number_of_fields ; i++)
+		for (int i = 1 ; i < number_of_fields ; i++)
 		{
-			additional_fe_field_list = Computed_field_get_defining_FE_field_list(field_array[i]);
+			struct LIST(FE_field) *additional_fe_field_list =
+				Computed_field_get_defining_FE_field_list(field_array[i]);
 			FOR_EACH_OBJECT_IN_LIST(FE_field)(ensure_FE_field_is_in_list,
 				(void *)fe_field_list, additional_fe_field_list);
 			DESTROY(LIST(FE_field))(&additional_fe_field_list);
@@ -4042,10 +4027,8 @@ the <number_of_fields> fields in <field_array>.
 		display_message(ERROR_MESSAGE,
 			"Computed_field_array_get_defining_FE_field_list.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (fe_field_list);
-} /* Computed_field_array_get_defining_FE_field_list */
+}
 
 int Computed_field_is_type_finite_element_iterator(
 	struct Computed_field *field, void *dummy_void)
@@ -4556,9 +4539,9 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	return (measure_string ? duplicate_string(measure_string) : 0);
 }
 
-FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
+FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field *field)
 {
-	if (field && field->core && (CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
+	if (field && field->core && (field->getValueType() == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION))
 	{
 		Computed_field_finite_element *fieldFiniteElement = dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (fieldFiniteElement)
@@ -4570,59 +4553,17 @@ FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
 		{
 			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->getMesh());
 		}
+		// for other fields, e.g. conditional field if, use first source field host mesh
+		for (int i = 0; i < field->number_of_source_fields; ++i)
+		{
+			if (field->source_fields[i]->getValueType() == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
+			{
+				return cmzn_field_get_host_FE_mesh(field->source_fields[i]);
+			}
+		}
 	}
 	display_message(ERROR_MESSAGE, "cmzn_field_get_host_FE_mesh.  Invalid argument(s)");
 	return nullptr;
-}
-
-int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field)
-{
-	if (!((destination_field) && (source_field)
-		&& (cmzn_field_get_value_type(destination_field) == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
-		&& (cmzn_field_get_value_type(source_field) == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)))
-	{
-		display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  Invalid argument(s)");
-		return CMZN_ERROR_ARGUMENT;
-	}
-	FE_mesh *source_fe_mesh = cmzn_field_get_host_FE_mesh(source_field);
-	if (!source_fe_mesh)
-	{
-		display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  Source field does not have a host mesh");
-		return CMZN_ERROR_ARGUMENT;
-	}
-	FE_mesh *destination_fe_mesh = cmzn_field_get_host_FE_mesh(destination_field);
-	if (destination_fe_mesh != source_fe_mesh)
-	{
-		if (!destination_fe_mesh)
-		{
-			FE_field *destination_fe_field = 0;
-			Computed_field_get_type_finite_element(destination_field, &destination_fe_field);
-			if (!destination_fe_field)
-			{
-				display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  "
-					"Destination is not a stored mesh location field");
-				return CMZN_ERROR_ARGUMENT;
-			}
-			if (CMZN_OK == destination_fe_field->setElementXiHostMesh(source_fe_mesh))
-			{
-				display_message(WARNING_MESSAGE, "Discovered host mesh '%s' for element_xi / stored mesh location field '%s'. Should be explicitly set.",
-					source_fe_mesh->getName(), destination_field->name);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  "
-					"Failed to set destination host mesh");
-				return CMZN_ERROR_ARGUMENT;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  "
-				"Source and destination fields have different host meshes");
-			return CMZN_ERROR_ARGUMENT;
-		}
-	}
-	return CMZN_OK;
 }
 
 FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cmzn_field *field, cmzn_fieldcache *fieldcache)

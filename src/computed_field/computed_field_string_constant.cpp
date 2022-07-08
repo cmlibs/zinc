@@ -51,6 +51,15 @@ public:
 		DEALLOCATE(string_value);
 	}
 
+	virtual void inherit_source_field_attributes()
+	{
+		if (this->field)
+		{
+			Coordinate_system coordinateSystem(NOT_APPLICABLE);
+			this->field->setCoordinateSystem(coordinateSystem, /*notifyChange*/false);
+		}
+	}
+
 private:
 	Computed_field_core *copy()
 	{

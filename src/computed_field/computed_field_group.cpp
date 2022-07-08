@@ -715,7 +715,7 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 			node_group = cmzn_field_cast_node_group(node_group_field);
 			if (node_group)
 			{
-				if (Computed_field_node_group_core_cast(node_group)->get_fe_nodeset() == fe_nodeset)
+				if (Computed_field_node_group_core_cast(node_group)->getFeNodeset() == fe_nodeset)
 					setLocalNodeGroup(use_data, node_group);
 				else // wrong nodeset
 					cmzn_field_node_group_destroy(&node_group);
@@ -807,7 +807,7 @@ cmzn_field_element_group_id Computed_field_group::get_element_group(cmzn_mesh_id
 			if (element_group)
 			{
 				if (cmzn_mesh_get_FE_mesh_internal(master_mesh) == 
-						Computed_field_element_group_core_cast(element_group)->get_fe_mesh())
+						Computed_field_element_group_core_cast(element_group)->getFeMesh())
 					this->setLocalElementGroup(dimension - 1, element_group);
 				else // wrong mesh
 					cmzn_field_element_group_destroy(&element_group);

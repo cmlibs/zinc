@@ -42,13 +42,11 @@ int cmzn_nodeset_assign_field_from_source(
 		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
 		if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 		{
-			// element_xi fields used to allow locations in multiple meshes, but are now
-			// restricted to a single host mesh. This must be discovered if necessary.
-			// This only happens when read from legacy EX format or created in Cmgui.
-			const int result = cmzn_field_discover_element_xi_host_mesh_from_source(destination_field, source_field);
-			if (CMZN_OK != result)
+			if (cmzn_field_get_host_FE_mesh(destination_field) != cmzn_field_get_host_FE_mesh(source_field))
 			{
-				return result;
+				display_message(ERROR_MESSAGE, "Field assignment:  "
+					"destination and source fields have mesh location values in different host meshes");
+				return CMZN_ERROR_ARGUMENT;
 			}
 		}
 		const int componentCount = cmzn_field_get_number_of_components(destination_field);
@@ -67,18 +65,32 @@ int cmzn_nodeset_assign_field_from_source(
 			FE_field *sourceFeField = 0;
 			Computed_field_get_type_finite_element(source_field, &sourceFeField);
 			if ((feField) && (!sourceFeField) && (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
-				&& (1 < componentCount) && (componentCount <= 3)) // 1-3 coordinate components is current restriction on gradient field
+				&& (componentCount <= 3)) // 1-3 coordinate components is current restriction on gradient field
 			{
-				// if source field is a function of destination feField, can numerically calculate derivatives
+				// if source field is a function of destination or any single coordinate FE_field, can numerically calculate derivatives
 				struct LIST(FE_field) *definingFeFieldlist = Computed_field_get_defining_FE_field_list(source_field);
+				cmzn_field *coordinateField = nullptr;
 				if (IS_OBJECT_IN_LIST(FE_field)(feField, definingFeFieldlist))
 				{
+					coordinateField = cmzn_field_access(destination_field);
+				}
+				else if (NUMBER_IN_LIST(FE_field)(definingFeFieldlist) == 1)
+				{
+					FE_field *coordinateFeField = FIRST_OBJECT_IN_LIST_THAT(FE_field)(/*conditional*/nullptr, /*data*/nullptr, definingFeFieldlist);
+					if (coordinateFeField->getNumberOfComponents() == componentCount)
+					{
+						coordinateField = cmzn_fieldmodule_find_field_by_name(fieldmodule, coordinateFeField->getName());
+					}
+				}
+				if (coordinateField)
+				{
 					// gradient field works by finite different at nodes; use this to get F = dx/dX to transform derivatives
-					dx_dX = cmzn_fieldmodule_create_field_gradient(fieldmodule, source_field, destination_field);
+					dx_dX = cmzn_fieldmodule_create_field_gradient(fieldmodule, source_field, coordinateField);
 					if (!dx_dX)
 					{
 						display_message(WARNING_MESSAGE, "Fieldassignment assign.  Cannot evaluate gradient needed for derivatives");
 					}
+					cmzn_field_destroy(&coordinateField);
 				}
 				DESTROY(LIST(FE_field))(&definingFeFieldlist);
 			}

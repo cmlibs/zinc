@@ -120,7 +120,7 @@ bool FE_element_template::FE_field_data::mergeElementfieldtemplatesIntoMesh(FE_m
 
 FE_element_template::FE_element_template(FE_mesh *mesh_in, FE_element_shape *elementShapeIn) :
 	cmzn::RefCounted(),
-	mesh(mesh_in->access()),
+	mesh(cmzn::Access(mesh_in)),
 	elementShape(elementShapeIn ? ACCESS(FE_element_shape)(elementShapeIn) : 0),
 	fieldCount(0),
 	fields(0),
@@ -134,7 +134,7 @@ FE_element_template::~FE_element_template()
 	for (int i = 0; i < fieldCount; ++i)
 		delete this->fields[i];
 	delete[] this->fields;
-	FE_mesh::deaccess(this->mesh);
+	cmzn::Deaccess(this->mesh);
 	if (this->elementShape)
 		DEACCESS(FE_element_shape)(&(this->elementShape));
 }
@@ -1375,8 +1375,7 @@ DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementInde
 }
 
 FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
-	fe_region(fe_regionIn),
-	dimension(dimensionIn),
+	FE_domain(fe_regionIn, dimensionIn),
 	elementShapeFacesCount(0),
 	elementShapeFacesArray(0),
 	elementFieldTemplateDataCount(0),
@@ -1386,11 +1385,9 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	lastMergedElementTemplate(0),
 	parentMesh(0),
 	faceMesh(0),
-	changeLog(nullptr),
 	element_type_node_sequence_list(0),
 	definingFaces(false),
-	activeElementIterators(0),
-	access_count(1)
+	activeElementIterators(0)
 {
 	this->createChangeLog();
 	std::string name(this->getName());
@@ -1411,6 +1408,8 @@ FE_mesh::~FE_mesh()
 		this->parentMesh->setFaceMesh(0);
 	if (this->faceMesh)
 		this->faceMesh->setParentMesh(0);
+
+	// must remove change log here to avoid messages during cleanup
 	cmzn::Deaccess(this->changeLog);
 
 	// detach objects holding non-accessed pointers to this mesh
@@ -1454,6 +1453,7 @@ void FE_mesh::detach_from_FE_region()
 	this->parentMesh = 0;
 	this->faceMesh = 0;
 	this->nodeset = 0;
+	this->FE_domain::detach_from_FE_region();
 }
 
 /** Called by FE_element_field_template constructor to maintain list of EFTs so
@@ -1809,26 +1809,14 @@ void FE_mesh::clear()
 	this->scaleFactorsCount = 0;
 	this->scaleFactorsIndexSize = 0;
 
-	this->labels.clear();
+	this->FE_domain::clear();
 }
 
 /** Private: can be used to clear cached changes */
 void FE_mesh::createChangeLog()
 {
-	cmzn::Deaccess(this->changeLog);
-	this->changeLog = DsLabelsChangeLog::create(&this->labels);
-	if (!this->changeLog)
-		display_message(ERROR_MESSAGE, "FE_mesh::createChangeLog.  Failed to create change log");
-}
-
-DsLabelsChangeLog *FE_mesh::extractChangeLog()
-{
-	// take access count of changelog when extracting
-	DsLabelsChangeLog *returnChangeLog = this->changeLog;
-	this->changeLog = nullptr;
+	this->FE_domain::createChangeLog();
 	this->lastMergedElementTemplate = 0; // ensures field notifications are recorded if template is merged again
-	this->createChangeLog();
-	return returnChangeLog;
 }
 
 /**
@@ -2036,7 +2024,7 @@ void FE_mesh::list_btree_statistics()
 	if (this->labels.getSize() > 0)
 	{
 		display_message(INFORMATION_MESSAGE, "%d-D elements:\n", this->dimension);
-		this->labels.list_storage_details();
+		this->FE_domain::list_btree_statistics();
 	}
 }
 
@@ -2133,11 +2121,6 @@ int FE_mesh::for_each_FE_element(
 	return return_code;
 }
 
-DsLabelsGroup *FE_mesh::createLabelsGroup()
-{
-	return DsLabelsGroup::create(&this->labels); // GRC dodgy taking address here
-}
-
 int FE_mesh::setElementIdentifier(DsLabelIndex elementIndex, int identifier)
 {
 	if ((this->getElementIdentifier(elementIndex) >= 0) && (identifier >= 0))
@@ -2162,18 +2145,6 @@ FE_element_template *FE_mesh::create_FE_element_template(FE_element_shape *eleme
 	if ((element_shape) && (get_FE_element_shape_dimension(element_shape) != this->dimension))
 		return 0;
 	return new FE_element_template(this, element_shape);
-}
-
-/** Clean up element label and objects. Called by element create functions when they fail part way. */
-void FE_mesh::destroyElementPrivate(DsLabelIndex elementIndex)
-{
-	cmzn_element **elementAddress = this->fe_elements.getAddress(elementIndex);
-	if (elementAddress && (*elementAddress))
-	{
-		(*elementAddress)->invalidate();
-		cmzn_element::deaccess(*elementAddress);
-	}
-	this->labels.removeLabel(elementIndex);
 }
 
 /**
@@ -2256,7 +2227,7 @@ cmzn_element *FE_mesh::create_FE_element(int identifier, FE_element_template *el
 				else
 				{
 					display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element.  Failed to set element shape or fields.");
-					this->destroyElementPrivate(elementIndex);
+					this->cleanupElementPrivate(elementIndex);
 					element = 0;
 				}
 			}
@@ -2309,7 +2280,7 @@ cmzn_element *FE_mesh::get_or_create_FE_element_with_identifier(int identifier,
 		{
 			if ((!(element_shape)) || (0 != this->setElementShape(element->getIndex(), element_shape)))
 				return element->access();
-			this->destroyElementPrivate(element->getIndex());
+			this->cleanupElementPrivate(element->getIndex());
 		}
 	}
 	else
@@ -2441,12 +2412,12 @@ void FE_mesh::clearElementFaces(DsLabelIndex elementIndex)
 		DsLabelIndex faceIndex = faces[i]; // must put in local variable since cleared by setElementFace
 		if (faceIndex >= 0)
 		{
-			// don't notify parent modified since only called from removeElementPrivate or on shape change
+			// don't notify parent modified since only called from destroyElementPrivate or on shape change
 			this->faceMesh->removeElementParent(faceIndex, elementIndex);
 			faces[i] = DS_LABEL_INDEX_INVALID;
 			const DsLabelIndex *parents;
 			if (0 == this->faceMesh->getElementParents(faceIndex, parents))
-				this->faceMesh->removeElementPrivate(faceIndex);
+				this->faceMesh->destroyElementPrivate(faceIndex);
 		}
 	}
 	elementShapeFaces->destroyElementFaces(elementIndex);
@@ -2996,54 +2967,124 @@ int FE_field_clear_element_varying_data(FE_field *field, void *mesh_and_element_
 
 }
 
-/**
- * Removes element and all its faces that are not shared with other elements
- * from mesh. Releases per-element data including nodes.
- * Records remove element change but doesn't notify.
- * Note: expects FE_region change cache to be on or caller to call FE_region update.
- * Note: expects caller to record field changes.
- * This function is recursive.
- * @param elementIndex  A valid element index. Not checked!
- */
-int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
+/** Clean up element label and objects. Called by element create functions when they fail part way. */
+void FE_mesh::cleanupElementPrivate(DsLabelIndex elementIndex)
 {
-	int return_code = 1;
-	cmzn_element *element = this->fe_elements.getValue(elementIndex);
-	if (element)
+	cmzn_element **elementAddress = this->fe_elements.getAddress(elementIndex);
+	if (elementAddress && (*elementAddress))
 	{
-		// clear data for this element stored with field, e.g. per-element DOFs
-		FE_mesh_and_element_index mesh_and_element_index = { this, elementIndex };
-		FE_region_for_each_FE_field(this->fe_region, FE_field_clear_element_varying_data, &mesh_and_element_index);
-		// clear element field templates for element in all mesh field templates
-		// note this clears nodes and scale factors for element once last usage of EFT for element is removed
-		for (auto mftIter = this->meshFieldTemplates.begin(); mftIter != this->meshFieldTemplates.end(); ++mftIter)
-		{
-			FE_mesh_field_template *mft = *mftIter;
-			mft->setElementfieldtemplateIndex(elementIndex, FE_mesh_field_template::ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID);
-		}
-		element->invalidate();
-		this->fe_elements.setValue(elementIndex, 0);
-		cmzn_element::deaccess(element);
-		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
-		if (this->parentMesh)
-			this->clearElementParents(elementIndex);
-		if (this->faceMesh)
-			this->clearElementFaces(elementIndex);
-		this->labels.removeLabel(elementIndex);
-		if (0 == this->labels.getSize())
-			this->clear();
+		(*elementAddress)->invalidate();
+		cmzn_element::deaccess(*elementAddress);
 	}
-	else
+	this->labels.removeLabel(elementIndex);
+}
+
+/** Call before any number of calls to destroyElementPrivate
+ * Handles notification of destroyed elements to groups, including for face meshes.
+ * Not to be nested. */
+void FE_mesh::beginDestroyElements()
+{
+	this->destroyedLabelsGroup = this->createLabelsGroup();
+	if (this->faceMesh)
 	{
-		display_message(ERROR_MESSAGE, "FE_mesh::removeElementPrivate.  No element object at index");
-		return_code = 0;
+		this->faceMesh->beginDestroyElements();
 	}
-	return (return_code);
 }
 
 /**
- * Removes <element> and all its faces that are not shared with other elements
- * from <fe_region>.
+ * Destroys and removes element and all its faces that are not shared with
+ * other elements from mesh. Releases per-element data including nodes.
+ * Records remove element change but doesn't notify.
+ * Note: expects FE_region change cache to be on or caller to call FE_region update.
+ * Note: expects caller to record field changes.
+ * Must be called between beginDestroyElements/endDestroyElements
+ * This function is recursive.
+ * @param elementIndex  A valid element index. Not checked!
+ */
+void FE_mesh::destroyElementPrivate(DsLabelIndex elementIndex)
+{
+	cmzn_element *element = this->getElement(elementIndex);
+	if (!element)
+	{
+		display_message(WARNING_MESSAGE, "FE_nodeset::destroyElementPrivate.  No element at index");
+		return;
+	}
+	// clear data for this element stored with field, e.g. per-element DOFs
+	FE_mesh_and_element_index mesh_and_element_index = { this, elementIndex };
+	FE_region_for_each_FE_field(this->fe_region, FE_field_clear_element_varying_data, &mesh_and_element_index);
+	// clear element field templates for element in all mesh field templates
+	// note this clears nodes and scale factors for element once last usage of EFT for element is removed
+	for (auto mftIter = this->meshFieldTemplates.begin(); mftIter != this->meshFieldTemplates.end(); ++mftIter)
+	{
+		FE_mesh_field_template *mft = *mftIter;
+		mft->setElementfieldtemplateIndex(elementIndex, FE_mesh_field_template::ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID);
+	}
+	element->invalidate();
+	this->fe_elements.setValue(elementIndex, 0);
+	cmzn_element::deaccess(element);
+	this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
+	if (this->parentMesh)
+	{
+		this->clearElementParents(elementIndex);
+	}
+	if (this->faceMesh)
+	{
+		this->clearElementFaces(elementIndex);
+	}
+	this->labels.removeLabel(elementIndex);
+	this->destroyedLabelsGroup->setIndex(elementIndex, true);
+}
+
+/** Call after any number of calls to destroyElementPrivate
+ * Handles notification of destroyed elements to groups, including for face meshes.
+ * @return  Number of elements destroyed. */
+int FE_mesh::endDestroyElements()
+{
+	const int numberDestroyed = this->destroyedLabelsGroup->getSize();
+	if (0 == this->labels.getSize())
+	{
+		this->clear();
+		if (numberDestroyed > 0)
+		{
+			// notify groups that all elements were destroyed
+			for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
+				groupIter != this->groups.end(); ++groupIter)
+			{
+				(*groupIter)->destroyedAllObjects();
+			}
+		}
+	}
+	else if (numberDestroyed == 1)
+	{
+		// more efficient to notify of one index change
+		DsLabelIndex elementIndex = -1;
+		this->destroyedLabelsGroup->incrementIndex(elementIndex);
+		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
+			groupIter != this->groups.end(); ++groupIter)
+		{
+			(*groupIter)->destroyedObject(elementIndex);
+		}
+	}
+	else if (numberDestroyed > 0)
+	{
+		// notify groups that a group of elements were destroyed
+		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
+			groupIter != this->groups.end(); ++groupIter)
+		{
+			(*groupIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
+		}
+	}
+	if (this->faceMesh)
+	{
+		this->faceMesh->endDestroyElements();
+	}
+	cmzn::Deaccess(this->destroyedLabelsGroup);
+	return numberDestroyed;
+}
+
+/**
+ * Destroys and removes element and all its faces that are not shared with
+ * other elements from <fe_region>.
  * FE_region_begin/end_change are called internally to reduce change messages to
  * one per call. User should place calls to the begin/end_change functions
  * around multiple calls to this function.
@@ -3051,14 +3092,25 @@ int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
  */
 int FE_mesh::destroyElement(cmzn_element *element)
 {
-	if ((!element) || (element->getIndex() < 0))
+	if (!this->containsElement(element))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::destroyElement.  Invalid argument(s)");
 		return CMZN_ERROR_ARGUMENT;
+	}
+	// need to store index before element is invalidated
+	const DsLabelIndex elementIndex = element->getIndex();
+	// want to enable change caching because faces and lines may also be destroyed
+	// plus don't want FE_region change message to be sent before groups are updated
 	FE_region_begin_change(this->fe_region);
-	int return_code = this->removeElementPrivate(element->getIndex());
-	if ((CMZN_OK == return_code) && (this->fe_region))
+	this->beginDestroyElements();
+	destroyElementPrivate(elementIndex);
+	if (this->fe_region)
+	{
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+	}
+	this->endDestroyElements();
 	FE_region_end_change(this->fe_region);
-	return return_code;
+	return CMZN_OK;
 }
 
 /**
@@ -3068,10 +3120,9 @@ int FE_mesh::destroyElement(cmzn_element *element)
  */
 int FE_mesh::destroyAllElements()
 {
-	int return_code = CMZN_OK;
 	FE_region_begin_change(fe_region);
+	this->beginDestroyElements();
 	// can't use an iterator as invalidated when element removed
-	const int oldSize = this->getSize();
 	const DsLabelIndex indexLimit = this->labels.getIndexSize();
 	const bool contiguous = this->labels.isContiguous();
 	for (DsLabelIndex elementIndex = 0; elementIndex < indexLimit; ++elementIndex)
@@ -3079,16 +3130,17 @@ int FE_mesh::destroyAllElements()
 		// must handle holes left in identifier array by deleted elements
 		if (contiguous || (0 <= this->getElementIdentifier(elementIndex)))
 		{
-			return_code = this->removeElementPrivate(elementIndex);
-			if (return_code != CMZN_OK)
-				break;
+			this->destroyElementPrivate(elementIndex);
 		}
 	}
-	// mark all fields changed if any removed
-	if ((this->getSize() != oldSize) && (this->fe_region))
+	const int numberDestroyed = this->endDestroyElements();
+	if ((numberDestroyed > 0) && (this->fe_region))
+	{
+		// mark all fields changed
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+	}
 	FE_region_end_change(fe_region);
-	return (return_code);
+	return (this->labels.getSize() > 0) ? CMZN_ERROR_GENERAL : CMZN_OK;
 }
 
 /**
@@ -3098,22 +3150,22 @@ int FE_mesh::destroyAllElements()
  */
 int FE_mesh::destroyElementsInGroup(DsLabelsGroup& labelsGroup)
 {
-	int return_code = CMZN_OK;
 	FE_region_begin_change(this->fe_region);
-	const int oldSize = this->getSize();
+	this->beginDestroyElements();
 	// can't use an iterator as invalidated when element removed
 	DsLabelIndex elementIndex = -1; // DS_LABEL_INDEX_INVALID
 	while (labelsGroup.incrementIndex(elementIndex))
 	{
-		return_code = this->removeElementPrivate(elementIndex);
-		if (return_code != CMZN_OK)
-			break;
+		this->destroyElementPrivate(elementIndex);
 	}
-	// mark all fields changed if any removed
-	if ((this->getSize() != oldSize) && (this->fe_region))
+	const int numberDestroyed = this->endDestroyElements();
+	if ((numberDestroyed > 0) && (this->fe_region))
+	{
+		// mark all fields changed
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+	}
 	FE_region_end_change(this->fe_region);
-	return (return_code);
+	return (numberDestroyed < labelsGroup.getSize()) ? CMZN_ERROR_GENERAL : CMZN_OK;
 }
 
 FieldDerivative *FE_mesh::getHigherFieldDerivative(const FieldDerivative& fieldDerivative)
@@ -3729,7 +3781,7 @@ bool FE_mesh::mergePart1Elements(const FE_mesh &source)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to set shape for %d-D mesh element %d",
 					this->dimension, identifier);
-				this->destroyElementPrivate(targetElementIndex);
+				this->cleanupElementPrivate(targetElementIndex);
 				result = false;
 				break;
 			}

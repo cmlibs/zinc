@@ -508,7 +508,7 @@ ZINC_API void *cmzn_materialmodulenotifier_get_callback_user_data(
 
 /**
  * Returns a new handle to the materialmodule event with reference count
- & incremented.
+ * incremented.
  *
  * @param event  The material module event to obtain a new handle to.
  * @return  New handle to event, or NULL/invalid handle on failure.

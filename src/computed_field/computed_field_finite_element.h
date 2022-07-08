@@ -67,25 +67,19 @@ int Computed_field_get_type_finite_element(struct Computed_field *field,
 int Computed_field_wraps_fe_field(struct Computed_field *field,
 	void *fe_field_void);
 
+/**
+ * Returns the list of FE_field that <field> depends on.
+ */
 struct LIST(FE_field)
 	*Computed_field_get_defining_FE_field_list(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
 
-DESCRIPTION :
-Returns the list of FE_fields that <field> depends on.
-==============================================================================*/
-
+/**
+ * Returns the list of FE_field that are required by any of
+ * the <number_of_fields> fields in <field_array>.
+ */
 struct LIST(FE_field)
 	*Computed_field_array_get_defining_FE_field_list(
 		int number_of_fields, struct Computed_field **field_array);
-/*******************************************************************************
-LAST MODIFIED : 5 April 2006
-
-DESCRIPTION :
-Returns the compiled list of FE_fields that are required by any of
-the <number_of_fields> fields in <field_array>.
-==============================================================================*/
 
 int Computed_field_is_type_cmiss_number(struct Computed_field *field);
 /*******************************************************************************
@@ -180,11 +174,7 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	enum cmzn_field_edge_discontinuity_measure measure);
 
 /** @return  Host mesh for find or stored mesh location fields. For time being must check if none. */
-FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
-
-/** Discover and set destination host mesh from source field, or check it matches if already set.
-  * @return  Result OK on success, any other value on failure. */
-int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field);
+FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field *field);
 
 class FE_element_field_evaluation;
 
