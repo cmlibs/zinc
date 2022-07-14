@@ -349,13 +349,12 @@ TEST(ZincFieldFiniteElement, createProlateSpheroidal)
 TEST(ZincFieldFiniteElement, node_value_label)
 {
 	ZincTestSetupCpp zinc;
-	int result;
 
 	FieldFiniteElement coordinateField = zinc.fm.createFieldFiniteElement(3);
 	EXPECT_TRUE(coordinateField.isValid());
-	EXPECT_EQ(OK, result = coordinateField.setManaged(true));
-	EXPECT_EQ(OK, result = coordinateField.setName("coordinates"));
-	EXPECT_EQ(OK, result = coordinateField.setTypeCoordinate(true));
+	EXPECT_EQ(OK, coordinateField.setManaged(true));
+	EXPECT_EQ(OK, coordinateField.setName("coordinates"));
+	EXPECT_EQ(OK, coordinateField.setTypeCoordinate(true));
 
 	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
@@ -363,18 +362,18 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	Nodetemplate nodeTemplate = nodeset.createNodetemplate();
 	EXPECT_TRUE(nodeTemplate.isValid());
 	EXPECT_EQ(OK, nodeTemplate.defineField(coordinateField));
-	EXPECT_EQ(1, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_VALUE));
-	EXPECT_EQ(OK, result = nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_VALUE, 1));
-	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(1, nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(0, nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
 	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1, 2));
-	EXPECT_EQ(2, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
-	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	EXPECT_EQ(2, nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(0, nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
 	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 1));
 	// following is now correctly 1 since now support variable number of versions per derivative / value label
-	EXPECT_EQ(1, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	EXPECT_EQ(1, nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
 	// test clearing the number of versions
 	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 0));
-	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	EXPECT_EQ(0, nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
 	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 1));
 
 	FieldNodeValue dx_ds1_v1 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS1, 1);
@@ -398,11 +397,11 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	{
 		// assign in temporary cache so later we don't evaluate the value from cache
 		Fieldcache tmpCache = zinc.fm.createFieldcache();
-		EXPECT_EQ(OK, result = tmpCache.setNode(node));
-		EXPECT_EQ(OK, result = coordinateField.assignReal(tmpCache, 3, coordinates));
-		EXPECT_EQ(OK, result = dx_ds1_v1.assignReal(tmpCache, 3, derivatives1_v1));
-		EXPECT_EQ(OK, result = dx_ds1_v2.assignReal(tmpCache, 3, derivatives1_v2));
-		EXPECT_EQ(OK, result = dx_ds2.assignReal(tmpCache, 3, derivatives2));
+		EXPECT_EQ(OK, tmpCache.setNode(node));
+		EXPECT_EQ(OK, coordinateField.assignReal(tmpCache, 3, coordinates));
+		EXPECT_EQ(OK, dx_ds1_v1.assignReal(tmpCache, 3, derivatives1_v1));
+		EXPECT_EQ(OK, dx_ds1_v2.assignReal(tmpCache, 3, derivatives1_v2));
+		EXPECT_EQ(OK, dx_ds2.assignReal(tmpCache, 3, derivatives2));
 	}
 	Fieldcache cache = zinc.fm.createFieldcache();
 	cache.setNode(node);
@@ -411,19 +410,19 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	double outDerivatives1_v2[3];
 	double outDerivatives2[3];
 	double outDerivatives2mod[3];
-	EXPECT_EQ(OK, result = coordinateField.evaluateReal(cache, 3, outCoordinates));
+	EXPECT_EQ(OK, coordinateField.evaluateReal(cache, 3, outCoordinates));
 	ASSERT_DOUBLE_EQ(coordinates[0], outCoordinates[0]);
 	ASSERT_DOUBLE_EQ(coordinates[1], outCoordinates[1]);
 	ASSERT_DOUBLE_EQ(coordinates[2], outCoordinates[2]);
-	EXPECT_EQ(OK, result = dx_ds1_v1.evaluateReal(cache, 3, outDerivatives1_v1));
+	EXPECT_EQ(OK, dx_ds1_v1.evaluateReal(cache, 3, outDerivatives1_v1));
 	ASSERT_DOUBLE_EQ(derivatives1_v1[0], outDerivatives1_v1[0]);
 	ASSERT_DOUBLE_EQ(derivatives1_v1[1], outDerivatives1_v1[1]);
 	ASSERT_DOUBLE_EQ(derivatives1_v1[2], outDerivatives1_v1[2]);
-	EXPECT_EQ(OK, result = dx_ds1_v2.evaluateReal(cache, 3, outDerivatives1_v2));
+	EXPECT_EQ(OK, dx_ds1_v2.evaluateReal(cache, 3, outDerivatives1_v2));
 	ASSERT_DOUBLE_EQ(derivatives1_v2[0], outDerivatives1_v2[0]);
 	ASSERT_DOUBLE_EQ(derivatives1_v2[1], outDerivatives1_v2[1]);
 	ASSERT_DOUBLE_EQ(derivatives1_v2[2], outDerivatives1_v2[2]);
-	EXPECT_EQ(OK, result = dx_ds2.evaluateReal(cache, 3, outDerivatives2));
+	EXPECT_EQ(OK, dx_ds2.evaluateReal(cache, 3, outDerivatives2));
 	ASSERT_DOUBLE_EQ(derivatives2[0], outDerivatives2[0]);
 	ASSERT_DOUBLE_EQ(derivatives2[1], outDerivatives2[1]);
 	ASSERT_DOUBLE_EQ(derivatives2[2], outDerivatives2[2]);
@@ -432,7 +431,7 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	EXPECT_EQ(Node::VALUE_LABEL_D_DS1, dx_ds2.getNodeValueLabel());
 	EXPECT_EQ(OK, dx_ds2.setVersionNumber(2));
 	EXPECT_EQ(2, dx_ds2.getVersionNumber());
-	EXPECT_EQ(OK, result = dx_ds2.evaluateReal(cache, 3, outDerivatives2mod));
+	EXPECT_EQ(OK, dx_ds2.evaluateReal(cache, 3, outDerivatives2mod));
 	ASSERT_DOUBLE_EQ(derivatives1_v2[0], outDerivatives2mod[0]);
 	ASSERT_DOUBLE_EQ(derivatives1_v2[1], outDerivatives2mod[1]);
 	ASSERT_DOUBLE_EQ(derivatives1_v2[2], outDerivatives2mod[2]);
@@ -505,9 +504,8 @@ TEST(ZincFieldIsExterior, evaluate3d)
 TEST(ZincFieldIsOnFace, evaluate)
 {
 	ZincTestSetupCpp zinc;
-	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(OK, zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDMODULE_CUBESQUARELINE_RESOURCE)));
 
 	Fieldcache cache = zinc.fm.createFieldcache();
@@ -542,16 +540,16 @@ TEST(ZincFieldIsOnFace, evaluate)
 		{
 			Element element = mesh3d.findElementByIdentifier(i);
 			EXPECT_TRUE(element.isValid());
-			EXPECT_EQ(OK, result = cache.setElement(element));
-			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+			EXPECT_EQ(OK, cache.setElement(element));
+			EXPECT_EQ(OK, isOnFaceField.evaluateReal(cache, 1, &value));
 			EXPECT_EQ(0.0, value);
 		}
 		for (i = 1; i <= size2; ++i)
 		{
 			Element element = mesh2d.findElementByIdentifier(i);
 			EXPECT_TRUE(element.isValid());
-			EXPECT_EQ(OK, result = cache.setElement(element));
-			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+			EXPECT_EQ(OK, cache.setElement(element));
+			EXPECT_EQ(OK, isOnFaceField.evaluateReal(cache, 1, &value));
 			if (f + 1 == i)
 				EXPECT_EQ(1.0, value);
 			else
@@ -561,8 +559,8 @@ TEST(ZincFieldIsOnFace, evaluate)
 		{
 			Element element = mesh1d.findElementByIdentifier(i);
 			EXPECT_TRUE(element.isValid());
-			EXPECT_EQ(OK, result = cache.setElement(element));
-			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+			EXPECT_EQ(OK, cache.setElement(element));
+			EXPECT_EQ(OK, isOnFaceField.evaluateReal(cache, 1, &value));
 			bool expectOnFace = false;
 			for (j = 0; j < 5; ++j)
 				if (expectedLines[f][j] == i)
@@ -586,34 +584,34 @@ TEST(ZincFieldIsOnFace, evaluate)
 	for (i = 1; i <= size3; ++i)
 	{
 		Element element = mesh3d.findElementByIdentifier(i);
-		EXPECT_EQ(OK, result = cache.setElement(element));
-		EXPECT_EQ(OK, result = allFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, cache.setElement(element));
+		EXPECT_EQ(OK, allFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(1.0, value);
-		EXPECT_EQ(OK, result = anyFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, anyFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(0.0, value);
-		EXPECT_EQ(OK, result = noFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, noFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(1.0, value);
 	}
 	for (i = 1; i <= size2; ++i)
 	{
 		Element element = mesh2d.findElementByIdentifier(i);
-		EXPECT_EQ(OK, result = cache.setElement(element));
-		EXPECT_EQ(OK, result = allFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, cache.setElement(element));
+		EXPECT_EQ(OK, allFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(1.0, value);
-		EXPECT_EQ(OK, result = anyFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, anyFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ((i != 7) ? 1.0 : 0.0, value);
-		EXPECT_EQ(OK, result = noFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, noFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ((i == 7) ? 1.0 : 0.0, value);
 	}
 	for (i = 1; i <= size1; ++i)
 	{
 		Element element = mesh1d.findElementByIdentifier(i);
-		EXPECT_EQ(OK, result = cache.setElement(element));
-		EXPECT_EQ(OK, result = allFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, cache.setElement(element));
+		EXPECT_EQ(OK, allFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(1.0, value);
-		EXPECT_EQ(OK, result = anyFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, anyFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ((i != 16) ? 1.0 : 0.0, value);
-		EXPECT_EQ(OK, result = noFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, noFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ((i == 16) ? 1.0 : 0.0, value);
 	}
 }
