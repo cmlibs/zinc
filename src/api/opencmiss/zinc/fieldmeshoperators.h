@@ -82,10 +82,30 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_mesh_integral_base_cast(
  *
  * @param mesh_integral_field_address  Address of handle to the field to
  * destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_mesh_integral_destroy(
 	cmzn_field_mesh_integral_id *mesh_integral_field_address);
+
+/**
+ * Get the mesh integrated over.
+ *
+ * @param mesh_integral_field  Handle to the mesh integral field to query.
+ * @return  Handle to the mesh, or NULL/invalid handle if invalid field.
+ */
+ZINC_API cmzn_mesh_id cmzn_field_mesh_integral_get_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field);
+
+/**
+ * Set the mesh integrated over.
+ *
+ * @param mesh_integral_field  Handle to the mesh integral field to modify.
+ * @param mesh  The mesh to integrate over.
+ * @return  Result OK on success, or ERROR_ARGUMENT if invalid mesh or mesh is
+ * not from this region.
+ */
+ZINC_API int cmzn_field_mesh_integral_set_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field, cmzn_mesh_id mesh);
 
 /**
  * Get the numbers of quadrature points in each element axis.
@@ -121,7 +141,9 @@ ZINC_API int cmzn_field_mesh_integral_get_numbers_of_points(
  * There is no upper limit on the numbers of points with midpoint quadrature.
  *
  * @param mesh_integral_field  Handle to the mesh integral field.
- * @param values_count  Size of the values array, at least 1.
+ * @param values_count  Size of the values array, at least 1. If more numbers
+ * are supplied than the internal maximum element dimension of 3, then surplus
+ * numbers are ignored.
  * @param values  Array containing numbers of quadrature points >=1, applied on
  * the corresponding element axis, with the last value in the arrray applying
  * on all subsequent element axes. For example [1, 2, 3] gives 1 point on xi1,
@@ -131,7 +153,7 @@ ZINC_API int cmzn_field_mesh_integral_get_numbers_of_points(
  * direction in all elements; for example a tubular mesh with bicubic elements
  * around the exterior (xi1 and xi2) and linear through the thickness (x3)
  * would benefit from using [4, 4, 2] points for full integration.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_mesh_integral_set_numbers_of_points(
 	cmzn_field_mesh_integral_id mesh_integral_field,
@@ -156,7 +178,7 @@ ZINC_API enum cmzn_element_quadrature_rule cmzn_field_mesh_integral_get_element_
  *
  * @param mesh_integral_field  Handle to mesh integral field to modify.
  * @param quadrature_rule  The quadrature rule to use.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_mesh_integral_set_element_quadrature_rule(
 	cmzn_field_mesh_integral_id mesh_integral_field,

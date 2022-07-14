@@ -216,6 +216,16 @@ public:
 		return cmzn_element_point_sampling_mode_enum_to_string(static_cast<cmzn_element_point_sampling_mode>(mode));
 	}
 
+	static QuadratureRule QuadratureRuleEnumFromString(const char *name)
+	{
+		return static_cast<QuadratureRule>(cmzn_element_quadrature_rule_enum_from_string(name));
+	}
+
+	static char *QuadratureRuleEnumToString(QuadratureRule rule)
+	{
+		return cmzn_element_quadrature_rule_enum_to_string(static_cast<cmzn_element_quadrature_rule>(rule));
+	}
+
 	static ShapeType ShapeTypeEnumFromString(const char *name)
 	{
 		return static_cast<ShapeType>(cmzn_element_shape_type_enum_from_string(name));

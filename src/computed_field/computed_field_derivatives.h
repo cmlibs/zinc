@@ -1,12 +1,9 @@
-/*******************************************************************************
-FILE : computed_field_derivatives.h
-
-LAST MODIFIED : 1 November 2000
-
-DESCRIPTION :
-Implements computed_fields for calculating various derivative quantities such
-as derivatives w.r.t. Xi, gradient, curl, divergence etc.
-==============================================================================*/
+/**
+ * FILE : computed_field_derivatives.h
+ *
+ * Implements computed_fields for calculating various derivative quantities such
+ * as derivatives w.r.t. Xi, gradient, curl, divergence etc.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,7 +13,5 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #define COMPUTED_FIELD_DERIVATIVES_H
 
 #include "opencmiss/zinc/fieldderivatives.h"
-
-int cmzn_field_derivative_get_xi_index(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVES_H) */

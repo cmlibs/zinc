@@ -675,8 +675,20 @@ TEST(ZincElement, PointSamplingModeEnum)
 	testEnum(6, enumNames, Element::PointSamplingModeEnumToString, Element::PointSamplingModeEnumFromString);
 }
 
+TEST(ZincElement, QuadratureRuleEnum)
+{
+	const char *enumNames[3] = { nullptr, "GAUSSIAN", "MIDPOINT" };
+	testEnum(3, enumNames, Element::QuadratureRuleEnumToString, Element::QuadratureRuleEnumFromString);
+}
+
 TEST(ZincElement, ShapeTypeEnum)
 {
 	const char *enumNames[9] = { nullptr, "LINE", "SQUARE", "TRIANGLE", "CUBE", "TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23" };
 	testEnum(9, enumNames, Element::ShapeTypeEnumToString, Element::ShapeTypeEnumFromString);
+}
+
+TEST(ZincNode, ValueLabelEnum)
+{
+	const char *enumNames[9] = { nullptr, "VALUE", "D_DS1", "D_DS2", "D2_DS1DS2", "D_DS3", "D2_DS1DS3", "D2_DS2DS3", "D3_DS1DS2DS3" };
+	testEnum(9, enumNames, Node::ValueLabelEnumToString, Node::ValueLabelEnumFromString);
 }

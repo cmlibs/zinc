@@ -12,6 +12,7 @@
 #define CMZN_FIELDDERIVATIVES_H__
 
 #include "types/fieldid.h"
+#include "types/fieldderivativesid.h"
 #include "types/fieldmoduleid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
@@ -21,19 +22,76 @@ extern "C" {
 #endif
 
 /**
- * Creates a field returning the derivative of the field with respect to element
- * xi_index as its primary value. Returned field has same number of components
- * as source field.
+ * Creates a field returning the derivative of the source field with respect to
+ * the chosen element xi coordinate index as its primary value. The xi index is
+ * relative to the element/face/line it is evaluated on, not the top-level
+ * element. Returned field has same number of components as the source field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field  Source field to get derivative number.
  * @param xi_index  Element coordinate system index for derivative, from 1 to
  * element dimension.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_derivative(
-	cmzn_fieldmodule_id field_module,
-	cmzn_field_id source_field, int xi_index);
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field, int xi_index);
+
+/**
+ * Cast field to derivative type if valid.
+ *
+ * @param field  The field to cast.
+ * @return  Handle to derived derivative field, or NULL/invalid handle if
+ * wrong type or failed.
+ */
+ZINC_API cmzn_field_derivative_id cmzn_field_cast_derivative(cmzn_field_id field);
+
+/**
+ * Cast derivative field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param derivative_field  Handle to the derivative field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_derivative_base_cast(
+	cmzn_field_derivative_id derivative_field)
+{
+	return (cmzn_field_id)(derivative_field);
+}
+
+/**
+ * Destroys handle to the derivative field (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param derivative_field_address  Address of handle to the field to
+ * destroy.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_derivative_destroy(
+	cmzn_field_derivative_id *derivative_field_address);
+
+/**
+ * Get the element xi coordinate index the derivative is with respect to.
+ *
+ * @param derivative_field  Handle to the derivative field to query.
+ * @return  Xi index >= 1, or 0 if invalid field.
+ */
+ZINC_API int cmzn_field_derivative_get_xi_index(
+	cmzn_field_derivative_id derivative_field);
+
+/**
+ * Set the element xi coordinate index the derivative is with respect to.
+ *
+ * @param derivative_field  Handle to the derivative field to modify.
+ * @param xi_index  Element coordinate system index for derivative, from 1 to
+ * element dimension.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_derivative_set_xi_index(
+	cmzn_field_derivative_id derivative_field, int xi_index);
 
 /**
  * Creates a field returning the curl of vector_field at location given by

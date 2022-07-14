@@ -23,6 +23,7 @@ class FieldApply;
 class FieldArgumentReal;
 class FieldComponent;
 class FieldConstant;
+class FieldDerivative;
 class FieldEdgeDiscontinuity;
 class FieldEigenvalues;
 class FieldElementGroup;
@@ -34,8 +35,10 @@ class FieldImagefilterBinaryThreshold;
 class FieldImagefilterDiscreteGaussian;
 class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
+class FieldIsOnFace;
 class FieldMeshIntegral;
 class FieldNodeGroup;
+class FieldNodeValue;
 class FieldNodesetOperator;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
@@ -153,7 +156,6 @@ public:
 		VALUE_TYPE_MESH_LOCATION = CMZN_FIELD_VALUE_TYPE_MESH_LOCATION
 	};
 
-
 	inline Fieldassignment createFieldassignment(const Field& sourceField);
 
 	bool isManaged() const
@@ -164,6 +166,16 @@ public:
 	int setManaged(bool value)
 	{
 		return cmzn_field_set_managed(id, value);
+	}
+
+	char *getClassName() const
+	{
+		return cmzn_field_get_class_name(this->id);
+	}
+
+	bool hasClassName(const char *className) const
+	{
+		return cmzn_field_has_class_name(this->id, className);
 	}
 
 	char *getComponentName(int componentNumber) const
@@ -293,6 +305,7 @@ public:
 	inline FieldArgumentReal castArgumentReal();
 	inline FieldComponent castComponent();
 	inline FieldConstant castConstant();
+	inline FieldDerivative castDerivative();
 	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();
 	inline FieldEigenvalues castEigenvalues();
 	inline FieldElementGroup castElementGroup();
@@ -305,7 +318,9 @@ public:
 	inline FieldImagefilterHistogram castImagefilterHistogram();
 	inline FieldImagefilterThreshold castImagefilterThreshold();
 	inline FieldMeshIntegral castMeshIntegral();
+	inline FieldIsOnFace castIsOnFace();
 	inline FieldNodeGroup castNodeGroup();
+	inline FieldNodeValue castNodeValue();
 	inline FieldNodesetOperator castNodesetOperator();
 	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();

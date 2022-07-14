@@ -51,7 +51,7 @@ ZINC_API enum cmzn_element_face_type cmzn_element_face_type_enum_from_string(
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param type  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
+ * @return  An allocated string set to the short name of the enum.
  */
 ZINC_API char *cmzn_element_face_type_enum_to_string(
 	enum cmzn_element_face_type type);
@@ -71,10 +71,30 @@ ZINC_API enum cmzn_element_point_sampling_mode
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
+ * @return  An allocated string set to the short name of the enum.
  */
 ZINC_API char *cmzn_element_point_sampling_mode_enum_to_string(
 	enum cmzn_element_point_sampling_mode mode);
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_element_quadrature_rule
+	cmzn_element_quadrature_rule_enum_from_string(const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  An allocated string set to the short name of the enum.
+ */
+ZINC_API char *cmzn_element_quadrature_rule_enum_to_string(
+	enum cmzn_element_quadrature_rule rule);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
@@ -91,7 +111,7 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_shape_type_enum_from_string(
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param type  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
+ * @return  An allocated string set to the short name of the enum.
  */
 ZINC_API char *cmzn_element_shape_type_enum_to_string(
 	enum cmzn_element_shape_type type);

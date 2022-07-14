@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/result.h>
 
 #include <opencmiss/zinc/field.hpp>
@@ -28,8 +29,10 @@
 #include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
+#include <cctype>
 #include <cmath>
 #include <iostream>
+#include <string>
 
 typedef void (*Binary_operator)(int, const double *, const double *, double *);
 
@@ -550,5 +553,48 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			EXPECT_LT(d2_error_ratio, 0.02);
 		else
 			EXPECT_LT(d2_error_ratio, 0.01);
+
+		std::string expectedClassName = "Field";
+		Field field = op.field;
+		if ((0 == strcmp(op.name, "transpose"))
+			|| (0 == strcmp(op.name, "magnitude"))
+			|| (0 == strcmp(op.name, "dot_product"))
+			|| (0 == strcmp(op.name, "sum_components")))
+		{
+			// these fields are within an outer component field
+			field = field.getSourceField(1);
+		}
+		if (strchr(op.name, '_'))
+		{
+			if (strstr(op.name, "coordinate_transformation"))
+			{
+				expectedClassName += "CoordinateTransformation";
+			}
+			else if (strstr(op.name, "matrix_multiply"))
+			{
+				expectedClassName += "MatrixMultiply";
+			}
+			else if (strstr(op.name, "cross_product"))
+			{
+				expectedClassName += "CrossProduct";
+			}
+			else if (strstr(op.name, "dot_product"))
+			{
+				expectedClassName += "DotProduct";
+			}
+			else if (strstr(op.name, "sum_components"))
+			{
+				expectedClassName += "SumComponents";
+			}
+		}
+		else
+		{
+			expectedClassName += std::toupper(op.name[0]);
+			expectedClassName += op.name + 1;
+		}
+		char *className = field.getClassName();
+		EXPECT_STREQ(expectedClassName.c_str(), className);
+		cmzn_deallocate(className);
+		EXPECT_TRUE(field.hasClassName(expectedClassName.c_str()));
 	}
 }

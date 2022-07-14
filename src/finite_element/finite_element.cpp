@@ -2224,8 +2224,8 @@ enum cmzn_element_point_sampling_mode cmzn_element_point_sampling_mode_enum_from
 
 char *cmzn_element_point_sampling_mode_enum_to_string(enum cmzn_element_point_sampling_mode mode)
 {
-	const char *string = cmzn_element_point_sampling_mode_conversion::to_string(mode);
-	return (string ? duplicate_string(string) : 0);
+	const char *name = cmzn_element_point_sampling_mode_conversion::to_string(mode);
+	return (name ? duplicate_string(name) : 0);
 }
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_quadrature_rule)
@@ -2245,6 +2245,40 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_quadrature_rule)
 }
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_quadrature_rule)
+
+class cmzn_element_quadrature_rule_conversion
+{
+public:
+	static const char *to_string(cmzn_element_quadrature_rule rule)
+	{
+		switch (rule)
+		{
+		case CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN:
+			return "GAUSSIAN";
+			break;
+		case CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT:
+			return "MIDPOINT";
+			break;
+		case CMZN_ELEMENT_QUADRATURE_RULE_INVALID:
+			break;
+		}
+		return nullptr;
+	}
+};
+
+enum cmzn_element_quadrature_rule
+	cmzn_element_quadrature_rule_enum_from_string(const char *name)
+{
+	return string_to_enum<cmzn_element_quadrature_rule,
+		cmzn_element_quadrature_rule_conversion>(name);
+}
+
+char *cmzn_element_quadrature_rule_enum_to_string(
+	enum cmzn_element_quadrature_rule rule)
+{
+	const char *name = cmzn_element_quadrature_rule_conversion::to_string(rule);
+	return (name) ? duplicate_string(name) : nullptr;
+}
 
 /** Important: check other enumerator functions work when adding new values.
  * They assume enums are powers of 2 */

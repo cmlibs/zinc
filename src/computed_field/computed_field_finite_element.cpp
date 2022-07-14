@@ -14,7 +14,7 @@
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/result.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -197,12 +197,12 @@ public:
 	static int deaccess(FE_element_field_evaluation_cache* &evaluation_cache)
 	{
 		if (!evaluation_cache)
-			return CMZN_RESULT_ERROR_ARGUMENT;
+			return CMZN_ERROR_ARGUMENT;
 		--(evaluation_cache->access_count);
 		if (evaluation_cache->access_count <= 0)
 			delete evaluation_cache;
 		evaluation_cache = 0;
-		return CMZN_RESULT_OK;
+		return CMZN_OK;
 	}
 
 	void clear()
@@ -2123,14 +2123,14 @@ class Computed_field_node_value : public Computed_field_core
 {
 public:
 	struct FE_field *fe_field;
-	cmzn_node_value_label valueLabel;
+	cmzn_node_value_label nodeValueLabel;
 	int versionNumber; // starting at 0
 
 	Computed_field_node_value(cmzn_field_id finite_element_field,
-			cmzn_node_value_label valueLabelIn, int versionNumberIn) :
+			cmzn_node_value_label nodeValueLabelIn, int versionNumberIn) :
 		Computed_field_core(),
 		fe_field(0),
-		valueLabel(valueLabelIn),
+		nodeValueLabel(nodeValueLabelIn),
 		versionNumber(versionNumberIn)
 	{
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field);
@@ -2138,6 +2138,49 @@ public:
 	};
 
 	virtual ~Computed_field_node_value();
+
+	cmzn_node_value_label getNodeValueLabel() const
+	{
+		return this->nodeValueLabel;
+	}
+
+	int setNodeValueLabel(cmzn_node_value_label nodeValueLabelIn)
+	{
+		if (nodeValueLabelIn != this->nodeValueLabel)
+		{
+			const char *s = cmzn_node_value_label_conversion::to_string(nodeValueLabelIn);
+			if (!s)
+			{
+				display_message(ERROR_MESSAGE, "FieldNodeValue setNodeValueLabel.  Invalid node value label");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			this->nodeValueLabel = nodeValueLabelIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
+
+	/** @return  Version number starting at 0 */
+	int getVersionNumber() const
+	{
+		return this->versionNumber;
+	}
+
+	/** @param versionNumberIn  Version number >= 0 */
+	int setVersionNumber(int versionNumberIn)
+	{
+		if (versionNumberIn != this->versionNumber)
+		{
+			if (versionNumberIn < 0)
+			{
+				display_message(ERROR_MESSAGE, "FieldNodeValue setVersionNumber.  Invalid version number");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			this->versionNumber = versionNumberIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
 
 	virtual void inherit_source_field_attributes()
 	{
@@ -2201,7 +2244,7 @@ Computed_field_node_value::~Computed_field_node_value()
 
 Computed_field_core* Computed_field_node_value::copy()
 {
-	return new Computed_field_node_value(this->getSourceField(0), this->valueLabel, this->versionNumber);
+	return new Computed_field_node_value(this->getSourceField(0), this->nodeValueLabel, this->versionNumber);
 }
 
 int Computed_field_node_value::compare(Computed_field_core *other_core)
@@ -2219,7 +2262,7 @@ Compare the type specific data
 	if (field && (other = dynamic_cast<Computed_field_node_value*>(other_core)))
 	{
 		return_code = ((this->fe_field == other->fe_field)
-			&& (this->valueLabel == other->valueLabel)
+			&& (this->nodeValueLabel == other->nodeValueLabel)
 			&& (this->versionNumber == other->versionNumber));
 	}
 	else
@@ -2244,7 +2287,7 @@ bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 			const int componentCount = field->number_of_components;
 			for (int c = 0; c < componentCount; ++c)
 			{
-				const int versionsCount = node_field->getComponent(c)->getValueNumberOfVersions(this->valueLabel);
+				const int versionsCount = node_field->getComponent(c)->getValueNumberOfVersions(this->nodeValueLabel);
 				if (this->versionNumber < versionsCount)
 				{
 					return true;
@@ -2299,7 +2342,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			double *double_values = valueCache.double_values.data();
 			result = get_FE_nodal_double_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, double_values);
+				this->nodeValueLabel, this->versionNumber, time, double_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(double_values[c]);
@@ -2308,13 +2351,13 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		case FE_VALUE_VALUE:
 		{
 			result = get_FE_nodal_FE_value_value(node, fe_field,/*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, valueCache.values);
+				this->nodeValueLabel, this->versionNumber, time, valueCache.values);
 		} break;
 		case FLT_VALUE:
 		{
 			float *float_values = valueCache.float_values.data();
 			result = get_FE_nodal_float_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, float_values);
+				this->nodeValueLabel, this->versionNumber, time, float_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(float_values[c]);
@@ -2324,7 +2367,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			int *int_values = valueCache.int_values.data();
 			result = get_FE_nodal_int_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, int_values);
+				this->nodeValueLabel, this->versionNumber, time, int_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(int_values[c]);
@@ -2334,7 +2377,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			short *short_values = valueCache.short_values.data();
 			result = get_FE_nodal_short_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, short_values);
+				this->nodeValueLabel, this->versionNumber, time, short_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(short_values[c]);
@@ -2399,12 +2442,12 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				double_values[c] = static_cast<double>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_double_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, double_values);
+				this->nodeValueLabel, this->versionNumber, time, double_values);
 		} break;
 		case FE_VALUE_VALUE:
 		{
 			return_code = set_FE_nodal_FE_value_value(node, fe_field,/*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, feValueCache.values);
+				this->nodeValueLabel, this->versionNumber, time, feValueCache.values);
 		} break;
 		case FLT_VALUE:
 		{
@@ -2414,7 +2457,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				float_values[c] = static_cast<FE_value>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_float_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, float_values);
+				this->nodeValueLabel, this->versionNumber, time, float_values);
 		} break;
 		case INT_VALUE:
 		{
@@ -2424,7 +2467,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				int_values[c] = static_cast<FE_value>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_int_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, int_values);
+				this->nodeValueLabel, this->versionNumber, time, int_values);
 		} break;
 		case SHORT_VALUE:
 		{
@@ -2434,7 +2477,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				short_values[c] = static_cast<short>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_short_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, short_values);
+				this->nodeValueLabel, this->versionNumber, time, short_values);
 		} break;
 		default:
 		{
@@ -2461,7 +2504,7 @@ int Computed_field_node_value::list()
 	{
 		display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",this->fe_field->getName());
 		display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-			ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel));
+			ENUMERATOR_STRING(cmzn_node_value_label)(this->nodeValueLabel));
 		display_message(INFORMATION_MESSAGE,"    version : %d\n", this->versionNumber + 1);
 		return 1;
 	}
@@ -2498,7 +2541,7 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel), &error);
+			ENUMERATOR_STRING(cmzn_node_value_label)(this->nodeValueLabel), &error);
 		sprintf(temp_string, " version %d", this->versionNumber + 1);
 		append_string(&command_string, temp_string, &error);
 	}
@@ -2539,24 +2582,72 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	return field;
 }
 
-cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field)
+cmzn_field_node_value_id cmzn_field_cast_node_value(cmzn_field_id field)
 {
-	Computed_field_node_value *fieldNodeValue;
-	if (!(field && (fieldNodeValue = dynamic_cast<Computed_field_node_value*>(field->core))))
+	if (field && (dynamic_cast<Computed_field_node_value*>(field->core)))
 	{
-		return CMZN_NODE_VALUE_LABEL_INVALID;
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_node_value_id>(field));
 	}
-	return fieldNodeValue->valueLabel;
+	return nullptr;
 }
 
-int cmzn_field_node_value_get_version_number(cmzn_field_id field)
+int cmzn_field_node_value_destroy(
+	cmzn_field_node_value_id *node_value_field_address)
 {
-	Computed_field_node_value *fieldNodeValue;
-	if (!(field && (fieldNodeValue = dynamic_cast<Computed_field_node_value*>(field->core))))
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(node_value_field_address));
+}
+
+inline Computed_field_node_value *Computed_field_node_value_core_cast(
+	cmzn_field_node_value *node_value_field)
+{
+	return static_cast<Computed_field_node_value*>(
+		reinterpret_cast<Computed_field*>(node_value_field)->core);
+}
+
+enum cmzn_node_value_label cmzn_field_node_value_get_node_value_label(
+	cmzn_field_node_value_id node_value_field)
+{
+	if (node_value_field)
 	{
-		return CMZN_NODE_VALUE_LABEL_INVALID;
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->getNodeValueLabel();
 	}
-	return fieldNodeValue->versionNumber + 1;
+	return CMZN_NODE_VALUE_LABEL_INVALID;
+}
+
+int cmzn_field_node_value_set_node_value_label(
+	cmzn_field_node_value_id node_value_field,
+	enum cmzn_node_value_label node_value_label)
+{
+	if (node_value_field)
+	{
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->setNodeValueLabel(node_value_label);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_node_value_get_version_number(
+	cmzn_field_node_value_id node_value_field)
+{
+	if (node_value_field)
+	{
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->getVersionNumber() + 1;
+	}
+	return 0;
+}
+
+int cmzn_field_node_value_set_version_number(
+	cmzn_field_node_value_id node_value_field, int version_number)
+{
+	if (node_value_field)
+	{
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->setVersionNumber(version_number - 1);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_edge_discontinuity_measure)
@@ -3348,14 +3439,14 @@ public:
 				|| (feSearchMesh->getDimension() > feMesh->getDimension()))
 			{
 				display_message(ERROR_MESSAGE, "FieldFindMeshLocation setSearchMesh  Invalid search mesh");
-				return CMZN_RESULT_ERROR_ARGUMENT;
+				return CMZN_ERROR_ARGUMENT;
 			}
 			cmzn_mesh_access(searchMeshIn);
 			cmzn_mesh_destroy(&this->searchMesh);
 			this->searchMesh = searchMeshIn;
 			this->field->setChanged();
 		}
-		return CMZN_RESULT_OK;
+		return CMZN_OK;
 	}
 
 	enum cmzn_field_find_mesh_location_search_mode getSearchMode() const
@@ -4370,18 +4461,35 @@ const char computed_field_is_on_face_type_string[] = "is_on_face";
 
 class Computed_field_is_on_face : public Computed_field_core
 {
-	cmzn_element_face_type faceType;
+	cmzn_element_face_type elementFaceType;
 
 public:
-	Computed_field_is_on_face(cmzn_element_face_type faceTypeIn) :
+	Computed_field_is_on_face(cmzn_element_face_type elementFaceTypeIn) :
 		Computed_field_core(),
-		faceType(faceTypeIn)
+		elementFaceType(elementFaceTypeIn)
 	{
 	};
 
-	cmzn_element_face_type get_face_type()
+	cmzn_element_face_type getElementFaceType() const
 	{
-		return faceType;
+		return this->elementFaceType;
+	}
+
+	int setElementFaceType(cmzn_element_face_type elementFaceTypeIn)
+	{
+		if (elementFaceTypeIn != this->elementFaceType)
+		{
+			char *s = cmzn_element_face_type_enum_to_string(elementFaceTypeIn);
+			if (!s)
+			{
+				display_message(ERROR_MESSAGE, "FieldIsOnFace setElementFaceType.  Invalid element face type");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			DEALLOCATE(s);
+			this->elementFaceType = elementFaceTypeIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
 	}
 
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
@@ -4392,7 +4500,7 @@ public:
 private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_is_on_face(this->faceType);
+		return new Computed_field_is_on_face(this->elementFaceType);
 	}
 
 	const char *get_type_string()
@@ -4408,7 +4516,7 @@ private:
 	int compare(Computed_field_core* other_field)
 	{
 		Computed_field_is_on_face* other_core = dynamic_cast<Computed_field_is_on_face*>(other_field);
-		return (0 != other_core) && (other_core->faceType == this->faceType);
+		return (0 != other_core) && (other_core->elementFaceType == this->elementFaceType);
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -4422,7 +4530,7 @@ private:
 
 	int list()
 	{
-		display_message(INFORMATION_MESSAGE,"    face : %s\n", ENUMERATOR_STRING(cmzn_element_face_type)(this->faceType));
+		display_message(INFORMATION_MESSAGE,"    face : %s\n", ENUMERATOR_STRING(cmzn_element_face_type)(this->elementFaceType));
 		return 1;
 	}
 
@@ -4431,7 +4539,7 @@ private:
 		char *command_string = duplicate_string(computed_field_is_on_face_type_string);
 		int error = 0;
 		append_string(&command_string, " face ", &error);
-		append_string(&command_string, ENUMERATOR_STRING(cmzn_element_face_type)(this->faceType), &error);
+		append_string(&command_string, ENUMERATOR_STRING(cmzn_element_face_type)(this->elementFaceType), &error);
 		return command_string;
 	}
 
@@ -4450,11 +4558,11 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		cmzn_element* element = element_xi_location->get_element();
 		FE_mesh *fe_mesh = element->getMesh();
 		if (fe_mesh &&
-				((CMZN_ELEMENT_FACE_TYPE_ALL == this->faceType) ||
-				((CMZN_ELEMENT_FACE_TYPE_NO_FACE == this->faceType) &&
+				((CMZN_ELEMENT_FACE_TYPE_ALL == this->elementFaceType) ||
+				((CMZN_ELEMENT_FACE_TYPE_NO_FACE == this->elementFaceType) &&
 					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), CMZN_ELEMENT_FACE_TYPE_ANY_FACE) < 0)) ||
-				((CMZN_ELEMENT_FACE_TYPE_NO_FACE != this->faceType) &&
-					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->faceType) >= 0))))
+				((CMZN_ELEMENT_FACE_TYPE_NO_FACE != this->elementFaceType) &&
+					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->elementFaceType) >= 0))))
 			valueCache.values[0] = 1.0;
 		else
 			valueCache.values[0] = 0.0;
@@ -4472,18 +4580,6 @@ int Computed_field_is_on_face::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 
 } // namespace
 
-enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field)
-{
-	enum cmzn_element_face_type type = CMZN_ELEMENT_FACE_TYPE_INVALID;
-	if (field && field->core)
-	{
-		Computed_field_is_on_face *fieldIsOnFace= static_cast<Computed_field_is_on_face*>(
-			field->core);
-		type = fieldIsOnFace->get_face_type();
-	}
-	return type;
-}
-
 cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 	struct cmzn_fieldmodule *fieldmodule, cmzn_element_face_type face)
 {
@@ -4498,6 +4594,51 @@ cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 			new Computed_field_is_on_face(face));
 	}
 	return field;
+}
+
+cmzn_field_is_on_face_id cmzn_field_cast_is_on_face(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_is_on_face*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_is_on_face_id>(field));
+	}
+	return nullptr;
+}
+
+int cmzn_field_is_on_face_destroy(
+	cmzn_field_is_on_face_id *is_on_face_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(is_on_face_field_address));
+}
+
+inline Computed_field_is_on_face *Computed_field_is_on_face_core_cast(
+	cmzn_field_is_on_face *is_on_face_field)
+{
+	return static_cast<Computed_field_is_on_face*>(
+		reinterpret_cast<Computed_field*>(is_on_face_field)->core);
+}
+
+enum cmzn_element_face_type cmzn_field_is_on_face_get_element_face_type(
+	cmzn_field_is_on_face_id is_on_face_field)
+{
+	if (is_on_face_field)
+	{
+		Computed_field_is_on_face *is_on_face_core = Computed_field_is_on_face_core_cast(is_on_face_field);
+		return is_on_face_core->getElementFaceType();
+	}
+	return CMZN_ELEMENT_FACE_TYPE_INVALID;
+}
+
+int cmzn_field_is_on_face_set_element_face_type(
+	cmzn_field_is_on_face_id is_on_face_field, enum cmzn_element_face_type face)
+{
+	if (is_on_face_field)
+	{
+		Computed_field_is_on_face *is_on_face_core = Computed_field_is_on_face_core_cast(is_on_face_field);
+		return is_on_face_core->setElementFaceType(face);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 
