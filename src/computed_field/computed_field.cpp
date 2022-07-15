@@ -1027,8 +1027,7 @@ int cmzn_field::setNameUnique(const char *part1, const char *part2, int startNum
 
 int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyChange)
 {
-	if ((index < 0) || (index > this->number_of_source_fields) ||
-		((index == this->number_of_source_fields) && (!sourceField)))
+	if ((index < 0) || (index > this->number_of_source_fields))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field::setSourceField  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
@@ -1053,7 +1052,7 @@ int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyCh
 			changed = true;
 		}
 	}
-	else
+	else if (index != this->number_of_source_fields)
 	{
 		cmzn_field::deaccess(this->source_fields[index]);
 		--(this->number_of_source_fields);
@@ -2992,7 +2991,7 @@ public:
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_INVALID:
-				enum_string = "INVALID";
+				// no enum string
 				break;
 			case CMZN_FIELD_TYPE_APPLY:
 				enum_string = "APPLY";
@@ -3180,7 +3179,29 @@ public:
 			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 				enum_string = "FIND_MESH_LOCATION";
 				break;
-			default:
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+				enum_string = "MESH_INTEGRAL";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+				enum_string = "MESH_INTEGRAL_SQUARES";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+				enum_string = "NODESET_MAXIMUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN:
+				enum_string = "NODESET_MEAN";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+				enum_string = "NODESET_MEAN_SQUARES";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+				enum_string = "NODESET_MINIMUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM:
+				enum_string = "NODESET_SUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+				enum_string = "NODESET_SUM_SQUARES";
 				break;
 		}
 		return enum_string;
@@ -3207,7 +3228,7 @@ public:
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_INVALID:
-				class_name = "Invalid";
+				// no class name
 				break;
 			case CMZN_FIELD_TYPE_APPLY:
 				class_name = "FieldApply";
@@ -3395,7 +3416,29 @@ public:
 			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 				class_name = "FieldFindMeshLocation";
 				break;
-			default:
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+				class_name = "FieldMeshIntegral";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+				class_name = "FieldMeshIntegralSquares";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+				class_name = "FieldNodesetMaximum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN:
+				class_name = "FieldNodesetMean";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+				class_name = "FieldNodesetMeanSquares";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+				class_name = "FieldNodesetMinimum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM:
+				class_name = "FieldNodesetSum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+				class_name = "FieldNodesetSumSquares";
 				break;
 		}
 		return class_name;
@@ -3416,6 +3459,33 @@ char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field)
 {
 	return field->core->get_type();
+}
+
+char *cmzn_field_get_class_name(cmzn_field_id field)
+{
+	if (field)
+	{
+		cmzn_field_type type = cmzn_field_get_type(field);
+		char *class_name = cmzn_field_type_enum_to_class_name(type);
+		if (!class_name)
+		{
+			display_message(ERROR_MESSAGE, "Field getClassName.  Class name not available for this field");
+		}
+		return class_name;
+	}
+	return nullptr;
+}
+
+bool cmzn_field_has_class_name(cmzn_field_id field,
+	const char *class_name)
+{
+	if ((field) && (class_name))
+	{
+		cmzn_field_type type = cmzn_field_get_type(field);
+		const char *tmp_class_name = cmzn_field_type_class_name_conversion::to_string(type);
+		return (nullptr != tmp_class_name) && (0 == strcmp(class_name, tmp_class_name));
+	}
+	return false;
 }
 
 cmzn_fieldparameters_id cmzn_field_get_fieldparameters(cmzn_field_id field)

@@ -50,6 +50,16 @@ public:
 			this->getDerivedId(), elementMapField.getId());
 	}
 
+	Nodeset getNodeset() const
+	{
+		return Nodeset(cmzn_field_nodeset_operator_get_nodeset(this->getDerivedId()));
+	}
+
+	int setNodeset(const Nodeset& nodeset)
+	{
+		return cmzn_field_nodeset_operator_set_nodeset(this->getDerivedId(), nodeset.getId());
+	}
+
 };
 
 class FieldNodesetSum : public FieldNodesetOperator

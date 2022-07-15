@@ -82,6 +82,11 @@ public:
 		return new Computed_field_mesh_integral(mesh);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MESH_INTEGRAL;
+	}
+
 	const char *get_type_string()
 	{
 		return (computed_field_mesh_integral_type_string);
@@ -116,12 +121,31 @@ public:
 
 	char* get_command_string();
 
-	cmzn_mesh_id getMesh()
+	/** @return  Non-accessed mesh */
+	cmzn_mesh *getMesh() const
 	{
-		return mesh;
+		return this->mesh;
 	}
 
-	int getNumbersOfPoints(int valuesCount, int *values)
+	/** @return  Result OK on success, ERROR_ARGUMENT if mesh missing or from wrong region */
+	int setMesh(cmzn_mesh *meshIn)
+	{
+		if ((!meshIn) || (cmzn_mesh_get_region_internal(meshIn) != this->field->getRegion()))
+		{
+			display_message(ERROR_MESSAGE, "FieldMeshIntegral setMesh:  Invalid mesh");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		if (!cmzn_mesh_match(this->mesh, meshIn))
+		{
+			cmzn_mesh *oldMesh = this->mesh;
+			this->mesh = cmzn_mesh_access(meshIn);
+			cmzn_mesh_destroy(&oldMesh);
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
+
+	int getNumbersOfPoints(int valuesCount, int *values) const
 	{
 		if ((0 == valuesCount) || ((0 < valuesCount) && values))
 		{
@@ -137,14 +161,16 @@ public:
 	{
 		if ((0 < valuesCount) && values)
 		{
-			for (int i = 0; i < valuesCount; ++i)
+			const int maxValuesCount = (valuesCount > MAXIMUM_ELEMENT_XI_DIMENSIONS) ?
+				MAXIMUM_ELEMENT_XI_DIMENSIONS : valuesCount;
+			for (int i = 0; i < maxValuesCount; ++i)
 			{
 				if (values[i] < 1)
 					return CMZN_ERROR_ARGUMENT;
 			}
-			bool change = (static_cast<int>(this->numbersOfPoints.size()) != valuesCount);
-			this->numbersOfPoints.resize(valuesCount);
-			for (int i = 0; i < valuesCount; ++i)
+			bool change = (static_cast<int>(this->numbersOfPoints.size()) != maxValuesCount);
+			this->numbersOfPoints.resize(maxValuesCount);
+			for (int i = 0; i < maxValuesCount; ++i)
 			{
 				if (this->numbersOfPoints[i] != values[i])
 				{
@@ -153,7 +179,9 @@ public:
 				}
 			}
 			if (change)
+			{
 				this->field->setChanged();
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -513,6 +541,11 @@ public:
 		return new Computed_field_mesh_integral_squares(mesh);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES;
+	}
+
 	const char *get_type_string()
 	{
 		return (computed_field_mesh_integral_squares_type_string);
@@ -711,7 +744,7 @@ cmzn_field_mesh_integral_id cmzn_field_cast_mesh_integral(cmzn_field_id field)
 		cmzn_field_access(field);
 		return (reinterpret_cast<cmzn_field_mesh_integral_id>(field));
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_field_mesh_integral_destroy(
@@ -723,8 +756,30 @@ int cmzn_field_mesh_integral_destroy(
 inline Computed_field_mesh_integral *Computed_field_mesh_integral_core_cast(
 	cmzn_field_mesh_integral *mesh_integral_field)
 {
-	return (static_cast<Computed_field_mesh_integral*>(
-		reinterpret_cast<Computed_field*>(mesh_integral_field)->core));
+	return static_cast<Computed_field_mesh_integral*>(
+		reinterpret_cast<Computed_field*>(mesh_integral_field)->core);
+}
+
+cmzn_mesh_id cmzn_field_mesh_integral_get_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field)
+{
+	if (mesh_integral_field)
+	{
+		Computed_field_mesh_integral *mesh_integral_core = Computed_field_mesh_integral_core_cast(mesh_integral_field);
+		return cmzn_mesh_access(mesh_integral_core->getMesh());
+	}
+	return nullptr;
+}
+
+int cmzn_field_mesh_integral_set_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field, cmzn_mesh_id mesh)
+{
+	if (mesh_integral_field)
+	{
+		Computed_field_mesh_integral *mesh_integral_core = Computed_field_mesh_integral_core_cast(mesh_integral_field);
+		return mesh_integral_core->setMesh(mesh);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_field_mesh_integral_get_numbers_of_points(

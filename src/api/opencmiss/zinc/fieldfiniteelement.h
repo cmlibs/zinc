@@ -69,8 +69,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_finite_element_base_cast(
  * Internally this decrements the reference count.
  *
  * @param finite_element_field_address  Address of handle to the field to
- * 		destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * destroy.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_finite_element_destroy(
 	cmzn_field_finite_element_id *finite_element_field_address);
@@ -204,7 +204,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_edge_discontinuity_base_cast(
  *
  * @param edge_discontinuity_field_address  Address of handle to the field to
  * destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_edge_discontinuity_destroy(
 	cmzn_field_edge_discontinuity_id *edge_discontinuity_field_address);
@@ -231,7 +231,7 @@ ZINC_API cmzn_field_id cmzn_field_edge_discontinuity_get_conditional_field(
  * elements and must be true (non-zero) to include that element in the measure
  * of discontinuity. With no conditional_field and/or more adjacent qualifying
  * surfaces, the first two surfaces are used.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_edge_discontinuity_set_conditional_field(
 	cmzn_field_edge_discontinuity_id edge_discontinuity_field,
@@ -258,7 +258,7 @@ ZINC_API cmzn_field_edge_discontinuity_measure
  * modify.
  * @param measure  Enumerated value specifying which measure of discontinuity
  * is to be calculated.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_edge_discontinuity_set_measure(
 	cmzn_field_edge_discontinuity_id edge_discontinuity_field,
@@ -337,7 +337,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_find_mesh_location_base_cast(
  *
  * @param find_mesh_location_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_find_mesh_location_destroy(
 	cmzn_field_find_mesh_location_id *find_mesh_location_field_address);
@@ -438,6 +438,84 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	enum cmzn_node_value_label node_value_label, int version_number);
 
 /**
+ * Cast field to node value type if valid.
+ *
+ * @param field  The field to cast.
+ * @return  Handle to derived node value field, or NULL/invalid handle if
+ * wrong type or failed.
+ */
+ZINC_API cmzn_field_node_value_id cmzn_field_cast_node_value(cmzn_field_id field);
+
+/**
+ * Cast node value field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param node_value_field  Handle to the node value field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_node_value_base_cast(
+	cmzn_field_node_value_id node_value_field)
+{
+	return (cmzn_field_id)(node_value_field);
+}
+
+/**
+ * Destroys handle to the node value field (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param node_value_field_address  Address of handle to the field to
+ * destroy.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_node_value_destroy(
+	cmzn_field_node_value_id *node_value_field_address);
+
+/**
+ * Get the node value label of the node parameter to evaluate.
+ *
+ * @param node_value_field  Handle to the node value field to query.
+ * @return  Node value label in use or VALUE_LABEL_INVALID if invalid field.
+ */
+ZINC_API enum cmzn_node_value_label cmzn_field_node_value_get_node_value_label(
+	cmzn_field_node_value_id node_value_field);
+
+/**
+ * Set the node value label of the node parameter to evaluate.
+ *
+ * @param node_value_field  Handle to the node value field to modify.
+ * @param node_value_label  The enumerated node value label of the node
+ * parameter to evaluate.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_node_value_set_node_value_label(
+	cmzn_field_node_value_id node_value_field,
+	enum cmzn_node_value_label node_value_label);
+
+/**
+ * Get the version number of the node parameter to evaluate.
+ *
+ * @param node_value_field  Handle to the node value field to query.
+ * @return  Node parameter version number >= 1, or 0 if invalid field.
+ */
+ZINC_API int cmzn_field_node_value_get_version_number(
+	cmzn_field_node_value_id node_value_field);
+
+/**
+ * Set the version number of the node parameter to evaluate.
+ *
+ * @param node_value_field  Handle to the node value field to modify.
+ * @param version_number  The version number >= 1 of the node parameter to
+ * evaluate.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_node_value_set_version_number(
+	cmzn_field_node_value_id node_value_field, int version_number);
+
+/**
  * Creates a field which stores and returns mesh location values at nodes. Its
  * values consists of an element and coordinates in the element's local 'xi'
  * coordinate chart.
@@ -482,7 +560,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_stored_mesh_location_base_cast(
  *
  * @param stored_mesh_location_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_stored_mesh_location_destroy(
 	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address);
@@ -537,7 +615,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_stored_string_base_cast(
  *
  * @param stored_string_field_address  Address of handle to the field to
  * 		destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_stored_string_destroy(
 	cmzn_field_stored_string_id *stored_string_field_address);
@@ -563,6 +641,63 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 	cmzn_fieldmodule_id fieldmodule, cmzn_element_face_type face);
+
+/**
+ * Cast field to 'is on face' type if valid.
+ *
+ * @param field  The field to cast.
+ * @return  Handle to derived 'is on face' field, or NULL/invalid handle if
+ * wrong type or failed.
+ */
+ZINC_API cmzn_field_is_on_face_id cmzn_field_cast_is_on_face(cmzn_field_id field);
+
+/**
+ * Cast 'is on face' field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param is_on_face_field  Handle to the 'is on face' field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_is_on_face_base_cast(
+	cmzn_field_is_on_face_id is_on_face_field)
+{
+	return (cmzn_field_id)(is_on_face_field);
+}
+
+/**
+ * Destroys handle to the 'is on face' field (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param is_on_face_field_address  Address of handle to the field to
+ * destroy.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_is_on_face_destroy(
+	cmzn_field_is_on_face_id *is_on_face_field_address);
+
+/**
+ * Get the element face type.
+ *
+ * @param is_on_face_field  Handle to the 'is on face' field to query.
+ * @return  Face type in use or FACE_TYPE_INVALID if invalid field.
+ */
+ZINC_API enum cmzn_element_face_type cmzn_field_is_on_face_get_element_face_type(
+	cmzn_field_is_on_face_id is_on_face_field);
+
+/**
+ * Set the element face type.
+ *
+ * @param is_on_face_field  Handle to the 'is on face' field to modify.
+ * @param face  The enumerated face type, defined with respect to the
+ * top-level element.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_is_on_face_set_element_face_type(
+	cmzn_field_is_on_face_id is_on_face_field, enum cmzn_element_face_type face);
 
 /**
  * Creates a field whose value equals source field calculated at the lookup node
