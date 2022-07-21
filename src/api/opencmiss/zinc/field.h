@@ -15,6 +15,7 @@
 #include "types/elementid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
+#include "types/fieldrangeid.h"
 #include "types/fieldmoduleid.h"
 #include "types/fieldsmoothingid.h"
 #include "types/nodeid.h"
@@ -253,6 +254,23 @@ ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
 ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_differentialoperator_id differential_operator,
 	cmzn_fieldcache_id cache, int number_of_values, double *values);
+
+/**
+ * Evaluate range of field, currently limited to real-valued fields at
+ * element/mesh location.
+ *
+ * @param field  The field to evaluate range of. Must be real-valued.
+ * @param fieldcache  Store of location to evaluate at and intermediate field
+ * values. Must be for same region as field. Must have set an element or mesh
+ * location in the field cache.
+ * @param fieldrange  Field range to store result in. Must have been created
+ * from the same fieldcache as supplied here.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no range found including
+ * field not defined, ERROR_NOT_IMPLEMENTED if not an element location,
+ * otherwise ERROR_ARGUMENT including for non-numeric fields.
+ */
+ZINC_API int cmzn_field_evaluate_fieldrange(cmzn_field_id field,
+	cmzn_fieldcache_id fieldcache, cmzn_fieldrange_id fieldrange);
 
 /**
  * Get whether the field is marked as coordinate type i.e. appropriate for

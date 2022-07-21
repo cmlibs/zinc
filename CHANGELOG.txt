@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.9.0
+Add field evaluate range API.
+
 v3.8.1
 Fix read merge for embedded locations which corrupted element to embedded node map.
 Fix write description for fields with NOT_APPLICABLE coordinate system type.

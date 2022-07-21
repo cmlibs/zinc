@@ -121,12 +121,12 @@ like the number of components.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.hpp"
-#include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/differential_operator.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
+#include "computed_field/field_range.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
@@ -135,8 +135,7 @@ like the number of components.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
-#include "general/indexed_list_private.h"
-#include "general/list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
@@ -1635,6 +1634,17 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		return CMZN_ERROR_GENERAL;
 	}
 	display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Invalid arguments");
+	return CMZN_ERROR_ARGUMENT;
+}
+
+// External API
+int cmzn_field_evaluate_fieldrange(cmzn_field_id field,
+	cmzn_fieldcache_id fieldcache, cmzn_fieldrange_id fieldrange)
+{
+	if (fieldrange)
+	{
+		return fieldrange->evaluateRange(field, fieldcache);
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 

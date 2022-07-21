@@ -1,0 +1,64 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=2 (value,d/ds1)
+ y. #Values=2 (value,d/ds1)
+ z. #Values=2 (value,d/ds1)
+Node template: node1
+Node: 1
+  0.000000000000000e+00  2.861569934853468e-01
+  0.000000000000000e+00 -7.900462307048225e-01
+  0.000000000000000e+00  3.988797621273601e-01
+Node: 2
+  3.806523016504364e-01  5.153614884460700e-01
+ -2.350425673775524e-01  2.415928470133888e-01
+  3.341109284223114e-02 -2.044398338321870e-01
+Node: 3
+  6.280921582815427e-01 -2.990156328657830e-01
+  1.924711604302137e-01  5.750329696173155e-01
+  1.467353004367122e-01  3.395750156414464e-01
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1
+  2. #Values=2
+   Value labels: value d/ds1
+ y. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1
+  2. #Values=2
+   Value labels: value d/ds1
+ z. c.Hermite, no modify, standard node based.
+  #Nodes=2
+  1. #Values=2
+   Value labels: value d/ds1
+  2. #Values=2
+   Value labels: value d/ds1
+Element template: element1
+Element: 1
+ Nodes:
+ 1 2
+Element: 2
+ Nodes:
+ 2 3
+Group name: cmiss_selection
+!#nodeset nodes
+Node group:
+3
+Group name: marker
+Group name: meshEdits
+!#nodeset nodes
+Node group:
+1..3

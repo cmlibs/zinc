@@ -31,6 +31,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_cache.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_derivative.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_module.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_range.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/fieldassignmentprivate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/fieldparametersprivate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/fieldsmoothingprivate.cpp
@@ -64,6 +65,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_cache.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_derivative.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_module.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/field_range.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/fieldassignmentprivate.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/fieldparametersprivate.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/fieldsmoothingprivate.hpp

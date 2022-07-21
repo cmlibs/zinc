@@ -284,7 +284,7 @@ Global functions
 */
 
 int FE_element_shape_get_xi_points_cell_centres(
-	struct FE_element_shape *element_shape, int *number_in_xi,
+	struct FE_element_shape *element_shape, const int *number_in_xi,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 /*******************************************************************************
 LAST MODIFIED : 24 April 2001
@@ -527,7 +527,7 @@ comments for simplex and polygons shapes for more details.
 } /* FE_element_shape_get_xi_points_cell_centres */
 
 int FE_element_shape_get_xi_points_cell_corners(
-	struct FE_element_shape *element_shape, int *number_in_xi,
+	struct FE_element_shape *element_shape, const int *number_in_xi,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 /*******************************************************************************
 LAST MODIFIED : 23 April 2001
@@ -1306,7 +1306,7 @@ array is enlarged if necessary and the new points added at random locations.
 } /* FE_element_add_xi_points_2d_square_cell_random */
 
 static int FE_element_add_xi_points_3d_cube_cell_random(
-	struct FE_element	*element,
+	struct FE_element *element,
 	cmzn_element_point_sampling_mode sampling_mode,
 	enum FE_element_shape_category element_shape_category,
 	FE_value *centre_xi, FE_value *dxi, cmzn_fieldcache_id field_cache,
@@ -1541,7 +1541,7 @@ array is enlarged if necessary and the new points added at random locations.
 } /* FE_element_add_xi_points_3d_cube_cell_random */
 
 static int FE_element_get_xi_points_cell_random(struct FE_element *element,
-	cmzn_element_point_sampling_mode sampling_mode, int *number_in_xi,
+	cmzn_element_point_sampling_mode sampling_mode, const int *number_in_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points_address,
 	FE_value_triple **xi_points_address)
@@ -1874,7 +1874,7 @@ fields, required for DENSITY and POISSON modes.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	cmzn_element_point_sampling_mode sampling_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
+	const int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 {
@@ -2115,7 +2115,7 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	cmzn_element_point_sampling_mode sampling_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
+	const int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi)
 {

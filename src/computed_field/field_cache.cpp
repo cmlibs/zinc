@@ -13,6 +13,7 @@
 #include "opencmiss/zinc/field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/field_module.hpp"
+#include "computed_field/field_range.hpp"
 #include "finite_element/finite_element.h"
 #include "general/message.h"
 #include "general/mystring.h"
@@ -165,6 +166,19 @@ cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region *regionIn)
 	return 0;
 }
 
+void cmzn_fieldcache::deaccess(cmzn_fieldcache*& fieldcache)
+{
+	if (fieldcache)
+	{
+		--(fieldcache->access_count);
+		if (fieldcache->access_count <= 0)
+		{
+			delete fieldcache;
+		}
+		fieldcache = nullptr;
+	}
+}
+
 void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
 {
 	switch (source.location->get_type())
@@ -313,11 +327,14 @@ cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache)
 	return 0;
 }
 
-int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address)
+int cmzn_fieldcache_destroy(cmzn_fieldcache_id *fieldcache_address)
 {
-	if (!cache_address)
-		return CMZN_ERROR_ARGUMENT;
-	return cmzn_fieldcache::deaccess(*cache_address);
+	if (fieldcache_address)
+	{
+		cmzn_fieldcache::deaccess(*fieldcache_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_clear_location(cmzn_fieldcache_id cache)
@@ -328,6 +345,12 @@ int cmzn_fieldcache_clear_location(cmzn_fieldcache_id cache)
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_fieldrange_id cmzn_fieldcache_create_fieldrange(
+	cmzn_fieldcache_id fieldcache)
+{
+	return cmzn_fieldrange::create(fieldcache);
 }
 
 int cmzn_fieldcache_set_time(cmzn_fieldcache_id cache, double time)
