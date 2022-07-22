@@ -1017,7 +1017,7 @@ bool cmzn_region::canMerge(cmzn_region& sourceRegion)
 	}
 
 	// check child regions can be merged
-	cmzn_region *sourceChild = this->getFirstChild();
+	cmzn_region *sourceChild = sourceRegion.getFirstChild();
 	while (sourceChild)
 	{
 		cmzn_region *targetChild = this->findChildByName(sourceChild->getName());

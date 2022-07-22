@@ -2,6 +2,7 @@ CHANGE LOG: OpenCMISS-Zinc Library
 
 v3.9.0
 Add field evaluate range API.
+Fix pre-merge checks of subregions when reading models.
 
 v3.8.1
 Fix read merge for embedded locations which corrupted element to embedded node map.
