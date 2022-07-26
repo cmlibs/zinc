@@ -97,6 +97,7 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 	}
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], lastXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value xiDir[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value xiDirMod[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	for (int i = 0; i < meshDimension; ++i)
 	{
 		lastXi[i] = xi[i] = initialXi[i];
@@ -154,10 +155,11 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 		}
 		// step in direction of d1 (or reverse if findMinimum)
 		FE_value x = findMinimum ? -maxDeltaXi : maxDeltaXi;
-		if (((a > 0.0) && findMinimum) || ((a < 0.0) && (!findMinimum)))
+		const bool findExtremum = ((a > 0.0) && findMinimum) || ((a < 0.0) && (!findMinimum));
+		if (findExtremum)
 		{
-			// minimum/maximum is at point where quadratic equation ax^2 + bx has zero slope:
-			x = -b / (2.0 * a);
+			// minimum/maximum is at point where quadratic equation of Taylor series u = c + bx + 0.5ax^2 has zero slope:
+			x = -b / a;
 			// limit xi increment
 			if (x < -maxDeltaXi)
 			{
@@ -173,14 +175,60 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 			xi[i] += x * xiDir[i];
 		}
 		FE_element_shape_limit_xi_to_element(elementShape, xi, /*tolerance*/0.0);
-		++iter;
-		if (fabs(x) < xiTolerance)
+		FE_value dxi = 0.0;
+		for (int i = 0; i < meshDimension; ++i)
 		{
-			display_message(INFORMATION_MESSAGE, "Field evaluateRange.  Field %s component %d find %s in element %d "
-				"converged by increment within tolerance in %d iterations", field->name, componentIndex + 1,
-				findMinimum ? "minimum" : "maximum", element->getIdentifier(), iter);
-			break;
+			xiDirMod[i] = xi[i] - lastXi[i];  // actual direction of increment
+			dxi += xiDirMod[i] * xiDirMod[i];
 		}
+		dxi = sqrt(dxi);
+		const FE_value xMag = fabs(x);
+		if ((dxi > (0.01 * xiTolerance)) && (dxi < (0.25 * xMag)))
+		{
+			for (int i = 0; i < meshDimension; ++i)
+			{
+				xiDirMod[i] /= dxi;
+			}
+			// xi increment limited on edge; re-solve on xiDirMod
+			FE_value bMod = 0.0;  // first derivative in direction of xiDirMod
+			for (int i = 0; i < meshDimension; ++i)
+			{
+				bMod += d1[i] * xiDirMod[i];
+			}
+			if (bMod == 0.0)
+			{
+				break;  // no variation of field with location, use this location
+			}
+			FE_value aMod = 0.0;  // get second derivative in direction of xiDirMod
+			for (int i = 0; i < meshDimension; ++i)
+			{
+				for (int j = 0; j < meshDimension; ++j)
+				{
+					aMod += d2[j * meshDimension + i] * xiDirMod[i] * xiDirMod[j];
+				}
+			}
+			FE_value xMod = findMinimum ? -maxDeltaXi : maxDeltaXi;
+			if (((aMod > 0.0) && findMinimum) || ((aMod < 0.0) && (!findMinimum)))
+			{
+				// minimum/maximum is at point where quadratic equation of Taylor series u = c + bx + 0.5ax^2 has zero slope:
+				xMod = -bMod / aMod;
+				// limit xi increment
+				if (xMod < -maxDeltaXi)
+				{
+					xMod = -maxDeltaXi;
+				}
+				else if (xMod > maxDeltaXi)
+				{
+					xMod = maxDeltaXi;
+				}
+			}
+			for (int i = 0; i < meshDimension; ++i)
+			{
+				xi[i] = lastXi[i] + xMod * xiDirMod[i];
+			}
+			FE_element_shape_limit_xi_to_element(elementShape, xi, /*tolerance*/0.0);
+		}
+		++iter;
 		bool sameXi = true;
 		for (int i = 0; i < meshDimension; ++i)
 		{
