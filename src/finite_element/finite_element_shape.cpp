@@ -2038,6 +2038,40 @@ are modified to put it on the nearest face.
 					xi[simplex_direction[i]] -= delta;
 				}
 			}
+			if (simplex_dimensions == 3)
+			{
+				// correct a single negative xi component where sum of other two must be <= 1
+				if ((xi[0] < -tolerance) && (xi[1] > 0.0) && (xi[2] > 0.0))
+				{
+					delta = -1.0 - tolerance + xi[simplex_direction[1]] + xi[simplex_direction[2]];
+					if (delta > 0.0)
+					{
+						delta *= 0.5;
+						xi[simplex_direction[1]] -= delta;
+						xi[simplex_direction[2]] -= delta;
+					}
+				}
+				else if ((xi[1] < -tolerance) && (xi[0] > 0.0) && (xi[2] > 0.0))
+				{
+					delta = -1.0 - tolerance + xi[simplex_direction[0]] + xi[simplex_direction[2]];
+					if (delta > 0.0)
+					{
+						delta *= 0.5;
+						xi[simplex_direction[0]] -= delta;
+						xi[simplex_direction[2]] -= delta;
+					}
+				}
+				else if ((xi[2] < -tolerance) && (xi[0] > 0.0) && (xi[1] > 0.0))
+				{
+					delta = -1.0 - tolerance + xi[simplex_direction[0]] + xi[simplex_direction[1]];
+					if (delta > 0.0)
+					{
+						delta *= 0.5;
+						xi[simplex_direction[0]] -= delta;
+						xi[simplex_direction[1]] -= delta;
+					}
+				}
+			}
 		}
 		/* keep xi within 0.0 to 1.0 bounds plus tolerance */
 		for (i = 0; i < shape->dimension; i++)
