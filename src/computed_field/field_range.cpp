@@ -240,9 +240,9 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 		}
 		if (sameXi)
 		{
-			display_message(INFORMATION_MESSAGE, "Field evaluateRange.  Field %s component %d find %s in element %d "
-				"converged by xi change within tolerance in %d iterations", field->name, componentIndex + 1,
-				findMinimum ? "minimum" : "maximum", element->getIdentifier(), iter);
+			//display_message(INFORMATION_MESSAGE, "Field evaluateRange.  Field %s component %d find %s in element %d "
+			//	"converged by xi change within tolerance in %d iterations", field->name, componentIndex + 1,
+			//	findMinimum ? "minimum" : "maximum", element->getIdentifier(), iter);
 			break;
 		}
 		if (iter == 100)
