@@ -43,7 +43,7 @@
 
 #include "zinctestsetup.hpp"
 
-TEST(cmzn_fieldmodule_create_field_derivative, invalid_args)
+TEST(cmzn_field_derivative, invalid_args)
 {
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
@@ -52,27 +52,42 @@ TEST(cmzn_fieldmodule_create_field_derivative, invalid_args)
 	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), fm);
 
 	cmzn_field_id f0 = cmzn_fieldmodule_create_field_derivative(0, 0, 0);
-	EXPECT_EQ(0, f0);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), f0);
 
 	cmzn_field_id f1 = cmzn_fieldmodule_create_field_derivative(fm, 0, 2);
-	EXPECT_EQ(0, f1);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), f1);
 
-	double values[] = {6.0, 1.0, 2.5};
+	const double values[] = {6.0, 1.0, 2.5};
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_constant(fm, 3, values);
+	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
 
 	cmzn_field_id f3 = cmzn_fieldmodule_create_field_derivative(fm, f2, -1);
-	EXPECT_EQ(0, f3);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), f3);
+
+	cmzn_field_id f4 = cmzn_fieldmodule_create_field_derivative(fm, f2, 1);
+	EXPECT_NE(static_cast<cmzn_field *>(0), f4);
+
+	EXPECT_EQ(static_cast<cmzn_field_derivative *>(0), cmzn_field_cast_derivative(nullptr));
+	EXPECT_EQ(static_cast<cmzn_field_derivative *>(0), cmzn_field_cast_derivative(f2));
+	cmzn_field_derivative_id f4d = cmzn_field_cast_derivative(f4);
+	EXPECT_NE(static_cast<cmzn_field_derivative *>(0), f4d);
+
+	EXPECT_EQ(0, cmzn_field_derivative_get_xi_index(nullptr));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_field_derivative_set_xi_index(nullptr, 1));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_field_derivative_set_xi_index(f4d, 0));
 
 	cmzn_field_destroy(&f0);
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_field_destroy(&f3);
+	cmzn_field_destroy(&f4);
+	cmzn_field_derivative_destroy(&f4d);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
 }
 
-TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
+TEST(cmzn_field_derivative, valid_args)
 {
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
@@ -98,7 +113,7 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	cmzn_element_id el = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
-	double xi[] = {0.6, 0.2, 0.45};
+	const double xi[] = {0.6, 0.2, 0.45};
 	result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi);
 	EXPECT_EQ(CMZN_OK, result);
 
@@ -113,15 +128,137 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
 	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
 
+	const double scale[] = { 2.2, 0.75, 1.5 };
+	ft = cmzn_fieldmodule_create_field_constant(fm, 3, scale);
+	EXPECT_NE(static_cast<cmzn_field *>(0), ft);
+	cmzn_field_id f3 = cmzn_fieldmodule_create_field_multiply(fm, f1, ft);
+	EXPECT_NE(static_cast<cmzn_field *>(0), f3);
+	cmzn_field_destroy(&ft);
+	cmzn_field_id f4 = cmzn_fieldmodule_create_field_derivative(fm, f3, 1);
+	EXPECT_NE(static_cast<cmzn_field *>(0), f4);
+
+	// test type-specific functions and evaluation after modifying
+	cmzn_field_derivative_id f4d = cmzn_field_cast_derivative(f4);
+	EXPECT_NE(static_cast<cmzn_field_derivative *>(0), f4d);
+	EXPECT_EQ(1, cmzn_field_derivative_get_xi_index(f4d));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f4, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(scale[0], outvalues[0]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
+	EXPECT_EQ(CMZN_OK, cmzn_field_derivative_set_xi_index(f4d, 2));
+	EXPECT_EQ(2, cmzn_field_derivative_get_xi_index(f4d));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f4, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(0.0, outvalues[0]);
+	EXPECT_DOUBLE_EQ(scale[1], outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
+
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
-	cmzn_field_destroy(&ft);
+	cmzn_field_destroy(&f3);
+	cmzn_field_destroy(&f4);
+	cmzn_field_derivative_destroy(&f4d);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
+}
+
+TEST(ZincFieldDerivative, invalid_args)
+{
+	Context context("test");
+	Region rootRegion = context.getDefaultRegion();
+	Fieldmodule fm = rootRegion.getFieldmodule();
+	EXPECT_TRUE(fm.isValid());
+
+	Fieldmodule noFm;
+	FieldDerivative f0 = noFm.createFieldDerivative(Field(), 0);
+	EXPECT_FALSE(f0.isValid());
+
+	FieldDerivative f1 = fm.createFieldDerivative(Field(), 2);
+	EXPECT_FALSE(f1.isValid());
+
+	const double values[] = { 6.0, 1.0, 2.5 };
+	FieldConstant f2 = fm.createFieldConstant(3, values);
+	EXPECT_TRUE(f2.isValid());
+
+	EXPECT_FALSE(noFm.createFieldDerivative(f2, 1).isValid());
+	EXPECT_FALSE(fm.createFieldDerivative(Field(), 1).isValid());
+	EXPECT_FALSE(fm.createFieldDerivative(Field(), 0).isValid());
+
+	FieldDerivative f4 = fm.createFieldDerivative(f2, 1);
+	EXPECT_TRUE(f4.isValid());
+
+	EXPECT_FALSE(Field().castDerivative().isValid());
+	EXPECT_FALSE(f2.castDerivative().isValid());
+	EXPECT_EQ(0, FieldDerivative().getXiIndex());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, FieldDerivative().setXiIndex(1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, f4.setXiIndex(0));
+}
+
+TEST(ZincFieldDerivative, valid_args)
+{
+	Context context("test");
+	Region rootRegion = context.getDefaultRegion();
+	Fieldmodule fm = rootRegion.getFieldmodule();
+	EXPECT_TRUE(fm.isValid());
+
+	EXPECT_EQ(RESULT_OK, rootRegion.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Field f1 = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(f1.isValid());
+
+	Field ft = fm.findFieldByName("xi");
+	EXPECT_TRUE(ft.isValid());
+
+	Field f2 = fm.createFieldDerivative(f1, 1);
+	EXPECT_TRUE(f2.isValid());
+
+	Fieldcache fc = fm.createFieldcache();
+
+	Mesh mesh = fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh.isValid());
+
+	Element el = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(el.isValid());
+
+	const double xi[] = { 0.6, 0.2, 0.45 };
+	EXPECT_EQ(RESULT_OK, fc.setMeshLocation(el, 3, xi));
+
+	double outvalues[3];
+	EXPECT_EQ(RESULT_OK, f1.evaluateReal(fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(xi[0], outvalues[0]);
+	EXPECT_DOUBLE_EQ(xi[1], outvalues[1]);
+	EXPECT_DOUBLE_EQ(xi[2], outvalues[2]);
+
+	EXPECT_EQ(RESULT_OK, f2.evaluateReal(fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(1.0, outvalues[0]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
+
+	const double scale[] = { 2.2, 0.75, 1.5 };
+	ft = fm.createFieldConstant(3, scale);
+	EXPECT_TRUE(ft.isValid());
+	FieldMultiply f3 = f1 * ft;
+	EXPECT_TRUE(f3.isValid());
+	FieldDerivative f4 = fm.createFieldDerivative(f3, 1);
+	EXPECT_TRUE(f4.isValid());
+
+	// test type-specific functions and evaluation after modifying
+	ft = f4;
+	EXPECT_EQ(f4, ft.castDerivative());
+	EXPECT_EQ(1, f4.getXiIndex());
+	EXPECT_EQ(RESULT_OK, f4.evaluateReal(fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(scale[0], outvalues[0]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
+	EXPECT_EQ(RESULT_OK, f4.setXiIndex(2));
+	EXPECT_EQ(2, f4.getXiIndex());
+	EXPECT_EQ(RESULT_OK, f4.evaluateReal(fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(0.0, outvalues[0]);
+	EXPECT_DOUBLE_EQ(scale[1], outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
 }
 
 TEST(cmzn_fieldmodule_create_field_curl, invalid_args)

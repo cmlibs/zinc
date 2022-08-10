@@ -134,6 +134,30 @@ public:
 		return this->field->setSourceField(1, elementMapField);
 	}
 
+	/** @return  Non-accessed nodeset */
+	cmzn_nodeset *getNodeset() const
+	{
+		return this->nodeset;
+	}
+
+	/** @return  Result OK on success, ERROR_ARGUMENT if nodeset missing or from wrong region */
+	int setNodeset(cmzn_nodeset *nodesetIn)
+	{
+		if ((!nodesetIn) || (cmzn_nodeset_get_region_internal(nodesetIn) != this->field->getRegion()))
+		{
+			display_message(ERROR_MESSAGE, "FieldNodesetOperator setNodeset:  Invalid nodeset");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		if (!cmzn_nodeset_match(this->nodeset, nodesetIn))
+		{
+			cmzn_nodeset *oldNodeset = this->nodeset;
+			this->nodeset = cmzn_nodeset_access(nodesetIn);
+			cmzn_nodeset_destroy(&oldNodeset);
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
+
 protected:
 	template <class TermOperator> int evaluateNodesetOperator(cmzn_fieldcache& cache, FieldValueCache& inValueCache, TermOperator& tempOperator);
 	template <class TermOperator> int evaluateDerivativeNodesetOperator(cmzn_fieldcache& cache, FieldValueCache& inValueCache,
@@ -301,6 +325,11 @@ public:
 		return new Computed_field_nodeset_sum(nodeset);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODESET_SUM;
+	}
+
 	const char *get_type_string()
 	{
 		return (computed_field_nodeset_sum_type_string);
@@ -375,6 +404,11 @@ public:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_nodeset_mean(nodeset);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODESET_MEAN;
 	}
 
 	const char *get_type_string()
@@ -461,6 +495,11 @@ public:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_nodeset_sum_squares(nodeset);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODESET_SUM_SQUARES;
 	}
 
 	const char *get_type_string()
@@ -646,6 +685,11 @@ public:
 		return new Computed_field_nodeset_mean_squares(nodeset);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES;
+	}
+
 	const char *get_type_string()
 	{
 		return (computed_field_nodeset_mean_squares_type_string);
@@ -757,6 +801,11 @@ public:
 		return new Computed_field_nodeset_minimum(nodeset);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODESET_MINIMUM;
+	}
+
 	const char *get_type_string()
 	{
 		return (computed_field_nodeset_minimum_type_string);
@@ -839,6 +888,11 @@ public:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_nodeset_maximum(nodeset);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODESET_MAXIMUM;
 	}
 
 	const char *get_type_string()
@@ -960,6 +1014,31 @@ int cmzn_field_nodeset_operator_set_element_map_field(
 	return nodeset_operator_core->setElementMapField(element_map_field);
 }
 
+cmzn_nodeset_id cmzn_field_nodeset_operator_get_nodeset(
+	cmzn_field_nodeset_operator_id nodeset_operator_field)
+{
+	if (nodeset_operator_field)
+	{
+		Computed_field_nodeset_operator *nodeset_operator_core =
+			Computed_field_nodeset_operator_core_cast(nodeset_operator_field);
+		return cmzn_nodeset_access(nodeset_operator_core->getNodeset());
+	}
+	return nullptr;
+}
+
+int cmzn_field_nodeset_operator_set_nodeset(
+	cmzn_field_nodeset_operator_id nodeset_operator_field,
+	cmzn_nodeset_id nodeset)
+{
+	if (nodeset_operator_field)
+	{
+		Computed_field_nodeset_operator *nodeset_operator_core =
+			Computed_field_nodeset_operator_core_cast(nodeset_operator_field);
+		return nodeset_operator_core->setNodeset(nodeset);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
 	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
@@ -1073,18 +1152,3 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
 	}
 	return field;
 }
-
-int cmzn_field_is_valid_nodeset_operator_element_map(cmzn_field_id field, void *)
-{
-	if (field)
-	{
-		cmzn_field_stored_mesh_location *stored_mesh_location = cmzn_field_cast_stored_mesh_location(field);
-		if (stored_mesh_location)
-		{
-			cmzn_field_stored_mesh_location_destroy(&stored_mesh_location);
-			return 1;
-		}
-	}
-	return 0;
-}
-

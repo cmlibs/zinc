@@ -36,6 +36,16 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_mesh_integral_id))
 	{	}
 
+	Mesh getMesh() const
+	{
+		return Mesh(cmzn_field_mesh_integral_get_mesh(this->getDerivedId()));
+	}
+
+	int setMesh(const Mesh& mesh)
+	{
+		return cmzn_field_mesh_integral_set_mesh(this->getDerivedId(), mesh.getId());
+	}
+
 	int getNumbersOfPoints(int valuesCount, int *valuesOut) const
 	{
 		return cmzn_field_mesh_integral_get_numbers_of_points(getDerivedId(),

@@ -245,6 +245,10 @@ TEST(NodesetOperators, args)
 	EXPECT_TRUE(mesh.isValid());
 	FieldStoredMeshLocation storedMeshLocation = zinc.fm.createFieldStoredMeshLocation(mesh);
 	EXPECT_TRUE(storedMeshLocation.isValid());
+	FieldNodeGroup nodeGroup = zinc.fm.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(nodeGroup.isValid());
+	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
 
 	Field noField;
 	Nodeset noNodeset;
@@ -255,14 +259,23 @@ TEST(NodesetOperators, args)
 	EXPECT_FALSE(nodesetSum.isValid());
 	nodesetSum = zinc.fm.createFieldNodesetSum(constant, nodeset);
 	EXPECT_TRUE(nodesetSum.isValid());
+	EXPECT_FALSE(nodesetSum.getElementMapField().isValid());
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nodesetSum.setElementMapField(constant));
 	EXPECT_EQ(RESULT_OK, nodesetSum.setElementMapField(storedMeshLocation));
 	EXPECT_EQ(storedMeshLocation, nodesetSum.getElementMapField());
+
+	EXPECT_EQ(nodeset, nodesetSum.getNodeset());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nodesetSum.setNodeset(noNodeset));
+	EXPECT_EQ(RESULT_OK, nodesetSum.setNodeset(nodesetGroup));
+	EXPECT_EQ(nodesetGroup, nodesetSum.getNodeset());
 
 	Field field1 = nodesetSum;
 	FieldNodesetOperator tmpNodesetSum = field1.castNodesetOperator();
 	EXPECT_EQ(nodesetSum, tmpNodesetSum);
 	EXPECT_EQ(storedMeshLocation, tmpNodesetSum.getElementMapField());
+
+	EXPECT_EQ(RESULT_OK, nodesetSum.setElementMapField(noField));
+	EXPECT_FALSE(nodesetSum.getElementMapField().isValid());
 }
 
 // Test evaluation of all nodeset operators with combinations of embedded nodes and groups
@@ -294,53 +307,43 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	for (int i = 1; i <= 7; i += 2)
 		EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(nodeset.findNodeByIdentifier(i)));
 
-	FieldNodesetOperator nodesetOperators[24];
-	int f = 0;
-	for (int i = 0; i < 6; ++i)
-		for (int j = 0; j < 4; ++j)
-		{
-			Nodeset& useNodeset = (j % 2) ? nodesetGroup : nodeset;
-			if (i == 0)
-				nodesetOperators[f] = zinc.fm.createFieldNodesetSum(cmissNumber, useNodeset);
-			else if (i == 1)
-				nodesetOperators[f] = zinc.fm.createFieldNodesetMean(cmissNumber, useNodeset);
-			else if (i == 2)
-				nodesetOperators[f] = zinc.fm.createFieldNodesetSumSquares(cmissNumber, useNodeset);
-			else if (i == 3)
-				nodesetOperators[f] = zinc.fm.createFieldNodesetMeanSquares(cmissNumber, useNodeset);
-			else if (i == 4)
-				nodesetOperators[f] = zinc.fm.createFieldNodesetMinimum(cmissNumber, useNodeset);
-			else  // (i == 5)
-				nodesetOperators[f] = zinc.fm.createFieldNodesetMaximum(cmissNumber, useNodeset);
-			EXPECT_TRUE(nodesetOperators[f].isValid());
-			if (j >= 2)
-			{
-				EXPECT_EQ(RESULT_OK, nodesetOperators[f].setElementMapField(hostLocation));
-			}
-			++f;
-		}
+	FieldNodesetOperator nodesetOperators[6] =
+	{
+		zinc.fm.createFieldNodesetSum(cmissNumber, nodeset),
+		zinc.fm.createFieldNodesetMean(cmissNumber, nodeset),
+		zinc.fm.createFieldNodesetSumSquares(cmissNumber, nodeset),
+		zinc.fm.createFieldNodesetMeanSquares(cmissNumber, nodeset),
+		zinc.fm.createFieldNodesetMinimum(cmissNumber, nodeset),
+		zinc.fm.createFieldNodesetMaximum(cmissNumber, nodeset)
+	};
 	Fieldcache fieldcache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(fieldcache.isValid());
 	EXPECT_EQ(RESULT_OK, fieldcache.setElement(element));
+	Field noField;
 	const double TOL = 1.0E-7;
-	const double expectedValues1[24] =
+	const double expectedValues1[6][4] =
 	{
-		//all, group, element, element & group
-		 36.0,  16.0,  26.0,  12.0,  // Sum
-		  4.5,   4.0,   6.5,   6.0,  // Mean
-		204.0,  84.0, 174.0,  74.0,  // SumSquares
-		 25.5,  21.0,  43.5,  37.0,  // MeanSquares
-		  1.0,   1.0,   5.0,   5.0,  // Minimum
-		  8.0,   7.0,   8.0,   7.0,  // Maximum
+		// all, group, element, element & group
+		{  36.0,  16.0,  26.0,  12.0 },  // Sum
+		{   4.5,   4.0,   6.5,   6.0 },  // Mean
+		{ 204.0,  84.0, 174.0,  74.0 },  // SumSquares
+		{  25.5,  21.0,  43.5,  37.0 },  // MeanSquares
+		{   1.0,   1.0,   5.0,   5.0 },  // Minimum
+		{   8.0,   7.0,   8.0,   7.0 }   // Maximum
 	};
-	double values[24];
+	double value;
 	int result;
-	for (f = 0; f < 24; ++f)
+	for (int f = 0; f < 6; ++f)
 	{
-		//std::cerr << "f " << f << "\n";
-		result = nodesetOperators[f].evaluateReal(fieldcache, 1, values + f);
-		EXPECT_EQ(RESULT_OK, result);
-		EXPECT_NEAR(expectedValues1[f], values[f], TOL);
+		for (int j = 0; j < 4; ++j)
+		{
+			//std::cerr << "f " << f << "j" << j << "\n";
+			EXPECT_EQ(RESULT_OK, nodesetOperators[f].setNodeset((j % 2) ? nodesetGroup : nodeset));
+			EXPECT_EQ(RESULT_OK, nodesetOperators[f].setElementMapField((j >= 2) ? hostLocation : noField));
+			result = nodesetOperators[f].evaluateReal(fieldcache, 1, &value);
+			EXPECT_EQ(RESULT_OK, result);
+			EXPECT_NEAR(expectedValues1[f][j], value, TOL);
+		}
 	}
 
 	// destroy node 5 and remove node 7 from group and check new answers
@@ -348,28 +351,33 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	EXPECT_EQ(RESULT_OK, nodesetGroup.removeNode(nodeset.findNodeByIdentifier(7)));
 
 	// expectedValue -1.0 used where no result expected
-	const double expectedValues2[24] =
+	const double expectedValues2[6][4] =
 	{
-		//all, group, element, element & group
-		 31.0,   4.0,  21.0,   0.0,  // Sum
-		 31.0/7.0,   2.0,   7.0,  -1.0,  // Mean
-		179.0,  10.0, 149.0,   0.0,  // SumSquares
-		179.0/7.0,   5.0, 149.0/3.0,  -1.0,  // MeanSquares
-		  1.0,   1.0,   6.0,  -1.0,  // Minimum
-		  8.0,   3.0,   8.0,  -1.0,  // Maximum
+		// all, group, element, element & group
+		{  31.0,      4.0,      21.0,  0.0 },  // Sum
+		{  31.0/7.0,  2.0,       7.0, -1.0 },  // Mean
+		{     179.0, 10.0,     149.0,  0.0 },  // SumSquares
+		{ 179.0/7.0,  5.0, 149.0/3.0, -1.0 },  // MeanSquares
+		{       1.0,  1.0,       6.0, -1.0 },  // Minimum
+		{       8.0,  3.0,       8.0, -1.0 }   // Maximum
 	};
-	for (f = 0; f < 24; ++f)
+	for (int f = 0; f < 6; ++f)
 	{
-		//std::cerr << "f " << f << "\n";
-		result = nodesetOperators[f].evaluateReal(fieldcache, 1, values + f);
-		if (expectedValues2[f] < 0.0)
+		for (int j = 0; j < 4; ++j)
 		{
-			EXPECT_EQ(RESULT_ERROR_GENERAL, result);
-		}
-		else
-		{
-			EXPECT_EQ(RESULT_OK, result);
-			EXPECT_NEAR(expectedValues2[f], values[f], TOL);
+			//std::cerr << "f " << f << "j" << j << "\n";
+			EXPECT_EQ(RESULT_OK, nodesetOperators[f].setNodeset((j % 2) ? nodesetGroup : nodeset));
+			EXPECT_EQ(RESULT_OK, nodesetOperators[f].setElementMapField((j >= 2) ? hostLocation : noField));
+			result = nodesetOperators[f].evaluateReal(fieldcache, 1, &value);
+			if (expectedValues2[f][j] < 0.0)
+			{
+				EXPECT_EQ(RESULT_ERROR_GENERAL, result);
+			}
+			else
+			{
+				EXPECT_EQ(RESULT_OK, result);
+				EXPECT_NEAR(expectedValues2[f][j], value, TOL);
+			}
 		}
 	}
 }

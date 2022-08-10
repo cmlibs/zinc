@@ -112,6 +112,16 @@ public:
 
 	int merge(const Nodetemplate& nodeTemplate);
 
+	static ValueLabel ValueLabelEnumFromString(const char *name)
+	{
+		return static_cast<ValueLabel>(cmzn_node_value_label_enum_from_string(name));
+	}
+
+	static char *ValueLabelEnumToString(ValueLabel valueLabel)
+	{
+		return cmzn_node_value_label_enum_to_string(static_cast<cmzn_node_value_label>(valueLabel));
+	}
+
 };
 
 inline bool operator==(const Node& a, const Node& b)

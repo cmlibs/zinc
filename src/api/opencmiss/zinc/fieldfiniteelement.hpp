@@ -193,17 +193,42 @@ public:
 class FieldNodeValue : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodeValue(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField,
-		Node::ValueLabel nodeValueLabel, int versionNumber);
+	inline cmzn_field_node_value_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_node_value_id>(this->id);
+	}
 
 public:
 
 	FieldNodeValue() : Field(0)
 	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeValue(cmzn_field_node_value_id field_node_value_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_node_value_id))
+	{	}
+
+	Node::ValueLabel getNodeValueLabel() const
+	{
+		return static_cast<Node::ValueLabel>(
+			cmzn_field_node_value_get_node_value_label(this->getDerivedId()));
+	}
+
+	int setNodeValueLabel(Node::ValueLabel nodeValueLabel)
+	{
+		return cmzn_field_node_value_set_node_value_label(this->getDerivedId(),
+			static_cast<cmzn_node_value_label>(nodeValueLabel));
+	}
+
+	int getVersionNumber() const
+	{
+		return cmzn_field_node_value_get_version_number(this->getDerivedId());
+	}
+
+	int setVersionNumber(int versionNumber)
+	{
+		return cmzn_field_node_value_set_version_number(this->getDerivedId(), versionNumber);
+	}
 
 };
 
@@ -262,16 +287,33 @@ public:
 class FieldIsOnFace : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldIsOnFace(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldIsOnFace Fieldmodule::createFieldIsOnFace(Element::FaceType face);
+	inline cmzn_field_is_on_face_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_is_on_face_id>(this->id);
+	}
 
 public:
 
 	FieldIsOnFace() : Field(0)
 	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIsOnFace(cmzn_field_is_on_face_id field_is_on_face_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_is_on_face_id))
+	{ }
+
+	Element::FaceType getElementFaceType() const
+	{
+		return static_cast<Element::FaceType>(
+			cmzn_field_is_on_face_get_element_face_type(this->getDerivedId()));
+	}
+
+	int setElementFaceType(Element::FaceType face)
+	{
+		return cmzn_field_is_on_face_set_element_face_type(this->getDerivedId(),
+			static_cast<cmzn_element_face_type>(face));
+	}
+
 };
 
 class FieldNodeLookup : public Field
@@ -336,9 +378,14 @@ inline FieldFindMeshLocation Field::castFindMeshLocation()
 inline FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField,
 	Node::ValueLabel nodeValueLabel, int versionNumber)
 {
-	return FieldNodeValue(cmzn_fieldmodule_create_field_node_value(id,
-		sourceField.getId(), static_cast<cmzn_node_value_label>(nodeValueLabel),
-		versionNumber));
+	return FieldNodeValue(reinterpret_cast<cmzn_field_node_value_id>(
+		cmzn_fieldmodule_create_field_node_value(this->id, sourceField.getId(),
+			static_cast<cmzn_node_value_label>(nodeValueLabel), versionNumber)));
+}
+
+inline FieldNodeValue Field::castNodeValue()
+{
+	return FieldNodeValue(cmzn_field_cast_node_value(this->id));
 }
 
 inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& hostMesh)
@@ -370,8 +417,14 @@ inline FieldIsExterior Fieldmodule::createFieldIsExterior()
 
 inline FieldIsOnFace Fieldmodule::createFieldIsOnFace(Element::FaceType face)
 {
-	return FieldIsOnFace(cmzn_fieldmodule_create_field_is_on_face(
-		id, static_cast<cmzn_element_face_type>(face)));
+	return FieldIsOnFace(reinterpret_cast<cmzn_field_is_on_face_id>(
+		cmzn_fieldmodule_create_field_is_on_face(this->id,
+			static_cast<cmzn_element_face_type>(face))));
+}
+
+inline FieldIsOnFace Field::castIsOnFace()
+{
+	return FieldIsOnFace(cmzn_field_cast_is_on_face(this->id));
 }
 
 inline FieldNodeLookup Fieldmodule::createFieldNodeLookup(const Field& sourceField,
