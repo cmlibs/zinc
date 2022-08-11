@@ -18,6 +18,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_find_xi_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/fieldparametersprivate.hpp"
@@ -3353,17 +3354,63 @@ class Computed_field_find_mesh_location;
 // is cleared. Stores owning field to support this; should all FieldValueCaches do this?
 class FindMeshLocationFieldValueCache : public MeshLocationFieldValueCache
 {
-	Computed_field_find_mesh_location* findMeshLocationField;
+	Computed_field_find_element_xi_cache *findElementXiCache;
 
 public:
 
-	FindMeshLocationFieldValueCache(Computed_field_find_mesh_location* findMeshLocationFieldIn) :
+	FindMeshLocationFieldValueCache() :
 		MeshLocationFieldValueCache(),
-		findMeshLocationField(findMeshLocationFieldIn)
+		findElementXiCache(nullptr)
 	{
 	}
 
-	virtual void clear();
+	~FindMeshLocationFieldValueCache()
+	{
+		if (this->findElementXiCache)
+		{
+			delete this->findElementXiCache;
+			this->findElementXiCache = nullptr;
+		}
+	}
+
+	virtual void clear()
+	{
+		if (this->findElementXiCache)
+		{
+			delete this->findElementXiCache;
+			this->findElementXiCache = nullptr;
+		}
+		MeshLocationFieldValueCache::clear();
+	}
+
+	Computed_field_find_element_xi_cache *getFindElementXiCache(cmzn_field *meshField)
+	{
+		if (!this->findElementXiCache)
+		{
+			this->findElementXiCache = new Computed_field_find_element_xi_cache(meshField);
+		}
+		return this->findElementXiCache;
+	}
+
+	static const FindMeshLocationFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const FindMeshLocationFieldValueCache*>(valueCache);
+	}
+
+	static FindMeshLocationFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<FindMeshLocationFieldValueCache*>(valueCache);
+	}
+
+	static const FindMeshLocationFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const FindMeshLocationFieldValueCache&>(valueCache);
+	}
+
+	static FindMeshLocationFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<FindMeshLocationFieldValueCache&>(valueCache);
+	}
 };
 
 const char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
@@ -3374,6 +3421,8 @@ private:
 	cmzn_mesh *mesh;  // mesh for storing locations in
 	cmzn_mesh *searchMesh;  // mesh for search for locations e.g. subset/faces
 	enum cmzn_field_find_mesh_location_search_mode searchMode;
+	FeMeshFieldRangesCache *meshFieldRangesCache;
+	FeMeshFieldRanges *meshFieldRanges;
 
 public:
 
@@ -3381,7 +3430,9 @@ public:
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
 		searchMesh(cmzn_mesh_access(mesh)),
-		searchMode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
+		searchMode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT),
+		meshFieldRangesCache(nullptr),
+		meshFieldRanges(nullptr)
 	{
 	};
 
@@ -3393,8 +3444,21 @@ public:
 	{
 	};
 
+	virtual bool attach_to_field(cmzn_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			this->meshFieldRangesCache = cmzn_mesh_get_FE_mesh_internal(this->mesh)->getFeMeshFieldRangesCache(this->getMeshField());
+			this->meshFieldRanges = this->meshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->mesh));
+			return true;
+		}
+		return false;
+	}
+
 	virtual ~Computed_field_find_mesh_location()
 	{
+		FeMeshFieldRanges::deaccess(this->meshFieldRanges);
+		FeMeshFieldRangesCache::deaccess(this->meshFieldRangesCache);
 		cmzn_mesh_destroy(&this->mesh);
 		cmzn_mesh_destroy(&this->searchMesh);
 	}
@@ -3413,13 +3477,19 @@ public:
 	/** @return  Non-accessed field */
 	cmzn_field *getMeshField()
 	{
-		return field->source_fields[1];
+		return this->field->source_fields[1];
 	}
 
 	/** @return  Non accessed mesh */
 	cmzn_mesh *getMesh()
 	{
 		return this->mesh;
+	}
+
+	/** @return  Non-accessed object storing ranges of mesh field in elements of mesh */
+	FeMeshFieldRanges *getMeshFieldRanges() const
+	{
+		return this->meshFieldRanges;
 	}
 
 	/** @return  Non-accessed search mesh */
@@ -3444,6 +3514,8 @@ public:
 			cmzn_mesh_access(searchMeshIn);
 			cmzn_mesh_destroy(&this->searchMesh);
 			this->searchMesh = searchMeshIn;
+			FeMeshFieldRanges::deaccess(this->meshFieldRanges);
+			this->meshFieldRanges = this->meshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->mesh));
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -3483,7 +3555,7 @@ private:
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
-		MeshLocationFieldValueCache *valueCache = new FindMeshLocationFieldValueCache(this);
+		FindMeshLocationFieldValueCache *valueCache = new FindMeshLocationFieldValueCache();
 		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
@@ -3530,16 +3602,6 @@ private:
 
 };
 
-void FindMeshLocationFieldValueCache::clear()
-{
-	// clear extra cache value cache for mesh field
-	cmzn_fieldcache& extraCache = *this->getExtraCache();
-	cmzn_field *meshField = this->findMeshLocationField->getMeshField();
-	FieldValueCache *meshFieldValueCache = meshField->getValueCache(extraCache);
-	meshFieldValueCache->clear();
-	MeshLocationFieldValueCache::clear();
-}
-
 Computed_field_core* Computed_field_find_mesh_location::copy()
 {
 	return new Computed_field_find_mesh_location(*this);
@@ -3566,14 +3628,17 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField()->evaluate(cache));
 	if (!sourceValueCache)
 		return 0;
-	MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
-	meshLocationValueCache.clearElement();
-	cmzn_fieldcache& extraCache = *meshLocationValueCache.getExtraCache();
+	FindMeshLocationFieldValueCache& findMeshLocationValueCache = FindMeshLocationFieldValueCache::cast(inValueCache);
+	findMeshLocationValueCache.clearElement();
+	cmzn_fieldcache& extraCache = *findMeshLocationValueCache.getExtraCache();
 	extraCache.setTime(cache.getTime());
 	cmzn_element *element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache, sourceValueCache->values,
-		sourceValueCache->componentCount, &element, xi, this->searchMesh, /*propagate_field*/0,
+	Computed_field_find_element_xi_cache *findElementXiCache =
+		findMeshLocationValueCache.getFindElementXiCache(this->getMeshField());
+	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache,
+		findElementXiCache, sourceValueCache->values,
+		sourceValueCache->componentCount, &element, xi, this->searchMesh,
 		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
 		&& (element)))
 		return 0;
@@ -3602,7 +3667,7 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 		}
 		element = ancestorElement;
 	}
-	meshLocationValueCache.setMeshLocation(element, xi);
+	findMeshLocationValueCache.setMeshLocation(element, xi);
 	return 1;
 }
 

@@ -2272,65 +2272,6 @@ The number of components controls how the field is interpreted:
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
 
-int Computed_field_find_element_xi(struct cmzn_field *field,
-	cmzn_fieldcache_id field_cache, const FE_value *values,
-	int number_of_values, struct FE_element **element_address, FE_value *xi,
-	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest)
-{
-	int return_code;
-	ENTER(Computed_field_find_element_xi);
-	if (field && field_cache && values && (number_of_values == field->number_of_components) &&
-		element_address && xi && (mesh || *element_address))
-	{
-		if ((!propagate_to_source) || find_nearest ||
-			(!(return_code = field->core->propagate_find_element_xi(*field_cache,
-				values, number_of_values, element_address, xi, mesh))))
-		{
-			return_code = Computed_field_perform_find_element_xi(field, field_cache,
-				values, number_of_values, element_address, xi, mesh, find_nearest);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}
-
-int Computed_field_is_find_element_xi_capable(struct cmzn_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function returns true if the <field> can find element and xi given
-a set of values.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_find_element_xi_capable);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		/* By doing the inversion iterations on the final computed field we
-			can do this on all computed fields. */
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_find_element_xi_capable.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_find_element_xi_capable */
-
 bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
 {

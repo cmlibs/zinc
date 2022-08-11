@@ -28,6 +28,27 @@ lookup of the element.
 
 #define MAX_FIND_XI_ITERATIONS 50
 
+
+Computed_field_find_element_xi_cache::Computed_field_find_element_xi_cache(cmzn_field *fieldIn) :
+	field(fieldIn),
+	searchMesh(nullptr),
+	element(nullptr),
+	componentsCount(field->getNumberOfComponents()),
+	time(0),
+	values(new FE_value[this->componentsCount]),
+	workingValues(new FE_value[this->componentsCount])
+{
+}
+
+Computed_field_find_element_xi_cache::~Computed_field_find_element_xi_cache()
+{
+	if (this->searchMesh)
+	cmzn_mesh_destroy(&this->searchMesh);
+	delete[] this->values;
+	delete[] this->workingValues;
+}
+
+
 int Computed_field_iterative_element_conditional(struct FE_element *element,
 	struct Computed_field_iterative_find_element_xi_data *data)
 {
@@ -283,78 +304,31 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 
 #undef MAX_FIND_XI_ITERATIONS
 
-int Computed_field_perform_find_element_xi(struct Computed_field *field,
+int Computed_field_find_element_xi(struct Computed_field *field,
 	cmzn_fieldcache_id field_cache,
+	Computed_field_find_element_xi_cache *findElementXiCache,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
-	cmzn_mesh_id search_mesh, int find_nearest)
+	cmzn_mesh *searchMesh, int find_nearest)
 {
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
-	int i, number_of_xi = -1, return_code;
-	RealFieldValueCache *valueCache;
+	int i, number_of_xi = -1;
+	int return_code = 1;
 
-	ENTER(Computed_field_perform_find_element_xi);
-	const int element_dimension = search_mesh ?
-		cmzn_mesh_get_dimension(search_mesh) : cmzn_element_get_dimension(*element_address);
-	if (field && (0 != (valueCache = dynamic_cast<RealFieldValueCache*>(field->getValueCache(*field_cache)))) &&
-		values && (number_of_values == field->number_of_components) &&
-		element_address && xi && (search_mesh || *element_address) &&
+	RealFieldValueCache *valueCache = dynamic_cast<RealFieldValueCache*>(field->getValueCache(*field_cache));
+	const int element_dimension = searchMesh ?
+		cmzn_mesh_get_dimension(searchMesh) : cmzn_element_get_dimension(*element_address);
+	if (field && (valueCache) && (findElementXiCache) &&
+		(findElementXiCache->getField() == field) &&
+		(values) && (number_of_values == field->getNumberOfComponents()) &&
+		(element_address) && (xi) && ((searchMesh) || (*element_address)) &&
 		(number_of_values >= element_dimension))
 	{
-		return_code = 1;
-		Computed_field_find_element_xi_base_cache *cache = 0;
-		if (valueCache->find_element_xi_cache && valueCache->find_element_xi_cache->cache_data)
-		{
-			cache = valueCache->find_element_xi_cache->cache_data;
-			if (cache->number_of_values != number_of_values)
-			{
-				DEALLOCATE(cache->values);
-				DEALLOCATE(cache->working_values);
-			}
-		}
-		else
-		{
-			valueCache->find_element_xi_cache =
-				CREATE(Computed_field_find_element_xi_cache)(new Computed_field_find_element_xi_base_cache());
-			if (valueCache->find_element_xi_cache != 0)
-			{
-				cache = valueCache->find_element_xi_cache->cache_data;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (cache)
-		{
-			cache->in_perform_find_element_xi = 1;
-		}
-		if (return_code && !cache->values)
-		{
-			cache->time = field_cache->getTime();
-			cache->number_of_values = number_of_values;
-			if (!ALLOCATE(cache->values, FE_value, number_of_values))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_perform_find_element_xi.  "
-					"Unable to allocate value memory.");
-				return_code = 0;
-			}
-		}
-		if (return_code && !cache->working_values)
-		{
-			if (!ALLOCATE(cache->working_values, FE_value, number_of_values))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_perform_find_element_xi.  "
-					"Unable to allocate working value memory.");
-				return_code = 0;
-			}
-		}
+		findElementXiCache->time = field_cache->getTime();
 		if (return_code)
 		{
-			find_element_xi_data.values = cache->values;
-			find_element_xi_data.found_values = cache->working_values;
+			find_element_xi_data.values = findElementXiCache->values;
+			find_element_xi_data.found_values = findElementXiCache->workingValues;
 			/* copy the source values */
 			for (i = 0; i < number_of_values; i++)
 			{
@@ -371,24 +345,24 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 			find_element_xi_data.nearest_element_distance_squared = 0.0;
 			find_element_xi_data.start_with_data_xi = 0;
 
-			if (search_mesh)
+			if (searchMesh)
 			{
 				*element_address = (struct FE_element *)NULL;
 
 				/* Try the cached element first if it is in the mesh */
-				if ((!find_nearest) && cache->element &&
-					cmzn_mesh_contains_element(search_mesh, cache->element))
+				if ((!find_nearest) && findElementXiCache->element &&
+					cmzn_mesh_contains_element(searchMesh, findElementXiCache->element))
 				{
 					if (Computed_field_iterative_element_conditional(
-						cache->element, &find_element_xi_data))
+						findElementXiCache->element, &find_element_xi_data))
 					{
-						*element_address = cache->element;
+						*element_address = findElementXiCache->element;
 					}
 				}
 				/* Now try every element */
 				if (!*element_address)
 				{
-					cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(search_mesh);
+					cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(searchMesh);
 					cmzn_element_id element = 0;
 					while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 					{
@@ -436,107 +410,23 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 			{
 				DEALLOCATE(find_element_xi_data.found_derivatives);
 			}
-			/* Remember the element and search mesh in the cache */
-			cache->element = *element_address;
-			cache->set_search_mesh(search_mesh);
+			/* Remember the element and search mesh in the findElementXiCache */
+			findElementXiCache->element = *element_address;
+			findElementXiCache->setSearchMesh(searchMesh);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_perform_find_element_xi.  "
+				"Computed_field_find_element_xi.  "
 				"Unable to allocate value memory.");
 			return_code = 0;
 		}
-		if (cache)
-		{
-			cache->in_perform_find_element_xi = 0;
-		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_perform_find_element_xi.  Invalid argument(s)");
+			"Computed_field_find_element_xi.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_perform_find_element_xi */
-
-struct Computed_field_find_element_xi_cache
-	*CREATE(Computed_field_find_element_xi_cache)(
-		Computed_field_find_element_xi_base_cache *cache_data)
-/*******************************************************************************
-LAST MODIFIED : 13 June 2008
-
-DESCRIPTION :
-Stores cache data for find_element_xi routines.
-The new object takes ownership of the <cache_data>.
-==============================================================================*/
-{
-	struct Computed_field_find_element_xi_cache *cache;
-
-	ENTER(CREATE(Computed_field_find_element_xi_cache));
-	cache = (struct Computed_field_find_element_xi_cache *)NULL;
-	if (cache_data)
-	{
-		if (ALLOCATE(cache,struct Computed_field_find_element_xi_cache,1))
-		{
-			cache->cache_data = cache_data;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Computed_field_find_element_xi_cache).  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_find_element_xi_cache).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (cache);
-} /* CREATE(Computed_field_find_element_xi_cache) */
-
-int DESTROY(Computed_field_find_element_xi_cache)
-	(struct Computed_field_find_element_xi_cache **cache_address)
-/*******************************************************************************
-LAST MODIFIED : 13 June 2008
-
-DESCRIPTION :
-Frees memory/deaccess cache at <*cache_address>.
-==============================================================================*/
-{
-	int return_code;
-	class Computed_field_find_element_xi_base_cache
-
-	ENTER(DESTROY(Computed_field_find_element_xi_cache));
-	if (cache_address&&*cache_address)
-	{
-		if (((*cache_address)->cache_data) &&
-			(*cache_address)->cache_data->in_perform_find_element_xi)
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Computed_field_find_element_xi_cache).  "
-				"This cache cannot be destroyed.");
-			return_code = 0;
-		}
-		else
-		{
-			delete (*cache_address)->cache_data;
-			DEALLOCATE(*cache_address);
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field_find_element_xi_cache).  Missing cache");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Computed_field_find_element_xi_cache) */
+}

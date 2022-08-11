@@ -34,11 +34,6 @@ void FieldValueCache::clear()
 
 RealFieldValueCache::~RealFieldValueCache()
 {
-	if (this->find_element_xi_cache)
-	{
-		DESTROY(Computed_field_find_element_xi_cache)(&this->find_element_xi_cache);
-		this->find_element_xi_cache = 0;
-	}
 	delete[] this->values;
 	for (std::vector<DerivativeValueCache *>::iterator iter = this->derivatives.begin(); iter != this->derivatives.end(); ++iter)
 		delete *iter;
@@ -50,16 +45,6 @@ void RealFieldValueCache::resetEvaluationCounter()
 		if (*iter)
 			(*iter)->resetEvaluationCounter();
 	FieldValueCache::resetEvaluationCounter();
-}
-
-void RealFieldValueCache::clear()
-{
-	if (this->find_element_xi_cache)
-	{
-		DESTROY(Computed_field_find_element_xi_cache)(&this->find_element_xi_cache);
-		this->find_element_xi_cache = 0;
-	}
-	FieldValueCache::clear();
 }
 
 char *RealFieldValueCache::getAsString() const
@@ -159,11 +144,13 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	cmzn_region::deaccess(this->region);
 }
 
-cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region *regionIn)
+cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn)
 {
 	if (regionIn)
-		return new cmzn_fieldcache(regionIn);
-	return 0;
+	{
+		return new cmzn_fieldcache(regionIn, parentCacheIn);
+	}
+	return nullptr;
 }
 
 void cmzn_fieldcache::deaccess(cmzn_fieldcache*& fieldcache)
@@ -293,7 +280,7 @@ cmzn_fieldcache *cmzn_fieldcache::getOrCreateSharedExternalWorkingCache(cmzn_reg
 		return iter->second;
 	}
 	// as this is for a different region, do not set parentCache as not sharing finite element field caches
-	cmzn_fieldcache *fieldcache = new cmzn_fieldcache(regionIn);
+	cmzn_fieldcache *fieldcache = new cmzn_fieldcache(regionIn, /*parentCache*/nullptr);
 	this->sharedExternalWorkingCacheMap[regionIn] = fieldcache;
 	return fieldcache;
 }
@@ -313,11 +300,13 @@ Global functions
 ----------------
 */
 
-cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(cmzn_fieldmodule_id field_module)
+cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(cmzn_fieldmodule_id fieldmodule)
 {
-	if (field_module)
-		return new cmzn_fieldcache(cmzn_fieldmodule_get_region_internal(field_module));
-	return 0;
+	if (fieldmodule)
+	{
+		return cmzn_fieldcache::create(cmzn_fieldmodule_get_region_internal(fieldmodule));
+	}
+	return nullptr;
 }
 
 cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache)

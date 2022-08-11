@@ -70,11 +70,6 @@ private:
 	char* get_command_string();
 
 	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
-
-	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
-		const FE_value *values, int number_of_values,
-		struct FE_element **element_address, FE_value *xi,
-		cmzn_mesh_id mesh);
 };
 
 int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -147,44 +142,6 @@ enum FieldAssignmentResult Computed_field_coordinate_transformation::assign(cmzn
 	}
 	return FIELD_ASSIGNMENT_RESULT_FAIL;
 }
-
-int Computed_field_coordinate_transformation::propagate_find_element_xi(cmzn_fieldcache& field_cache,
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, cmzn_mesh_id mesh)
-{
-	int return_code;
-
-	ENTER(Computed_field_coordinate_transformation::propagate_find_element_xi);
-	if (field && values && (field->number_of_components == number_of_values))
-	{
-		FE_value source_field_coordinates[3];
-
-		/* convert this fields values back into source coordinate system */
-		return_code=convert_Coordinate_system(&(field->coordinate_system),
-			number_of_values,values, &(field->source_fields[0]->coordinate_system),
-			field->source_fields[0]->number_of_components, source_field_coordinates,
-			/*jacobian*/(FE_value *)NULL) && Computed_field_find_element_xi(
-			field->source_fields[0], &field_cache, source_field_coordinates,
-			field->source_fields[0]->number_of_components, element_address,
-			xi, mesh, /*propagate_field*/1,
-			/*find_nearest_location*/0);
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_coordinate_transformation::propagate_find_element_xi.  "
-				"Could not set coordinate_transformation field %s at node",field->name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation::propagate_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_coordinate_transformation::propagate_find_element_xi */
 
 int Computed_field_coordinate_transformation::list(
 	)

@@ -222,14 +222,6 @@ public:
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int propagate_find_element_xi(cmzn_fieldcache&,
-		const FE_value * /*values*/, int /*number_of_values*/,
-		struct FE_element ** /*element_address*/, FE_value * /*xi*/,
-		cmzn_mesh_id /*mesh*/)
-	{
-		return 0;
-	};
-
 	virtual int list();
 
 	virtual char* get_command_string();

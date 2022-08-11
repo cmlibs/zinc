@@ -19,24 +19,16 @@ has a particular value.
 
 struct Graphics_buffer_package;
 
-struct Computed_field_find_element_xi_cache;
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
+class Computed_field_find_element_xi_cache;
 
-DESCRIPTION :
-struct Computed_field_find_element_xi_cache is private.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Find location in mesh or element where the field has same or nearest value to
- * the prescribed values. This routine is either called directly by
- * Computed_field_find_element_xi or if that field is propagating it's values
- * backwards, it is called by the last ancestor field implementing
- * propagate_find_element_xi.
+ * the prescribed values.
  *
  * @param field  The field whose values need to match.
  * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
+ * @param find_element_xi_cache  Cache for storing values during search.
  * @param values  Array of values to match or get nearest to. Implementation
  * promises to copy this, hence can pass a pointer to field cache values.
  * @param number_of_values  The size of the values array, must equal the number
@@ -51,19 +43,11 @@ struct Computed_field_find_element_xi_cache is private.
  * @return  1 if search carried out without error including when no element is
  * found, or 0 if failed.
  */
-int Computed_field_perform_find_element_xi(struct Computed_field *field,
+int Computed_field_find_element_xi(struct Computed_field *field,
 	cmzn_fieldcache_id field_cache,
+	Computed_field_find_element_xi_cache *findElementXiCache,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
-	cmzn_mesh_id search_mesh, int find_nearest);
-
-int DESTROY(Computed_field_find_element_xi_cache)
-	  (struct Computed_field_find_element_xi_cache **cache_address);
-/*******************************************************************************
-LAST MODIFIED : 20 June 2000
-
-DESCRIPTION :
-Frees memory/deaccess cache at <*cache_address>.
-==============================================================================*/
+	cmzn_mesh *searchMesh, int find_nearest);
 
 #endif /* !defined (COMPUTED_FIELD_FIND_XI_H) */

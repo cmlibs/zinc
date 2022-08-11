@@ -1398,6 +1398,11 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 
 FE_mesh::~FE_mesh()
 {
+	for (std::map<cmzn_field *, FeMeshFieldRangesCache *>::iterator iter = this->meshFieldRangesCaches.begin();
+		iter != this->meshFieldRangesCaches.end(); ++iter)
+	{
+		iter->second->detachFromMesh();
+	}
 	for (int i = 0; i < MAXIMUM_MESH_DERIVATIVE_ORDER; ++i)
 	{
 		this->fieldDerivatives[i]->clearOwnerPrivate();
@@ -3179,6 +3184,23 @@ FieldDerivative *FE_mesh::getHigherFieldDerivative(const FieldDerivative& fieldD
 		return fieldDerivative.getFieldparameters()->getFieldDerivativeMixed(this,
 			fieldDerivative.getMeshOrder() + 1, fieldDerivative.getParameterOrder());
 	return this->getFieldDerivative(fieldDerivative.getMeshOrder() + 1);
+}
+
+FeMeshFieldRangesCache *FE_mesh::getFeMeshFieldRangesCache(cmzn_field *field)
+{
+	std::map<cmzn_field *, FeMeshFieldRangesCache *>::iterator iter = this->meshFieldRangesCaches.find(field);
+	if (iter != this->meshFieldRangesCaches.end())
+	{
+		return iter->second->access();
+	}
+	FeMeshFieldRangesCache *meshFieldRangesCache = new FeMeshFieldRangesCache(this, field);
+	this->meshFieldRangesCaches[field] = meshFieldRangesCache;
+	return meshFieldRangesCache;
+}
+
+void FE_mesh::removeMeshFieldRangesCache(FeMeshFieldRangesCache *meshFieldRangesCache)
+{
+	this->meshFieldRangesCaches.erase(meshFieldRangesCache->getField());
 }
 
 DsLabelIndex FE_mesh::createScaleFactorIndex()

@@ -23,8 +23,6 @@
 #include <map>
 #include <vector>
 
-struct Computed_field_find_element_xi_cache;
-
 // dynamic_cast may make cache value type crashes more predictable.
 // Enable for spurious errors, but switching off for performance reasons, release and debug.
 #if defined (TEST_FIELD_VALUE_CACHE_CAST)
@@ -171,13 +169,11 @@ public:
 	FE_value *values;
 	const int componentCount;
 	std::vector<DerivativeValueCache *> derivatives;
-	Computed_field_find_element_xi_cache *find_element_xi_cache;
 
 	RealFieldValueCache(int componentCountIn) :
 		FieldValueCache(),
 		values(new FE_value[componentCountIn]),
-		componentCount(componentCountIn),
-		find_element_xi_cache(0)
+		componentCount(componentCountIn)
 	{
 	}
 
@@ -185,7 +181,6 @@ public:
 
 	virtual void resetEvaluationCounter();
 
-	virtual void clear();
 
 	static const RealFieldValueCache* cast(const FieldValueCache* valueCache)
 	{
@@ -302,14 +297,14 @@ private:
 	std::list<cmzn_fieldrange *> fieldranges;  // list of field ranges owned by this field cache
 	int access_count;
 
-public:
-
 	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
-	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = nullptr);
+	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn);
+
+public:
 
 	~cmzn_fieldcache();
 
-	static cmzn_fieldcache *create(cmzn_region *regionIn);
+	static cmzn_fieldcache *create(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = nullptr);
 
 	cmzn_fieldcache *access()
 	{
@@ -574,7 +569,7 @@ public:
 	cmzn_fieldcache *getOrCreateSharedWorkingCache()
 	{
 		if (!this->sharedWorkingCache)
-			this->sharedWorkingCache = new cmzn_fieldcache(this->region, this);
+			this->sharedWorkingCache = cmzn_fieldcache::create(this->region, this);
 		return this->sharedWorkingCache;
 	}
 

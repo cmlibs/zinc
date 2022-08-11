@@ -12,6 +12,7 @@
 #define FINITE_ELEMENT_MESH_HPP
 
 #include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/fieldid.h"
 #include "opencmiss/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
@@ -19,6 +20,7 @@
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_constants.hpp"
 #include "finite_element/finite_element_domain.hpp"
+#include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "general/block_array.hpp"
 #include "general/list.h"
@@ -858,6 +860,10 @@ private:
 
 	FieldDerivative *fieldDerivatives[MAXIMUM_MESH_DERIVATIVE_ORDER];
 
+	// caches of field ranges over elements of this mesh, to speed up FindMeshLocation Field
+	// map from the field being found over the mesh to the cache object
+	std::map<cmzn_field *, FeMeshFieldRangesCache *> meshFieldRangesCaches;
+
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
 
@@ -1282,6 +1288,12 @@ public:
 	 * they must be for this mesh.
 	 * @return  Non-accessed field derivative or nullptr on error */
 	FieldDerivative *getHigherFieldDerivative(const FieldDerivative& fieldDerivative);
+
+	/** Find or create mesh field ranges cache for field over mesh.
+	 * @return  Accessed cache. Final deaccess removes it from mesh */
+	FeMeshFieldRangesCache *getFeMeshFieldRangesCache(cmzn_field *field);
+
+	void removeMeshFieldRangesCache(FeMeshFieldRangesCache *meshFieldRangesCache);
 
 	/** @param scaleFactorIndex  Not checked. Must be valid. */
 	FE_value getScaleFactor(DsLabelIndex scaleFactorIndex) const
