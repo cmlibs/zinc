@@ -1213,6 +1213,13 @@ int FE_nodeset::merge_FE_node_external(cmzn_node *node,
 	// merge
 	if (globalNode)
 	{
+		// workaround for free_value_storage_array not clearing embedded node map
+		// called regardless of whether target and source elements are different
+		for (size_t f = 0; f < embeddedFieldSize; f += 2)
+		{
+			FE_field *targetEmbeddedField = data.sourceTargetEmbeddedFields[f + 1];
+			set_FE_nodal_element_xi_value(globalNode, targetEmbeddedField, /*component_number*/0, /*element*/nullptr, /*xi*/nullptr);
+		}
 		if (::merge_FE_node(globalNode, node, /*optimised_merge*/1))
 		{
 			this->nodeChange(globalNode->getIndex(), DS_LABEL_CHANGE_TYPE_RELATED, node);
