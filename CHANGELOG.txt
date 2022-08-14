@@ -1,5 +1,9 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.9.0
+Fix read merge for embedded locations which corrupted element to embedded node map.
+Fix write description for fields with NOT_APPLICABLE coordinate system type.
+
 v3.8.0
 Serialise mesh and nodeset operators fields to/from json description.
 Add missing type-specific field API.
