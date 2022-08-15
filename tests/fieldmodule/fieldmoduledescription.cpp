@@ -38,8 +38,11 @@
 #include <opencmiss/zinc/streamregion.h>
 #include <opencmiss/zinc/timekeeper.h>
 
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
 #include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 
 #include <string>       // std::string
 #include <iostream>     // std::cout, std::ostream, std::hex
@@ -832,4 +835,20 @@ TEST(fieldmodule_description, read)
 
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
+}
+
+// Test serialisation of field with NOT_APPLICABLE coordinate system
+TEST(Fieldmodule_description, writeFieldCoordinateSystemTypeNotApplicable)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement field = zinc.fm.createFieldFiniteElement(1);
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN, field.getCoordinateSystemType());
+	EXPECT_EQ(RESULT_OK, field.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE));
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, field.getCoordinateSystemType());
+
+	char *description = zinc.fm.writeDescription();
+	EXPECT_NE(nullptr, description);
+	EXPECT_EQ(RESULT_OK, zinc.fm.readDescription(description));
+	cmzn_deallocate(description);
 }

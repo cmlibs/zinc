@@ -2963,6 +2963,9 @@ public:
 			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
 				enum_string = "FIBRE";
 				break;
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE:
+				enum_string = "NOT_APPLICABLE";
+				break;
 			default:
 				break;
 		}
