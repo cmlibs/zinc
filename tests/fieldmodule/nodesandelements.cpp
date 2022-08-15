@@ -496,6 +496,21 @@ TEST(ZincMesh, destroyElementsGroupChangeManager_simple)
 	}
 }
 
+// Test destroying an element with embedded location after reading twice.
+// Tests read/merge code properly maintains element to embedded node maps.
+TEST(ZincMesh, destroyElement_embeddedLocation)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	Element element1 = mesh1d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	EXPECT_EQ(RESULT_OK, mesh1d.destroyElement(element1));
+}
+
 // Test destroying 3D element removes it and all orphaned faces from groups,
 // even while change cache is active
 TEST(ZincNodeset, destroyElementsGroupChangeManager_cube)

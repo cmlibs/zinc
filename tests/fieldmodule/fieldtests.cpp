@@ -24,9 +24,9 @@
 
 TEST(ZincField, CoordinateSystemTypeEnum)
 {
-	const char *enumNames[7] = { nullptr, "RECTANGULAR_CARTESIAN", "CYLINDRICAL_POLAR",
-		"SPHERICAL_POLAR", "PROLATE_SPHEROIDAL", "OBLATE_SPHEROIDAL", "FIBRE" };
-	testEnum(7, enumNames, Field::CoordinateSystemTypeEnumToString, Field::CoordinateSystemTypeEnumFromString);
+	const char *enumNames[8] = { nullptr, "RECTANGULAR_CARTESIAN", "CYLINDRICAL_POLAR",
+		"SPHERICAL_POLAR", "PROLATE_SPHEROIDAL", "OBLATE_SPHEROIDAL", "FIBRE", "NOT_APPLICABLE" };
+	testEnum(8, enumNames, Field::CoordinateSystemTypeEnumToString, Field::CoordinateSystemTypeEnumFromString);
 }
 
 TEST(ZincField, DomainTypeEnum)
