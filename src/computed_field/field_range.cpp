@@ -17,6 +17,7 @@
 #include "finite_element/finite_element_discretization.h"
 #include "general/message.h"
 #include <cmath>
+//#include <iostream>
 
 cmzn_fieldrange::cmzn_fieldrange(cmzn_fieldcache *fieldcacheIn) :
 	fieldcache(fieldcacheIn->access()),
@@ -98,6 +99,9 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], lastXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value xiDir[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value xiDirMod[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value lastXiDirMod[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int lastXiDirModIter = -2;
+	int lastXiDirCount = 0;
 	for (int i = 0; i < meshDimension; ++i)
 	{
 		lastXi[i] = xi[i] = initialXi[i];
@@ -185,11 +189,43 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 		const FE_value xMag = fabs(x);
 		if ((dxi > (0.01 * xiTolerance)) && (dxi < (0.25 * xMag)))
 		{
+			// xi increment limited on boundary; re-solve on xiDirMod
 			for (int i = 0; i < meshDimension; ++i)
 			{
 				xiDirMod[i] /= dxi;
 			}
-			// xi increment limited on edge; re-solve on xiDirMod
+			if ((iter >= 20) && (lastXiDirModIter == (iter - 1)))
+			{
+				// likely zig zagging along boundary: average xiDirMod with all previous
+				++lastXiDirCount;
+				const FE_value weight = lastXiDirCount;
+				FE_value mag = 0.0;
+				for (int i = 0; i < meshDimension; ++i)
+				{
+					xiDirMod[i] += weight * lastXiDirMod[i];
+					mag += xiDirMod[i] * xiDirMod[i];
+				}
+				mag = sqrt(mag);
+				if (mag > 0.0)
+				{
+					for (int i = 0; i < meshDimension; ++i)
+					{
+						xiDirMod[i] /= mag;
+					}
+				}
+				else
+				{
+					// go back to last direction if they cancelled
+					for (int i = 0; i < meshDimension; ++i)
+					{
+						xiDirMod[i] = -lastXiDirMod[i];
+					}
+				}
+			}
+			else
+			{
+				lastXiDirCount = 0;
+			}
 			FE_value bMod = 0.0;  // first derivative in direction of xiDirMod
 			for (int i = 0; i < meshDimension; ++i)
 			{
@@ -225,8 +261,17 @@ bool cmzn_fieldrange::findComponentLimit(cmzn_field *field, int componentIndex, 
 			for (int i = 0; i < meshDimension; ++i)
 			{
 				xi[i] = lastXi[i] + xMod * xiDirMod[i];
+				lastXiDirMod[i] = xiDirMod[i];
 			}
 			FE_element_shape_limit_xi_to_element(elementShape, xi, /*tolerance*/0.0);
+			//{
+			//	const RealFieldValueCache *realValueCache = RealFieldValueCache::cast(field->evaluate(*fieldcache));
+			//	std::cerr << "iter " << iter
+			//		<< " xi " << xi[0] << ", " << xi[1] << ", " << xi[2]
+			//		<< " incr " << xMod << " dir " << xiDirMod[0] << ", " << xiDirMod[1] << ", " << xiDirMod[2]
+			//		<< " = " << realValueCache->values[componentIndex] << "\n";
+			//}
+			lastXiDirModIter = iter;
 		}
 		++iter;
 		bool sameXi = true;
