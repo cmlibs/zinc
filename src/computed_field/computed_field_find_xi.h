@@ -48,7 +48,7 @@ class FeMeshFieldRanges;
 int Computed_field_find_element_xi(struct Computed_field *field,
 	cmzn_fieldcache_id field_cache,
 	Computed_field_find_element_xi_cache *findElementXiCache,
-	FeMeshFieldRanges *meshFieldRanges,
+	const FeMeshFieldRanges *meshFieldRanges,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh *searchMesh, int find_nearest);

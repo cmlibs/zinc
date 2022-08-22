@@ -308,7 +308,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 
 /** Determine if element is within tolerance of element */
 inline bool checkElement(int componentsCount, const FE_value *values, cmzn_element *element,
-	FeMeshFieldRanges *meshFieldRanges, FE_value tolerance)
+	const FeMeshFieldRanges *meshFieldRanges, FE_value tolerance)
 {
 	if ((meshFieldRanges) && (tolerance >= 0.0))
 	{
@@ -324,7 +324,7 @@ inline bool checkElement(int componentsCount, const FE_value *values, cmzn_eleme
 int Computed_field_find_element_xi(struct Computed_field *field,
 	cmzn_fieldcache_id field_cache,
 	Computed_field_find_element_xi_cache *findElementXiCache,
-	FeMeshFieldRanges *meshFieldRanges,
+	const FeMeshFieldRanges *meshFieldRanges,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh *searchMesh, int find_nearest)

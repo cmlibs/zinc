@@ -24,9 +24,12 @@
 #include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/mesh.hpp>
 #include <opencmiss/zinc/node.hpp>
 #include <opencmiss/zinc/region.hpp>
 #include <opencmiss/zinc/scene.hpp>
@@ -1629,6 +1632,93 @@ TEST(ZincFieldFindMeshLocation, searchMesh)
 	EXPECT_NEAR(xValues[0], xi[0], TOL);
 	EXPECT_NEAR(1.0, xi[1], TOL);
 	EXPECT_NEAR(0.0, xi[2], TOL);
+}
+
+// Test find nearest on 3D elements using allshapes quadratic model
+// Tests bug where nearest on 3D elements does not match nearest on 2D boundary
+TEST(ZincFieldFindMeshLocation, find_nearest_3d)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+	Field deformed = zinc.fm.findFieldByName("deformed");
+	EXPECT_TRUE(deformed.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_FIND_XI_DATA_RESOURCE)));
+	Field dataCordinates = zinc.fm.findFieldByName("data_coordinates");
+	EXPECT_TRUE(dataCordinates.isValid());
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+
+	// make boundary mesh group
+	FieldIsExterior isExterior = zinc.fm.createFieldIsExterior();
+	EXPECT_TRUE(isExterior.isValid());
+	FieldGroup boundaryGroup = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(boundaryGroup.isValid());
+	FieldElementGroup boundaryElementGroup = boundaryGroup.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(boundaryElementGroup.isValid());
+	MeshGroup boundaryMeshGroup = boundaryElementGroup.getMeshGroup();
+	EXPECT_TRUE(boundaryMeshGroup.isValid());
+	EXPECT_EQ(RESULT_OK, boundaryMeshGroup.addElementsConditional(isExterior));
+	EXPECT_EQ(18, boundaryMeshGroup.getSize());
+
+	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_TRUE(datapoints.isValid());
+	EXPECT_EQ(10, datapoints.getSize());
+
+	const struct
+	{
+		int elementIdentifier;
+		double xi[3];
+	} expectedElementXi[10] =
+	{
+		{1, {0.0, 0.53979577402311651, 0.69177470736971181}},
+		{2, {0.11990294780427879, 0.0, 0.37092623208751258}},
+		{1, {0.56808113276559502, 1.0, 0.38366019661829664}},
+		{6, {0.074523878452688763, 0.38040009528755753, 0.54507602625975382}},
+		{6, {0.79754778495051604, 0.10509665420330587, 0.097355560846178094}},
+		{4, {0.38943696024031643, 0.53071420626463561, 0.61056303975968351}},
+		{6, {0.15702108718222982, 0.26880621160983603, 0.26128316101522436}},
+		{5, {0.51817252996829977, 0.40963848233275751, 0.31716431429090608}},
+		{3, {0.24583038158538131, 0.35923948388603327, 0.33152494022382217}},
+		{1, {0.43003497940512292, 0.59309299145975747, 0.40054136880384372}}
+	};
+
+	FieldFindMeshLocation findMeshLocationExact = zinc.fm.createFieldFindMeshLocation(dataCordinates, deformed, mesh3d);
+	EXPECT_TRUE(findMeshLocationExact.isValid());
+	FieldFindMeshLocation findMeshLocationNearest = zinc.fm.createFieldFindMeshLocation(dataCordinates, deformed, mesh3d);
+	EXPECT_TRUE(findMeshLocationNearest.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationNearest.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	FieldFindMeshLocation findMeshLocationBoundaryNearest = zinc.fm.createFieldFindMeshLocation(dataCordinates, deformed, mesh3d);
+	EXPECT_TRUE(findMeshLocationBoundaryNearest.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationBoundaryNearest.setSearchMesh(boundaryMeshGroup));
+	EXPECT_EQ(RESULT_OK, findMeshLocationBoundaryNearest.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+
+	Element elementExact, elementNearest, elementBoundaryNearest, elementWorkaround;
+	double xiExact[3], xiNearest[3], xiBoundaryNearest[3], *xiWorkaround;
+	const double TOL = 1.0E-8;
+	for (int i = 0; i < 10; ++i)
+	{
+		Node datapoint = datapoints.findNodeByIdentifier(i + 1);
+		EXPECT_TRUE(datapoint.isValid());
+
+		EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint));
+		elementExact = findMeshLocationExact.evaluateMeshLocation(fieldcache, 3, xiExact);
+		elementNearest = findMeshLocationNearest.evaluateMeshLocation(fieldcache, 3, xiNearest);
+		elementBoundaryNearest = findMeshLocationBoundaryNearest.evaluateMeshLocation(fieldcache, 3, xiBoundaryNearest);
+		Element &element = (elementExact.isValid()) ? elementExact : elementBoundaryNearest;
+		const int elementIdentifier = element.getIdentifier();
+		EXPECT_EQ(expectedElementXi[i].elementIdentifier, element.getIdentifier());
+		const double *xi = (elementExact.isValid()) ? xiExact : xiBoundaryNearest;
+		EXPECT_NEAR(expectedElementXi[i].xi[0], xi[0], TOL);
+		EXPECT_NEAR(expectedElementXi[i].xi[1], xi[1], TOL);
+		EXPECT_NEAR(expectedElementXi[i].xi[2], xi[2], TOL);
+	}
 }
 
 TEST(ZincFieldStoredMeshLocation, valid_arguments)
