@@ -3636,8 +3636,13 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	Computed_field_find_element_xi_cache *findElementXiCache =
 		findMeshLocationValueCache.getFindElementXiCache(this->getMeshField());
+	FeMeshFieldRanges *meshFieldRanges = this->meshFieldRanges;
+	if (!meshFieldRanges->isEvaluated())
+	{
+		this->meshFieldRangesCache->evaluateMeshFieldRanges(extraCache, meshFieldRanges);
+	}
 	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache,
-		findElementXiCache, sourceValueCache->values,
+		findElementXiCache, meshFieldRanges, sourceValueCache->values,
 		sourceValueCache->componentCount, &element, xi, this->searchMesh,
 		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
 		&& (element)))

@@ -1349,7 +1349,8 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 								 cmzn_field_get_number_of_components(texture_coordinate_field), &element, xi,
 								 search_mesh, graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
-							Computed_field_find_element_xi(texture_coordinate_field, field_cache, findElementXiCache,
+							Computed_field_find_element_xi(texture_coordinate_field, field_cache,
+								findElementXiCache, /*meshFieldRanges*/nullptr,
 								values, cmzn_field_get_number_of_components(texture_coordinate_field),
 								&element, xi, search_mesh,
 								/*find_nearest_location*/0)))

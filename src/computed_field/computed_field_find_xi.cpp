@@ -13,8 +13,8 @@ lookup of the element.
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -43,7 +43,9 @@ Computed_field_find_element_xi_cache::Computed_field_find_element_xi_cache(cmzn_
 Computed_field_find_element_xi_cache::~Computed_field_find_element_xi_cache()
 {
 	if (this->searchMesh)
-	cmzn_mesh_destroy(&this->searchMesh);
+	{
+		cmzn_mesh_destroy(&this->searchMesh);
+	}
 	delete[] this->values;
 	delete[] this->workingValues;
 }
@@ -304,9 +306,25 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 
 #undef MAX_FIND_XI_ITERATIONS
 
+/** Determine if element is within tolerance of element */
+inline bool checkElement(int componentsCount, const FE_value *values, cmzn_element *element,
+	FeMeshFieldRanges *meshFieldRanges, FE_value tolerance)
+{
+	if ((meshFieldRanges) && (tolerance >= 0.0))
+	{
+		const FeElementFieldRange *elementFieldRange = meshFieldRanges->getElementFieldRange(element->getIndex());
+		if (elementFieldRange)
+		{
+			return elementFieldRange->valuesInRange(componentsCount, values, tolerance);
+		}
+	}
+	return true;
+}
+
 int Computed_field_find_element_xi(struct Computed_field *field,
 	cmzn_fieldcache_id field_cache,
 	Computed_field_find_element_xi_cache *findElementXiCache,
+	FeMeshFieldRanges *meshFieldRanges,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh *searchMesh, int find_nearest)
@@ -347,36 +365,53 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 
 			if (searchMesh)
 			{
+				FE_value tolerance = (meshFieldRanges) && (!find_nearest) ? meshFieldRanges->getTolerance() : -1.0;
 				*element_address = (struct FE_element *)NULL;
 
 				/* Try the cached element first if it is in the mesh */
-				if ((!find_nearest) && findElementXiCache->element &&
-					cmzn_mesh_contains_element(searchMesh, findElementXiCache->element))
+				cmzn_element *element = findElementXiCache->element;
+				if ((element) && cmzn_mesh_contains_element(searchMesh, element))
 				{
-					if (Computed_field_iterative_element_conditional(
-						findElementXiCache->element, &find_element_xi_data))
+					if (checkElement(number_of_values, values, element, meshFieldRanges, tolerance))
 					{
-						*element_address = findElementXiCache->element;
+						if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
+						{
+							*element_address = element;
+						}
+						else if (find_element_xi_data.nearest_element == element)
+						{
+							tolerance = sqrt(find_element_xi_data.nearest_element_distance_squared);
+						}
 					}
 				}
 				/* Now try every element */
 				if (!*element_address)
 				{
-					cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(searchMesh);
-					cmzn_element_id element = 0;
+					cmzn_elementiterator *iterator = cmzn_mesh_create_elementiterator(searchMesh);
 					while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 					{
-						if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
+						if (element != findElementXiCache->element)  // since already tried it
 						{
-							*element_address = element;
-							break;
+							if (checkElement(number_of_values, values, element, meshFieldRanges, tolerance))
+							{
+								if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
+								{
+									*element_address = element;
+									break;
+								}
+								else if (find_element_xi_data.nearest_element == element)
+								{
+									tolerance = sqrt(find_element_xi_data.nearest_element_distance_squared);
+								}
+							}
 						}
 					}
-					cmzn_elementiterator_destroy(&iterator);
+					cmzn::Deaccess(iterator);
 				}
 			}
 			else
 			{
+				// don't expect to use mesh field ranges for single element case:
 				if ((!Computed_field_iterative_element_conditional(
 					*element_address, &find_element_xi_data)))
 				{

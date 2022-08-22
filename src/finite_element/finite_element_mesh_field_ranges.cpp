@@ -25,6 +25,8 @@ FeMeshFieldRanges::FeMeshFieldRanges(FeMeshFieldRangesCache *meshFieldRangesCach
 	meshFieldRangesCache(meshFieldRangesCacheIn),
 	fieldElementGroup(fieldElementGroupIn),
 	evaluated(false),
+	totalRange(nullptr),
+	tolerance(0.0),
 	access_count(1)
 {
 }
@@ -59,6 +61,9 @@ void FeMeshFieldRanges::clearRanges()
 		}
 	}
 	this->elementFieldRanges.clear();
+	delete this->totalRange;
+	this->totalRange = nullptr;
+	this->tolerance = 0.0;
 	this->evaluated = false;
 }
 
@@ -137,7 +142,7 @@ void FeMeshFieldRangesCache::detachFromMesh()
 	this->mesh = nullptr;
 }
 
-void FeMeshFieldRangesCache::evaluateMeshFieldRanges(cmzn_fieldcache *fieldcache, FeMeshFieldRanges *meshFieldRanges)
+void FeMeshFieldRangesCache::evaluateMeshFieldRanges(cmzn_fieldcache& fieldcache, FeMeshFieldRanges *meshFieldRanges)
 {
 	if (!((this->mesh) && (this->mesh->get_FE_region()) && (this->mesh->get_FE_region()->getRegion())))
 	{
@@ -153,13 +158,14 @@ void FeMeshFieldRangesCache::evaluateMeshFieldRanges(cmzn_fieldcache *fieldcache
 		return;
 	}
 
-	cmzn_fieldrange *fieldrange = cmzn_fieldrange::create(fieldcache);
+	cmzn_fieldrange *fieldrange = cmzn_fieldrange::create(&fieldcache);
 
 	const int componentsCount = this->field->getNumberOfComponents();
 	std::vector<double> values(componentsCount * 2);
 	double *minimums = values.data();
 	double *maximums = values.data() + componentsCount;
 
+	FeElementFieldRange *totalRange = nullptr;
 	cmzn_field_element_group *elementGroup = meshFieldRanges->getFieldElementGroup();
 	DsLabelsGroup *labelsGroup = (elementGroup) ?
 		&(Computed_field_element_group_core_cast(elementGroup)->getLabelsGroup()) : nullptr;
@@ -171,20 +177,32 @@ void FeMeshFieldRangesCache::evaluateMeshFieldRanges(cmzn_fieldcache *fieldcache
 		const FeElementFieldRange *elementFieldRange = this->masterRanges->getElementFieldRange(elementIndex);
 		if (!elementFieldRange)
 		{
-			if ((CMZN_OK == fieldcache->setElement(element)) &&
-				(CMZN_OK == fieldrange->evaluateRange(this->field, fieldcache)) &&
+			if ((CMZN_OK == fieldcache.setElement(element)) &&
+				(CMZN_OK == fieldrange->evaluateRange(this->field, &fieldcache)) &&
 				(CMZN_OK == fieldrange->getRange(componentsCount, minimums, maximums)))
 			{
 				elementFieldRange = new FeElementFieldRange(componentsCount, minimums, maximums);
 				this->masterRanges->setElementFieldRange(elementIndex, elementFieldRange);
 			}
 		}
-		if (elementGroup)
+		if (elementFieldRange)
 		{
-			meshFieldRanges->setElementFieldRange(elementIndex, elementFieldRange);
+			if (totalRange)
+			{
+				totalRange->enlarge(componentsCount, *elementFieldRange);
+			}
+			else
+			{
+				totalRange = new FeElementFieldRange(componentsCount, *elementFieldRange);
+			}
+			if (elementGroup)
+			{
+				meshFieldRanges->setElementFieldRange(elementIndex, elementFieldRange);
+			}
 		}
 	}
 	cmzn_fieldrange::deaccess(fieldrange);
+	meshFieldRanges->setTotalRange(componentsCount, totalRange);
 	meshFieldRanges->setEvaluated();
 }
 

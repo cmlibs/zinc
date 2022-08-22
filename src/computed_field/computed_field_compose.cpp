@@ -89,6 +89,7 @@ int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& in
 		// should store in custom ValueCache, but only used by cmgui
 		Computed_field_find_element_xi_cache *findElementXiCache = new Computed_field_find_element_xi_cache(getSourceField(1));
 		if (Computed_field_find_element_xi(getSourceField(1), &extraCache, findElementXiCache,
+			/*meshFieldRanges*/nullptr,
 			coordinateValueCache->values,
 			coordinateValueCache->componentCount,
 			&compose_element, compose_xi, mesh, find_nearest)

@@ -1415,10 +1415,10 @@ TEST(ZincNodetemplate, define_undefineField)
 	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
 }
 
-// Issue 50: Find mesh location was caching wrong xi between fieldmodule begin/end change
+// Find mesh location was caching wrong xi for modified field between begin/end change
 // Also, convergence was difficult for far away points with high curvature elements.
 // This test loads a curved heart surface mesh and finds nearest xi to 4 quite distant points.
-TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
+TEST(ZincFieldFindMeshLocation, find_xi_cache_and_convergence_active_modifications)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -1469,8 +1469,17 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	FieldDotProduct find_heart_dot = zinc.fm.createFieldDotProduct(find_heart_norm_vector, find_heart_norm_inside);
 	EXPECT_TRUE(find_heart_dot.isValid());
 
-	// between begin/endChange, field evaluation value caching is turned off meaning
-	// find_mesh_location is done twice. This brought up its incorrect cache behaviour.
+	// get and later set node 1 coordinate values to trigger a modification
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Node node1 = nodes.findNodeByIdentifier(1);
+	Fieldcache otherCache = zinc.fm.createFieldcache();
+	EXPECT_EQ(RESULT_OK, otherCache.setNode(node1));
+	double node1coordinates[3];
+	EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(otherCache, 3, node1coordinates));
+
+	// if there are active modifications to any field between begin/endChange,
+	// field evaluation value caching is turned off meaning find_mesh_location is done twice.
+	// This brought up the incorrect cache behaviour.
 	zinc.fm.beginChange();
 
 	Fieldcache cache = zinc.fm.createFieldcache();
@@ -1523,6 +1532,9 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 		EXPECT_NEAR(expected_xi_out[xin][0], xi_out[0], xiTol);
 		EXPECT_NEAR(expected_xi_out[xin][1], xi_out[1], xiTol);
 
+		// make an arbitrary field modification
+		EXPECT_EQ(RESULT_OK, coordinates.assignReal(otherCache, 3, node1coordinates));
+
 		element_out = find_heart.evaluateMeshLocation(cache, 2, xi_out);
 		EXPECT_TRUE(element_out.isValid());
 		element_out_number = element_out.getIdentifier();
@@ -1530,15 +1542,24 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 		EXPECT_NEAR(expected_xi_out[xin][0], xi_out[0], xiTol);
 		EXPECT_NEAR(expected_xi_out[xin][1], xi_out[1], xiTol);
 
+		// make an arbitrary field modification
+		EXPECT_EQ(RESULT_OK, coordinates.assignReal(otherCache, 3, node1coordinates));
+
 		EXPECT_EQ(RESULT_OK, find_heart_coordinates.evaluateReal(cache, 3, x_out));
 		EXPECT_NEAR(expected_x_out[xin][0], x_out[0], xTol);
 		EXPECT_NEAR(expected_x_out[xin][1], x_out[1], xTol);
 		EXPECT_NEAR(expected_x_out[xin][2], x_out[2], xTol);
 
+		// make an arbitrary field modification
+		EXPECT_EQ(RESULT_OK, coordinates.assignReal(otherCache, 3, node1coordinates));
+
 		EXPECT_EQ(RESULT_OK, find_heart_vector.evaluateReal(cache, 3, vector_out));
 		EXPECT_NEAR(expected_vector_out[xin][0], vector_out[0], xTol);
 		EXPECT_NEAR(expected_vector_out[xin][1], vector_out[1], xTol);
 		EXPECT_NEAR(expected_vector_out[xin][2], vector_out[2], xTol);
+
+		// make an arbitrary field modification
+		EXPECT_EQ(RESULT_OK, coordinates.assignReal(otherCache, 3, node1coordinates));
 
 		// all locations are outside of heart surface. Since heart is smooth, dot product
 		// of projection should be normal to surface and same direction as inside surface

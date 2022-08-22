@@ -17,9 +17,9 @@ has a particular value.
 
 #include "region/cmiss_region.hpp"
 
-struct Graphics_buffer_package;
-
 class Computed_field_find_element_xi_cache;
+
+class FeMeshFieldRanges;
 
 /**
  * Find location in mesh or element where the field has same or nearest value to
@@ -28,7 +28,9 @@ class Computed_field_find_element_xi_cache;
  * @param field  The field whose values need to match.
  * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
- * @param find_element_xi_cache  Cache for storing values during search.
+ * @param findElementXiCache  Cache for storing values during search.
+ * @param meshFieldRanges  Optional map from elements to ranges of field to
+ * quickly eliminate elements too far away.
  * @param values  Array of values to match or get nearest to. Implementation
  * promises to copy this, hence can pass a pointer to field cache values.
  * @param number_of_values  The size of the values array, must equal the number
@@ -46,6 +48,7 @@ class Computed_field_find_element_xi_cache;
 int Computed_field_find_element_xi(struct Computed_field *field,
 	cmzn_fieldcache_id field_cache,
 	Computed_field_find_element_xi_cache *findElementXiCache,
+	FeMeshFieldRanges *meshFieldRanges,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh *searchMesh, int find_nearest);

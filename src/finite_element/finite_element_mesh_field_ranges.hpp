@@ -29,17 +29,25 @@ class FeMeshFieldRangesCache;
 class FeElementFieldRange
 {
 public:
-	const int componentsCount;
 	FE_value *ranges;  // minimums, maximums
 
-	FeElementFieldRange(int componentsCountIn, FE_value *minimums, FE_value *maximums) :
-		componentsCount(componentsCountIn),
-		ranges(new FE_value[componentsCountIn * 2])
+	FeElementFieldRange(int componentsCount, FE_value *minimums, FE_value *maximums) :
+		ranges(new FE_value[componentsCount * 2])
 	{
-		for (int i = 0; i < componentsCountIn; ++i)
+		for (int i = 0; i < componentsCount; ++i)
 		{
 			this->ranges[i] = minimums[i];
-			this->ranges[i + componentsCountIn] = maximums[i];
+			this->ranges[i + componentsCount] = maximums[i];
+		}
+	}
+
+	/** copy constructor requires componentsCount */
+	FeElementFieldRange(int componentsCount, const FeElementFieldRange& source) :
+		ranges(new FE_value[componentsCount * 2])
+	{
+		for (int i = 0; i < componentsCount * 2; ++i)
+		{
+			this->ranges[i] = source.ranges[i];
 		}
 	}
 
@@ -48,12 +56,48 @@ public:
 		delete[] this->ranges;
 	}
 
-	/** @return True if values in range with tolerance, otherwise false. */
-	bool valuesInRange(FE_value *values, FE_value tolerance = 0.0) const
+	/** enlarge range to fit source */
+	void enlarge(int componentsCount, const FeElementFieldRange& source)
+	{
+		for (int i = 0; i < componentsCount; ++i)
+		{
+			if (this->ranges[i] > source.ranges[i])
+			{
+				this->ranges[i] = source.ranges[i];
+			}
+		}
+		for (int i = componentsCount; i < componentsCount * 2; ++i)
+		{
+			if (this->ranges[i] < source.ranges[i])
+			{
+				this->ranges[i] = source.ranges[i];
+			}
+		}
+	}
+
+	/** @return  Maximum value of any component (maximum - minimum). */
+	FE_value getMaxRange(int componentsCount)
 	{
 		const FE_value *minimums = this->ranges;
-		const FE_value *maximums = minimums + this->componentsCount;
-		for (int i = 0; i < this->componentsCount; ++i)
+		const FE_value *maximums = minimums + componentsCount;
+		FE_value maxRange = 0.0;
+		for (int i = 0; i < componentsCount; ++i)
+		{
+			const FE_value componentRange = maximums[i] - minimums[i];
+			if (maxRange < componentRange)
+			{
+				maxRange = componentRange;
+			}
+		}
+		return maxRange;
+	}
+
+	/** @return True if values in range with tolerance, otherwise false. */
+	bool valuesInRange(int componentsCount, const FE_value *values, FE_value tolerance) const
+	{
+		const FE_value *minimums = this->ranges;
+		const FE_value *maximums = minimums + componentsCount;
+		for (int i = 0; i < componentsCount; ++i)
 		{
 			if (values[i] < (minimums[i] - tolerance))
 			{
@@ -80,6 +124,8 @@ class FeMeshFieldRanges
 	cmzn_field_element_group *fieldElementGroup;  // optional group this is for, not accessed
 	// Note: owns and frees FeElementFieldRange objects only if no fieldElementGroup
 	block_array<DsLabelIndex, const FeElementFieldRange *> elementFieldRanges;
+	FeElementFieldRange *totalRange;  // total range of whole mesh, if valid
+	FE_value tolerance;  // a fraction of the totalRange to cover approximation in each element
 	bool evaluated;  // true if ranges have been evaluate (but client must check field has not been modified)
 	std::atomic_int access_count;
 
@@ -102,15 +148,6 @@ public:
 	/** Called when owning cache is destroyed. Clears ranges and pointer to owning cache pointer. */
 	void detachFromCache();
 
-	/** Client must call before using cache */
-	void checkEvaluate()
-	{
-		if (!this->evaluated)
-		{
-			this->doEvaluate();
-		}
-	}
-
 	/** Client must check before using cache, otherwise call parent cache evaluate */
 	bool isEvaluated() const
 	{
@@ -129,12 +166,6 @@ public:
 		return this->elementFieldRanges.getValue(elementIndex);
 	}
 
-	/** @return  Optional element group this is for */
-	cmzn_field_element_group *getFieldElementGroup() const
-	{
-		return this->fieldElementGroup;
-	}
-
 	/** Set the element field range for element index.
 	 * Expects no existing element field range for the element index.
 	 * If no fieldElementGroup, ownership and cleanup are passed to this object.
@@ -144,9 +175,33 @@ public:
 		return this->elementFieldRanges.setValue(elementIndex, elementFieldRange);
 	}
 
-private:
+	/** @return  Optional element group this is for */
+	cmzn_field_element_group *getFieldElementGroup() const
+	{
+		return this->fieldElementGroup;
+	}
 
-	void doEvaluate();
+	/** @return  Small tolerance for testing whether in element range */
+	FE_value getTolerance() const
+	{
+		return this->tolerance;
+	}
+
+	void setTotalRange(int componentsCount, FeElementFieldRange *totalRangeIn)
+	{
+		delete this->totalRange;
+		this->tolerance = 0.0;
+		this->totalRange = totalRangeIn;
+		if (this->totalRange)
+		{
+			this->tolerance = 1.0E-5 * this->totalRange->getMaxRange(componentsCount);
+		}
+		else
+		{
+			this->tolerance = 0.0;
+		}
+	}
+
 };
 
 
@@ -184,7 +239,7 @@ public:
 
 	/** Evaluate ranges of all elements for mesh field ranges and mark as evaluated.
 	 * @param fieldcache  Field */
-	void evaluateMeshFieldRanges(cmzn_fieldcache *fieldcache, FeMeshFieldRanges *meshFieldRanges);
+	void evaluateMeshFieldRanges(cmzn_fieldcache& fieldcache, FeMeshFieldRanges *meshFieldRanges);
 
 	cmzn_field *getField() const
 	{
