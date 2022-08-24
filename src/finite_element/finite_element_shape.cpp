@@ -788,13 +788,18 @@ if (POLYGON_SHAPE== *type_entry) \
 										linked_offset=simplex_dimension;
 										if (0<linked_offsets[xi_coordinate])
 										{
+											int line_offset = 0;  // wedge13 wasn't taking into account offset for line on middle direction
 											do
 											{
+												if (linked_offsets[simplex_coordinate] > 1)
+												{
+													++line_offset;
+												}
 												simplex_coordinate +=
 													linked_offsets[simplex_coordinate];
 												linked_offset--;
 											} while (linked_offsets[simplex_coordinate]>0);
-											face[simplex_coordinate-xi_coordinate] += offset;
+											face[simplex_coordinate - xi_coordinate + line_offset] += offset;
 										}
 										else
 										{
