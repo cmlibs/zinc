@@ -3691,9 +3691,15 @@ int Computed_field_find_mesh_location::list()
 			display_message(INFORMATION_MESSAGE, " find_exact\n");
 		}
 		display_message(INFORMATION_MESSAGE, "    mesh : ");
-		char *mesh_name = cmzn_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(this->mesh);
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
+
+		display_message(INFORMATION_MESSAGE, "    search mesh : ");
+		mesh_name = cmzn_mesh_get_name(this->searchMesh);
+		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
+		DEALLOCATE(mesh_name);
+
 		display_message(INFORMATION_MESSAGE,
 			"    mesh field : %s\n", getMeshField()->name);
 		display_message(INFORMATION_MESSAGE,
@@ -3722,7 +3728,14 @@ char *Computed_field_find_mesh_location::get_command_string()
 		}
 
 		append_string(&command_string, " mesh ", &error);
-		char *mesh_name = cmzn_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(this->mesh);
+		make_valid_token(&mesh_name);
+		append_string(&command_string, mesh_name, &error);
+		DEALLOCATE(mesh_name);
+
+		append_string(&command_string, " search_mesh ", &error);
+		mesh_name = cmzn_mesh_get_name(this->searchMesh);
+		make_valid_token(&mesh_name);
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 

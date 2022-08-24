@@ -1741,64 +1741,40 @@ const FE_value *get_FE_element_shape_face_to_element(
 }
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
-	FE_value *xi, int *face_number)
-/*******************************************************************************
-LAST MODIFIED : 11 June 1999
-
-DESCRIPTION :
-This function checks to see if the given <xi> location (of dimension
-<shape>->dimension) specifys a location on a face.  If it does then the function
-returns 1 and <face_number> is set.  Otherwise the function returns 0.
-SAB Doesn't work for polygons at the moment.
-==============================================================================*/
+	FE_value *xi, FE_value tolerance, int lastFaceNumber)
 {
-	int bit, i, j, return_code;
-	FE_value sum;
-
-	ENTER(FE_element_shape_find_face_number_for_xi);
-
-	if (shape&&face_number)
+	if (!((shape) && (xi) && (tolerance > 0.0) &&
+		(2 <= shape->dimension) && (shape->dimension <= 3) &&
+		(-1 <= lastFaceNumber) && (lastFaceNumber < shape->number_of_faces)))
 	{
-		return_code = 0;
-		for (i = 0 ; (!return_code) && (i < shape->number_of_faces) ; i++)
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_find_face_number_for_xi.  Invalid argument(s)");
+		return -1;
+	}
+	// shape->faces encodes face equation for line and simplex shapes in binary
+	// first bit = 0 or 1, expected sum of included xi coordinates
+	// next bits are true for each xi coordinate to add
+	// e.g. tetrahedron simplex face 15 = 1 1 1 1: 1.0 = xi1 + xi2 + xi3
+	for (int fn = lastFaceNumber + 1; fn < shape->number_of_faces; ++fn)
+	{
+		const int face = shape->faces[fn];
+		unsigned int bit = 0x1;
+		FE_value feq = (face & bit) ? -1.0 : 0.0;
+		for (int i = 0; i < shape->dimension; ++i)
 		{
-			sum = 0.0;
-			bit = 2;
-			for (j = 0 ; j < shape->dimension ; j++)
+			bit <<= 1;
+			if (face & bit)
 			{
-				if (shape->faces[i] & bit)
-				{
-					sum += xi[j];
-				}
-				bit *= 2;
-			}
-			if (shape->faces[i] & 1)
-			{
-				if (sum >= 1.0)
-				{
-					*face_number = i;
-					return_code = 1;
-				}
-			}
-			else
-			{
-				if (sum <= 0.0)
-				{
-					*face_number = i;
-					return_code = 1;
-				}
+				feq += xi[i];
 			}
 		}
+		if (fabs(feq) < tolerance)
+		{
+			return fn;
+		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"find_face_number_of_face_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_shape_find_face_number_for_xi */
+	return -1;
+}
 
 int get_FE_element_shape_xi_linkage_number(
 	struct FE_element_shape *element_shape, int xi_number1, int xi_number2,
@@ -1959,148 +1935,214 @@ Also checks that the linked xi numbers have the same shape type.
 	return (return_code);
 } /* get_FE_element_shape_next_linked_xi_number */
 
-int FE_element_shape_limit_xi_to_element(struct FE_element_shape *shape,
-	FE_value *xi, FE_value tolerance)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
+namespace {
 
-DESCRIPTION :
-Checks that the <xi> location is valid for elements with <shape>.
-The <tolerance> allows the location to go slightly outside.  If the values for
-<xi> location are further than <tolerance> outside the element then the values
-are modified to put it on the nearest face.
-==============================================================================*/
+inline int shape_type_get_simplex_info(FE_element_shape *shape, int *simplex_direction)
 {
-	int i, return_code, simplex_dimensions,
-		simplex_direction[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	FE_value delta;
-
-	ENTER(FE_element_shape_limit_xi_to_element);
-	if (shape && xi)
+	int simplex_dimensions = 0;
+	switch (shape->dimension)
 	{
-		return_code = 1;
-		/* determine whether the element is simplex to limit xi space */
-		simplex_dimensions = 0;
-		switch (shape->dimension)
+	case 2:
+	{
+		if (SIMPLEX_SHAPE == shape->type[0])
 		{
-			case 2:
-			{
-				if (SIMPLEX_SHAPE == shape->type[0])
-				{
-					simplex_dimensions = 2;
-					simplex_direction[0] = 0;
-					simplex_direction[1] = 1;
-				}
-			} break;
-			case 3:
-			{
-				if (SIMPLEX_SHAPE == shape->type[0])
-				{
-					if (LINE_SHAPE == shape->type[3])
-					{
-						simplex_dimensions = 2;
-						simplex_direction[0] = 0;
-						simplex_direction[1] = 2;
-					}
-					else if (LINE_SHAPE == shape->type[5])
-					{
-						simplex_dimensions = 2;
-						simplex_direction[0] = 0;
-						simplex_direction[1] = 1;
-					}
-					else
-					{
-						/* tetrahedron */
-						simplex_dimensions = 3;
-						simplex_direction[0] = 0;
-						simplex_direction[1] = 1;
-						simplex_direction[2] = 2;
-					}
-				}
-				else if (SIMPLEX_SHAPE == shape->type[3])
-				{
-					simplex_dimensions = 2;
-					simplex_direction[0] = 1;
-					simplex_direction[1] = 2;
-				}
-			} break;
+			simplex_dimensions = 2;
+			simplex_direction[0] = 0;
+			simplex_direction[1] = 1;
 		}
-		/* keep xi within simplex bounds plus tolerance */
-		if (simplex_dimensions)
+	} break;
+	case 3:
+	{
+		if (SIMPLEX_SHAPE == shape->type[0])
 		{
-			/* calculate distance out of element in xi space */
-			delta = -1.0 - tolerance;
-			for (i = 0; i < simplex_dimensions; i++)
+			if (LINE_SHAPE == shape->type[3])
 			{
-				delta += xi[simplex_direction[i]];
+				simplex_dimensions = 2;
+				simplex_direction[0] = 0;
+				simplex_direction[1] = 2;
 			}
-			if (delta > 0.0)
+			else if (LINE_SHAPE == shape->type[5])
 			{
-				/* subtract delta equally from all directions */
-				delta /= simplex_dimensions;
-				for (i = 0; i < simplex_dimensions; i++)
-				{
-					xi[simplex_direction[i]] -= delta;
-				}
+				simplex_dimensions = 2;
+				simplex_direction[0] = 0;
+				simplex_direction[1] = 1;
 			}
-			if (simplex_dimensions == 3)
+			else
 			{
-				// correct a single negative xi component where sum of other two must be <= 1
-				if ((xi[0] < -tolerance) && (xi[1] > 0.0) && (xi[2] > 0.0))
-				{
-					delta = -1.0 - tolerance + xi[simplex_direction[1]] + xi[simplex_direction[2]];
-					if (delta > 0.0)
-					{
-						delta *= 0.5;
-						xi[simplex_direction[1]] -= delta;
-						xi[simplex_direction[2]] -= delta;
-					}
-				}
-				else if ((xi[1] < -tolerance) && (xi[0] > 0.0) && (xi[2] > 0.0))
-				{
-					delta = -1.0 - tolerance + xi[simplex_direction[0]] + xi[simplex_direction[2]];
-					if (delta > 0.0)
-					{
-						delta *= 0.5;
-						xi[simplex_direction[0]] -= delta;
-						xi[simplex_direction[2]] -= delta;
-					}
-				}
-				else if ((xi[2] < -tolerance) && (xi[0] > 0.0) && (xi[1] > 0.0))
-				{
-					delta = -1.0 - tolerance + xi[simplex_direction[0]] + xi[simplex_direction[1]];
-					if (delta > 0.0)
-					{
-						delta *= 0.5;
-						xi[simplex_direction[0]] -= delta;
-						xi[simplex_direction[1]] -= delta;
-					}
-				}
+				/* tetrahedron */
+				simplex_dimensions = 3;
+				simplex_direction[0] = 0;
+				simplex_direction[1] = 1;
+				simplex_direction[2] = 2;
 			}
 		}
-		/* keep xi within 0.0 to 1.0 bounds plus tolerance */
-		for (i = 0; i < shape->dimension; i++)
+		else if (SIMPLEX_SHAPE == shape->type[3])
 		{
-			if (xi[i] < -tolerance)
+			simplex_dimensions = 2;
+			simplex_direction[0] = 1;
+			simplex_direction[1] = 2;
+		}
+	} break;
+	}
+	return simplex_dimensions;
+}
+
+}
+
+bool FE_element_shape_limit_xi_to_element(struct FE_element_shape *shape,
+	FE_value *xi, FE_value tolerance)
+{
+	if (!((shape) && (xi)))
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_limit_xi_to_element.  Invalid argument(s)");
+		return false;
+	}
+	bool xiLimited = false;
+	/* determine whether the element is simplex to limit xi space */
+	int simplex_direction[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	const int simplex_dimensions = shape_type_get_simplex_info(shape, simplex_direction);
+	/* keep xi within simplex bounds plus tolerance */
+	if (simplex_dimensions)
+	{
+		/* calculate distance out of element in xi space */
+		FE_value delta = -1.0 - tolerance;
+		for (int i = 0; i < simplex_dimensions; i++)
+		{
+			delta += xi[simplex_direction[i]];
+		}
+		if (delta > 0.0)
+		{
+			/* subtract delta equally from all directions */
+			delta /= simplex_dimensions;
+			for (int i = 0; i < simplex_dimensions; i++)
 			{
-				xi[i] = -tolerance;
+				xi[simplex_direction[i]] -= delta;
 			}
-			else if (xi[i] > 1.0 + tolerance)
+			xiLimited = true;
+		}
+		if (simplex_dimensions == 3)
+		{
+			// correct a single negative xi component where sum of other two must be <= 1
+			if ((xi[0] < -tolerance) && (xi[1] > 0.0) && (xi[2] > 0.0))
 			{
-				xi[i] = 1.0 + tolerance;
+				delta = -1.0 - tolerance + xi[simplex_direction[1]] + xi[simplex_direction[2]];
+				if (delta > 0.0)
+				{
+					delta *= 0.5;
+					xi[simplex_direction[1]] -= delta;
+					xi[simplex_direction[2]] -= delta;
+				}
+			}
+			else if ((xi[1] < -tolerance) && (xi[0] > 0.0) && (xi[2] > 0.0))
+			{
+				delta = -1.0 - tolerance + xi[simplex_direction[0]] + xi[simplex_direction[2]];
+				if (delta > 0.0)
+				{
+					delta *= 0.5;
+					xi[simplex_direction[0]] -= delta;
+					xi[simplex_direction[2]] -= delta;
+				}
+			}
+			else if ((xi[2] < -tolerance) && (xi[0] > 0.0) && (xi[1] > 0.0))
+			{
+				delta = -1.0 - tolerance + xi[simplex_direction[0]] + xi[simplex_direction[1]];
+				if (delta > 0.0)
+				{
+					delta *= 0.5;
+					xi[simplex_direction[0]] -= delta;
+					xi[simplex_direction[1]] -= delta;
+				}
 			}
 		}
+	}
+	/* keep xi within 0.0 to 1.0 bounds plus tolerance */
+	for (int i = 0; i < shape->dimension; i++)
+	{
+		if (xi[i] < -tolerance)
+		{
+			xi[i] = -tolerance;
+			xiLimited = true;
+		}
+		else if (xi[i] > 1.0 + tolerance)
+		{
+			xi[i] = 1.0 + tolerance;
+			xiLimited = true;
+		}
+	}
+	return xiLimited;
+}
+
+bool FE_element_shape_get_face_outward_normal(FE_element_shape *shape, int faceNumber,
+	int coordinatesCount, const FE_value *coordinateDerivatives, FE_value *faceNormal)
+{
+	if (!((shape) && (faceNumber >= 0) &&
+		(2 <= shape->dimension) && (shape->dimension <= 3) &&
+		(shape->dimension <= coordinatesCount) && (coordinatesCount <= 3) &&
+		(coordinateDerivatives) && (faceNormal)))
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_get_face_outward_normal.  Invalid argument(s)");
+		return false;
+	}
+	// following will contain dx/dxi on face
+	FE_value sd[2][3];
+	const FE_value *faceToElement = shape->face_to_element +
+		(faceNumber * shape->dimension * shape->dimension);
+
+	const int shapeDimension = shape->dimension;
+	const int faceDimension = shapeDimension - 1;
+	for (int i = 0; i < faceDimension; ++i)
+	{
+		for (int c = 0; c < coordinatesCount; ++c)
+		{
+			FE_value sum = 0.0;
+			for (int j = 0; j < shapeDimension; ++j)
+			{
+				sum += faceToElement[j * shapeDimension + 1 + i] * coordinateDerivatives[c * shapeDimension + j];
+			}
+			sd[i][c] = sum;
+		}
+		// pad to 3 components
+		for (int c = coordinatesCount; c < 3; ++c)
+		{
+			sd[i][c] = 0.0;
+		}
+	}
+	if (shapeDimension == 2)
+	{
+		FE_value d[2][3];
+		for (int j = 0; j < shapeDimension; ++j)
+		{
+			for (int c = 0; c < coordinatesCount; ++c)
+			{
+				d[j][c] = coordinateDerivatives[c * shapeDimension + j];
+			}
+			// pad to 3 components
+			for (int c = coordinatesCount; c < 3; ++c)
+			{
+				d[j][c] = 0.0;
+			}
+		}
+		cross_product3(d[0], d[1], sd[1]);
+		cross_product3(sd[1], sd[0], faceNormal);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"FE_element_shape_limit_xi_to_element.  "
-			"Invalid argument(s)");
-		return_code = 0;
+		cross_product3(sd[0], sd[1], faceNormal);
 	}
-	LEAVE;
+	normalize3(faceNormal);
+	// ensure faceNormal is outward
+	if (FE_element_shape_face_has_inward_normal(shape, faceNumber))
+	{
+		for (int c = 0; c < coordinatesCount; ++c)
+		{
+			faceNormal[c] = -faceNormal[c];
+		}
+	}
+	return true;
+}
 
-	return (return_code);
-} /* FE_element_shape_limit_xi_to_element */
 
 int FE_element_shape_calculate_face_xi_normal(struct FE_element_shape *shape,
 	int face_number, FE_value *normal)
@@ -2150,19 +2192,19 @@ int FE_element_shape_calculate_face_xi_normal(struct FE_element_shape *shape,
 						}
 					}
 					if (LU_decompose(dimension-1, matrix_double, pivot_index,
-						&determinant,/*singular_tolerance*/1.0e-12))
+&determinant,/*singular_tolerance*/1.0e-12))
 					{
-						for (j = 0; j<dimension-1; j++)
-						{
-							determinant *= matrix_double[j*(dimension-1)+j];
-						}
-						normal[i] = sign*(FE_value)determinant;
-						sign = -sign;
+					for (j = 0; j<dimension-1; j++)
+					{
+						determinant *= matrix_double[j*(dimension-1)+j];
+					}
+					normal[i] = sign*(FE_value)determinant;
+					sign = -sign;
 					}
 					else
 					{
-						normal[i] = 0.0;
-						sign = -sign;
+					normal[i] = 0.0;
+					sign = -sign;
 					}
 					i++;
 				}
@@ -2190,10 +2232,10 @@ int FE_element_shape_calculate_face_xi_normal(struct FE_element_shape *shape,
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "face_calculate_xi_normal.  "
-					"Could not allocate matrix_double (%p) or pivot_index (%p)",
-					matrix_double, pivot_index);
-				return_code = 0;
+			display_message(ERROR_MESSAGE, "face_calculate_xi_normal.  "
+				"Could not allocate matrix_double (%p) or pivot_index (%p)",
+				matrix_double, pivot_index);
+			return_code = 0;
 			}
 			DEALLOCATE(pivot_index);
 			DEALLOCATE(matrix_double);
@@ -2201,9 +2243,9 @@ int FE_element_shape_calculate_face_xi_normal(struct FE_element_shape *shape,
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "face_calculate_xi_normal.  "
-			"Invalid argument(s).  %p %d %d %p", shape, dimension, face_number, normal);
-		return_code = 0;
+	display_message(ERROR_MESSAGE, "face_calculate_xi_normal.  "
+		"Invalid argument(s).  %p %d %d %p", shape, dimension, face_number, normal);
+	return_code = 0;
 	}
 	LEAVE;
 
@@ -2213,26 +2255,50 @@ int FE_element_shape_calculate_face_xi_normal(struct FE_element_shape *shape,
 bool FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 	int face_number)
 {
-	if (shape && (3 == shape->dimension) &&
+	if (shape && (2 <= shape->dimension) && (shape->dimension <= 3) &&
 		(0 <= face_number) && (face_number <= shape->number_of_faces))
 	{
-		FE_value *outward_face_normal;
-		FE_value face_xi1[3], face_xi2[3], actual_face_normal[3];
-		FE_value *face_to_element = shape->face_to_element +
-			face_number*shape->dimension*shape->dimension;
-		face_xi1[0] = face_to_element[1];
-		face_xi1[1] = face_to_element[4];
-		face_xi1[2] = face_to_element[7];
-		face_xi2[0] = face_to_element[2];
-		face_xi2[1] = face_to_element[5];
-		face_xi2[2] = face_to_element[8];
-		cross_product_FE_value_vector3(face_xi1, face_xi2, actual_face_normal);
-		outward_face_normal = shape->face_normals + face_number*shape->dimension;
-		FE_value result = actual_face_normal[0]*outward_face_normal[0] +
-			actual_face_normal[1]*outward_face_normal[1] +
-			actual_face_normal[2]*outward_face_normal[2];
-		if (result < 0.0)
-			return true;
+		if (shape->dimension == 3)
+		{
+			FE_value *outward_face_normal;
+			FE_value face_xi1[3], face_xi2[3], actual_face_normal[3];
+			FE_value *face_to_element = shape->face_to_element +
+				face_number*shape->dimension*shape->dimension;
+			face_xi1[0] = face_to_element[1];
+			face_xi1[1] = face_to_element[4];
+			face_xi1[2] = face_to_element[7];
+			face_xi2[0] = face_to_element[2];
+			face_xi2[1] = face_to_element[5];
+			face_xi2[2] = face_to_element[8];
+			cross_product3(face_xi1, face_xi2, actual_face_normal);
+			outward_face_normal = shape->face_normals + face_number*shape->dimension;
+			FE_value result = actual_face_normal[0]*outward_face_normal[0] +
+				actual_face_normal[1]*outward_face_normal[1] +
+				actual_face_normal[2]*outward_face_normal[2];
+			if (result < 0.0)
+			{
+				return true;
+			}
+		}
+		else if (shape->dimension == 2)
+		{
+			if (shape->type[0] == SIMPLEX_SHAPE)
+			{
+				// triangle
+				if (face_number == 1)
+				{
+					return true;
+				}
+			}
+			else
+			{
+				// square element
+				if ((face_number = 1) || (face_number == 2))
+				{
+					return true;
+				}
+			}
+		}
 	}
 	else
 	{

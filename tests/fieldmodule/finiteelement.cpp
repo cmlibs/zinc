@@ -1666,13 +1666,13 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 
 	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
 	EXPECT_TRUE(datapoints.isValid());
-	EXPECT_EQ(10, datapoints.getSize());
+	EXPECT_EQ(12, datapoints.getSize());
 
 	const struct
 	{
 		int elementIdentifier;
 		double xi[3];
-	} expectedElementXi[10] =
+	} expectedElementXi[12] =
 	{
 		{1, {0.0, 0.53979577402311651, 0.69177470736971181}},
 		{2, {0.11990294780427879, 0.0, 0.37092623208751258}},
@@ -1683,7 +1683,9 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		{6, {0.15702108718222982, 0.26880621160983603, 0.26128316101522436}},
 		{5, {0.51817252996829977, 0.40963848233275751, 0.31716431429090608}},
 		{3, {0.24583038158538131, 0.35923948388603327, 0.33152494022382217}},
-		{1, {0.43003497940512292, 0.59309299145975747, 0.40054136880384372}}
+		{1, {0.43003497940512292, 0.59309299145975747, 0.40054136880384372}},
+		{3, {0.12125557535668180, 0.054821385886946641, 1.0000000000000000}},
+		{1, {0.0, 1.0, 0.24745374311778573}}
 	};
 
 	FieldFindMeshLocation findMeshLocationExact = zinc.fm.createFieldFindMeshLocation(dataCordinates, deformed, mesh3d);
@@ -1699,17 +1701,17 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 	Fieldcache fieldcache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(fieldcache.isValid());
 
-	Element elementExact, elementNearest, elementBoundaryNearest, elementWorkaround;
-	double xiExact[3], xiNearest[3], xiBoundaryNearest[3], *xiWorkaround;
-	const double TOL = 1.0E-8;
-	for (int i = 0; i < 10; ++i)
+	Element elementExact, elementNearest, elementBoundaryNearest;
+	double xiExact[3], xiNearest[3], xiBoundaryNearest[3];
+	const double TOL = 1.0E-5;
+	for (int i = 0; i < 12; ++i)
 	{
 		Node datapoint = datapoints.findNodeByIdentifier(i + 1);
 		EXPECT_TRUE(datapoint.isValid());
 
 		EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint));
-		elementExact = findMeshLocationExact.evaluateMeshLocation(fieldcache, 3, xiExact);
 		elementNearest = findMeshLocationNearest.evaluateMeshLocation(fieldcache, 3, xiNearest);
+		elementExact = findMeshLocationExact.evaluateMeshLocation(fieldcache, 3, xiExact);
 		elementBoundaryNearest = findMeshLocationBoundaryNearest.evaluateMeshLocation(fieldcache, 3, xiBoundaryNearest);
 		Element &element = (elementExact.isValid()) ? elementExact : elementBoundaryNearest;
 		const int elementIdentifier = element.getIdentifier();
@@ -1718,6 +1720,12 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		EXPECT_NEAR(expectedElementXi[i].xi[0], xi[0], TOL);
 		EXPECT_NEAR(expectedElementXi[i].xi[1], xi[1], TOL);
 		EXPECT_NEAR(expectedElementXi[i].xi[2], xi[2], TOL);
+
+		EXPECT_EQ(expectedElementXi[i].elementIdentifier, elementNearest.getIdentifier());
+		EXPECT_NEAR(expectedElementXi[i].xi[0], xiNearest[0], TOL);
+		// find nearest on 3D does not yet give identical results in all cases to find nearest on boundary, hence:
+		EXPECT_NEAR(expectedElementXi[i].xi[1], xiNearest[1], (i == 0) ? 4.0E-4 : TOL);
+		EXPECT_NEAR(expectedElementXi[i].xi[2], xiNearest[2], (i == 0) ? 4.0E-4 : (i == 11) ? 0.2 : TOL);
 	}
 }
 

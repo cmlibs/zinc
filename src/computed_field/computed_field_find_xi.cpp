@@ -55,235 +55,275 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 	struct Computed_field_iterative_find_element_xi_data *data)
 {
 	double a[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		b[MAXIMUM_ELEMENT_XI_DIMENSIONS], d, sum;
-	FE_value *derivatives, last_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values;
-	int converged, i, indx[MAXIMUM_ELEMENT_XI_DIMENSIONS], iterations, j, k,
-		number_of_xi, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
+		b[MAXIMUM_ELEMENT_XI_DIMENSIONS], b2[MAXIMUM_ELEMENT_XI_DIMENSIONS], d, sum;
+	FE_value last_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int i, indx[MAXIMUM_ELEMENT_XI_DIMENSIONS], iterations, j, k,
 		number_of_xi_points_created[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code;
 	struct FE_element_shape *shape;
-	FE_value_triple *xi_points;
 
-	ENTER(Computed_field_iterative_element_conditional);
 	if (element && data)
 	{
-		number_of_xi = get_FE_element_dimension(element);
+		const int number_of_xi = element->getDimension();
 		if (number_of_xi <= data->number_of_values)
 		{
 			return_code = 1;
-			if (data->found_number_of_xi != number_of_xi)
+			shape = get_FE_element_shape(element);
+			if (data->start_with_data_xi)
 			{
-				if (REALLOCATE(derivatives, data->found_derivatives, FE_value,
-					data->number_of_values * number_of_xi))
+				for (i = 0; i < number_of_xi; i++)
 				{
-					data->found_derivatives = derivatives;
-					data->found_number_of_xi = number_of_xi;
-					return_code = 1;
+					last_xi[i] = data->xi[i];
+				}
+			}
+			else
+			{
+				/* Find a good estimate of the centre to start with */
+				int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 1, 1, 1 };
+				FE_value_triple *xi_points;
+				if (FE_element_shape_get_xi_points_cell_centres(shape,
+					number_in_xi, number_of_xi_points_created, &xi_points))
+				{
+					for (i = 0; i < number_of_xi; i++)
+					{
+						data->xi[i] = xi_points[0][i];
+						last_xi[i] = xi_points[0][i];
+					}
+					DEALLOCATE(xi_points);
 				}
 				else
+				{
+					for (i = 0; i < number_of_xi; i++)
+					{
+						data->xi[i] = 0.5;
+						last_xi[i] = 0.5;
+					}
+				}
+			}
+			FE_value maxDeltaXi = 0.2;  // reduced after certain iterations
+			FE_value dxi2[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			FE_value *faceNormal = data->workingValues;
+			const FieldDerivative *fieldDerivative = element->getMesh()->getFieldDerivative(/*order*/1);
+			const FE_value *values = nullptr;
+			const FE_value *derivatives = nullptr;
+			bool converged = false;
+			iterations = 0;
+			while (true)
+			{
+				const int result = data->field_cache->setMeshLocation(element, data->xi);
+				const RealFieldValueCache *realValueCache = RealFieldValueCache::cast(data->field->evaluate(*data->field_cache));
+				const DerivativeValueCache *derivativeValueCache = data->field->evaluateDerivative(*data->field_cache, *fieldDerivative);
+				if (!((CMZN_OK == result) && (realValueCache) && (derivativeValueCache)))
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_iterative_element_conditional.  "
-						"Unable to allocate derivative storage");
+						"Could not evaluate field");
 					return_code = 0;
+					break;
 				}
-			}
-			if (return_code)
-			{
-				values = data->found_values;
-				derivatives = data->found_derivatives;
-				shape = get_FE_element_shape(element);
-				if (data->start_with_data_xi)
+				values = realValueCache->values;
+				derivatives = derivativeValueCache->values;
+				/* least-squares approach: make the derivatives / right hand side
+					vector into square system to solve for delta-Xi */
+				for (i = 0; i < number_of_xi; i++)
 				{
-					for (i = 0 ; i < number_of_xi ; i++)
+					for (j = 0; j < number_of_xi; j++)
 					{
-						last_xi[i] = data->xi[i];
-					}
-				}
-				else
-				{
-					/* Find a good estimate of the centre to start with */
-					for (i = 0 ; i < number_of_xi ; i++)
-					{
-						/* I want just one location in the middle */
-						number_in_xi[i] = 1;
-					}
-					if (FE_element_shape_get_xi_points_cell_centres(shape,
-							number_in_xi, number_of_xi_points_created, &xi_points))
-					{
-						for (i = 0 ; i < number_of_xi ; i++)
+						sum = 0.0;
+						for (k = 0; k < data->number_of_values; k++)
 						{
-							data->xi[i] = xi_points[0][i];
-							last_xi[i] = xi_points[0][i];
+							sum += (double)derivatives[k*number_of_xi + j] *
+								(double)derivatives[k*number_of_xi + i];
 						}
-						DEALLOCATE(xi_points);
+						a[i*number_of_xi + j] = sum;
 					}
-					else
+					sum = 0.0;
+					for (k = 0; k < data->number_of_values; k++)
 					{
-						for (i = 0 ; i < number_of_xi ; i++)
-						{
-							data->xi[i] = 0.5;
-							last_xi[i] = 0.5;
-						}
+						sum += (double)derivatives[k*number_of_xi + i] *
+							((double)data->values[k] - (double)values[k]);
+					}
+					b[i] = sum;
+				}
+				if (!(LU_decompose(number_of_xi, a, indx, &d,/*singular_tolerance*/1.0e-12) &&
+					LU_backsubstitute(number_of_xi, a, indx, b)))
+				{
+					/* Probably singular matrix, no longer report error
+						as a collapsed element gets reported on every
+						pixel making it unusable.*/
+					return_code = 0;
+					break;
+				}
+				// have limits on delta xi to handle high field curvature
+				if (iterations == 6)
+				{
+					maxDeltaXi *= 0.5;
+				}
+				else if (iterations == 21)
+				{
+					maxDeltaXi *= 0.25;
+				}
+				double mag_dxi = 0.0;
+				for (i = 0; i < number_of_xi; ++i)
+				{
+					mag_dxi += b[i]*b[i];
+				}
+				mag_dxi = sqrt(mag_dxi);
+				const FE_value dxi_scale = (data->find_nearest_location) && (mag_dxi > maxDeltaXi) ? (maxDeltaXi / mag_dxi) : 1.0;
+				for (i = 0; i < number_of_xi; i++)
+				{
+					data->xi[i] += dxi_scale * b[i];
+				}
+				bool xiLimited = FE_element_shape_limit_xi_to_element(shape, data->xi, 0.0);
+				converged = true;
+				for (i = 0; i < number_of_xi; i++)
+				{
+					/* converged if all xi increments on or within tolerance */
+					if (fabs(b[i]) > data->xi_tolerance)
+					{
+						converged = false;
+						break;
 					}
 				}
-				converged = 0;
-				iterations = 0;
-				while ((!converged) && return_code)
+				++iterations;
+				if (converged)
 				{
-					if ((CMZN_OK == data->field_cache->setMeshLocation(element, data->xi)) &&
-						(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(data->field, data->field_cache,
-							data->number_of_values, values, number_of_xi, derivatives)))
+					break;
+				}
+				// only want to do boundary optimisation if this step started and finished on the boundary
+				if (xiLimited)
+				{
+					for (i = 0; i < number_of_xi; i++)
 					{
-						/* least-squares approach: make the derivatives / right hand side
-							vector into square system to solve for delta-Xi */
+						dxi2[i] = 0.0;
+					}
+					int faceNumber = -1;
+					int faceCount = 0;
+					// try all faces the point could be on, otherwise it can get stuck on the wrong face. Accumulate xi increments
+					// note that displacement on one face may move it off another so subsequent faces are not searched - this is wanted behaviour
+					while ((0 <= (faceNumber = FE_element_shape_find_face_number_for_xi(shape, last_xi, data->xi_tolerance, faceNumber)))
+						&& FE_element_shape_get_face_outward_normal(shape, faceNumber, data->number_of_values, derivatives, faceNormal))
+					{
+						// sliding along boundary face: subtract component of delta x normal to surface and recompute dxi
+						++faceCount;
+						FE_value coeffNormal = 0.0;
+						for (k = 0; k < data->number_of_values; k++)
+						{
+							coeffNormal += (data->values[k] - values[k]) * faceNormal[k];
+						}
 						for (i = 0; i < number_of_xi; i++)
 						{
-							for (j = 0; j < number_of_xi; j++)
-							{
-								sum = 0.0;
-								for (k = 0; k < data->number_of_values; k++)
-								{
-									sum += (double)derivatives[k*number_of_xi + j] *
-										(double)derivatives[k*number_of_xi + i];
-								}
-								a[i*number_of_xi + j] = sum;
-							}
 							sum = 0.0;
 							for (k = 0; k < data->number_of_values; k++)
 							{
 								sum += (double)derivatives[k*number_of_xi + i] *
-									((double)data->values[k] - (double)values[k]);
+									((double)data->values[k] - (double)values[k] - coeffNormal * faceNormal[k]);
 							}
-							b[i] = sum;
+							b2[i] = sum;
 						}
-						if (LU_decompose(number_of_xi, a, indx, &d,/*singular_tolerance*/1.0e-12) &&
-							LU_backsubstitute(number_of_xi, a, indx, b))
+						if (!LU_backsubstitute(number_of_xi, a, indx, b2))
 						{
-							converged = 1;
-							if (data->find_nearest_location)
-							{
-								// limit delta xi as search oscillates when surface
-								// is very curved and data point is far away
-								double limit = 0.2;
-								if (iterations > 5)
-								{
-									limit /= 2.0;
-									if (iterations > 20)
-										limit /= 4.0;
-								}
-								double mag_dxi = 0.0;
-								for (i = 0; i < number_of_xi; i++)
-									mag_dxi += b[i]*b[i];
-								mag_dxi = sqrt(mag_dxi);
-								if (mag_dxi > limit)
-								{
-									for (i = 0; i < number_of_xi; i++)
-										b[i] *= limit/mag_dxi;
-								}
-							}
-							for (i = 0; i < number_of_xi; i++)
-							{
-								/* converged if all xi increments on or within tolerance */
-								if (fabs(b[i]) > data->xi_tolerance)
-								{
-									converged = 0;
-								}
-								data->xi[i] += b[i];
-							}
-							iterations++;
-							if (!converged)
-							{
-								FE_element_shape_limit_xi_to_element(shape,
-									data->xi, data->xi_tolerance);
-								if (iterations == MAX_FIND_XI_ITERATIONS)
-								{
-									/* too many iterations; give up */
-									return_code = 0;
-								}
-								else if (1 < iterations)
-								{
-									/* give up if xi not changed this iteration; usually means
-										the solution is outside this element */
-									return_code = 0;
-									for (i = 0; i < number_of_xi; i++)
-									{
-										if (fabs(data->xi[i] - last_xi[i]) > data->xi_tolerance)
-										{
-											return_code = 1;
-										}
-										last_xi[i] = data->xi[i];
-									}
-								}
-							}
-						}
-						else
-						{
-							/* Probably singular matrix, no longer report error
-								as a collapsed element gets reported on every
-								pixel making it unusable.*/
 							return_code = 0;
+							break;
+						}
+						FE_value scaleNext = 1.0 / static_cast<FE_value>(faceCount);
+						FE_value scalePrev = 1.0 - scaleNext;
+						for (i = 0; i < number_of_xi; i++)
+						{
+							dxi2[i] = scalePrev * dxi2[i] + scaleNext * b2[i];
+						}
+						FE_value mag_dxi2 = 0.0;
+						for (i = 0; i < number_of_xi; ++i)
+						{
+							mag_dxi2 += dxi2[i] * dxi2[i];
+						}
+						mag_dxi2 = sqrt(mag_dxi2);
+						const FE_value dxi2_scale = (mag_dxi2 > maxDeltaXi) ? (maxDeltaXi / mag_dxi2) : 1.0;
+						for (i = 0; i < number_of_xi; i++)
+						{
+							data->xi[i] = last_xi[i] + dxi2_scale * dxi2[i];
+						}
+						xiLimited = FE_element_shape_limit_xi_to_element(shape, data->xi, 0.0);
+					}
+				}
+				if (iterations == MAX_FIND_XI_ITERATIONS)
+				{
+					/* too many iterations; give up */
+					return_code = 0;
+					break;
+				}
+				else if (1 < iterations)
+				{
+					/* give up if xi not changed this iteration; usually means
+						the solution is outside this element */
+					return_code = 0;
+					for (i = 0; i < number_of_xi; i++)
+					{
+						if (fabs(data->xi[i] - last_xi[i]) > data->xi_tolerance)
+						{
+							return_code = 1;
+							break;
 						}
 					}
-					else
+					if (!return_code)
 					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_iterative_element_conditional.  "
-							"Could not evaluate field");
+						break;
+					}
+				}
+				for (i = 0; i < number_of_xi; i++)
+				{
+					last_xi[i] = data->xi[i];
+				}
+			}
+			/* if field has more components than xi-directions, must
+				check all components have converged */
+			if (converged && (data->number_of_values > number_of_xi))
+			{
+				/* strategy for determining convergence is to multiply
+					the derivative for each component by the last increment
+					in xi, stored in b, and ensuring it is larger than the
+					difference between target and current field values.
+					Broadly, this means the given component is not wishing
+					the solution to shift more than the last xi increment.
+					Note that the increment in xi is doubled to make this
+					test slightly less strict than original convergence */
+				for (k = 0; k < data->number_of_values; k++)
+				{
+					sum = 0.0;
+					for (i = 0; i < number_of_xi; i++)
+					{
+						sum += (double)derivatives[k*number_of_xi + i] * b[i];
+					}
+					if (2.0*fabs(sum) <
+						fabs((double)data->values[k] - (double)values[k]))
+					{
 						return_code = 0;
 					}
 				}
-				/* if field has more components than xi-directions, must
-					check all components have converged */
-				if (converged && (data->number_of_values > number_of_xi))
-				{
-					/* strategy for determining convergence is to multiply
-						the derivative for each component by the last increment
-						in xi, stored in b, and ensuring it is larger than the
-						difference between target and current field values.
-						Broadly, this means the given component is not wishing
-						the solution to shift more than the last xi increment.
-						Note that the increment in xi is doubled to make this
-						test slightly less strict than original convergence */
-					for (k = 0; k < data->number_of_values; k++)
-					{
-						sum = 0.0;
-						for (i = 0; i < number_of_xi; i++)
-						{
-							sum += (double)derivatives[k*number_of_xi + i] * b[i];
-						}
-						if (2.0*fabs(sum) <
-							fabs((double)data->values[k] - (double)values[k]))
-						{
-							return_code = 0;
-						}
-					}
-				}
-				if (data->find_nearest_location)
-				{
-					sum = 0.0;
-					for (k = 0; k < data->number_of_values; k++)
-					{
-						sum += ((double)data->values[k] - (double)values[k]) *
-							((double)data->values[k] - (double)values[k]);
-					}
-					if (!data->nearest_element ||
-						(sum < data->nearest_element_distance_squared))
-					{
-						data->nearest_element = element;
-						for (i = 0; i < number_of_xi; i++)
-						{
-							data->nearest_xi[i] = data->xi[i];
-						}
-						data->nearest_element_distance_squared = sum;
-					}
-				}
-#if defined (DEBUG_CODE)
-				display_message(INFORMATION_MESSAGE,
-					"Computed_field_iterative_element_conditional.  "
-					"Converged %d iterations %d\n", converged, iterations);
-#endif /* defined (DEBUG_CODE) */
-
 			}
+			if (data->find_nearest_location)
+			{
+				sum = 0.0;
+				for (k = 0; k < data->number_of_values; k++)
+				{
+					sum += ((double)data->values[k] - (double)values[k]) *
+						((double)data->values[k] - (double)values[k]);
+				}
+				if (!data->nearest_element ||
+					(sum < data->nearest_element_distance_squared))
+				{
+					data->nearest_element = element;
+					for (i = 0; i < number_of_xi; i++)
+					{
+						data->nearest_xi[i] = data->xi[i];
+					}
+					data->nearest_element_distance_squared = sum;
+				}
+			}
+#if defined (DEBUG_CODE)
+			display_message(INFORMATION_MESSAGE,
+				"Computed_field_iterative_element_conditional.  "
+				"Converged %d iterations %d\n", converged, iterations);
+#endif /* defined (DEBUG_CODE) */
 		}
 		else
 		{
@@ -299,10 +339,8 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 			"Computed_field_iterative_element_conditional.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_iterative_element_conditional */
+}
 
 #undef MAX_FIND_XI_ITERATIONS
 
@@ -346,17 +384,15 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 		if (return_code)
 		{
 			find_element_xi_data.values = findElementXiCache->values;
-			find_element_xi_data.found_values = findElementXiCache->workingValues;
 			/* copy the source values */
 			for (i = 0; i < number_of_values; i++)
 			{
 				find_element_xi_data.values[i] = values[i];
 			}
+			find_element_xi_data.workingValues = findElementXiCache->workingValues;
 			find_element_xi_data.field_cache = field_cache;
 			find_element_xi_data.field = field;
 			find_element_xi_data.number_of_values = number_of_values;
-			find_element_xi_data.found_number_of_xi = 0;
-			find_element_xi_data.found_derivatives = (FE_value *)NULL;
 			find_element_xi_data.xi_tolerance = 1e-05;
 			find_element_xi_data.find_nearest_location = find_nearest;
 			find_element_xi_data.nearest_element = (struct FE_element *)NULL;
@@ -441,10 +477,6 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 			}
 			/* The search is valid even if the element wasn't found */
 			return_code = 1;
-			if (find_element_xi_data.found_derivatives)
-			{
-				DEALLOCATE(find_element_xi_data.found_derivatives);
-			}
 			/* Remember the element and search mesh in the findElementXiCache */
 			findElementXiCache->element = *element_address;
 			findElementXiCache->setSearchMesh(searchMesh);

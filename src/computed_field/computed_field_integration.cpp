@@ -593,9 +593,10 @@ time is supplied in the workingCache.
 					} break;
 				}
 				shape = get_FE_element_shape(mapping_item->element);
-				if (!(FE_element_shape_find_face_number_for_xi(shape, xi, &face_number) &&
-					(((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
-						&number_of_neighbour_elements, &neighbour_elements))))))
+				face_number = FE_element_shape_find_face_number_for_xi(shape, xi, 1.0E-8);
+				if (!((0 <= face_number) &&
+					(CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
+						&number_of_neighbour_elements, &neighbour_elements))))
 				{
 					number_of_neighbour_elements = 0;
 				}

@@ -72,9 +72,7 @@ matches the <field> in this structure or one of its source fields.
 	cmzn_field *field;
 	int number_of_values;
 	FE_value *values;
-	int found_number_of_xi;
-	FE_value *found_values;
-	FE_value *found_derivatives;
+	FE_value *workingValues;  // another array with correct number of components
 	FE_value xi_tolerance;
 	int find_nearest_location;
 	struct FE_element *nearest_element;
