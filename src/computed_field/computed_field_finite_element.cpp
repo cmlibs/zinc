@@ -3448,8 +3448,7 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			this->meshFieldRangesCache = cmzn_mesh_get_FE_mesh_internal(this->mesh)->getFeMeshFieldRangesCache(this->getMeshField());
-			this->meshFieldRanges = this->meshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->mesh));
+			this->updateMeshFieldRanges();
 			return true;
 		}
 		return false;
@@ -3514,8 +3513,7 @@ public:
 			cmzn_mesh_access(searchMeshIn);
 			cmzn_mesh_destroy(&this->searchMesh);
 			this->searchMesh = searchMeshIn;
-			FeMeshFieldRanges::deaccess(this->meshFieldRanges);
-			this->meshFieldRanges = this->meshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->mesh));
+			this->updateMeshFieldRanges();
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -3598,6 +3596,18 @@ private:
 			}
 		}
 		return return_code;
+	}
+
+	// call if search mesh or mesh field are changed to get new mesh field ranges/cache
+	void updateMeshFieldRanges()
+	{
+		// get new mesh field ranges cache and ranges before releasing old ones in case they are the same
+		FeMeshFieldRangesCache *newMeshFieldRangesCache = cmzn_mesh_get_FE_mesh_internal(this->searchMesh)->getFeMeshFieldRangesCache(this->getMeshField());
+		FeMeshFieldRanges *newMeshFieldRanges = newMeshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->searchMesh));
+		FeMeshFieldRangesCache::deaccess(this->meshFieldRangesCache);
+		FeMeshFieldRanges::deaccess(this->meshFieldRanges);
+		this->meshFieldRangesCache = newMeshFieldRangesCache;
+		this->meshFieldRanges = newMeshFieldRanges;
 	}
 
 };
