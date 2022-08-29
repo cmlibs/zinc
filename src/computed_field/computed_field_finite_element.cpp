@@ -376,7 +376,7 @@ const char computed_field_finite_element_type_string[] = "finite_element";
 class Computed_field_finite_element : public Computed_field_core
 {
 public:
-	FE_field* fe_field;
+	FE_field *fe_field;
 	enum cmzn_field_type type;
 
 public:
@@ -416,6 +416,19 @@ public:
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
 	{
 		return (this->field == other_field);
+	}
+
+	/** @return  True if this finite element field result changed. */
+	virtual bool isResultChanged()
+	{
+		int change = 0;
+		CHANGE_LOG_QUERY(FE_field)(this->fe_field->get_FE_region()->fe_field_changes, this->fe_field, &change);
+		// changed if any flags other than identifier changed
+		if (change &= (~CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)))
+		{
+			return true;
+		}
+		return false;
 	}
 
 private:
@@ -2123,7 +2136,7 @@ const char computed_field_node_value_type_string[] = "node_value";
 class Computed_field_node_value : public Computed_field_core
 {
 public:
-	struct FE_field *fe_field;
+	FE_field *fe_field;
 	cmzn_node_value_label nodeValueLabel;
 	int versionNumber; // starting at 0
 
@@ -2194,6 +2207,19 @@ public:
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
 	{
 		return (this->field == other_field);
+	}
+
+	/** @return  True if this finite element field result changed. */
+	virtual bool isResultChanged()
+	{
+		int change = 0;
+		CHANGE_LOG_QUERY(FE_field)(this->fe_field->get_FE_region()->fe_field_changes, this->fe_field, &change);
+		// changed if any flags other than identifier changed
+		if (change |= (~CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)))
+		{
+			return true;
+		}
+		return false;
 	}
 
 private:
@@ -3581,19 +3607,43 @@ private:
 		return CMZN_FIELD_VALUE_TYPE_MESH_LOCATION;
 	}
 
-	// if the mesh is a mesh group, also need to propagate changes from it
+	// if the mesh or search mesh is a group, also need to propagate changes from it
+	// also, if the mesh field or mesh or search mesh group have changed, trigger re-evaluation of mesh field ranges
 	virtual int check_dependency()
 	{
 		int return_code = Computed_field_core::check_dependency();
-		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+		bool reevaluate = false;
+		// have to call check_dependency because Computed_field_core::check_dependency will not
+		// call it if any earlier field is MANAGER_CHANGE_FULL_RESULT
+		// must compare with MANAGER_CHANGE_RESULT as may be MANAGER_CHANGE_PARTIAL_RESULT
+		cmzn_field *meshField = this->getMeshField();
+		if ((meshField->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field)) ||
+			(meshField->core->check_dependency() & MANAGER_CHANGE_RESULT(Computed_field)))
 		{
-			cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
-			if (elementGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
-				cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+			reevaluate = true;
+		}
+		else
+		{
+			for (int i = 0; i < 2; ++i)
 			{
-				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
-				return_code = this->field->manager_change_status;
+				cmzn_mesh *checkMesh = (i == 0) ? this->mesh : this->searchMesh;
+				cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(checkMesh);
+				// can simply compare with manager_change_status member
+				// since has no source field and subgroup changes directly stored in field
+				if ((elementGroupField) && (MANAGER_CHANGE_NONE(Computed_field) !=
+					cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+				{
+					reevaluate = true;
+					break;
+				}
 			}
+		}
+		if (reevaluate)
+		{
+			this->meshFieldRangesCache->clearRanges();
+			// this implies a full change
+			this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+			return_code = this->field->manager_change_status;
 		}
 		return return_code;
 	}
@@ -3644,14 +3694,25 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	extraCache.setTime(cache.getTime());
 	cmzn_element *element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	cmzn_field *meshField = this->getMeshField();
 	Computed_field_find_element_xi_cache *findElementXiCache =
-		findMeshLocationValueCache.getFindElementXiCache(this->getMeshField());
+		findMeshLocationValueCache.getFindElementXiCache(meshField);
 	FeMeshFieldRanges *meshFieldRanges = this->meshFieldRanges;
-	if (!meshFieldRanges->isEvaluated())
+	// while the mesh field has changes the ranges are not used
+	// changes to groups are fine: deletion of elements immediately removes them from any groups, and their ranges from mesh field ranges
+	// Any elements added to groups won't have a range so will fallback to the original find xi algorithm
+	// the evaluated flag is cleared when FindMeshLocation field is notified of change to either mesh field or element group
+	//cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
+	if (meshField->isResultChanged()/* || ((elementGroupField) && cmzn_field_element_group_base_cast(elementGroupField)->isResultChanged())*/)
+	{
+		// mesh field ranges are invalid while mesh field has unnotified result changes
+		meshFieldRanges = nullptr;
+	}
+	else if (!meshFieldRanges->isEvaluated())
 	{
 		this->meshFieldRangesCache->evaluateMeshFieldRanges(extraCache, meshFieldRanges);
 	}
-	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache,
+	if (!(Computed_field_find_element_xi(meshField, &extraCache,
 		findElementXiCache, meshFieldRanges, sourceValueCache->values,
 		sourceValueCache->componentCount, &element, xi, this->searchMesh,
 		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))

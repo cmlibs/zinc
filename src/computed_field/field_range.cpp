@@ -321,12 +321,12 @@ int cmzn_fieldrange::evaluateElementRange(cmzn_field *field, cmzn_element *eleme
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_element_shape *elementShape = element->getElementShape();
-	int xiPointsCount;
+	int xiPointsCount = 0;
 	FE_value_triple *xiPoints;
 	const int numberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 3, 3, 3 };
 	int return_code = FE_element_shape_get_xi_points_cell_corners(elementShape,
 		numberInXi, &xiPointsCount, &xiPoints);
-	if ((!return_code) || (numberInXi <= 0))
+	if ((!return_code) || (xiPointsCount <= 0))
 	{
 		display_message(ERROR_MESSAGE, "Field evaluateRange:  Unexpected failure sampling element xi coordinates");
 		return CMZN_ERROR_GENERAL;

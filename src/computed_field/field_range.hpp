@@ -28,7 +28,7 @@ private:
 	Field_location_element_xi *componentMinimumLocations, *componentMaximumLocations;
 	// starting with field values at the first component minimum/maximum location
 	// currently limited to real values
-	FE_value *componentMaximumValues, *componentMinimumValues;
+	FE_value *componentMinimumValues, *componentMaximumValues;
 	int access_count;
 
 	cmzn_fieldrange(cmzn_fieldcache *fieldcacheIn);

@@ -16,6 +16,7 @@
 #include "opencmiss/zinc/types/fieldsubobjectgroupid.h"
 #include "opencmiss/zinc/zincconfigure.h"
 #include "datastore/labels.hpp"
+#include "finite_element/finite_element_domain.hpp"
 #include "general/block_array.hpp"
 #include <map>
 #include <atomic>
@@ -135,7 +136,11 @@ public:
 
 	~FeMeshFieldRanges();
 
+	// only set by single thread making modification
 	void clearRanges();
+
+	/** Clear range for a single element, usually when destroyed */
+	void clearElementRange(DsLabelIndex elementIndex);
 
 	FeMeshFieldRanges *access()
 	{
@@ -208,7 +213,7 @@ public:
 /**
  * Caches of ranges of elements for field on mesh, for whole mesh or groups.
  */
-class FeMeshFieldRangesCache
+class FeMeshFieldRangesCache : public FE_domain_group
 {
 	FE_mesh *mesh;  // not accessed
 	cmzn_field *field;  // not accessed
@@ -249,6 +254,12 @@ public:
 	/** @return  Element labels object if still attached to mesh, otherwise nullptr */
 	const DsLabels *getLabels() const;
 
+	/** @return  Owning mesh or nullptr if detached (mesh destroyed) */
+	FE_mesh *getMesh() const
+	{
+		return this->mesh;
+	}
+
 	/** @return  Accessed ranges for element group or whole mesh.
 	 * @param elementGroup  Optional element group field; if nullptr use whole mesh.
 	 */
@@ -256,6 +267,15 @@ public:
 
 	/** Called by ~FeMeshFieldRanges to remove from parent */
 	void removeMeshFieldRanges(FeMeshFieldRanges *meshFieldRanges);
+
+	/** notification from parent FE_mesh that all elements have been destroyed: clear ranges */
+	virtual void destroyedAllObjects();
+
+	/** notification from parent FE_mesh that an element has been destroyed: remove its range */
+	virtual void destroyedObject(DsLabelIndex destroyedIndex);
+
+	/** notification from parent FE_mesh that a group of elements has been destroyed: remove their ranges */
+	virtual void destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup);
 };
 
 #endif /* !defined (FINITE_ELEMENT_MESH_FIELD_RANGES_HPP) */

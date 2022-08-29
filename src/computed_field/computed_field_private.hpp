@@ -349,6 +349,15 @@ public:
 	*/
 	virtual bool is_purely_function_of_field(cmzn_field *other_field);
 
+	/** Override for finite element and other field cores which may record changes to
+	 * their objects prior to propagating to the parent field.
+	 * @return  True if this field core has unnotified changes.
+	 */
+	virtual bool isResultChanged()
+	{
+		return false;
+	}
+
 protected:
 
 	// call whenever type-specific parameters are changed to notify clients
@@ -601,6 +610,12 @@ public:
 	 * Notify clients if not caching changes.
 	 */
 	inline void setChangedRelated();
+
+	/**
+	 * @return  True if this field, its core or any field it depends on has
+	 * unnotified changes which affect the result values of the field, else false.
+	 */
+	bool isResultChanged();
 
 	const Coordinate_system& getCoordinateSystem()
 	{

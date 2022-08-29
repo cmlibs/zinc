@@ -327,6 +327,9 @@ public:
 			this->labelsGroup->invalidateLabelIterators();
 		}
 
+		/** Don't need to override as changes already stored in field as well */
+		//virtual bool isResultChanged();
+
 	public:
 
 		inline DsLabelsGroup& getLabelsGroup() const

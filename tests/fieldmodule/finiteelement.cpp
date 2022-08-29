@@ -20,6 +20,7 @@
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
@@ -1634,6 +1635,12 @@ TEST(ZincFieldFindMeshLocation, searchMesh)
 	EXPECT_NEAR(0.0, xi[2], TOL);
 }
 
+struct ElementXi
+{
+	int elementIdentifier;
+	double xi[3];
+};
+
 // Test find nearest on 3D elements using allshapes quadratic model
 // Tests bug where nearest on 3D elements does not match nearest on 2D boundary
 TEST(ZincFieldFindMeshLocation, find_nearest_3d)
@@ -1668,11 +1675,7 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 	EXPECT_TRUE(datapoints.isValid());
 	EXPECT_EQ(12, datapoints.getSize());
 
-	const struct
-	{
-		int elementIdentifier;
-		double xi[3];
-	} expectedElementXi[12] =
+	const struct ElementXi mainExpectedElementXi[12] =
 	{
 		{1, {0.0, 0.53979577402311651, 0.69177470736971181}},
 		{2, {0.11990294780427879, 0.0, 0.37092623208751258}},
@@ -1684,8 +1687,25 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		{5, {0.51817252996829977, 0.40963848233275751, 0.31716431429090608}},
 		{3, {0.24583038158538131, 0.35923948388603327, 0.33152494022382217}},
 		{1, {0.43003497940512292, 0.59309299145975747, 0.40054136880384372}},
-		{3, {0.12125557535668180, 0.054821385886946641, 1.0000000000000000}},
+		{3, {0.12125557535668180, 0.054821385886946641, 1.0}},
 		{1, {0.0, 1.0, 0.24745374311778573}}
+	};
+	const struct ElementXi expectedElementXi_remove_faces_10_14 =
+	{ 5, {0.13420804216841339, 0.0, 1.0} };
+	const struct ElementXi offsetExpectedElementXi[12] =
+	{
+		{1, {0.0, 0.52581379451193333, 0.70596172924462486}},
+		{2, {0.21583163917566850, 0.0, 0.36727921968009020}},
+		{5, {0.0, 0.35622422426772493, 0.38163779624757027}},
+		{6, {0.10921662511808401, 0.37850648463701003, 0.51227689024490597}},
+		{6, {0.76598752320589247, 0.12843949113490016, 0.10557298565920736}},
+		{4, {0.43911977591640261, 0.62214083778046148, 0.56088022408359739}},
+		{6, {0.21277707481976382, 0.27498606741318926, 0.24136541686415375}},
+		{5, {0.59083156340723442, 0.38952236337228430, 0.31754004247410267}},
+		{3, {0.25184603765852870, 0.45194936087109261, 0.32992481913567989}},
+		{1, {0.5, 0.6, 0.4}},
+		{3, {0.16725154477046614, 0.073236871064890019, 1.0}},
+		{1, {0.0, 1.0, 0.22762761439741774}}
 	};
 
 	FieldFindMeshLocation findMeshLocationExact = zinc.fm.createFieldFindMeshLocation(dataCordinates, deformed, mesh3d);
@@ -1702,30 +1722,112 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 	EXPECT_TRUE(fieldcache.isValid());
 
 	Element elementExact, elementNearest, elementBoundaryNearest;
+	Element face10 = mesh2d.findElementByIdentifier(10);
+	EXPECT_TRUE(face10.isValid());
+	Element face14 = mesh2d.findElementByIdentifier(14);
+	EXPECT_TRUE(face14.isValid());
 	double xiExact[3], xiNearest[3], xiBoundaryNearest[3];
-	const double TOL = 1.0E-5;
-	for (int i = 0; i < 12; ++i)
+	const double TOL = 5.0E-5;
+	// tests t:
+	// 0 = original
+	// 1 = change cache remove faces 10, 14 (affects datapoint 11, i = 10)
+	// 2 = after end change for above
+	// 3 = change cache add faces 10, 14
+	// 4 = after end change for above
+	// 5 = change cache destroy faces 10, 14
+	// 6 = after end change for above
+	// 7 = change cache redefine faces
+	// 8 = after end change for above
+	// 9 = change cache offset mesh coordinates
+	// 10 = after end change for above
+	// 11 = reload file and back to start state
+	for (int t = 0; t < 12; ++t)
 	{
-		Node datapoint = datapoints.findNodeByIdentifier(i + 1);
-		EXPECT_TRUE(datapoint.isValid());
+		const bool changeCaching = (t == 1) || (t == 3) || (t == 5) || (t == 7) || (t == 9);
+		if (changeCaching)
+		{
+			zinc.fm.beginChange();
+			if (t == 1)
+			{
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.removeElement(face10));
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.removeElement(face14));
+			}
+			else if (t == 3)
+			{
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.addElement(face10));
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.addElement(face14));
+			}
+			else if (t == 5)
+			{
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.destroyElement(face10));
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.destroyElement(face14));
+			}
+			else if (t == 7)
+			{
+				EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+				face10 = mesh2d.findElementByIdentifier(10);
+				EXPECT_TRUE(face10.isValid());
+				face14 = mesh2d.findElementByIdentifier(14);
+				EXPECT_TRUE(face14.isValid());
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.addElement(face10));
+				EXPECT_EQ(RESULT_OK, boundaryMeshGroup.addElement(face14));
+			}
+			else if (t == 9)
+			{
+				// offset coordinates to get new locations
+				const double offsets[3] = { -0.1, 0.0, 0.0 };
+				Field offset = zinc.fm.createFieldConstant(3, offsets);
+				EXPECT_TRUE(offset.isValid());
+				FieldAdd offsetDeformed = deformed + offset;
+				Fieldassignment fieldassignment = deformed.createFieldassignment(offsetDeformed);
+				EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+			}
+		}
+		else if (t == 11)
+		{
+			EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+		}
+		for (int i = 0; i < 12; ++i)
+		{
+			Node datapoint = datapoints.findNodeByIdentifier(i + 1);
+			EXPECT_TRUE(datapoint.isValid());
 
-		EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint));
-		elementNearest = findMeshLocationNearest.evaluateMeshLocation(fieldcache, 3, xiNearest);
-		elementExact = findMeshLocationExact.evaluateMeshLocation(fieldcache, 3, xiExact);
-		elementBoundaryNearest = findMeshLocationBoundaryNearest.evaluateMeshLocation(fieldcache, 3, xiBoundaryNearest);
-		Element &element = (elementExact.isValid()) ? elementExact : elementBoundaryNearest;
-		const int elementIdentifier = element.getIdentifier();
-		EXPECT_EQ(expectedElementXi[i].elementIdentifier, element.getIdentifier());
-		const double *xi = (elementExact.isValid()) ? xiExact : xiBoundaryNearest;
-		EXPECT_NEAR(expectedElementXi[i].xi[0], xi[0], TOL);
-		EXPECT_NEAR(expectedElementXi[i].xi[1], xi[1], TOL);
-		EXPECT_NEAR(expectedElementXi[i].xi[2], xi[2], TOL);
+			EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint));
+			elementNearest = findMeshLocationNearest.evaluateMeshLocation(fieldcache, 3, xiNearest);
+			elementExact = findMeshLocationExact.evaluateMeshLocation(fieldcache, 3, xiExact);
+			elementBoundaryNearest = findMeshLocationBoundaryNearest.evaluateMeshLocation(fieldcache, 3, xiBoundaryNearest);
 
-		EXPECT_EQ(expectedElementXi[i].elementIdentifier, elementNearest.getIdentifier());
-		EXPECT_NEAR(expectedElementXi[i].xi[0], xiNearest[0], TOL);
-		// find nearest on 3D does not yet give identical results in all cases to find nearest on boundary, hence:
-		EXPECT_NEAR(expectedElementXi[i].xi[1], xiNearest[1], (i == 0) ? 4.0E-4 : TOL);
-		EXPECT_NEAR(expectedElementXi[i].xi[2], xiNearest[2], (i == 0) ? 4.0E-4 : (i == 11) ? 0.2 : TOL);
+			const ElementXi *expectedElementXi =
+				((t == 9) || (t == 10)) ? &(offsetExpectedElementXi[i]):
+				&(mainExpectedElementXi[i]);
+			if ((i == 10) && ((t == 1) || (t == 2) || (t == 5) || (t == 6)))
+			{
+				expectedElementXi = &expectedElementXi_remove_faces_10_14;
+			}
+
+			Element &element = (elementExact.isValid()) ? elementExact : elementBoundaryNearest;
+			const int elementIdentifier = element.getIdentifier();
+			EXPECT_EQ(expectedElementXi->elementIdentifier, element.getIdentifier());
+			const double *xi = (elementExact.isValid()) ? xiExact : xiBoundaryNearest;
+			EXPECT_NEAR(expectedElementXi->xi[0], xi[0], TOL);
+			EXPECT_NEAR(expectedElementXi->xi[1], xi[1], TOL);
+			EXPECT_NEAR(expectedElementXi->xi[2], xi[2], TOL);
+
+			expectedElementXi =
+				((t == 9) || (t == 10)) ? &(offsetExpectedElementXi[i]) :
+				&(mainExpectedElementXi[i]);
+
+			// find nearest on 3D does not yet give identical results in all cases to find nearest on boundary,
+			// hence a small number of points have larger tolerances:
+			EXPECT_EQ(expectedElementXi->elementIdentifier, elementNearest.getIdentifier());
+			EXPECT_NEAR(expectedElementXi->xi[0], xiNearest[0], TOL);
+			EXPECT_NEAR(expectedElementXi->xi[1], xiNearest[1], ((t == 9) || (t == 10)) && (i == 0) ? 0.02 : (i == 0) ? 4.0E-4 : TOL);
+			EXPECT_NEAR(expectedElementXi->xi[2], xiNearest[2], ((t == 9) || (t == 10)) && (i == 0) ? 0.03 : (i == 0) ? 4.0E-4 : (i == 11) ? 0.2 : TOL);
+		}
+		if (changeCaching)
+		{
+			zinc.fm.endChange();
+		}
 	}
 }
 

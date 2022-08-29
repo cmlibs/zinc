@@ -3200,7 +3200,14 @@ FeMeshFieldRangesCache *FE_mesh::getFeMeshFieldRangesCache(cmzn_field *field)
 
 void FE_mesh::removeMeshFieldRangesCache(FeMeshFieldRangesCache *meshFieldRangesCache)
 {
-	this->meshFieldRangesCaches.erase(meshFieldRangesCache->getField());
+	if (meshFieldRangesCache->getMesh() == this)
+	{
+		this->meshFieldRangesCaches.erase(meshFieldRangesCache->getField());
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::removeMeshFieldRangesCache.  Wrong mesh.");
+	}
 }
 
 DsLabelIndex FE_mesh::createScaleFactorIndex()

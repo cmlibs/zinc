@@ -24,9 +24,9 @@
 FeMeshFieldRanges::FeMeshFieldRanges(FeMeshFieldRangesCache *meshFieldRangesCacheIn, cmzn_field_element_group *fieldElementGroupIn) :
 	meshFieldRangesCache(meshFieldRangesCacheIn),
 	fieldElementGroup(fieldElementGroupIn),
-	evaluated(false),
 	totalRange(nullptr),
 	tolerance(0.0),
+	evaluated(false),
 	access_count(1)
 {
 }
@@ -50,12 +50,16 @@ void FeMeshFieldRanges::clearRanges()
 			const DsLabels *labels = this->meshFieldRangesCache->getLabels();
 			if (labels)
 			{
-				// only the master group is responsible for freeing range objects
-				const DsLabelIndex indexLimit = labels->getIndexSize();
-				for (DsLabelIndex index = 0; index < indexLimit; ++index)
+				// avoid looping through indexes if already clear
+				if (this->elementFieldRanges.getBlockCount() > 0)
 				{
-					const FeElementFieldRange *elementFieldRange = this->elementFieldRanges.getValue(index);
-					delete elementFieldRange;
+					// only the master group is responsible for freeing range objects
+					const DsLabelIndex indexLimit = labels->getIndexSize();
+					for (DsLabelIndex index = 0; index < indexLimit; ++index)
+					{
+						const FeElementFieldRange *elementFieldRange = this->elementFieldRanges.getValue(index);
+						delete elementFieldRange;
+					}
 				}
 			}
 		}
@@ -65,6 +69,20 @@ void FeMeshFieldRanges::clearRanges()
 	this->totalRange = nullptr;
 	this->tolerance = 0.0;
 	this->evaluated = false;
+}
+
+void FeMeshFieldRanges::clearElementRange(DsLabelIndex elementIndex)
+{
+	const FeElementFieldRange *elementFieldRange = this->elementFieldRanges.getValue(elementIndex);
+	if (elementFieldRange)
+	{
+		if (!this->fieldElementGroup)
+		{
+			// only the master group is responsible for freeing range objects
+			delete elementFieldRange;
+		}
+		this->elementFieldRanges.setValue(elementIndex, nullptr);
+	}
 }
 
 void FeMeshFieldRanges::deaccess(FeMeshFieldRanges*& meshFieldRanges)
@@ -82,22 +100,29 @@ void FeMeshFieldRanges::deaccess(FeMeshFieldRanges*& meshFieldRanges)
 
 void FeMeshFieldRanges::detachFromCache()
 {
-	this->clearRanges();
+	// only called from Cache destructor; ranges have already been cleared
 	this->meshFieldRangesCache = nullptr;
 }
 
 
+// only called from FE_mesh::getMeshFieldRangesCache()
 FeMeshFieldRangesCache::FeMeshFieldRangesCache(FE_mesh *meshIn, cmzn_field *fieldIn) :
 	mesh(meshIn),
 	field(fieldIn),
 	masterRanges(new FeMeshFieldRanges(this, nullptr)),
 	access_count(1)
 {
+	this->mesh->addGroup(this);
 }
 
 FeMeshFieldRangesCache::~FeMeshFieldRangesCache()
 {
-	// important: detachFromCache also clears it
+	// mesh is nullptr if already destroyed & cache is detached
+	if (this->mesh)
+	{
+		this->mesh->removeMeshFieldRangesCache(this);
+		this->detachFromMesh();
+	}
 	for (std::map<cmzn_field_element_group *, FeMeshFieldRanges *>::iterator iter = this->groupRanges.begin();
 		iter != this->groupRanges.end(); ++iter)
 	{
@@ -105,11 +130,6 @@ FeMeshFieldRangesCache::~FeMeshFieldRangesCache()
 	}
 	this->masterRanges->detachFromCache();
 	FeMeshFieldRanges::deaccess(this->masterRanges);
-	// mesh is null if already destroyed
-	if (this->mesh)
-	{
-		this->mesh->removeMeshFieldRangesCache(this);
-	}
 }
 
 void FeMeshFieldRangesCache::clearRanges()
@@ -139,6 +159,7 @@ void FeMeshFieldRangesCache::detachFromMesh()
 {
 	// must clear any labels maps as labels are now destroyed
 	this->clearRanges();
+	this->mesh->removeGroup(this);
 	this->mesh = nullptr;
 }
 
@@ -149,7 +170,6 @@ void FeMeshFieldRangesCache::evaluateMeshFieldRanges(cmzn_fieldcache& fieldcache
 		display_message(ERROR_MESSAGE, "FeMeshFieldRangesCache::evaluateMeshFieldRanges.  Called when detached from mesh/region");
 		return;
 	}
-	cmzn_region *region = this->mesh->get_FE_region()->getRegion();
 	// enforce critical section for remainder of scope: only one thread can evaluate ranges at a time
 	const std::lock_guard<std::mutex> lock(this->evaluateMutex);
 	if (meshFieldRanges->isEvaluated())
@@ -233,5 +253,34 @@ void FeMeshFieldRangesCache::removeMeshFieldRanges(FeMeshFieldRanges *meshFieldR
 	if (elementGroup)
 	{
 		this->groupRanges.erase(elementGroup);
+	}
+}
+
+void FeMeshFieldRangesCache::destroyedAllObjects()
+{
+	this->clearRanges();
+}
+
+void FeMeshFieldRangesCache::destroyedObject(DsLabelIndex destroyedIndex)
+{
+	if (this->masterRanges->getElementFieldRange(destroyedIndex))
+	{
+		for (std::map<cmzn_field_element_group *, FeMeshFieldRanges *>::iterator iter = this->groupRanges.begin();
+			iter != this->groupRanges.end(); ++iter)
+		{
+			iter->second->clearElementRange(destroyedIndex);
+		}
+		this->masterRanges->clearElementRange(destroyedIndex);
+	}
+}
+
+void FeMeshFieldRangesCache::destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup)
+{
+	// This could be made faster by working directly with data blocks
+	int numberRemoved = 0;
+	DsLabelIndex elementIndex = -1;  // So first increment gives 0 == first valid index
+	while (destroyedLabelsGroup.incrementIndex(elementIndex))
+	{
+		this->destroyedObject(elementIndex);
 	}
 }

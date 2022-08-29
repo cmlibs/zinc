@@ -809,6 +809,23 @@ cmzn_fieldparameters *cmzn_field::getFieldparameters()
 	return this->fieldparameters;
 }
 
+bool cmzn_field::isResultChanged()
+{
+	if ((this->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		|| this->core->isResultChanged())
+	{
+		return true;
+	}
+	for (int i = 0; i < this->number_of_source_fields; ++i)
+	{
+		if (this->source_fields[i]->isResultChanged())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 int cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange)
 {
 	if (coordinateSystemIn.type != NOT_APPLICABLE)
