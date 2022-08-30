@@ -277,7 +277,6 @@ void FeMeshFieldRangesCache::destroyedObject(DsLabelIndex destroyedIndex)
 void FeMeshFieldRangesCache::destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup)
 {
 	// This could be made faster by working directly with data blocks
-	int numberRemoved = 0;
 	DsLabelIndex elementIndex = -1;  // So first increment gives 0 == first valid index
 	while (destroyedLabelsGroup.incrementIndex(elementIndex))
 	{

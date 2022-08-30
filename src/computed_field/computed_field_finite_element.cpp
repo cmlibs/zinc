@@ -2215,7 +2215,7 @@ public:
 		int change = 0;
 		CHANGE_LOG_QUERY(FE_field)(this->fe_field->get_FE_region()->fe_field_changes, this->fe_field, &change);
 		// changed if any flags other than identifier changed
-		if (change |= (~CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)))
+		if (change | (~CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)))
 		{
 			return true;
 		}

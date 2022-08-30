@@ -305,7 +305,7 @@ public:
 			this->fe_domain->addGroup(this);
 		}
 
-		~Computed_field_fe_domain_group()
+		virtual ~Computed_field_fe_domain_group()
 		{
 			this->fe_domain->removeGroup(this);
 			cmzn::Deaccess(this->labelsGroup);

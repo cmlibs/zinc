@@ -199,7 +199,7 @@ public:
 		this->totalRange = totalRangeIn;
 		if (this->totalRange)
 		{
-			this->tolerance = 1.0E-5 * this->totalRange->getMaxRange(componentsCount);
+			this->tolerance = 1.0E-2 * this->totalRange->getMaxRange(componentsCount);
 		}
 		else
 		{
@@ -226,7 +226,7 @@ class FeMeshFieldRangesCache : public FE_domain_group
 public:
 	FeMeshFieldRangesCache(FE_mesh *meshIn, cmzn_field *fieldIn);
 
-	~FeMeshFieldRangesCache();
+	virtual ~FeMeshFieldRangesCache();
 
 	/** Clear all ranges, but do not remove them. */
 	void clearRanges();

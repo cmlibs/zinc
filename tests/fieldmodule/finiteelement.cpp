@@ -1806,7 +1806,6 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 			}
 
 			Element &element = (elementExact.isValid()) ? elementExact : elementBoundaryNearest;
-			const int elementIdentifier = element.getIdentifier();
 			EXPECT_EQ(expectedElementXi->elementIdentifier, element.getIdentifier());
 			const double *xi = (elementExact.isValid()) ? xiExact : xiBoundaryNearest;
 			EXPECT_NEAR(expectedElementXi->xi[0], xi[0], TOL);
