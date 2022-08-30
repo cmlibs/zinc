@@ -576,7 +576,7 @@ TEST(ZincFieldGradient, large_strain_2d)
 	EXPECT_TRUE(xi.isValid());
 	const double sqrt2 = sqrt(2.0);
 	const double one_sqrt2 = 1.0/sqrt2;
-	const double pi = 3.1415926535897932384626433832795;
+	//const double pi = 3.1415926535897932384626433832795;
 	const double scalingValues[9] = {
 		0.75*sqrt2, 0.25*sqrt2, 0.0,
 		0.25*sqrt2, 0.75*sqrt2, 0.0,

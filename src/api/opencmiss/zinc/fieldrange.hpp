@@ -10,8 +10,6 @@
 #ifndef CMZN_FIELDRANGE_HPP__
 #define CMZN_FIELDRANGE_HPP__
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldrange.h"
 #include "opencmiss/zinc/element.hpp"
 #include "opencmiss/zinc/field.hpp"
