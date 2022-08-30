@@ -3450,6 +3450,8 @@ private:
 	FeMeshFieldRangesCache *meshFieldRangesCache;
 	FeMeshFieldRanges *meshFieldRanges;
 
+	Computed_field_find_mesh_location();  // not defined
+
 public:
 
 	Computed_field_find_mesh_location(cmzn_mesh *mesh) :
@@ -3466,7 +3468,9 @@ public:
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(source.mesh)),
 		searchMesh(cmzn_mesh_access(source.searchMesh)),
-		searchMode(source.searchMode)
+		searchMode(source.searchMode),
+		meshFieldRangesCache(nullptr),
+		meshFieldRanges(nullptr)
 	{
 	};
 
@@ -3486,6 +3490,15 @@ public:
 		FeMeshFieldRangesCache::deaccess(this->meshFieldRangesCache);
 		cmzn_mesh_destroy(&this->mesh);
 		cmzn_mesh_destroy(&this->searchMesh);
+	}
+
+	virtual void inherit_source_field_attributes()
+	{
+		if (this->field)
+		{
+			Coordinate_system coordinateSystem(NOT_APPLICABLE);
+			this->field->setCoordinateSystem(coordinateSystem, /*notifyChange*/false);
+		}
 	}
 
 	/** @return  Non-accessed field */
