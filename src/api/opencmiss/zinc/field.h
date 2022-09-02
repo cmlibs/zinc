@@ -258,6 +258,9 @@ ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 /**
  * Evaluate range of field, currently limited to real-valued fields at
  * element/mesh location.
+ * Note this is only designed to work for field functions up to cubic
+ * polynomial complexity, and may not be accurate for fields with higher order
+ * waviness or extreme distortions.
  *
  * @param field  The field to evaluate range of. Must be real-valued.
  * @param fieldcache  Store of location to evaluate at and intermediate field

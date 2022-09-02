@@ -12,6 +12,7 @@
 #if !defined (__FIELD_RANGE_HPP__)
 #define __FIELD_RANGE_HPP__
 
+#include "opencmiss/zinc/types/fieldrangeid.h"
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldrange.h"

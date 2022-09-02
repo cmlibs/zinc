@@ -325,7 +325,7 @@ public:
 		this->fieldranges.push_back(range);
 	}
 
-	/** private, only to be called by cmzn_fieldrange denstructor */
+	/** private, only to be called by cmzn_fieldrange destructor */
 	void removeFieldrange(cmzn_fieldrange *range)
 	{
 		this->fieldranges.remove(range);

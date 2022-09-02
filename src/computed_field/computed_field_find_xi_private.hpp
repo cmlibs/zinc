@@ -20,6 +20,7 @@ class Computed_field_find_element_xi_cache
 {
 	cmzn_field *field;
 	cmzn_mesh *searchMesh;
+
 public:
 	struct FE_element *element;
 	int componentsCount;
@@ -47,7 +48,7 @@ public:
 		{
 			cmzn_mesh_access(searchMeshIn);
 		}
-		if (searchMesh)
+		if (this->searchMesh)
 		{
 			cmzn_mesh_destroy(&this->searchMesh);
 		}

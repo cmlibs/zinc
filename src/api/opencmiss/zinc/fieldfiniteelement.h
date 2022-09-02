@@ -286,6 +286,9 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
  * Type-specific functions allow the search to find the nearest value and
  * set the search mesh to be different e.g. to limit to a subset mesh such
  * as faces or lines.
+ * Note this is only designed to work for mesh field functions up to cubic
+ * polynomial complexity, and may not be accurate for fields with higher order
+ * waviness or extreme distortions.
  *
  * @param fieldmodule  Region field module which will own new field.
  * @param source_field  Source field whose value is to be searched for. Must have
