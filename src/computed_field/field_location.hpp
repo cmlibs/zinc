@@ -190,6 +190,24 @@ public:
 		return top_level_element;
 	}
 
+	/**
+	 * @param coordinatesCount  The size of the coordinatesOut array, must be at
+	 * least element dimension, or 3 for any supported dimension.
+	 * @param coordinatesOut  Array to receive element local xi coordinates.
+	 * @return  Accessed element or nullptr if none. */
+	cmzn_element *get_mesh_location_api(int coordinatesCount, FE_value *coordinatesOut) const
+	{
+		if ((this->element) && (coordinatesCount >= this->element_dimension) && (coordinatesOut))
+		{
+			for (int i = 0; i < this->element_dimension; ++i)
+			{
+				coordinatesOut[i] = xi[i];
+			}
+			return this->element->access();
+		}
+		return nullptr;
+	}
+
 	/** This is only for evaluating basis functions at this xi location. */
 	Standard_basis_function_evaluation &get_basis_function_evaluation() const
 	{

@@ -64,6 +64,9 @@ enum cmzn_field_edge_discontinuity_measure
  *
  * A field that computes the location in a mesh at which a field equals or is
  * nearest to values prescribed by another field.
+ * Note this is only designed to work for mesh field functions up to cubic
+ * polynomial complexity, and may not be accurate for fields with higher order
+ * waviness or extreme distortions.
  */
 struct cmzn_field_find_mesh_location;
 typedef struct cmzn_field_find_mesh_location *cmzn_field_find_mesh_location_id;

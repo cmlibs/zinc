@@ -29,6 +29,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldmodulenotifier.cpp
 	${CURRENT_TEST}/fieldparameterstests.cpp
 	${CURRENT_TEST}/field_operator_derivatives.cpp
+	${CURRENT_TEST}/fieldrange.cpp
 	${CURRENT_TEST}/fieldsmoothing.cpp
 	${CURRENT_TEST}/fieldtests.cpp
 	${CURRENT_TEST}/finiteelement.cpp
@@ -64,3 +65,7 @@ SET(FIELDMODULE_EX2_ELEMENT_BASES_3D_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/el
 SET(FIELDMODULE_EX2_NON_NUMERIC_COORDINATE_SYSTEM_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/non_numeric_coordinate_system.exf")
 SET(FIELDMODULE_EX3_EMBED_HOST_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/embed_host.exf")
 SET(FIELDMODULE_EX3_EMBED_NETWORK_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/embed_network.exf")
+SET(FIELDMODULE_EX3_FIELDRANGE_CURVE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/fieldrange_curve.exf")
+SET(FIELDIO_EX3_ALLSHAPES_QUADRATIC_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/allshapes_quadratic.exf")
+SET(FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/allshapes_quadratic_deformed.exf")
+SET(FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_FIND_XI_DATA_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/allshapes_quadratic_deformed_find_xi_data.exf")

@@ -222,14 +222,6 @@ public:
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int propagate_find_element_xi(cmzn_fieldcache&,
-		const FE_value * /*values*/, int /*number_of_values*/,
-		struct FE_element ** /*element_address*/, FE_value * /*xi*/,
-		cmzn_mesh_id /*mesh*/)
-	{
-		return 0;
-	};
-
 	virtual int list();
 
 	virtual char* get_command_string();
@@ -356,6 +348,15 @@ public:
 		}
 	*/
 	virtual bool is_purely_function_of_field(cmzn_field *other_field);
+
+	/** Override for finite element and other field cores which may record changes to
+	 * their objects prior to propagating to the parent field.
+	 * @return  True if this field core has unnotified changes.
+	 */
+	virtual bool isResultChanged()
+	{
+		return false;
+	}
 
 protected:
 
@@ -609,6 +610,12 @@ public:
 	 * Notify clients if not caching changes.
 	 */
 	inline void setChangedRelated();
+
+	/**
+	 * @return  True if this field, its core or any field it depends on has
+	 * unnotified changes which affect the result values of the field, else false.
+	 */
+	bool isResultChanged();
 
 	const Coordinate_system& getCoordinateSystem()
 	{

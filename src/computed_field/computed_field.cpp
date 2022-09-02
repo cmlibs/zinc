@@ -121,12 +121,12 @@ like the number of components.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.hpp"
-#include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/differential_operator.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
+#include "computed_field/field_range.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
@@ -135,8 +135,7 @@ like the number of components.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
-#include "general/indexed_list_private.h"
-#include "general/list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
@@ -808,6 +807,23 @@ cmzn_fieldparameters *cmzn_field::getFieldparameters()
 		return this->fieldparameters->access();
 	this->fieldparameters = cmzn_fieldparameters::create(this);
 	return this->fieldparameters;
+}
+
+bool cmzn_field::isResultChanged()
+{
+	if ((this->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		|| this->core->isResultChanged())
+	{
+		return true;
+	}
+	for (int i = 0; i < this->number_of_source_fields; ++i)
+	{
+		if (this->source_fields[i]->isResultChanged())
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 int cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange)
@@ -1638,6 +1654,17 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+// External API
+int cmzn_field_evaluate_fieldrange(cmzn_field_id field,
+	cmzn_fieldcache_id fieldcache, cmzn_fieldrange_id fieldrange)
+{
+	if (fieldrange)
+	{
+		return fieldrange->evaluateRange(field, fieldcache);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 	cmzn_fieldcache_id cache)
 {
@@ -2261,65 +2288,6 @@ The number of components controls how the field is interpreted:
 
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
-
-int Computed_field_find_element_xi(struct cmzn_field *field,
-	cmzn_fieldcache_id field_cache, const FE_value *values,
-	int number_of_values, struct FE_element **element_address, FE_value *xi,
-	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest)
-{
-	int return_code;
-	ENTER(Computed_field_find_element_xi);
-	if (field && field_cache && values && (number_of_values == field->number_of_components) &&
-		element_address && xi && (mesh || *element_address))
-	{
-		if ((!propagate_to_source) || find_nearest ||
-			(!(return_code = field->core->propagate_find_element_xi(*field_cache,
-				values, number_of_values, element_address, xi, mesh))))
-		{
-			return_code = Computed_field_perform_find_element_xi(field, field_cache,
-				values, number_of_values, element_address, xi, mesh, find_nearest);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}
-
-int Computed_field_is_find_element_xi_capable(struct cmzn_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function returns true if the <field> can find element and xi given
-a set of values.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_find_element_xi_capable);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		/* By doing the inversion iterations on the final computed field we
-			can do this on all computed fields. */
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_find_element_xi_capable.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_find_element_xi_capable */
 
 bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)

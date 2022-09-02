@@ -305,7 +305,7 @@ public:
 			this->fe_domain->addGroup(this);
 		}
 
-		~Computed_field_fe_domain_group()
+		virtual ~Computed_field_fe_domain_group()
 		{
 			this->fe_domain->removeGroup(this);
 			cmzn::Deaccess(this->labelsGroup);
@@ -326,6 +326,9 @@ public:
 		{
 			this->labelsGroup->invalidateLabelIterators();
 		}
+
+		/** Don't need to override as changes already stored in field as well */
+		//virtual bool isResultChanged();
 
 	public:
 

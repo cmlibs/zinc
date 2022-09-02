@@ -171,7 +171,7 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 	else
 	{
 		iter = this->getFeMesh()->createElementiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeMesh()->get_FE_region()));
+		cache = cmzn_fieldcache::create(FE_region_get_cmzn_region(this->getFeMesh()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -267,7 +267,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	else
 	{
 		iter = this->getFeMesh()->createElementiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeMesh()->get_FE_region()));
+		cache = cmzn_fieldcache::create(FE_region_get_cmzn_region(this->getFeMesh()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -787,7 +787,7 @@ int Computed_field_node_group::addNodesConditional(cmzn_field_id conditional_fie
 	else
 	{
 		iter = this->getFeNodeset()->createNodeiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeNodeset()->get_FE_region()));
+		cache = cmzn_fieldcache::create(FE_region_get_cmzn_region(this->getFeNodeset()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -851,7 +851,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	else
 	{
 		iter = this->createNodeiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeNodeset()->get_FE_region()));
+		cache = cmzn_fieldcache::create(FE_region_get_cmzn_region(this->getFeNodeset()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}

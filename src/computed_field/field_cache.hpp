@@ -23,8 +23,6 @@
 #include <map>
 #include <vector>
 
-struct Computed_field_find_element_xi_cache;
-
 // dynamic_cast may make cache value type crashes more predictable.
 // Enable for spurious errors, but switching off for performance reasons, release and debug.
 #if defined (TEST_FIELD_VALUE_CACHE_CAST)
@@ -171,13 +169,11 @@ public:
 	FE_value *values;
 	const int componentCount;
 	std::vector<DerivativeValueCache *> derivatives;
-	Computed_field_find_element_xi_cache *find_element_xi_cache;
 
 	RealFieldValueCache(int componentCountIn) :
 		FieldValueCache(),
 		values(new FE_value[componentCountIn]),
-		componentCount(componentCountIn),
-		find_element_xi_cache(0)
+		componentCount(componentCountIn)
 	{
 	}
 
@@ -185,7 +181,6 @@ public:
 
 	virtual void resetEvaluationCounter();
 
-	virtual void clear();
 
 	static const RealFieldValueCache* cast(const FieldValueCache* valueCache)
 	{
@@ -299,16 +294,17 @@ private:
 	cmzn_fieldcache *parentCache;  // non-accessed parent cache if this is its sharedWorkingCache; finite element evaluation caches are shared with parent
 	cmzn_fieldcache *sharedWorkingCache;  // optional working cache shared by fields evaluating at the same time value
 	RegionFieldcacheMap sharedExternalWorkingCacheMap;
+	std::list<cmzn_fieldrange *> fieldranges;  // list of field ranges owned by this field cache
 	int access_count;
+
+	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
+	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn);
 
 public:
 
-	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
-	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = nullptr);
-
 	~cmzn_fieldcache();
 
-	static cmzn_fieldcache *create(cmzn_region *regionIn);
+	static cmzn_fieldcache *create(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = nullptr);
 
 	cmzn_fieldcache *access()
 	{
@@ -316,20 +312,23 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_fieldcache*& cache)
-	{
-		if (!cache)
-			return CMZN_ERROR_ARGUMENT;
-		--(cache->access_count);
-		if (cache->access_count <= 0)
-			delete cache;
-		cache = 0;
-		return CMZN_OK;
-	}
+	static void deaccess(cmzn_fieldcache*& fieldcache);
 
 	inline bool hasRegionModifications() const
 	{
 		return this->modifyCounter != this->region->getFieldModifyCounter();
+	}
+
+	/** private, only to be called by cmzn_fieldrange constructor */
+	void addFieldrange(cmzn_fieldrange *range)
+	{
+		this->fieldranges.push_back(range);
+	}
+
+	/** private, only to be called by cmzn_fieldrange destructor */
+	void removeFieldrange(cmzn_fieldrange *range)
+	{
+		this->fieldranges.remove(range);
 	}
 
 	/** call whenever location changes to increment location counter
@@ -473,6 +472,7 @@ public:
 
 	/** Set a mesh location where the chart_coordinates are likely to be the same at that index.
 	 * Allows pre-calculated basis functions to be kept.
+	 * @param index  Index of location starting at 0.
 	 * @param topLevelElement  Optional top-level element to inherit fields from */
 	int setIndexedMeshLocation(unsigned int index, cmzn_element *element, const double *chart_coordinates,
 		cmzn_element *top_level_element = 0);
@@ -569,7 +569,7 @@ public:
 	cmzn_fieldcache *getOrCreateSharedWorkingCache()
 	{
 		if (!this->sharedWorkingCache)
-			this->sharedWorkingCache = new cmzn_fieldcache(this->region, this);
+			this->sharedWorkingCache = cmzn_fieldcache::create(this->region, this);
 		return this->sharedWorkingCache;
 	}
 

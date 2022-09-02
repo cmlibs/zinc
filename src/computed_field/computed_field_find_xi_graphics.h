@@ -22,8 +22,7 @@ struct Graphics_buffer_package;
 
 /***************************************************************************//**
  * This function implements the reverse of some certain computed_fields
- * (Computed_field_is_find_element_xi_capable) so that it tries to find an
- * element and xi which would evaluate to the given values.
+ * to find an element and xi which would evaluate to the given values.
  * This implementation of find_element_xi has been separated out as it uses
  * OpenGL to accelerate the element xi lookup.
  * The <graphics_buffer_package> is required to connect to the OpenGL
@@ -40,9 +39,9 @@ struct Graphics_buffer_package;
  * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
  */
-int Computed_field_find_element_xi_special(struct Computed_field *field,
+int Computed_field_find_element_xi_special(cmzn_field *field,
 	cmzn_fieldcache_id field_cache,
-	struct Computed_field_find_element_xi_cache **cache_ptr,
+	Computed_field_find_element_xi_cache **findElementXiCache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, cmzn_mesh_id search_mesh,
 	Graphics_buffer_package *graphics_buffer_package,

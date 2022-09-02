@@ -20,6 +20,7 @@ SET( FINITE_ELEMENT_CORE_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_evaluation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_parameters.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_mesh.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_mesh_field_ranges.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_nodeset.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_region.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_shape.cpp
@@ -40,6 +41,7 @@ SET( FINITE_ELEMENT_CORE_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_parameters.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_private.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_mesh.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_mesh_field_ranges.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_nodeset.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_private.h
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_region.h

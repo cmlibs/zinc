@@ -22,7 +22,14 @@ struct FE_region;
  * Interface for notifying when the objects are destroyed */
 class FE_domain_group
 {
+protected:
+
+	virtual ~FE_domain_group()
+	{
+	}
+
 public:
+
 	/** Notify that all objects in domain have been destroyed, so group must be cleared */
 	virtual void destroyedAllObjects() = 0;
 

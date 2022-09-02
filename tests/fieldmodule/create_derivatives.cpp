@@ -576,8 +576,7 @@ TEST(ZincFieldGradient, large_strain_2d)
 	EXPECT_TRUE(xi.isValid());
 	const double sqrt2 = sqrt(2.0);
 	const double one_sqrt2 = 1.0/sqrt2;
-	const double pi = 3.1415926535897932384626433832795;
-	const double pi_2 = 0.5*pi;
+	//const double pi = 3.1415926535897932384626433832795;
 	const double scalingValues[9] = {
 		0.75*sqrt2, 0.25*sqrt2, 0.0,
 		0.25*sqrt2, 0.75*sqrt2, 0.0,
@@ -820,8 +819,6 @@ TEST(ZincFieldGradient, gradientOfGradient2)
 	double xOffset[3];
 	double xiOffset[3];
 	double deformedCentre[3];
-	double deformedOffset[6][3];
-	double gradient1Offset[6][9];
 	const double delta = 1.0E-5;
 	double gradient1[9], gradient2[27];
 	double deformedMinus[3], deformedPlus[3];

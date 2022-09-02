@@ -16,6 +16,8 @@ Essentially it is used to embed one mesh in the elements of another.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_find_xi_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.hpp"
@@ -84,11 +86,13 @@ int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& in
 			the third source field */
 		cmzn_element_id compose_element =0;
 		FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-		if (Computed_field_find_element_xi(getSourceField(1), &extraCache,
+		// should store in custom ValueCache, but only used by cmgui
+		Computed_field_find_element_xi_cache *findElementXiCache = new Computed_field_find_element_xi_cache(getSourceField(1));
+		if (Computed_field_find_element_xi(getSourceField(1), &extraCache, findElementXiCache,
+			/*meshFieldRanges*/nullptr,
 			coordinateValueCache->values,
 			coordinateValueCache->componentCount,
-			&compose_element, compose_xi,
-			mesh, /*propagate_field*/0, find_nearest)
+			&compose_element, compose_xi, mesh, find_nearest)
 			&& compose_element)
 		{
 			/* calculate the third source_field at this new location */
@@ -120,6 +124,7 @@ int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& in
 				return_code = 0;
 			}
 		}
+		delete findElementXiCache;
 	}
 	return return_code;
 }
@@ -270,28 +275,17 @@ cmzn_field *cmzn_fieldmodule_create_field_compose(cmzn_fieldmodule *fieldmodule,
 		if (texture_coordinate_field->number_of_components ==
 			find_element_xi_field->number_of_components)
 		{
-			if (Computed_field_is_find_element_xi_capable(
-				find_element_xi_field, /*dummy*/NULL))
-			{
-				cmzn_field *source_fields[3];
-				source_fields[0] = texture_coordinate_field;
-				source_fields[1] = find_element_xi_field;
-				source_fields[2] = calculate_values_field;
-				field = Computed_field_create_generic(fieldmodule,
-					/*check_source_field_regions*/true,
-					calculate_values_field->number_of_components,
-					/*number_of_source_fields*/3, source_fields,
-					/*number_of_source_values*/0, NULL,
-					new Computed_field_compose(search_mesh, find_nearest,
-						use_point_five_when_out_of_bounds));
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_fieldmodule_create_field_compose.  "
-					"The type of find_element_xi_field supplied has not "
-					"been implemented for find_element_xi calculations.");
-			}
+			cmzn_field *source_fields[3];
+			source_fields[0] = texture_coordinate_field;
+			source_fields[1] = find_element_xi_field;
+			source_fields[2] = calculate_values_field;
+			field = Computed_field_create_generic(fieldmodule,
+				/*check_source_field_regions*/true,
+				calculate_values_field->number_of_components,
+				/*number_of_source_fields*/3, source_fields,
+				/*number_of_source_values*/0, NULL,
+				new Computed_field_compose(search_mesh, find_nearest,
+					use_point_five_when_out_of_bounds));
 		}
 		else
 		{
