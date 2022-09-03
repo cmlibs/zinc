@@ -1163,11 +1163,6 @@ private:
 	char* get_command_string();
 
 	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
-
-	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
-		const FE_value *values, int number_of_values,
-		struct FE_element **element_address, FE_value *xi,
-		cmzn_mesh_id mesh);
 };
 
 int Computed_field_scale::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -1218,60 +1213,6 @@ enum FieldAssignmentResult Computed_field_scale::assign(cmzn_fieldcache& cache, 
 	}
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
-
-int Computed_field_scale::propagate_find_element_xi(cmzn_fieldcache& field_cache,
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, cmzn_mesh_id mesh)
-{
-	FE_value *source_values;
-	int i,return_code;
-
-	ENTER(Computed_field_scale::propagate_find_element_xi);
-	if (field && values && (number_of_values == field->number_of_components))
-	{
-		return_code = 1;
-		/* reverse the scaling - unless any scale_factors are zero */
-		if (ALLOCATE(source_values,FE_value,field->number_of_components))
-		{
-			for (i=0;(i<field->number_of_components)&&return_code;i++)
-			{
-				if (0.0 != field->source_values[i])
-				{
-					source_values[i] = values[i] / field->source_values[i];
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_scale::propagate_find_element_xi.  "
-						"Cannot invert scale field %s with zero scale factor",
-						field->name);
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				return_code = Computed_field_find_element_xi(
-					field->source_fields[0], &field_cache, source_values, number_of_values,
-					element_address, xi, mesh, /*propagate_field*/1,
-					/*find_nearest*/0);
-			}
-			DEALLOCATE(source_values);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scale::propagate_find_element_xi.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_scale::propagate_find_element_xi */
 
 int Computed_field_scale::list()
 /*******************************************************************************
@@ -1985,11 +1926,6 @@ private:
 	char* get_command_string();
 
 	enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
-
-	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
-		const FE_value *values, int number_of_values,
-		struct FE_element **element_address, FE_value *xi,
-		cmzn_mesh_id mesh);
 };
 
 int Computed_field_offset::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -2025,46 +1961,6 @@ enum FieldAssignmentResult Computed_field_offset::assign(cmzn_fieldcache& cache,
 	}
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
-
-int Computed_field_offset::propagate_find_element_xi(cmzn_fieldcache& field_cache,
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, cmzn_mesh_id mesh)
-{
-	FE_value *source_values;
-	int i,return_code;
-
-	ENTER(Computed_field_offset::propagate_find_element_xi);
-	if (field && values && (number_of_values == field->number_of_components))
-	{
-		return_code = 1;
-		/* reverse the offset */
-		if (ALLOCATE(source_values,FE_value,field->number_of_components))
-		{
-			for (i=0;i<field->number_of_components;i++)
-			{
-				source_values[i] = values[i] - field->source_values[i];
-			}
-			return_code = Computed_field_find_element_xi(
-				field->source_fields[0], &field_cache, source_values, number_of_values,
-				element_address, xi, mesh, /*propagate_field*/1,
-				/*find_nearest*/0);
-			DEALLOCATE(source_values);
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_offset::propagate_find_element_xi.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_offset::propagate_find_element_xi */
 
 int Computed_field_offset::list()
 /*******************************************************************************

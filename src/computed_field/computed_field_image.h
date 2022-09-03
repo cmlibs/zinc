@@ -75,7 +75,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field,
 	int image_width, int image_height, int image_depth, int bytes_per_pixel,
 	int number_of_bytes_per_component, bool use_pixel_location,
 	double texture_width, double texture_height, double texture_depth,
-	enum Texture_storage_type specify_format, int propagate_field,
+	enum Texture_storage_type specify_format,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	cmzn_mesh_id search_mesh);
 

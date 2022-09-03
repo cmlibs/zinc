@@ -47,6 +47,7 @@ class Fieldassignment;
 class Fieldcache;
 class Fieldparameters;
 class Fieldmodule;
+class Fieldrange;
 class Fieldsmoothing;
 
 class Field
@@ -295,6 +296,8 @@ public:
 
 	inline int evaluateDerivative(const Differentialoperator& differentialOperator,
 		const Fieldcache& cache, int valuesCount, double *valuesOut) const;
+
+	inline int evaluateFieldrange(const Fieldcache& cache, Fieldrange& range) const;
 
 	inline bool isDefinedAtLocation(const Fieldcache& cache) const;
 

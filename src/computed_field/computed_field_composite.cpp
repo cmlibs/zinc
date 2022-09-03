@@ -146,11 +146,6 @@ private:
 	char* get_command_string();
 
 	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, RealFieldValueCache& /*valueCache*/);
-
-	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
-		const FE_value *values, int number_of_values,
-		struct FE_element **element_address, FE_value *xi,
-		cmzn_mesh_id mesh);
 };
 
 Computed_field_composite::~Computed_field_composite()
@@ -325,78 +320,6 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 	}
 	return result;
 }
-
-int Computed_field_composite::propagate_find_element_xi(cmzn_fieldcache& field_cache,
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, cmzn_mesh_id mesh)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Currently only tries to work if there is only one and exactly one source field.
-Zero is used for any source field values that aren't set from the composite field.
-==============================================================================*/
-{
-	int i, number_of_source_values, return_code, source_field_number;
-	FE_value *source_values;
-
-	ENTER(Computed_field_composite::propagate_find_element_xi);
-	if (field && values && (number_of_values == field->number_of_components))
-	{
-		return_code=1;
-		if (field->number_of_source_fields == 1)
-		{
-			source_field_number = 0;
-			number_of_source_values = field->source_fields[source_field_number]->number_of_components;
-			if (ALLOCATE(source_values,FE_value,number_of_source_values))
-			{
-				/* Put zero into every value initially */
-				for (i=0;i<number_of_source_values;i++)
-				{
-					source_values[i] = 0.0;
-				}
-				for (i=0;i<field->number_of_components;i++)
-				{
-					if (source_field_number == source_field_numbers[i])
-					{
-						source_values[source_value_numbers[i]] = values[i];
-					}
-				}
-				return_code = Computed_field_find_element_xi(
-					field->source_fields[source_field_number], &field_cache, source_values,
-					number_of_values, element_address, xi, mesh,
-					/*propagate_field*/1, /*find_nearest*/0);
-				DEALLOCATE(source_values);
-			}
-			else
-			{
-				return_code=0;
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_composite::propagate_find_element_xi.  Failed");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_composite::propagate_find_element_xi.  "
-				"Unable to find element xi on a composite field involving more than one source field.");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_composite::propagate_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_composite::propagate_find_element_xi */
 
 char *Computed_field_composite::get_source_string(int commands)
 /*******************************************************************************

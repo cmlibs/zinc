@@ -484,7 +484,7 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	// test bogus material correctly serialised
 	Material bogusMaterial2 = materialmodule2.findMaterialByName("bogus");
 	EXPECT_TRUE(bogusMaterial2.isValid());
-	double ambient[3], diffuse[3], emission[3], specular[3], alpha, shininess;
+	double ambient[3], diffuse[3], emission[3], specular[3];
 	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_AMBIENT, ambient));
 	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_DIFFUSE, diffuse));
 	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_EMISSION, emission));

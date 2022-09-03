@@ -45,7 +45,7 @@ public:
 class Calculate_xi_points_line_cell_centres : public Calculate_xi_points
 {
 public:
-	Calculate_xi_points_line_cell_centres(int *numbersOfPoints) :
+	Calculate_xi_points_line_cell_centres(const int *numbersOfPoints) :
 		Calculate_xi_points(numbersOfPoints[0], 1.0)
 	{
 	}
@@ -69,7 +69,7 @@ class Calculate_xi_points_square_cell_centres : public Calculate_xi_points
 {
 	int numPoints1, numPoints2;
 public:
-	Calculate_xi_points_square_cell_centres(int *numbersOfPoints) :
+	Calculate_xi_points_square_cell_centres(const int *numbersOfPoints) :
 		Calculate_xi_points(numbersOfPoints[0]*numbersOfPoints[1], 1.0),
 		numPoints1(numbersOfPoints[0]),
 		numPoints2(numbersOfPoints[1])
@@ -216,7 +216,7 @@ class Calculate_xi_points_cube_cell_centres : public Calculate_xi_points
 {
 	int numPoints1, numPoints2, numPoints3;
 public:
-	Calculate_xi_points_cube_cell_centres(int *numbersOfPoints) :
+	Calculate_xi_points_cube_cell_centres(const int *numbersOfPoints) :
 		Calculate_xi_points(numbersOfPoints[0]*numbersOfPoints[1]*numbersOfPoints[2], 1.0),
 		numPoints1(numbersOfPoints[0]),
 		numPoints2(numbersOfPoints[1]),
@@ -383,7 +383,7 @@ public:
 };
 
 int FE_element_shape_get_xi_points_cell_centres(
-	struct FE_element_shape *element_shape, int *number_in_xi,
+	struct FE_element_shape *element_shape, const int *number_in_xi,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
@@ -399,7 +399,7 @@ comments for simplex and polygons shapes for more details.
 ==============================================================================*/
 
 int FE_element_shape_get_xi_points_cell_corners(
-	struct FE_element_shape *element_shape, int *number_in_xi,
+	struct FE_element_shape *element_shape, const int *number_in_xi,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
@@ -429,7 +429,7 @@ Otherwise the routine returns 0.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	cmzn_element_point_sampling_mode sampling_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
+	const int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
@@ -471,7 +471,7 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	cmzn_element_point_sampling_mode sampling_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
+	const int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi);
 /*******************************************************************************

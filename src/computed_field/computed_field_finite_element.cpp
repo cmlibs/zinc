@@ -18,6 +18,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_find_xi_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/fieldparametersprivate.hpp"
@@ -375,7 +376,7 @@ const char computed_field_finite_element_type_string[] = "finite_element";
 class Computed_field_finite_element : public Computed_field_core
 {
 public:
-	FE_field* fe_field;
+	FE_field *fe_field;
 	enum cmzn_field_type type;
 
 public:
@@ -415,6 +416,19 @@ public:
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
 	{
 		return (this->field == other_field);
+	}
+
+	/** @return  True if this finite element field result changed. */
+	virtual bool isResultChanged()
+	{
+		int change = 0;
+		CHANGE_LOG_QUERY(FE_field)(this->fe_field->get_FE_region()->fe_field_changes, this->fe_field, &change);
+		// changed if any flags other than identifier changed
+		if (change &= (~CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)))
+		{
+			return true;
+		}
+		return false;
 	}
 
 private:
@@ -2122,7 +2136,7 @@ const char computed_field_node_value_type_string[] = "node_value";
 class Computed_field_node_value : public Computed_field_core
 {
 public:
-	struct FE_field *fe_field;
+	FE_field *fe_field;
 	cmzn_node_value_label nodeValueLabel;
 	int versionNumber; // starting at 0
 
@@ -2193,6 +2207,19 @@ public:
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
 	{
 		return (this->field == other_field);
+	}
+
+	/** @return  True if this finite element field result changed. */
+	virtual bool isResultChanged()
+	{
+		int change = 0;
+		CHANGE_LOG_QUERY(FE_field)(this->fe_field->get_FE_region()->fe_field_changes, this->fe_field, &change);
+		// changed if any flags other than identifier changed
+		if (change | (~CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)))
+		{
+			return true;
+		}
+		return false;
 	}
 
 private:
@@ -3353,17 +3380,63 @@ class Computed_field_find_mesh_location;
 // is cleared. Stores owning field to support this; should all FieldValueCaches do this?
 class FindMeshLocationFieldValueCache : public MeshLocationFieldValueCache
 {
-	Computed_field_find_mesh_location* findMeshLocationField;
+	Computed_field_find_element_xi_cache *findElementXiCache;
 
 public:
 
-	FindMeshLocationFieldValueCache(Computed_field_find_mesh_location* findMeshLocationFieldIn) :
+	FindMeshLocationFieldValueCache() :
 		MeshLocationFieldValueCache(),
-		findMeshLocationField(findMeshLocationFieldIn)
+		findElementXiCache(nullptr)
 	{
 	}
 
-	virtual void clear();
+	~FindMeshLocationFieldValueCache()
+	{
+		if (this->findElementXiCache)
+		{
+			delete this->findElementXiCache;
+			this->findElementXiCache = nullptr;
+		}
+	}
+
+	virtual void clear()
+	{
+		if (this->findElementXiCache)
+		{
+			delete this->findElementXiCache;
+			this->findElementXiCache = nullptr;
+		}
+		MeshLocationFieldValueCache::clear();
+	}
+
+	Computed_field_find_element_xi_cache *getFindElementXiCache(cmzn_field *meshField)
+	{
+		if (!this->findElementXiCache)
+		{
+			this->findElementXiCache = new Computed_field_find_element_xi_cache(meshField);
+		}
+		return this->findElementXiCache;
+	}
+
+	static const FindMeshLocationFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const FindMeshLocationFieldValueCache*>(valueCache);
+	}
+
+	static FindMeshLocationFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<FindMeshLocationFieldValueCache*>(valueCache);
+	}
+
+	static const FindMeshLocationFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const FindMeshLocationFieldValueCache&>(valueCache);
+	}
+
+	static FindMeshLocationFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<FindMeshLocationFieldValueCache&>(valueCache);
+	}
 };
 
 const char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
@@ -3374,6 +3447,10 @@ private:
 	cmzn_mesh *mesh;  // mesh for storing locations in
 	cmzn_mesh *searchMesh;  // mesh for search for locations e.g. subset/faces
 	enum cmzn_field_find_mesh_location_search_mode searchMode;
+	FeMeshFieldRangesCache *meshFieldRangesCache;
+	FeMeshFieldRanges *meshFieldRanges;
+
+	Computed_field_find_mesh_location();  // not defined
 
 public:
 
@@ -3381,7 +3458,9 @@ public:
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
 		searchMesh(cmzn_mesh_access(mesh)),
-		searchMode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
+		searchMode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT),
+		meshFieldRangesCache(nullptr),
+		meshFieldRanges(nullptr)
 	{
 	};
 
@@ -3389,14 +3468,37 @@ public:
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(source.mesh)),
 		searchMesh(cmzn_mesh_access(source.searchMesh)),
-		searchMode(source.searchMode)
+		searchMode(source.searchMode),
+		meshFieldRangesCache(nullptr),
+		meshFieldRanges(nullptr)
 	{
 	};
 
+	virtual bool attach_to_field(cmzn_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			this->updateMeshFieldRanges();
+			return true;
+		}
+		return false;
+	}
+
 	virtual ~Computed_field_find_mesh_location()
 	{
+		FeMeshFieldRanges::deaccess(this->meshFieldRanges);
+		FeMeshFieldRangesCache::deaccess(this->meshFieldRangesCache);
 		cmzn_mesh_destroy(&this->mesh);
 		cmzn_mesh_destroy(&this->searchMesh);
+	}
+
+	virtual void inherit_source_field_attributes()
+	{
+		if (this->field)
+		{
+			Coordinate_system coordinateSystem(NOT_APPLICABLE);
+			this->field->setCoordinateSystem(coordinateSystem, /*notifyChange*/false);
+		}
 	}
 
 	/** @return  Non-accessed field */
@@ -3413,13 +3515,19 @@ public:
 	/** @return  Non-accessed field */
 	cmzn_field *getMeshField()
 	{
-		return field->source_fields[1];
+		return this->field->source_fields[1];
 	}
 
 	/** @return  Non accessed mesh */
 	cmzn_mesh *getMesh()
 	{
 		return this->mesh;
+	}
+
+	/** @return  Non-accessed object storing ranges of mesh field in elements of mesh */
+	FeMeshFieldRanges *getMeshFieldRanges() const
+	{
+		return this->meshFieldRanges;
 	}
 
 	/** @return  Non-accessed search mesh */
@@ -3444,6 +3552,7 @@ public:
 			cmzn_mesh_access(searchMeshIn);
 			cmzn_mesh_destroy(&this->searchMesh);
 			this->searchMesh = searchMeshIn;
+			this->updateMeshFieldRanges();
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -3483,7 +3592,7 @@ private:
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
-		MeshLocationFieldValueCache *valueCache = new FindMeshLocationFieldValueCache(this);
+		FindMeshLocationFieldValueCache *valueCache = new FindMeshLocationFieldValueCache();
 		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
@@ -3511,34 +3620,60 @@ private:
 		return CMZN_FIELD_VALUE_TYPE_MESH_LOCATION;
 	}
 
-	// if the mesh is a mesh group, also need to propagate changes from it
+	// if the mesh or search mesh is a group, also need to propagate changes from it
+	// also, if the mesh field or mesh or search mesh group have changed, trigger re-evaluation of mesh field ranges
 	virtual int check_dependency()
 	{
 		int return_code = Computed_field_core::check_dependency();
-		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+		bool reevaluate = false;
+		// have to call check_dependency because Computed_field_core::check_dependency will not
+		// call it if any earlier field is MANAGER_CHANGE_FULL_RESULT
+		// must compare with MANAGER_CHANGE_RESULT as may be MANAGER_CHANGE_PARTIAL_RESULT
+		cmzn_field *meshField = this->getMeshField();
+		if ((meshField->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field)) ||
+			(meshField->core->check_dependency() & MANAGER_CHANGE_RESULT(Computed_field)))
 		{
-			cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
-			if (elementGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
-				cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+			reevaluate = true;
+		}
+		else
+		{
+			for (int i = 0; i < 2; ++i)
 			{
-				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
-				return_code = this->field->manager_change_status;
+				cmzn_mesh *checkMesh = (i == 0) ? this->mesh : this->searchMesh;
+				cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(checkMesh);
+				// can simply compare with manager_change_status member
+				// since has no source field and subgroup changes directly stored in field
+				if ((elementGroupField) && (MANAGER_CHANGE_NONE(Computed_field) !=
+					cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+				{
+					reevaluate = true;
+					break;
+				}
 			}
+		}
+		if (reevaluate)
+		{
+			this->meshFieldRangesCache->clearRanges();
+			// this implies a full change
+			this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+			return_code = this->field->manager_change_status;
 		}
 		return return_code;
 	}
 
-};
+	// call if search mesh or mesh field are changed to get new mesh field ranges/cache
+	void updateMeshFieldRanges()
+	{
+		// get new mesh field ranges cache and ranges before releasing old ones in case they are the same
+		FeMeshFieldRangesCache *newMeshFieldRangesCache = cmzn_mesh_get_FE_mesh_internal(this->searchMesh)->getFeMeshFieldRangesCache(this->getMeshField());
+		FeMeshFieldRanges *newMeshFieldRanges = newMeshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->searchMesh));
+		FeMeshFieldRangesCache::deaccess(this->meshFieldRangesCache);
+		FeMeshFieldRanges::deaccess(this->meshFieldRanges);
+		this->meshFieldRangesCache = newMeshFieldRangesCache;
+		this->meshFieldRanges = newMeshFieldRanges;
+	}
 
-void FindMeshLocationFieldValueCache::clear()
-{
-	// clear extra cache value cache for mesh field
-	cmzn_fieldcache& extraCache = *this->getExtraCache();
-	cmzn_field *meshField = this->findMeshLocationField->getMeshField();
-	FieldValueCache *meshFieldValueCache = meshField->getValueCache(extraCache);
-	meshFieldValueCache->clear();
-	MeshLocationFieldValueCache::clear();
-}
+};
 
 Computed_field_core* Computed_field_find_mesh_location::copy()
 {
@@ -3566,14 +3701,33 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField()->evaluate(cache));
 	if (!sourceValueCache)
 		return 0;
-	MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
-	meshLocationValueCache.clearElement();
-	cmzn_fieldcache& extraCache = *meshLocationValueCache.getExtraCache();
+	FindMeshLocationFieldValueCache& findMeshLocationValueCache = FindMeshLocationFieldValueCache::cast(inValueCache);
+	findMeshLocationValueCache.clearElement();
+	cmzn_fieldcache& extraCache = *findMeshLocationValueCache.getExtraCache();
 	extraCache.setTime(cache.getTime());
 	cmzn_element *element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache, sourceValueCache->values,
-		sourceValueCache->componentCount, &element, xi, this->searchMesh, /*propagate_field*/0,
+	cmzn_field *meshField = this->getMeshField();
+	Computed_field_find_element_xi_cache *findElementXiCache =
+		findMeshLocationValueCache.getFindElementXiCache(meshField);
+	FeMeshFieldRanges *meshFieldRanges = this->meshFieldRanges;
+	// while the mesh field has changes the ranges are not used
+	// changes to groups are fine: deletion of elements immediately removes them from any groups, and their ranges from mesh field ranges
+	// Any elements added to groups won't have a range so will fallback to the original find xi algorithm
+	// the evaluated flag is cleared when FindMeshLocation field is notified of change to either mesh field or element group
+	//cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
+	if (meshField->isResultChanged()/* || ((elementGroupField) && cmzn_field_element_group_base_cast(elementGroupField)->isResultChanged())*/)
+	{
+		// mesh field ranges are invalid while mesh field has unnotified result changes
+		meshFieldRanges = nullptr;
+	}
+	else if (!meshFieldRanges->isEvaluated())
+	{
+		this->meshFieldRangesCache->evaluateMeshFieldRanges(extraCache, meshFieldRanges);
+	}
+	if (!(Computed_field_find_element_xi(meshField, &extraCache,
+		findElementXiCache, meshFieldRanges, sourceValueCache->values,
+		sourceValueCache->componentCount, &element, xi, this->searchMesh,
 		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
 		&& (element)))
 		return 0;
@@ -3602,7 +3756,7 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 		}
 		element = ancestorElement;
 	}
-	meshLocationValueCache.setMeshLocation(element, xi);
+	findMeshLocationValueCache.setMeshLocation(element, xi);
 	return 1;
 }
 
@@ -3621,9 +3775,15 @@ int Computed_field_find_mesh_location::list()
 			display_message(INFORMATION_MESSAGE, " find_exact\n");
 		}
 		display_message(INFORMATION_MESSAGE, "    mesh : ");
-		char *mesh_name = cmzn_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(this->mesh);
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
+
+		display_message(INFORMATION_MESSAGE, "    search mesh : ");
+		mesh_name = cmzn_mesh_get_name(this->searchMesh);
+		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
+		DEALLOCATE(mesh_name);
+
 		display_message(INFORMATION_MESSAGE,
 			"    mesh field : %s\n", getMeshField()->name);
 		display_message(INFORMATION_MESSAGE,
@@ -3652,7 +3812,14 @@ char *Computed_field_find_mesh_location::get_command_string()
 		}
 
 		append_string(&command_string, " mesh ", &error);
-		char *mesh_name = cmzn_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(this->mesh);
+		make_valid_token(&mesh_name);
+		append_string(&command_string, mesh_name, &error);
+		DEALLOCATE(mesh_name);
+
+		append_string(&command_string, " search_mesh ", &error);
+		mesh_name = cmzn_mesh_get_name(this->searchMesh);
+		make_valid_token(&mesh_name);
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 

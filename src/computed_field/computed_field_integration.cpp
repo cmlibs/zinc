@@ -593,9 +593,10 @@ time is supplied in the workingCache.
 					} break;
 				}
 				shape = get_FE_element_shape(mapping_item->element);
-				if (!(FE_element_shape_find_face_number_for_xi(shape, xi, &face_number) &&
-					(((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
-						&number_of_neighbour_elements, &neighbour_elements))))))
+				face_number = FE_element_shape_find_face_number_for_xi(shape, xi, 1.0E-8);
+				if (!((0 <= face_number) &&
+					(CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
+						&number_of_neighbour_elements, &neighbour_elements))))
 				{
 					number_of_neighbour_elements = 0;
 				}
@@ -1344,131 +1345,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	}
 	return (return_code);
 }
-
-// @TODO Migrate to new external field cache
-#if defined (FUTURE_CODE)
-int Computed_field_integration::propagate_find_element_xi(
-	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, FE_value time, cmzn_mesh_id search_mesh)
-{
-	FE_value floor_values[3];
-	int i, return_code;
-	Computed_field_element_integration_mapping *mapping;
-	Computed_field_integration_has_values_data has_values_data;
-
-	ENTER(Computed_field_integration::propagate_find_element_xi);
-	USE_PARAMETER(time);
-	if (field && values && (number_of_values==field->number_of_components) && search_mesh)
-	{
-		const int element_dimension = search_mesh ?
-			cmzn_mesh_get_dimension(search_mesh) : get_FE_element_dimension(*element_address);
-		if (!texture_mapping)
-		{
-			calculate_mapping(/*time*/0);
-		}
-		else
-		{
-#if defined (NEW_CODE)
-			/* Until we are calculating this at the correct time there is no
-				point seeing if the time has changed */
-			if ((time != cached_time)
-				&& (Computed_field_has_multiple_times(field->source_fields[0])
-				|| Computed_field_has_multiple_times(field->source_fields[1])))
-			{
-				DESTROY_LIST(Computed_field_element_integration_mapping)
-					(&texture_mapping);
-				Computed_field_integration_calculate_mapping(field, time);
-			}
-#endif /* defined (NEW_CODE) */
-		}
-		if (number_of_values<=3)
-		{
-			for (i = 0 ; i < number_of_values ; i++)
-			{
-				floor_values[i] = floor(values[i]);
-			}
-			has_values_data.values = floor_values;
-			has_values_data.number_of_values = number_of_values;
-			if (texture_mapping)
-			{
-				return_code=0;
-				/* Check the last successful mapping first */
-				if (find_element_xi_mapping&&
-					Computed_field_element_integration_mapping_has_values(
-						find_element_xi_mapping, (void *)&has_values_data))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					/* Find in the list */
-					mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_integration_mapping)
-						(Computed_field_element_integration_mapping_has_values, (void *)&has_values_data,
-							texture_mapping);
-					if (mapping != 0)
-					{
-						REACCESS(Computed_field_element_integration_mapping)(&(find_element_xi_mapping),
-							mapping);
-						return_code = 1;
-					}
-				}
-				if (return_code)
-				{
-					*element_address = find_element_xi_mapping->element;
-					for (i = 0 ; i < get_FE_element_dimension(*element_address) ; i++)
-					{
-						xi[i] = values[i] - floor_values[i];
-					}
-					if (!cmzn_mesh_contains_element(mesh, *element_address))
-					{
-						*element_address = (FE_element *)NULL;
-						display_message(ERROR_MESSAGE,
-							"Computed_field_integration::propagate_find_element_xi.  "
-							"Element is not in integration mesh");
-						return_code=0;
-					}
-					if (element_dimension && (element_dimension != get_FE_element_dimension(*element_address)))
-					{
-						*element_address = (FE_element *)NULL;
-						display_message(ERROR_MESSAGE,
-							"Computed_field_integration::propagate_find_element_xi.  "
-							"Element is not of the required dimension");
-						return_code=0;
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_integration::propagate_find_element_xi.  "
-					"Xi texture coordinate mapping not calculated");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_integration::propagate_find_element_xi.  "
-				"Only implemented for three or less values");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_integration::propagate_find_element_xi.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_integration::propagate_find_element_xi */
-#endif // defined (FUTURE_CODE)
 
 int Computed_field_integration::list(
 	)
