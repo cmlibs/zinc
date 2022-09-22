@@ -1,6 +1,21 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.9.0
+Add field evaluate range API.
+Optimise find mesh location using pre-calculated element field range cache.
+Improve find mesh location search mode nearest on 3-D elements.
+Fix pre-merge checks of subregions when reading models.
+
+v3.8.1
+Fix read merge for embedded locations which corrupted element to embedded node map.
+Fix write description for fields with NOT_APPLICABLE coordinate system type.
+
+v3.8.0
+Serialise mesh and nodeset operators fields to/from json description.
+Add missing type-specific field API.
+
 v3.7.0
+Support optimisation at time for time-varying fields.
 Add Region change notifier, for tree structure changes.
 Add Sceneviewer incremental graphics build render timeout API.
 Fix groups not immediately removing destoyed nodes or elements within begin/end change.

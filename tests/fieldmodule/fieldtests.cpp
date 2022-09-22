@@ -24,9 +24,9 @@
 
 TEST(ZincField, CoordinateSystemTypeEnum)
 {
-	const char *enumNames[7] = { nullptr, "RECTANGULAR_CARTESIAN", "CYLINDRICAL_POLAR",
-		"SPHERICAL_POLAR", "PROLATE_SPHEROIDAL", "OBLATE_SPHEROIDAL", "FIBRE" };
-	testEnum(7, enumNames, Field::CoordinateSystemTypeEnumToString, Field::CoordinateSystemTypeEnumFromString);
+	const char *enumNames[8] = { nullptr, "RECTANGULAR_CARTESIAN", "CYLINDRICAL_POLAR",
+		"SPHERICAL_POLAR", "PROLATE_SPHEROIDAL", "OBLATE_SPHEROIDAL", "FIBRE", "NOT_APPLICABLE" };
+	testEnum(8, enumNames, Field::CoordinateSystemTypeEnumToString, Field::CoordinateSystemTypeEnumFromString);
 }
 
 TEST(ZincField, DomainTypeEnum)
@@ -190,6 +190,15 @@ TEST(ZincField, nonNumericFieldCoordinateSystem)
 	EXPECT_EQ(RESULT_OK, storedString.setName("stored_string"));
 	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, storedString.getCoordinateSystemType());
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, storedString.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+
+	const double zeroValues[3] = { 0.0, 0.0, 0.0 };
+	FieldConstant zero = zinc.fm.createFieldConstant(3, zeroValues);
+	EXPECT_TRUE(zero.isValid());
+	FieldFindMeshLocation findMeshLocation = zinc.fm.createFieldFindMeshLocation(zero, zero, mesh3d);
+	EXPECT_TRUE(findMeshLocation.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setName("find_mesh_location"));
+	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, findMeshLocation.getCoordinateSystemType());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, findMeshLocation.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
 
 	// check old EX files specifying coordinate system other than NON_APPLICABLE for non-numeric fields
 	// can be read, but these field are read as coordinate system type NON_APPLICABLE

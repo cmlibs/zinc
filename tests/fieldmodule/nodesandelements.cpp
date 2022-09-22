@@ -496,6 +496,21 @@ TEST(ZincMesh, destroyElementsGroupChangeManager_simple)
 	}
 }
 
+// Test destroying an element with embedded location after reading twice.
+// Tests read/merge code properly maintains element to embedded node maps.
+TEST(ZincMesh, destroyElement_embeddedLocation)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	Element element1 = mesh1d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	EXPECT_EQ(RESULT_OK, mesh1d.destroyElement(element1));
+}
+
 // Test destroying 3D element removes it and all orphaned faces from groups,
 // even while change cache is active
 TEST(ZincNodeset, destroyElementsGroupChangeManager_cube)
@@ -675,8 +690,20 @@ TEST(ZincElement, PointSamplingModeEnum)
 	testEnum(6, enumNames, Element::PointSamplingModeEnumToString, Element::PointSamplingModeEnumFromString);
 }
 
+TEST(ZincElement, QuadratureRuleEnum)
+{
+	const char *enumNames[3] = { nullptr, "GAUSSIAN", "MIDPOINT" };
+	testEnum(3, enumNames, Element::QuadratureRuleEnumToString, Element::QuadratureRuleEnumFromString);
+}
+
 TEST(ZincElement, ShapeTypeEnum)
 {
 	const char *enumNames[9] = { nullptr, "LINE", "SQUARE", "TRIANGLE", "CUBE", "TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23" };
 	testEnum(9, enumNames, Element::ShapeTypeEnumToString, Element::ShapeTypeEnumFromString);
+}
+
+TEST(ZincNode, ValueLabelEnum)
+{
+	const char *enumNames[9] = { nullptr, "VALUE", "D_DS1", "D_DS2", "D2_DS1DS2", "D_DS3", "D2_DS1DS3", "D2_DS2DS3", "D3_DS1DS2DS3" };
+	testEnum(9, enumNames, Node::ValueLabelEnumToString, Node::ValueLabelEnumFromString);
 }

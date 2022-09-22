@@ -174,6 +174,10 @@ struct FE_region
 		return FE_time_sequence_package_get_time_range(this->fe_time, minimumTime, maximumTime);
 	}
 
+	cmzn_region *getRegion() const
+	{
+		return this->cmiss_region;
+	}
 };
 
 /*

@@ -121,12 +121,12 @@ like the number of components.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.hpp"
-#include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/differential_operator.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
+#include "computed_field/field_range.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
@@ -135,8 +135,7 @@ like the number of components.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
-#include "general/indexed_list_private.h"
-#include "general/list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
@@ -810,6 +809,23 @@ cmzn_fieldparameters *cmzn_field::getFieldparameters()
 	return this->fieldparameters;
 }
 
+bool cmzn_field::isResultChanged()
+{
+	if ((this->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		|| this->core->isResultChanged())
+	{
+		return true;
+	}
+	for (int i = 0; i < this->number_of_source_fields; ++i)
+	{
+		if (this->source_fields[i]->isResultChanged())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 int cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange)
 {
 	if (coordinateSystemIn.type != NOT_APPLICABLE)
@@ -1027,8 +1043,7 @@ int cmzn_field::setNameUnique(const char *part1, const char *part2, int startNum
 
 int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyChange)
 {
-	if ((index < 0) || (index > this->number_of_source_fields) ||
-		((index == this->number_of_source_fields) && (!sourceField)))
+	if ((index < 0) || (index > this->number_of_source_fields))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field::setSourceField  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
@@ -1053,7 +1068,7 @@ int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyCh
 			changed = true;
 		}
 	}
-	else
+	else if (index != this->number_of_source_fields)
 	{
 		cmzn_field::deaccess(this->source_fields[index]);
 		--(this->number_of_source_fields);
@@ -1636,6 +1651,17 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		return CMZN_ERROR_GENERAL;
 	}
 	display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Invalid arguments");
+	return CMZN_ERROR_ARGUMENT;
+}
+
+// External API
+int cmzn_field_evaluate_fieldrange(cmzn_field_id field,
+	cmzn_fieldcache_id fieldcache, cmzn_fieldrange_id fieldrange)
+{
+	if (fieldrange)
+	{
+		return fieldrange->evaluateRange(field, fieldcache);
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -2262,65 +2288,6 @@ The number of components controls how the field is interpreted:
 
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
-
-int Computed_field_find_element_xi(struct cmzn_field *field,
-	cmzn_fieldcache_id field_cache, const FE_value *values,
-	int number_of_values, struct FE_element **element_address, FE_value *xi,
-	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest)
-{
-	int return_code;
-	ENTER(Computed_field_find_element_xi);
-	if (field && field_cache && values && (number_of_values == field->number_of_components) &&
-		element_address && xi && (mesh || *element_address))
-	{
-		if ((!propagate_to_source) || find_nearest ||
-			(!(return_code = field->core->propagate_find_element_xi(*field_cache,
-				values, number_of_values, element_address, xi, mesh))))
-		{
-			return_code = Computed_field_perform_find_element_xi(field, field_cache,
-				values, number_of_values, element_address, xi, mesh, find_nearest);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_find_element_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}
-
-int Computed_field_is_find_element_xi_capable(struct cmzn_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-This function returns true if the <field> can find element and xi given
-a set of values.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_find_element_xi_capable);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		/* By doing the inversion iterations on the final computed field we
-			can do this on all computed fields. */
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_find_element_xi_capable.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_find_element_xi_capable */
 
 bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
@@ -2964,6 +2931,9 @@ public:
 			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
 				enum_string = "FIBRE";
 				break;
+			case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE:
+				enum_string = "NOT_APPLICABLE";
+				break;
 			default:
 				break;
 		}
@@ -2992,7 +2962,7 @@ public:
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_INVALID:
-				enum_string = "INVALID";
+				// no enum string
 				break;
 			case CMZN_FIELD_TYPE_APPLY:
 				enum_string = "APPLY";
@@ -3180,7 +3150,29 @@ public:
 			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 				enum_string = "FIND_MESH_LOCATION";
 				break;
-			default:
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+				enum_string = "MESH_INTEGRAL";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+				enum_string = "MESH_INTEGRAL_SQUARES";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+				enum_string = "NODESET_MAXIMUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN:
+				enum_string = "NODESET_MEAN";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+				enum_string = "NODESET_MEAN_SQUARES";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+				enum_string = "NODESET_MINIMUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM:
+				enum_string = "NODESET_SUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+				enum_string = "NODESET_SUM_SQUARES";
 				break;
 		}
 		return enum_string;
@@ -3207,7 +3199,7 @@ public:
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_INVALID:
-				class_name = "Invalid";
+				// no class name
 				break;
 			case CMZN_FIELD_TYPE_APPLY:
 				class_name = "FieldApply";
@@ -3395,7 +3387,29 @@ public:
 			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 				class_name = "FieldFindMeshLocation";
 				break;
-			default:
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+				class_name = "FieldMeshIntegral";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+				class_name = "FieldMeshIntegralSquares";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+				class_name = "FieldNodesetMaximum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN:
+				class_name = "FieldNodesetMean";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+				class_name = "FieldNodesetMeanSquares";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+				class_name = "FieldNodesetMinimum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM:
+				class_name = "FieldNodesetSum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+				class_name = "FieldNodesetSumSquares";
 				break;
 		}
 		return class_name;
@@ -3416,6 +3430,33 @@ char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field)
 {
 	return field->core->get_type();
+}
+
+char *cmzn_field_get_class_name(cmzn_field_id field)
+{
+	if (field)
+	{
+		cmzn_field_type type = cmzn_field_get_type(field);
+		char *class_name = cmzn_field_type_enum_to_class_name(type);
+		if (!class_name)
+		{
+			display_message(ERROR_MESSAGE, "Field getClassName.  Class name not available for this field");
+		}
+		return class_name;
+	}
+	return nullptr;
+}
+
+bool cmzn_field_has_class_name(cmzn_field_id field,
+	const char *class_name)
+{
+	if ((field) && (class_name))
+	{
+		cmzn_field_type type = cmzn_field_get_type(field);
+		const char *tmp_class_name = cmzn_field_type_class_name_conversion::to_string(type);
+		return (nullptr != tmp_class_name) && (0 == strcmp(class_name, tmp_class_name));
+	}
+	return false;
 }
 
 cmzn_fieldparameters_id cmzn_field_get_fieldparameters(cmzn_field_id field)

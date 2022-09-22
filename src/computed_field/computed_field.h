@@ -121,6 +121,16 @@ enum cmzn_field_type
 	CMZN_FIELD_TYPE_MATRIX_MULTIPLY,
 	CMZN_FIELD_TYPE_PROJECTION,
 	CMZN_FIELD_TYPE_TRANSPOSE,
+	// mesh operators
+	CMZN_FIELD_TYPE_MESH_INTEGRAL,
+	CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES,
+	// nodeset operators
+	CMZN_FIELD_TYPE_NODESET_MAXIMUM,
+	CMZN_FIELD_TYPE_NODESET_MEAN,
+	CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES,
+	CMZN_FIELD_TYPE_NODESET_MINIMUM,
+	CMZN_FIELD_TYPE_NODESET_SUM,
+	CMZN_FIELD_TYPE_NODESET_SUM_SQUARES,
 	// time
 	CMZN_FIELD_TYPE_TIME_LOOKUP,
 	CMZN_FIELD_TYPE_TIME_VALUE,
@@ -491,48 +501,6 @@ The number of components controls how the field is interpreted:
 	from cross product);
 9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
 	normal).
-==============================================================================*/
-
-/***************************************************************************//**
- * Find location in mesh or element where the field has same or nearest value to
- * the prescribed values.
- *
- * @param field  The field whose values need to match.
- * @param field_cache  Field cache to perform evaluations to find mesh location.
- * Set time in the field cache to search for field values at particular times.
- * @param values  Array of values to match or get nearest to. Implementation
- * promises to copy this, hence can pass a pointer to field cache values.
- * @param number_of_values  The size of the values array, must equal the number
- * of components of field.
- * @param element_address  Address to return element in. If mesh is omitted,
- * must point at a single element to search.
- * @param xi  Array of same dimension as mesh or element to return chart
- * coordinates in.
- * @param mesh  The mesh to search over. Can be omitted if element specified.
- * @param propagate_to_source  If this is set, find_nearest is not set, and
- * field implements a propagate_find_element_xi function this is called to undo
- * its field calculation and resume the search on its source field. This can
- * result in less computation, but can fail if the source field is multi-valued,
- * a common case being when it is in a polar coordinate system since valid
- * values may be a multiple of 2*PI out.
- * @param find_nearest  Set to 1 to find location of nearest field value, or 0
- * to find exact match.
- * @return  1 if search carried out without error including when no element is
- * found, or 0 if failed.
- */
-int Computed_field_find_element_xi(struct cmzn_field *field,
-	cmzn_fieldcache_id field_cache, const FE_value *values,
-	int number_of_values, struct FE_element **element_address, FE_value *xi,
-	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest);
-
-int Computed_field_is_find_element_xi_capable(struct cmzn_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 16 June 2000
-
-DESCRIPTION :
-This function returns true if the <field> can find element and xi given
-a set of values.
 ==============================================================================*/
 
 /* Returns true if all fields are defined in the same way at the two elements. */

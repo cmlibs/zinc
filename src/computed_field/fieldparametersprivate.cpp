@@ -154,6 +154,16 @@ FE_value cmzn_fieldparameters::getPerturbationDelta() const
 	return this->feFieldParameters->getPerturbationDelta();
 }
 
+double cmzn_fieldparameters::getTime() const
+{
+	return static_cast<double>(this->feFieldParameters->getTime());
+}
+
+int cmzn_fieldparameters::setTime(double timeIn)
+{
+	return this->feFieldParameters->setTime(static_cast<FE_value>(timeIn));
+}
+
 /*
 Global functions
 ----------------
@@ -162,14 +172,18 @@ Global functions
 cmzn_fieldparameters_id cmzn_fieldparameters_access(cmzn_fieldparameters_id fieldparameters)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->access();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_fieldparameters_destroy(cmzn_fieldparameters_id *fieldparameters_address)
 {
 	if (!fieldparameters_address)
+	{
 		return CMZN_RESULT_ERROR_ARGUMENT;
+	}
 	return cmzn_fieldparameters::deaccess(*fieldparameters_address);
 }
 
@@ -180,7 +194,9 @@ cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operator(
 	{
 		FieldDerivative *fieldDerivative = fieldparameters->getFieldDerivative(order);
 		if (fieldDerivative)
+		{
 			return cmzn_differentialoperator::create(fieldDerivative, -1);
+		}
 	}
 	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
 	return nullptr;
@@ -191,7 +207,9 @@ int cmzn_fieldparameters_get_element_parameter_indexes(
 	int valuesCount, int *valuesOut)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->getElementParameterIndexes(element, valuesCount, valuesOut, 1);
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters getElementParametersIndexes:  Invalid Fieldparameters");
 	return CMZN_RESULT_ERROR_ARGUMENT;
 }
@@ -201,7 +219,9 @@ int cmzn_fieldparameters_get_element_parameter_indexes_zero(
 	int valuesCount, int *valuesOut)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->getElementParameterIndexes(element, valuesCount, valuesOut, 0);
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexesZero:  Invalid Fieldparameters");
 	return CMZN_RESULT_ERROR_ARGUMENT;
 }
@@ -210,7 +230,9 @@ cmzn_field_id cmzn_fieldparameters_get_field(
 	cmzn_fieldparameters_id fieldparameters)
 {
 	if (fieldparameters)
+	{
 		return cmzn_field_access(fieldparameters->getField());
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters getField:  Invalid field parameters object");
 	return nullptr;
 }
@@ -219,7 +241,9 @@ int cmzn_fieldparameters_get_number_of_element_parameters(
 	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->getNumberOfElementParameters(element);
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Invalid Fieldparameters");
 	return -1;
 }
@@ -238,9 +262,11 @@ int cmzn_fieldparameters_add_parameters(
 	int valuesCount, const double *valuesIn)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->addParameters(valuesCount, valuesIn);
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters addParameters:  Invalid Fieldparameters");
-	return -1;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldparameters_get_parameters(
@@ -248,9 +274,11 @@ int cmzn_fieldparameters_get_parameters(
 	int valuesCount, double *valuesOut)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->getParameters(valuesCount, valuesOut);
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters addParameters:  Invalid Fieldparameters");
-	return -1;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldparameters_set_parameters(
@@ -258,7 +286,31 @@ int cmzn_fieldparameters_set_parameters(
 	int valuesCount, const double *valuesIn)
 {
 	if (fieldparameters)
+	{
 		return fieldparameters->setParameters(valuesCount, valuesIn);
+	}
 	display_message(ERROR_MESSAGE, "Fieldparameters setParameters:  Invalid Fieldparameters");
-	return -1;
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_fieldparameters_get_time(
+	cmzn_fieldparameters_id fieldparameters)
+{
+	if (fieldparameters)
+	{
+		return fieldparameters->getTime();
+	}
+	display_message(ERROR_MESSAGE, "Fieldparameters getTime:  Invalid Fieldparameters");
+	return 0.0;
+}
+
+int cmzn_fieldparameters_set_time(
+	cmzn_fieldparameters_id fieldparameters, double timeIn)
+{
+	if (fieldparameters)
+	{
+		return fieldparameters->setTime(timeIn);
+	}
+	display_message(ERROR_MESSAGE, "Fieldparameters setTime:  Invalid Fieldparameters");
+	return CMZN_ERROR_ARGUMENT;
 }

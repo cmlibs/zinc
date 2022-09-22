@@ -40,8 +40,8 @@ lookup of the element.
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 #if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
-struct Computed_field_find_element_xi_graphics_cache :
-	public Computed_field_find_element_xi_base_cache
+class Computed_field_find_element_xi_graphics_cache :
+	public Computed_field_find_element_xi_cache
 {
 public:
 	int bit_shift;
@@ -49,11 +49,11 @@ public:
 	int maximum_element_number;
 	struct Graphics_buffer *graphics_buffer;
 
-	Computed_field_find_element_xi_graphics_cache() :
-		Computed_field_find_element_xi_base_cache(),
-	  graphics_buffer((struct Graphics_buffer *)NULL)
-  {
-  }
+	Computed_field_find_element_xi_graphics_cache(cmzn_field *fieldIn) :
+		Computed_field_find_element_xi_cache(fieldIn),
+		graphics_buffer((struct Graphics_buffer *)NULL)
+	{
+	}
 
 	virtual ~Computed_field_find_element_xi_graphics_cache()
 	{
@@ -170,9 +170,9 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 } /* Render_element_as_texture */
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
-int Computed_field_find_element_xi_special(struct Computed_field *field,
+int Computed_field_find_element_xi_special(cmzn_field *field,
 	cmzn_fieldcache_id field_cache,
-	struct Computed_field_find_element_xi_cache **cache_ptr,
+	Computed_field_find_element_xi_cache **findElementXiCache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, cmzn_mesh_id search_mesh,
 	Graphics_buffer_package *graphics_buffer_package,
@@ -187,7 +187,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	unsigned char *block_ptr, colour[4], colour_block[BLOCK_SIZE * BLOCK_SIZE *4],
 		*next_colour;
 	ZnReal ditherx, dithery;
-	struct Computed_field_find_element_xi_graphics_cache *cache;
+	Computed_field_find_element_xi_graphics_cache *cache = nullptr;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;
 	struct Render_element_data data;
@@ -199,7 +199,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 #if !defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	USE_PARAMETER(field);
 	USE_PARAMETER(field_cache);
-	USE_PARAMETER(cache_ptr);
+	USE_PARAMETER(findElementXiCache_ptr);
 	USE_PARAMETER(values);
 	USE_PARAMETER(element);
 	USE_PARAMETER(xi);
@@ -216,14 +216,15 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 		any benefit to using this method */
 	/* This method is adversely affected when displaying on a remote machine as every
 		pixel grab requires transfer across the network */
-	if (cache_ptr && hint_minimums && hint_maximums && hint_resolution &&
+	if ((findElementXiCache_ptr) && (*findElementXiCache_ptr) &&
+		(*findElementXiCache_ptr->getField() == field) &&
+		hint_minimums && hint_maximums && hint_resolution &&
 		((2 == cmzn_field_get_number_of_components(field)) ||
 		((3 == cmzn_field_get_number_of_components(field)) &&
 		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh
 		/* This special case actually only works for 2D elements */
 		&& (cmzn_mesh_get_dimension(search_mesh) == 2)
-		&& ((cmzn_mesh_get_size(search_mesh) > 5))
-		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
+		&& ((cmzn_mesh_get_size(search_mesh) > 5)))
 	{
 		find_element_xi_data.field_cache = field_cache;
 		find_element_xi_data.field = field;
@@ -239,22 +240,14 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 		find_element_xi_data.time = 0;
 		if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
 		{
-			cache = (Computed_field_find_element_xi_graphics_cache*)NULL;
-			if (*cache_ptr)
-			{
-				cache = dynamic_cast<Computed_field_find_element_xi_graphics_cache*>(
-					(*cache_ptr)->cache_data);
-			}
+			cache = dynamic_cast<Computed_field_find_element_xi_graphics_cache*>(*findElementXiCache_ptr);
 			if (!cache)
 			{
-				if (*cache_ptr)
-				{
-					DESTROY(Computed_field_find_element_xi_cache)(cache_ptr);
-				}
+				delete *findElementXiCache_ptr;
 				/* Get the element number range so we can spread the colour range
 					as widely as possible */
-				cache = new Computed_field_find_element_xi_graphics_cache;
-				*cache_ptr = CREATE(Computed_field_find_element_xi_cache)(cache);
+				cache = new Computed_field_find_element_xi_graphics_cache(field);
+				*findElementXiCache_ptr = cache;
 				cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(search_mesh);
 				cmzn_element_id element = 0;
 				element = cmzn_elementiterator_next(iterator);

@@ -14,6 +14,7 @@
 #include "types/elementid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
+#include "types/fieldrangeid.h"
 #include "types/nodeid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
@@ -34,10 +35,10 @@ ZINC_API cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache);
  * Destroys handle to the field cache, and sets it to NULL.
  * Internally this decrements the reference count.
  *
- * @param cache_address  Address of handle to field cache to destroy.
+ * @param fieldcache_address  Address of handle to field cache to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address);
+ZINC_API int cmzn_fieldcache_destroy(cmzn_fieldcache_id *fieldcache_address);
 
 /**
  * Clears domain locations held in the field cache. Call this function before
@@ -50,6 +51,18 @@ ZINC_API int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address);
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_fieldcache_clear_location(cmzn_fieldcache_id cache);
+
+/**
+ * Create a field range object to store range of a field's values over a
+ * domain, the locations at which each component minimum or maximum occurs and
+ * the field values there.
+ *
+ * @param fieldcache  The fieldcache to create a range for.
+ * @return  Handle to new field range object, or NULL/invalid handle on
+ * failure.
+ */
+ZINC_API cmzn_fieldrange_id cmzn_fieldcache_create_fieldrange(
+	cmzn_fieldcache_id fieldcache);
 
 /**
  * Prescribes an element location without specifying the location in its local

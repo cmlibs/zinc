@@ -144,8 +144,20 @@ int get_FE_element_shape_dimension(struct FE_element_shape *element_shape);
 const FE_value *get_FE_element_shape_face_to_element(
 	struct FE_element_shape *element_shape, int face_number);
 
+/**
+ * Finds face number corresponding to xi location in element, if any.
+ * Element coordinates must be within tolerance of the face equation.
+ * Only supports simplex and line shapes, not polygon shape.
+ * @param shape  Element shape to query.
+ * @param xi  Element local coordinates in shape to check.
+ * @param tolerance  Closeness of difference from face equation >= 0.0.
+ * @param lastFaceNumber  Optional last face number to only try face numbers
+ * higher than this. Use -1 for no last face number, otherwise must be from
+ * 0 to number of faces - 1.
+ * @return  Face number for shape >= 0, or -1 if not on a face.
+ */
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
-	FE_value *xi, int *face_number);
+	FE_value *xi, FE_value tolerance, int lastFaceNumber = -1);
 
 int get_FE_element_shape_xi_linkage_number(
 	struct FE_element_shape *element_shape, int xi_number1, int xi_number2,
@@ -189,17 +201,32 @@ If there is no remaining linked dimension, 0 is returned in both addresses.
 Also checks that the linked xi numbers have the same shape type.
 ==============================================================================*/
 
-int FE_element_shape_limit_xi_to_element(struct FE_element_shape *shape,
+/**
+ * Adjust xi to be within the bounds of the element shape, moving it as needed
+ * to the nearest point on its boundary.
+ * @param shape  Element shape to limit to.
+ * @param xi  Element local coordinates to adjust if needed.
+ * @param tolerance  Amount that xi is allowed to be outside bounds.
+ * @return  True if xi was limited to bounds, false if not or invalid arguments.
+ */
+bool FE_element_shape_limit_xi_to_element(FE_element_shape *shape,
 	FE_value *xi, FE_value tolerance);
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
 
-DESCRIPTION :
-Checks that the <xi> location is valid for elements with <shape>.
-The <tolerance> allows the location to go slightly outside.  If the values for
-<xi> location are further than <tolerance> outside the element then the values
-are modified to put it on the nearest face.
-==============================================================================*/
+/**
+ * Calculate the geometric unit surface normal for a face of the given shape from
+ * the coordinate derivatives with respect to the shape.
+ * @param shape  Element shape to query.
+ * @param faceNumber  The face number >= 0.
+ * @param coordinatesCount  The number of coordinate components, at least shape
+ * dimension, at most 3.
+ * @param coordinateDerivatives  Derivatives of the coordinates with respect to
+ * xi for the shape.
+ * @param faceNormal  Array of length coordinatesCount to receive outward unit
+ * normal.
+ * @return  True on success, false if failed.
+ */
+bool FE_element_shape_get_face_outward_normal(FE_element_shape *shape, int faceNumber,
+	int coordinatesCount, const FE_value *coordinateDerivatives, FE_value *faceNormal);
 
 /** Calculates the <normal>, in xi space, of the specified face.
  * Cannot guarantee that <normal> is inward. */
@@ -210,7 +237,10 @@ int FE_element_shape_calculate_face_xi_normal(struct FE_element_shape *shape,
  * Return whether the shape-face mapping for the supplied face number gives the
  * face an inward normal.
  *
- * @param shape  The shape - must be 3 dimensional.
+ * @param shape  The shape - must be 2 or 3 dimensional. For 2-D the normal is
+ * inward if the primary xi of the face is anticlockwise around the element
+ * such that the cross product of the parent normal (d1xd2) and the face xi is
+ * inward.
  * @param face_number  Face index from 0 to (shape->number_of_faces - 1).
  * @return  True if face has inward normal, otherwise false.
  */

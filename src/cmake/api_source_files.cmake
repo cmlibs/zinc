@@ -37,6 +37,7 @@ SET( API_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldmodule.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldnodesetoperators.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldparameters.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldrange.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldsceneviewerprojection.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldsmoothing.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldsubobjectgroup.h
@@ -88,6 +89,7 @@ SET( API_TYPES_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldgroupid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldassignmentid.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldderivativesid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldimageid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldimageprocessingid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldmatrixoperatorsid.h
@@ -95,6 +97,7 @@ SET( API_TYPES_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldmoduleid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldnodesetoperatorsid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldparametersid.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldrangeid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldsmoothingid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldsubobjectgroupid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fontid.h

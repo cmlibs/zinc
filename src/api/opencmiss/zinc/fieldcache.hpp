@@ -22,6 +22,8 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Fieldrange;
+
 class Fieldcache
 {
 protected:
@@ -74,6 +76,8 @@ public:
 	{
 		return cmzn_fieldcache_clear_location(id);
 	}
+
+	inline Fieldrange createFieldrange();
 
 	int setElement(const Element& element)
 	{

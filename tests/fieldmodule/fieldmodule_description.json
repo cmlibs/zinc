@@ -1,18 +1,200 @@
 {
    "Fields" : [
       {
+         "FieldAbs" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Abs"
+      },
+      {
+         "FieldAcos" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Acos"
+      },
+      {
          "FieldAdd" : {
             "SourceFields" : [ "firstComponent", "temperature" ]
          },
          "IsManaged" : true,
-         "Name" : "add"
+         "Name" : "Add"
       },
       {
          "FieldAnd" : {
-            "SourceFields" : [ "constant", "temperature_1" ]
+            "SourceFields" : [ "firstComponent", "temperature" ]
          },
          "IsManaged" : true,
-         "Name" : "and"
+         "Name" : "And"
+      },
+      {
+         "FieldAsin" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Asin"
+      },
+      {
+         "FieldAtan" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Atan"
+      },
+      {
+         "FieldAtan2" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Atan2"
+      },
+      {
+         "FieldCos" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Cos"
+      },
+      {
+         "FieldDivide" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Divide"
+      },
+      {
+         "FieldDotProduct" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "DotProduct"
+      },
+      {
+         "FieldEqualTo" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "EqualTo"
+      },
+      {
+         "FieldExp" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Exp"
+      },
+      {
+         "FieldGreaterThan" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "GreaterThan"
+      },
+      {
+         "FieldIsDefined" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "IsDefined"
+      },
+      {
+         "FieldLessThan" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "LessThan"
+      },
+      {
+         "FieldLog" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Log"
+      },
+      {
+         "FieldMagnitude" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Magnitude"
+      },
+      {
+         "FieldMultiply" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Multiply"
+      },
+      {
+         "FieldNormalise" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Normalise"
+      },
+      {
+         "FieldNot" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Not"
+      },
+      {
+         "FieldOr" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Or"
+      },
+      {
+         "FieldPower" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Power"
+      },
+      {
+         "FieldSin" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Sin"
+      },
+      {
+         "FieldSqrt" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Sqrt"
+      },
+      {
+         "FieldSubtract" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Subtract"
+      },
+      {
+         "FieldSumComponents" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "SumComponents"
+      },
+      {
+         "FieldTan" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Tan"
+      },
+      {
+         "FieldXor" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Xor"
       },
       {
          "FieldComponent" : {
@@ -66,7 +248,7 @@
       {
          "FieldDerivative" : {
             "SourceFields" : [ "coordinates" ],
-            "XiIndexes" : [ 1 ]
+            "XiIndexes" : [ 2 ]
          },
          "IsManaged" : true,
          "Name" : "derivative"
@@ -102,9 +284,9 @@
       },
       {
          "FieldFindMeshLocation" : {
-            "Mesh" : "mesh2d",
-            "SearchMesh" : "mesh2d",
-            "SearchMode" : "FIND_EXACT",
+            "Mesh" : "mesh3d",
+            "SearchMesh" : "triangle.mesh2d",
+            "SearchMode" : "FIND_NEAREST",
             "SourceFields" : [ "coordinates", "coordinates" ]
          },
          "IsManaged" : true,
@@ -151,13 +333,82 @@
          "Name" : "matrixMultiply"
       },
       {
+         "FieldMeshIntegral" : {
+            "ElementQuadratureRule" : "GAUSSIAN",
+            "Mesh" : "triangle.mesh2d",
+            "NumbersOfPoints" : [ 2, 4 ],
+            "SourceFields" : [ "constant", "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "meshIntegral"
+      },
+      {
+         "FieldMeshIntegralSquares" : {
+            "ElementQuadratureRule" : "MIDPOINT",
+            "Mesh" : "mesh2d",
+            "NumbersOfPoints" : [ 3, 7 ],
+            "SourceFields" : [ "constant", "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "meshIntegralSquares"
+      },
+      {
          "FieldNodeValue" : {
-            "NodeValueLabel" : "VALUE",
+            "NodeValueLabel" : "D_DS1",
             "SourceFields" : [ "coordinates" ],
-            "VersionNumber" : 1
+            "VersionNumber" : 2
          },
          "IsManaged" : true,
          "Name" : "nodeValue"
+      },
+      {
+         "FieldNodesetMaximum" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMaximum"
+      },
+      {
+         "FieldNodesetMean" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMean"
+      },
+      {
+         "FieldNodesetMeanSquares" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMeanSquares"
+      },
+      {
+         "FieldNodesetMinimum" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMinimum"
+      },
+      {
+         "FieldNodesetSum" : {
+            "ElementMapField" : "storedMeshLocation",
+            "Nodeset" : "triangle.nodes",
+            "SourceFields" : [ "coordinates", "storedMeshLocation" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetSum"
+      },
+      {
+         "FieldNodesetSumSquares" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetSumSquares"
       },
       {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
@@ -180,13 +431,6 @@
          },
          "IsManaged" : true,
          "Name" : "stringConstant"
-      },
-      {
-         "FieldSumComponents" : {
-            "SourceFields" : [ "coordinates" ]
-         },
-         "IsManaged" : true,
-         "Name" : "sumComponent"
       },
       {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",

@@ -440,4 +440,17 @@ TEST(FieldIO, ex3CompactGroups)
 	checkEx3CompactGroups(region2);
 }
 
-
+// Check that region canMerge code is being called in child regions
+TEST(FieldIO, subregionMerge)
+{
+	ZincTestSetupCpp zinc;
+	
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_SUBREGION_MERGE_RESOURCE)));
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	EXPECT_TRUE(sir.isValid());
+	StreamresourceMemory srm = sir.createStreamresourceMemory();
+	EXPECT_TRUE(srm.isValid());
+	// previously the legacy node mappings in child regions were not converted
+	// leading to a crash from writing the null string for CMZN_NODE_VALUE_TYPE_INVALID
+	EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
+}

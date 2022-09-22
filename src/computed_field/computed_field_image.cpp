@@ -18,6 +18,7 @@
 #include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_find_xi_private.hpp"
 #include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/field_module.hpp"
@@ -406,7 +407,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 				Set_cmiss_field_value_to_texture(source_field, use_texture_coordinate_field,
 					texture, NULL, NULL, image_width, image_height, image_depth, bytes_per_pixel,
 					number_of_bytes_per_component, use_pixel_location, texture_width, texture_height, texture_depth,
-					storage, 0, NULL, search_mesh);
+					storage, NULL, search_mesh);
 				cmzn_mesh_destroy(&search_mesh);
 				cmzn_fieldmodule_destroy(&field_module);
 				this->need_evaluate_texture = false;
@@ -1187,7 +1188,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	struct Texture *texture, struct cmzn_spectrum *spectrum, struct cmzn_material *fail_material,
 	int image_width, int image_height, int image_depth, int bytes_per_pixel, int number_of_bytes_per_component,
 	bool use_pixel_location, double texture_width, double texture_height, double texture_depth,
-	enum Texture_storage_type specify_format, int propagate_field,
+	enum Texture_storage_type specify_format,
 	struct Graphics_buffer_package *graphics_buffer_package, cmzn_mesh_id search_mesh)
 {
 	unsigned char *image_plane, *ptr = 0;
@@ -1201,11 +1202,11 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	ZnReal multiplier;
 	struct Colour fail_colour = {0.0, 0.0, 0.0, 0.0};
 	ZnReal rgba[4], fail_alpha = 0.0;
-	struct Computed_field_find_element_xi_cache *cache = NULL;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct FE_element *element = NULL;
 
+	Computed_field_find_element_xi_cache *findElementXiCache = new Computed_field_find_element_xi_cache(texture_coordinate_field);
 	//int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
 	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
@@ -1344,13 +1345,14 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 						rgba[3] = fail_alpha;
 						if (search_mesh && (
 							(graphics_buffer_package && Computed_field_find_element_xi_special(
-								 texture_coordinate_field, field_cache, &cache, values,
+								 texture_coordinate_field, field_cache, &findElementXiCache, values,
 								 cmzn_field_get_number_of_components(texture_coordinate_field), &element, xi,
 								 search_mesh, graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
 							Computed_field_find_element_xi(texture_coordinate_field, field_cache,
+								findElementXiCache, /*meshFieldRanges*/nullptr,
 								values, cmzn_field_get_number_of_components(texture_coordinate_field),
-								&element, xi, search_mesh, propagate_field,
+								&element, xi, search_mesh,
 								/*find_nearest_location*/0)))
 						{
 							if (element)
@@ -1602,10 +1604,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 		 DEALLOCATE(image_plane);
 	if (two_bytes_image_plane)
 		 DEALLOCATE(two_bytes_image_plane);
-	if (cache)
-	{
-		DESTROY(Computed_field_find_element_xi_cache)(&cache);
-	}
+	delete findElementXiCache;
 	cmzn_fieldcache_destroy(&field_cache);
 	cmzn_fieldmodule_destroy(&field_module);
 

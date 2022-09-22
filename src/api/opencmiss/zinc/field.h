@@ -15,6 +15,7 @@
 #include "types/elementid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
+#include "types/fieldrangeid.h"
 #include "types/fieldmoduleid.h"
 #include "types/fieldsmoothingid.h"
 #include "types/nodeid.h"
@@ -255,6 +256,26 @@ ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_values, double *values);
 
 /**
+ * Evaluate range of field, currently limited to real-valued fields at
+ * element/mesh location.
+ * Note this is only designed to work for field functions up to cubic
+ * polynomial complexity, and may not be accurate for fields with higher order
+ * waviness or extreme distortions.
+ *
+ * @param field  The field to evaluate range of. Must be real-valued.
+ * @param fieldcache  Store of location to evaluate at and intermediate field
+ * values. Must be for same region as field. Must have set an element or mesh
+ * location in the field cache.
+ * @param fieldrange  Field range to store result in. Must have been created
+ * from the same fieldcache as supplied here.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no range found including
+ * field not defined, ERROR_NOT_IMPLEMENTED if not an element location,
+ * otherwise ERROR_ARGUMENT including for non-numeric fields.
+ */
+ZINC_API int cmzn_field_evaluate_fieldrange(cmzn_field_id field,
+	cmzn_fieldcache_id fieldcache, cmzn_fieldrange_id fieldrange);
+
+/**
  * Get whether the field is marked as coordinate type i.e. appropriate for
  * giving geometric location of a domain.
  *
@@ -274,6 +295,25 @@ ZINC_API bool cmzn_field_is_type_coordinate(cmzn_field_id field);
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value);
+
+/**
+ * Get the C++ style class name e.g. "FieldAdd".
+ *
+ * @param field  The field to query.
+ * @return  On success: allocated string containing field class name.
+ * Up to caller to free using cmzn_deallocate().
+ */
+ZINC_API char *cmzn_field_get_class_name(cmzn_field_id field);
+
+/**
+ * Return true if field has the exact class name string including case.
+ *
+ * @param field  The field to query.
+ * @param class_name  C++ style class name e.g. "FieldAdd".
+ * @return  True if field has exactly matching class name otherwise false.
+ */
+ZINC_API bool cmzn_field_has_class_name(cmzn_field_id field,
+	const char *class_name);
 
 /**
  * Get the name of a component of the field. This is only meaningful for
