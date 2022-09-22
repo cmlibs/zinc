@@ -127,7 +127,7 @@ DESCRIPTION :
 
 #if defined (HAVE_ZLIB)
 	/* IO_STREAM_GZIP_FILE_TYPE */
-	gzFile *gzip_file_handle;
+	gzFile gzip_file_handle;
 	z_stream gzStream;
 	int last_gzip_return;
 #endif /* defined (HAVE_ZLIB) */
@@ -445,7 +445,7 @@ DESCRIPTION :
 
 #if defined (HAVE_ZLIB)
 			/* IO_STREAM_GZIP_FILE_TYPE */
-			io_stream->gzip_file_handle = (gzFile *)NULL;
+			io_stream->gzip_file_handle = nullptr;
 			io_stream->last_gzip_return = Z_OK;
 #endif /* defined (HAVE_ZLIB) */
 
@@ -576,7 +576,7 @@ int IO_stream_open_for_read_compression_specified(struct IO_stream *stream, cons
 #if defined (HAVE_ZLIB)
 				if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP == data_compression_type)
 				{
-					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					stream->gzip_file_handle = gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
@@ -740,7 +740,7 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
-					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					stream->gzip_file_handle = gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
