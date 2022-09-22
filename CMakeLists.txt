@@ -25,7 +25,7 @@ set(Zinc_DEVELOPER_VERSION ".dev0")
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
-find_package(OPENCMISSDEPENDENCIES REQUIRED)
+find_package(CMLIBSDEPENDENCIES REQUIRED)
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
     list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
