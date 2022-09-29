@@ -77,6 +77,11 @@ public:
 		return Differentialoperator(cmzn_fieldparameters_get_derivative_operator(this->id, order));
 	}
 
+	Differentialoperator getHigherDerivativeOperator(const Differentialoperator &sourceOperator, int addOrder) const
+	{
+		return Differentialoperator(cmzn_fieldparameters_get_higher_derivative_operator(this->id, sourceOperator.getId(), addOrder));
+	}
+
 	int getElementParameterIndexes(const Element& element, int valuesCount, int *valuesOut) const
 	{
 		return cmzn_fieldparameters_get_element_parameter_indexes(this->id, element.getId(), valuesCount, valuesOut);

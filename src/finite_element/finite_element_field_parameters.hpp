@@ -73,12 +73,13 @@ public:
 
 	/** Get array of global parameter indexes for field parameters in element.
 	 * @param element  The element to query.
+	 * @param topLevelElement  Top-level element to inherit field from (pass nullptr for default first ancestor).
 	 * @param valuesCount  Size of valuesOut >= number of parameters in element.
 	 * @param valuesOut  Location to put parameter indexes.
 	 * @param startIndex  Start index for returned parameters: 0 for zero-based indexes, 1 for one-based.
 	 * @return Result OK on success, ERROR_NOT_FOUND if field not defined/no parameters on element,
 	 * otherwise any other error code. */
-	int getElementParameterIndexes(cmzn_element *element, int valuesCount, int *valuesOut, int startIndex = 0);
+	int getElementParameterIndexes(cmzn_element *element, cmzn_element *topLevelElement, int valuesCount, int *valuesOut, int startIndex = 0);
 
 	/** If parameter is node-based, return the node, field component, value label and version.
 	 * @param parameterIndex  Zero-based parameter parameter index.
@@ -89,8 +90,12 @@ public:
 	 */
 	cmzn_node *getNodeParameter(int parameterIndex, int &fieldComponent, cmzn_node_value_label& valueLabel, int& version);
 
-	/** @return  Number of parameters >=0, or -1 if error */
-	int getNumberOfElementParameters(cmzn_element *element);
+	/**
+	 * @param element  Element to get field parameters for.
+	 * @param topLevelElement  Optional top-level element to inherit field from.
+	 * @return  Number of parameters >= 0, or -1 if error
+	 */
+	int getNumberOfElementParameters(cmzn_element *element, cmzn_element *topLevelElement = nullptr);
 
 	/** Currently also triggers creation of parameter map */
 	int getNumberOfParameters();

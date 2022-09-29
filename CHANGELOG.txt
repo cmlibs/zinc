@@ -1,5 +1,9 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.10.0
+Evaluate parameter and top-level/field element xi derivatives on faces and lines, and convert field element xi derivatives to face and line xi.
+Add API to get mixed mesh and parameter derivative operators.
+
 v3.9.0
 Add field evaluate range API.
 Optimise find mesh location using pre-calculated element field range cache.

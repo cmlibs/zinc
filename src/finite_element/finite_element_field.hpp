@@ -202,7 +202,7 @@ public:
 
 	cmzn_element *getOrInheritOnElement(cmzn_element *element,
 		int inheritFaceNumber, cmzn_element *topLevelElement,
-		FE_value *coordinateTransformation);
+		FE_value *coordinateTransformation) const;
 
 	/**
 	 * @param componentIndex  Component index starting at 0
