@@ -24,9 +24,12 @@
 #include "opencmiss/zinc/fieldcache.hpp"
 #include "opencmiss/zinc/fieldarithmeticoperators.hpp"
 #include "opencmiss/zinc/fieldcomposite.hpp"
+#include "opencmiss/zinc/fieldmeshoperators.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/fieldnodesetoperators.hpp"
 #include "opencmiss/zinc/fieldparameters.hpp"
 #include "opencmiss/zinc/fieldvectoroperators.hpp"
+#include "opencmiss/zinc/mesh.hpp"
 #include "opencmiss/zinc/node.hpp"
 #include "opencmiss/zinc/nodeset.hpp"
 #include "computed_field/computed_field.h"
@@ -43,6 +46,7 @@
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
+#include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #include "time/time_keeper.hpp"
 #include "general/message.h"
@@ -613,49 +617,12 @@ int Minimisation::minimise_Newton()
 	const int globalParameterCount = fieldparameters.getNumberOfParameters();
 	display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Parameters count %d\n", globalParameterCount);
 
-	Mesh mesh;
-	// use highest dimension mesh with elements in it
+	Mesh highestDimensionMesh;
 	for (int d = 3; d >= 1; --d)
 	{
-		mesh = fieldmodule.findMeshByDimension(d);
-		if (mesh.getSize() > 0)
+		highestDimensionMesh = fieldmodule.findMeshByDimension(d);
+		if (highestDimensionMesh.getSize() > 0)
 			break;
-	}
-
-	fieldmodule.beginChange();
-	// get scalar objective field, summing all objective field components if needed
-	Field objectiveField;
-	if (this->objectiveFields.size() == 1)
-	{
-		ObjectiveFieldData *objective = *(this->objectiveFields.begin());
-		objectiveField = Field(cmzn_field_access(objective->field));
-		if (objectiveField.getNumberOfComponents() > 1)
-			objectiveField = fieldmodule.createFieldSumComponents(objectiveField);
-	}
-	else
-	{
-		bool allScalar = true;
-		std::vector<Field> fields;
-		for (ObjectiveFieldDataVector::iterator iter = this->objectiveFields.begin();
-			iter != this->objectiveFields.end(); ++iter)
-		{
-			ObjectiveFieldData *objective = *iter;
-			objectiveField = Field(cmzn_field_access(objective->field));
-			if (objectiveField.getNumberOfComponents() > 1)
-				allScalar = false;
-			fields.push_back(objectiveField);
-		}
-		if (allScalar && (fields.size() == 2))
-			objectiveField = fieldmodule.createFieldAdd(fields[0], fields[1]);
-		else
-			objectiveField = fieldmodule.createFieldSumComponents(fieldmodule.createFieldConcatenate(static_cast<int>(fields.size()), fields.data()));
-		fields.clear();
-	}
-	fieldmodule.endChange();
-	if (!objectiveField.isValid())
-	{
-		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to get scalar objective field");
-		return 0;
 	}
 
 	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
@@ -672,54 +639,93 @@ int Minimisation::minimise_Newton()
 	std::vector<int> elementParameterIndexes;  // grows to fit maximum elementParametersCount
 	std::vector<double> elementJacobian;  // grows to fit maximum elementParametersCount
 	std::vector<double> elementHessian;  // grows to fit maximum elementParametersCount*elementParametersCount
-	Element element;
-	Elementiterator iter = mesh.createElementiterator();
-	int return_code = 1;
-	const int elementCount = mesh.getSize();
-	int elementIndex = 0;
-	while ((element = iter.next()).isValid())
+
+	for (ObjectiveFieldDataVector::iterator fieldIter = this->objectiveFields.begin();
+		fieldIter != this->objectiveFields.end(); ++fieldIter)
 	{
-		++elementIndex;
-		display_message(INFORMATION_MESSAGE, "Element %d (%d/%d)\n", element.getIdentifier(), elementIndex, elementCount);
-		fieldcache.setElement(element);
-		const int elementParametersCount = fieldparameters.getNumberOfElementParameters(element);
-		if (elementParametersCount <= 0)
-			continue;  // GRC handle -1 error?
-		if (elementParametersCount > static_cast<int>(elementParameterIndexes.size()))
+		ObjectiveFieldData *objective = *fieldIter;
+		Field objectiveField = Field(cmzn_field_access(objective->field));
+		// use mesh from mesh integral, or host mesh for nodeset operator, falling back to highest dimension mesh if neither
+		Mesh mesh = highestDimensionMesh;
+		FieldMeshIntegral meshIntegral = objectiveField.castMeshIntegral();
+		FieldNodesetOperator nodesetOperator = objectiveField.castNodesetOperator();
+		if (meshIntegral.isValid())
 		{
-			elementParameterIndexes.resize(elementParametersCount);
-			elementJacobian.resize(elementParametersCount);
-			elementHessian.resize(elementParametersCount*elementParametersCount);
+			mesh = meshIntegral.getMesh();
 		}
-		fieldparameters.getElementParameterIndexes(element, elementParametersCount, elementParameterIndexes.data());
+		else if (nodesetOperator.isValid())
+		{
+			Field elementMapField = nodesetOperator.getElementMapField();
+			if (elementMapField.isValid())
+			{
+				FE_field *feField = nullptr;
+				Computed_field_get_type_finite_element(elementMapField.getId(), &feField);
+				if (feField)
+				{
+					FE_mesh *hostMesh = feField->getElementXiHostMesh();
+					FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodesetOperator.getNodeset().getId());
+					FE_mesh_embedded_node_field *embeddedNodeField = feField->getEmbeddedNodeField(feNodeset);
+					if ((hostMesh) && (embeddedNodeField))
+					{
+						mesh = Mesh(cmzn_mesh_create(hostMesh));
+					}
+				}
+			}
+		}
+		if (objectiveField.getNumberOfComponents() > 1)
+		{
+			objectiveField = fieldmodule.createFieldSumComponents(objectiveField);
+		}
 
-		const int result1 = objectiveField.evaluateDerivative(parameterDerivative1, fieldcache, elementParametersCount, elementJacobian.data());
-		if (result1 != CMZN_OK)
+		Element element;
+		Elementiterator elementIter = mesh.createElementiterator();
+		const int elementCount = mesh.getSize();
+		int elementIndex = 0;
+		while ((element = elementIter.next()).isValid())
 		{
-			display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to evaluate element Jacobian");
-			return_code = 0;
-		}
-		const int result2 = objectiveField.evaluateDerivative(parameterDerivative2, fieldcache, elementParametersCount*elementParametersCount, elementHessian.data());
-		if (result2 != CMZN_OK)
-		{
-			display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to evaluate element Hessian");
-			return_code = 0;
-		}
+			++elementIndex;
+			display_message(INFORMATION_MESSAGE, "Element %d (%d/%d)\n", element.getIdentifier(), elementIndex, elementCount);
+			fieldcache.setElement(element);
+			const int elementParametersCount = fieldparameters.getNumberOfElementParameters(element);
+			if (elementParametersCount <= 0)
+			{
+				continue;  // GRC handle -1 error?
+			}
+			if (elementParametersCount > static_cast<int>(elementParameterIndexes.size()))
+			{
+				elementParameterIndexes.resize(elementParametersCount);
+				elementJacobian.resize(elementParametersCount);
+				elementHessian.resize(elementParametersCount*elementParametersCount);
+			}
+			fieldparameters.getElementParameterIndexes(element, elementParametersCount, elementParameterIndexes.data());
 
-		// assemble
-		const double *elementHessianRow = elementHessian.data();
-		for (int i = 0; i < elementParametersCount; ++i)
-		{
-			const int row = elementParameterIndexes[i];
-			parameterUsed[row - 1] = 1;
-			globalJacobian(row) -= elementJacobian[i];
-			for (int j = 0; j < elementParametersCount; ++j)
-				globalHessian(row, elementParameterIndexes[j]) += elementHessianRow[j];
-			elementHessianRow += elementParametersCount;
+			const int result1 = objectiveField.evaluateDerivative(parameterDerivative1, fieldcache, elementParametersCount, elementJacobian.data());
+			if (result1 != CMZN_OK)
+			{
+				display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to evaluate element Jacobian");
+				return 0;
+
+			}
+			const int result2 = objectiveField.evaluateDerivative(parameterDerivative2, fieldcache, elementParametersCount*elementParametersCount, elementHessian.data());
+			if (result2 != CMZN_OK)
+			{
+				display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to evaluate element Hessian");
+				return 0;
+			}
+
+			// assemble
+			const double *elementHessianRow = elementHessian.data();
+			for (int i = 0; i < elementParametersCount; ++i)
+			{
+				const int row = elementParameterIndexes[i];
+				parameterUsed[row - 1] = 1;
+				globalJacobian(row) -= elementJacobian[i];
+				for (int j = 0; j < elementParametersCount; ++j)
+					globalHessian(row, elementParameterIndexes[j]) += elementHessianRow[j];
+				elementHessianRow += elementParametersCount;
+			}
 		}
 	}
-	if (!return_code)
-		return return_code;
 
 	// need internal class to access some query API which is not yet publicly exposed
 	cmzn_fieldparameters *fieldparametersInternal = fieldparameters.getId();
