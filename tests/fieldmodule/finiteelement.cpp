@@ -1830,6 +1830,135 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 	}
 }
 
+// Test conversion of face/line location to main mesh group
+TEST(ZincFieldFindMeshLocation, convert_main_mesh_group)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Element element2 = mesh3d.findElementByIdentifier(2);
+	EXPECT_TRUE(element2.isValid());
+	Element face1 = mesh2d.findElementByIdentifier(1);
+	EXPECT_TRUE(face1.isValid());
+	Element face2 = mesh2d.findElementByIdentifier(2);
+	EXPECT_TRUE(face2.isValid());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	FieldGroup two = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(two.isValid());
+	FieldElementGroup twoElements = two.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(twoElements.isValid());
+	MeshGroup twoMesh3d = twoElements.getMeshGroup();
+	EXPECT_EQ(RESULT_OK, twoMesh3d.addElement(element2));
+
+	Field dataCoordinates = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(dataCoordinates.isValid());
+	const double x[2][3] =
+	{
+		{ 10.0, 0.0, 5.0 },
+		{  0.0, 5.0, 0.0 }
+	};
+	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_TRUE(datapoints.isValid());
+	Nodetemplate nodetemplate = datapoints.createNodetemplate();
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(dataCoordinates));
+	Node datapoint[2];
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	for (int i = 0; i < 2; ++i)
+	{
+		datapoint[i] = datapoints.createNode(i + 1, nodetemplate);
+		EXPECT_TRUE(datapoint[i].isValid());
+		EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[i]));
+		EXPECT_EQ(RESULT_OK, dataCoordinates.assignReal(fieldcache, 3, x[i]));
+	}
+
+	// test regular find on all 3D elements, with face and line search mesh
+
+	const double TOL = 1.0E-10;
+	Element element;
+	double xi[3];
+	FieldFindMeshLocation findMeshLocationElements = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, mesh3d);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[0]));
+	element = findMeshLocationElements.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element1, element);
+	EXPECT_EQ(1.0, xi[0]);
+	EXPECT_EQ(0.0, xi[1]);
+	EXPECT_EQ(0.5, xi[2]);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[1]));
+	element = findMeshLocationElements.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element1, element);
+	EXPECT_EQ(0.0, xi[0]);
+	EXPECT_EQ(0.5, xi[1]);
+	EXPECT_EQ(0.0, xi[2]);
+
+	FieldFindMeshLocation findMeshLocationElementsFace = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, mesh3d);
+	EXPECT_EQ(RESULT_OK, findMeshLocationElementsFace.setSearchMesh(mesh2d));
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[0]));
+	element = findMeshLocationElementsFace.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element1, element);
+	EXPECT_EQ(1.0, xi[0]);
+	EXPECT_EQ(0.0, xi[1]);
+	EXPECT_EQ(0.5, xi[2]);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[1]));
+	element = findMeshLocationElementsFace.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element1, element);
+	EXPECT_EQ(0.0, xi[0]);
+	EXPECT_EQ(0.5, xi[1]);
+	EXPECT_EQ(0.0, xi[2]);
+
+	FieldFindMeshLocation findMeshLocationElementsLine = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, mesh3d);
+	EXPECT_EQ(RESULT_OK, findMeshLocationElementsLine.setSearchMesh(mesh1d));
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[0]));
+	element = findMeshLocationElementsLine.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element1, element);
+	EXPECT_EQ(1.0, xi[0]);
+	EXPECT_EQ(0.0, xi[1]);
+	EXPECT_EQ(0.5, xi[2]);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[1]));
+	element = findMeshLocationElementsLine.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element1, element);
+	EXPECT_EQ(0.0, xi[0]);
+	EXPECT_EQ(0.5, xi[1]);
+	EXPECT_EQ(0.0, xi[2]);
+
+	// Now use main mesh = twoMesh3d
+	// datapoint[0] conversion should be to element2, while datapoint[0] will not find an element
+
+	FieldFindMeshLocation findMeshLocationTwoFace = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, twoMesh3d);
+	EXPECT_EQ(RESULT_OK, findMeshLocationTwoFace.setSearchMesh(mesh2d));
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[0]));
+	element = findMeshLocationTwoFace.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element2, element);
+	EXPECT_EQ(0.0, xi[0]);
+	EXPECT_EQ(0.0, xi[1]);
+	EXPECT_EQ(0.5, xi[2]);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[1]));
+	element = findMeshLocationTwoFace.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_FALSE(element.isValid());
+
+	FieldFindMeshLocation findMeshLocationTwoLine = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, twoMesh3d);
+	EXPECT_EQ(RESULT_OK, findMeshLocationTwoLine.setSearchMesh(mesh1d));
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[0]));
+	element = findMeshLocationTwoLine.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_EQ(element2, element);
+	EXPECT_EQ(0.0, xi[0]);
+	EXPECT_EQ(0.0, xi[1]);
+	EXPECT_EQ(0.5, xi[2]);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint[1]));
+	element = findMeshLocationTwoLine.evaluateMeshLocation(fieldcache, 3, xi);
+	EXPECT_FALSE(element.isValid());
+}
+
 TEST(ZincFieldStoredMeshLocation, valid_arguments)
 {
 	ZincTestSetupCpp zinc;

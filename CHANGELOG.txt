@@ -3,6 +3,7 @@ CHANGE LOG: OpenCMISS-Zinc Library
 v3.10.0
 Allow integrals over face and line meshes in optimisation objective fields.
 Evaluate parameter and top-level/field element xi derivatives on faces and lines, and convert field element xi derivatives to face and line xi.
+Find mesh location field with lower dimensional search mesh restricts location to main mesh group if supplied.
 Add API to get mixed mesh and parameter derivative operators.
 
 v3.9.0

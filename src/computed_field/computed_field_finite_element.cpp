@@ -21,6 +21,7 @@
 #include "computed_field/computed_field_find_xi_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
@@ -3870,10 +3871,13 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	if (searchFeMesh != ancestorFeMesh)
 	{
 		FE_value elementToAncestor[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
-		cmzn_element *ancestorElement = element->getAncestorConversion(ancestorFeMesh, elementToAncestor);
+		cmzn_field_element_group *elementGroup = cmzn_mesh_get_element_group_field_internal(this->mesh);
+		const DsLabelsGroup *ancestorLabelsGroup = (elementGroup) ?
+			&(Computed_field_element_group_core_cast(elementGroup)->getLabelsGroup()) : nullptr;
+		cmzn_element *ancestorElement =
+			element->getAncestorConversion(ancestorFeMesh, ancestorLabelsGroup, elementToAncestor);
 		if (!ancestorElement)
 		{
-			display_message(ERROR_MESSAGE, "FieldFindMeshLocation evaluate.  Failed to map from search mesh to main mesh");
 			return 0;
 		}
 		const int searchDimension = element->getDimension();

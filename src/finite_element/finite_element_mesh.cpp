@@ -316,7 +316,8 @@ cmzn_element::~cmzn_element()
 	}
 }
 
-cmzn_element *cmzn_element::getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor)
+cmzn_element *cmzn_element::getAncestorConversion(const FE_mesh *ancestorMesh,
+	const DsLabelsGroup *ancestorLabelsGroup, FE_value *elementToAncestor)
 {
 	if (!((this->mesh) && (elementToAncestor)))
 	{
@@ -344,17 +345,24 @@ cmzn_element *cmzn_element::getAncestorConversion(FE_mesh *ancestorMesh, FE_valu
 		if ((parentShape) && (faceNumber >= 0))
 		{
 			cmzn_element *ancestorElement = (parentMesh == ancestorMesh) ? parent :
-				parent->getAncestorConversion(ancestorMesh, elementToAncestor);
-			if (!ancestorElement)
+				parent->getAncestorConversion(ancestorMesh, ancestorLabelsGroup, elementToAncestor);
+			if ((!ancestorElement) ||
+				((ancestorLabelsGroup) && (!ancestorLabelsGroup->hasIndex(ancestorElement->getIndex()))))
+			{
 				continue;
+			}
 			const FE_value *faceToElement = get_FE_element_shape_face_to_element(parentShape, faceNumber);
 			if (!faceToElement)
+			{
 				continue;
+			}
 			const int size = ancestorElement->getDimension();
 			if (parent == ancestorElement)
 			{
 				for (int i = size*size - 1; 0 <= i; --i)
+				{
 					elementToAncestor[i] = faceToElement[i];
+				}
 			}
 			else
 			{
@@ -373,7 +381,7 @@ cmzn_element *cmzn_element::getAncestorConversion(FE_mesh *ancestorMesh, FE_valu
 			return ancestorElement;
 		}
 	}
-	display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  No ancestor found");
+	//display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  No ancestor found");
 	return nullptr;
 }
 

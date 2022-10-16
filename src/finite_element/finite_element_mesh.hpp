@@ -285,12 +285,15 @@ public:
 	 * xi(ancestor) = b + A.xi(element) where b is in the first column of the
 	 * matrix and the rest is A. Recursive to handle 1-D to 3-D case.
 	 * @param ancestorMesh  The mesh the ancestor must be on.
+	 * @param ancestorLabelsGroup  Optional labels group for ancestorMesh,
+	 * return element must be in.
 	 * @param elementToAncestor  If the returned element is different to this
 	 * element, returns the matrix above, otherwise nullptr. Must be at least
 	 * MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS in size.
 	 * @return  Ancestor element or nullptr if not found.
 	 */
-	cmzn_element *getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor);
+	cmzn_element *getAncestorConversion(const FE_mesh *ancestorMesh,
+		const DsLabelsGroup *ancestorLabelsGroup, FE_value *elementToAncestor);
 
 };
 
