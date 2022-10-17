@@ -815,3 +815,138 @@ TEST(ZincOptimisation, fitLineTime)
 	EXPECT_EQ(RESULT_OK, optimisation.setAttributeReal(Optimisation::ATTRIBUTE_FIELD_PARAMETERS_TIME, 0.5));
 	EXPECT_EQ(RESULT_ERROR_GENERAL, optimisation.optimise());
 }
+
+// Use NEWTON method for an optimisation problem with a conditional field to limit included DOFs
+// also test constraining coordinates on a face to x=0
+TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+	FieldFiniteElement referenceCoordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_EQ(RESULT_OK, referenceCoordinates.setName("reference coordinates"));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	Element face1 = mesh2d.findElementByIdentifier(1);
+	EXPECT_TRUE(face1.isValid());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+
+	FieldGroup one = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(one.isValid());
+	EXPECT_EQ(RESULT_OK, one.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+	FieldElementGroup oneElements = one.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(oneElements.isValid());
+	MeshGroup oneMesh3d = oneElements.getMeshGroup();
+	EXPECT_EQ(RESULT_OK, oneMesh3d.addElement(element1));
+
+	FieldGroup left = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(left.isValid());
+	FieldElementGroup leftFaceGroup = left.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(leftFaceGroup.isValid());
+	MeshGroup leftFaceMeshGroup = leftFaceGroup.getMeshGroup();
+	EXPECT_EQ(RESULT_OK, leftFaceMeshGroup.addElement(face1));
+
+	FieldComponent x = zinc.fm.createFieldComponent(coordinates, 1);
+	const double scaleValue = 100.0;
+	FieldConstant scale = zinc.fm.createFieldConstant(1, &scaleValue);
+	FieldMultiply scalex = scale * x;
+	FieldMultiply scalexSq = scalex * scalex;
+	FieldMeshIntegral leftObjective = zinc.fm.createFieldMeshIntegral(scalexSq, referenceCoordinates, leftFaceMeshGroup);
+	const int numberOfPoints = 4;
+	EXPECT_EQ(RESULT_OK, leftObjective.setNumbersOfPoints(1, &numberOfPoints));
+	EXPECT_TRUE(leftObjective.isValid());
+
+	Field displacement = coordinates - referenceCoordinates;
+	FieldGradient strain = zinc.fm.createFieldGradient(displacement, referenceCoordinates);
+	const double targetStrainValues[9] = { 0.2, 0.0, 0.0, 0.0, -0.1, 0.0, 0.0, 0.0, -0.2 };
+	Field targetStrain = zinc.fm.createFieldConstant(9, targetStrainValues);
+	Field deltaStrain = strain - targetStrain;
+	Field stretchSq = zinc.fm.createFieldDotProduct(deltaStrain, deltaStrain);
+	FieldMeshIntegral stretchObjective = zinc.fm.createFieldMeshIntegral(stretchSq, referenceCoordinates, mesh3d);
+	EXPECT_EQ(RESULT_OK, stretchObjective.setNumbersOfPoints(1, &numberOfPoints));
+	EXPECT_TRUE(stretchObjective.isValid());
+
+	const int components[2] = { 2, 3 };
+	Field yzDisplacement = zinc.fm.createFieldComponent(displacement, 2, components);
+	Field displacementSq = zinc.fm.createFieldDotProduct(yzDisplacement, yzDisplacement);
+	const double scaleDisplacementValue = 0.1;
+	Field scaleDisplacementSq = displacementSq * zinc.fm.createFieldConstant(1, &scaleDisplacementValue);
+	FieldMeshIntegral displacementObjective = zinc.fm.createFieldMeshIntegral(scaleDisplacementSq, referenceCoordinates, mesh3d);
+	// leave on 1 point as only used to stop solution drifting from centre
+	//EXPECT_EQ(RESULT_OK, displacementObjective.setNumbersOfPoints(1, &numberOfPoints));
+	EXPECT_TRUE(displacementObjective.isValid());
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+
+	// solve optimisation
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(stretchObjective));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(displacementObjective));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(leftObjective));
+	EXPECT_EQ(OK, optimisation.addDependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.setConditionalField(coordinates, one));
+	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
+
+	EXPECT_EQ(OK, optimisation.optimise());
+	char *solutionReport = optimisation.getSolutionReport();
+	EXPECT_NE((char *)0, solutionReport);
+	printf("%s", solutionReport);
+
+	// check final strains match target
+	double outStrainValues[9];
+	const double xi[4][3] =
+	{
+		{ 0.5, 0.5, 0.5 },
+		{ 0.2, 0.7, 0.0 },
+		{ 0.6, 0.9, 0.9 },
+		{ 0.0, 0.0, 0.0 }
+	};
+	const double TOL = 1.0E-10;
+	for (int p = 0; p < 4; ++p)
+	{
+		fieldcache.setMeshLocation(element1, 3, xi[p]);
+		EXPECT_EQ(RESULT_OK, strain.evaluateReal(fieldcache, 9, outStrainValues));
+		for (int i = 0; i < 9; ++i)
+		{
+			EXPECT_NEAR(targetStrainValues[i], outStrainValues[i], TOL);
+		}
+	}
+
+	// check left constraint
+	double outLeft;
+	fieldcache.clearLocation();
+	EXPECT_EQ(RESULT_OK, leftObjective.evaluateReal(fieldcache, 1, &outLeft));
+	EXPECT_NEAR(0.0, outLeft, TOL);
+
+	// check no change to end nodes not part of conditional group
+	const int nodeIdentifiers[4] = { 3, 6, 9, 12 };
+	const Node::ValueLabel valueLabels[4] = { Node::VALUE_LABEL_VALUE, Node::VALUE_LABEL_D_DS1, Node::VALUE_LABEL_D_DS2, Node::VALUE_LABEL_D2_DS1DS2 };
+	for (int n = 0; n < 4; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(nodeIdentifiers[n]);
+		EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+		double ux[3];
+		double dx[3];
+		for (int v = 0; v < 4; ++v)
+		{
+			EXPECT_EQ(RESULT_OK, referenceCoordinates.getNodeParameters(fieldcache, -1, valueLabels[v], 1, 3, ux));
+			EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(fieldcache, -1, valueLabels[v], 1, 3, dx));
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_DOUBLE_EQ(ux[c], dx[c]);
+			}
+		}
+	}
+}

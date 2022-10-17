@@ -81,7 +81,11 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_conditional_field(
  * The conditional field only applies to finite element dependent fields,
  * and is queried and applied to nodal DOFs only.
  * @note
- * The conditional field is not yet supported by the NEWTON method.
+ * For the NEWTON method, the conditional field is used both to include nodal
+ * DOFs and to restrict integrals to the elements, faces and lines returning
+ * true for it. Normally a Group field containing the required top-level
+ * elements and including all subelements (faces, lines and nodes) is used for
+ * this purpose.
  *
  * @param optimisation  Handle to the optimisation object.
  * @param dependent_field  The dependent field to select a subset of DOFs
@@ -349,6 +353,9 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_next_objective_field(
  * The overall objective function becomes the sum of all components of all
  * objective fields, or for the least-squares method, the sum of the squares of
  * all terms (or components if the objective field is not a sum of squares).
+ * The NEWTON method expects each objective field to be of type MeshIntegral or
+ * NodesetOperator (with ElementMapField mapping to a mesh) so it can evaluate
+ * over elements of the respective mesh.
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued objective field to add to the optimisation object

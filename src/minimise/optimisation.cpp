@@ -602,8 +602,11 @@ int Minimisation::minimise_Newton()
 		return 0;
 	}
 	Fieldmodule fieldmodule(cmzn_fieldmodule_access(this->field_module));
-	Field dependentField(cmzn_field_access(this->optimisation.dependentFields.front().dependentField));
+	cmzn_field *dependentFieldInternal = this->optimisation.dependentFields.front().dependentField;
+	Field dependentField(cmzn_field_access(dependentFieldInternal));
 	Fieldparameters fieldparameters = dependentField.getFieldparameters();
+	// need internal class to access some query API which is not yet publicly exposed
+	cmzn_fieldparameters *fieldparametersInternal = fieldparameters.getId();
 	if (!fieldparameters.isValid())
 	{
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Could not get field parameters for dependent field which must be finite element type");
@@ -628,14 +631,52 @@ int Minimisation::minimise_Newton()
 	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
 	Differentialoperator parameterDerivative2 = fieldparameters.getDerivativeOperator(/*order*/2);
 
-	NEWMAT::ColumnVector globalJacobian(globalParameterCount);
-	globalJacobian = 0.0;
-	NEWMAT::SquareMatrix globalHessian(globalParameterCount);
-	globalHessian = 0.0;
-	std::vector<unsigned char> parameterUsed(globalParameterCount, 0);  // set to 1 if parameter used in element
-
 	Fieldcache fieldcache = fieldmodule.createFieldcache();
 	fieldcache.setTime(this->optimisation.fieldParametersTime);
+
+	// set up optional reduced parameters for conditional field
+	std::vector<int> conditionalParameterIndex;  // map from global to conditional parameter index
+	std::vector<int> globalParameterIndex; // map from conditional to global parameter index
+	int conditionalParameterCount = 0;
+	cmzn_field *conditionalFieldInternal = this->optimisation.getConditionalField(dependentFieldInternal);
+	if (conditionalFieldInternal)
+	{
+		conditionalParameterIndex.resize(globalParameterCount, -1);  // set included parameters to conditional index
+		for (int i = 0; i < globalParameterCount; ++i)
+		{
+			int fieldComponent, version;
+			cmzn_node_value_label valueLabel;
+			cmzn_node *node = fieldparametersInternal->getNodeParameter(i, fieldComponent, valueLabel, version);
+			fieldcache.getId()->setNode(node);
+			if (cmzn_field_evaluate_boolean(conditionalFieldInternal, fieldcache.getId()))
+			{
+				conditionalParameterIndex[i] = conditionalParameterCount;
+				++conditionalParameterCount;
+			}
+		}
+		globalParameterIndex.resize(conditionalParameterCount);
+		for (int i = 0; i < globalParameterCount; ++i)
+		{
+			const int conditionalIndex = conditionalParameterIndex[i];
+			if (conditionalIndex >= 0)
+			{
+				globalParameterIndex[conditionalIndex] = i;
+			}
+		}
+		display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Conditional parameters count %d\n", conditionalParameterCount);
+		//for (int i = 0; i < conditionalParameterCount; ++i)
+		//{
+		//	display_message(INFORMATION_MESSAGE, "  Param[%d] = %d", i, globalParameterIndex[i]);
+		//}
+	}
+	int solveParameterCount = (conditionalFieldInternal) ? conditionalParameterCount : globalParameterCount;
+
+	NEWMAT::ColumnVector globalJacobian(solveParameterCount);
+	globalJacobian = 0.0;
+	NEWMAT::SquareMatrix globalHessian(solveParameterCount);
+	globalHessian = 0.0;
+	std::vector<bool> parameterUsed(solveParameterCount, false);  // set to true if parameter used in element
+
 	std::vector<int> elementParameterIndexes;  // grows to fit maximum elementParametersCount
 	std::vector<double> elementJacobian;  // grows to fit maximum elementParametersCount
 	std::vector<double> elementHessian;  // grows to fit maximum elementParametersCount*elementParametersCount
@@ -684,8 +725,15 @@ int Minimisation::minimise_Newton()
 		while ((element = elementIter.next()).isValid())
 		{
 			++elementIndex;
-			display_message(INFORMATION_MESSAGE, "Element %d (%d/%d)\n", element.getIdentifier(), elementIndex, elementCount);
+			//display_message(INFORMATION_MESSAGE, "Element %d (%d/%d)\n", element.getIdentifier(), elementIndex, elementCount);
 			fieldcache.setElement(element);
+			if (conditionalFieldInternal)
+			{
+				if (!cmzn_field_evaluate_boolean(conditionalFieldInternal, fieldcache.getId()))
+				{
+					continue;
+				}
+			}
 			const int elementParametersCount = fieldparameters.getNumberOfElementParameters(element);
 			if (elementParametersCount <= 0)
 			{
@@ -697,7 +745,7 @@ int Minimisation::minimise_Newton()
 				elementJacobian.resize(elementParametersCount);
 				elementHessian.resize(elementParametersCount*elementParametersCount);
 			}
-			fieldparameters.getElementParameterIndexes(element, elementParametersCount, elementParameterIndexes.data());
+			fieldparameters.getElementParameterIndexesZero(element, elementParametersCount, elementParameterIndexes.data());
 
 			const int result1 = objectiveField.evaluateDerivative(parameterDerivative1, fieldcache, elementParametersCount, elementJacobian.data());
 			if (result1 != CMZN_OK)
@@ -717,30 +765,36 @@ int Minimisation::minimise_Newton()
 			const double *elementHessianRow = elementHessian.data();
 			for (int i = 0; i < elementParametersCount; ++i)
 			{
-				const int row = elementParameterIndexes[i];
-				parameterUsed[row - 1] = 1;
-				globalJacobian(row) -= elementJacobian[i];
-				for (int j = 0; j < elementParametersCount; ++j)
-					globalHessian(row, elementParameterIndexes[j]) += elementHessianRow[j];
-				elementHessianRow += elementParametersCount;
+				int row = elementParameterIndexes[i];
+				if ((!conditionalFieldInternal) || ((row = conditionalParameterIndex[row]) >= 0))
+				{
+					parameterUsed[row] = true;
+					globalJacobian.element(row) -= elementJacobian[i];
+					for (int j = 0; j < elementParametersCount; ++j)
+					{
+						int col = elementParameterIndexes[j];
+						if ((!conditionalFieldInternal) || ((col = conditionalParameterIndex[col]) >= 0))
+						{
+							globalHessian.element(row, col) += elementHessianRow[j];
+						}
+					}
+					elementHessianRow += elementParametersCount;
+				}
 			}
 		}
 	}
 
-	// need internal class to access some query API which is not yet publicly exposed
-	cmzn_fieldparameters *fieldparametersInternal = fieldparameters.getId();
-	for (int i = 0; i < globalParameterCount; ++i)
+	for (int i = 0; i < solveParameterCount; ++i)
 	{
 		if (!parameterUsed[i])
 		{
-			const int row = i + 1;
-			globalHessian(row, row) = 1.0;
+			globalHessian.element(i, i) = 1.0;
 			// warn which parameter is eliminated
 			cmzn_node_value_label valueLabel;
 			int fieldComponent, version;
 			cmzn_node *node = fieldparametersInternal->getNodeParameter(i, fieldComponent, valueLabel, version);
 			display_message(WARNING_MESSAGE, "Optimisation optimise NEWTON:  Parameter %d (node %d, component %d, %s, version %d) is unused in elements; eliminating.",
-				row, (node) ? node->getIdentifier() : -1, fieldComponent + 1, cmzn_node_value_label_conversion::to_string(valueLabel), version + 1);
+				i, (node) ? node->getIdentifier() : -1, fieldComponent + 1, cmzn_node_value_label_conversion::to_string(valueLabel), version + 1);
 		}
 	}
 
@@ -752,8 +806,18 @@ int Minimisation::minimise_Newton()
 		return 0;
 	}
 	NEWMAT::ColumnVector increment = LUmatrix.i()*globalJacobian;
-
-	const int result = fieldparameters.addParameters(globalParameterCount, increment.data());
+	const double *incrementData = increment.data();
+	std::vector<double> globalIncrement;
+	if (conditionalFieldInternal)
+	{
+		globalIncrement.resize(globalParameterCount, 0.0);
+		for (int i = 0; i < solveParameterCount; ++i)
+		{
+			globalIncrement[globalParameterIndex[i]] = incrementData[i];
+		}
+		incrementData = globalIncrement.data();
+	}
+	const int result = fieldparameters.addParameters(globalParameterCount, incrementData);
 	if (result != CMZN_OK)
 	{
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to add solution vector.");
