@@ -1,0 +1,484 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node template: node1
+Node: 1
+  0.000000000000000e+00
+  0.000000000000000e+00
+  0.000000000000000e+00
+Node: 2
+  1.000000000000000e+00
+  0.000000000000000e+00
+  0.000000000000000e+00
+Node: 3
+  2.000000000000000e+00
+  0.000000000000000e+00
+  0.000000000000000e+00
+Node: 4
+  0.000000000000000e+00
+  1.000000000000000e+00
+  0.000000000000000e+00
+Node: 5
+  1.000000000000000e+00
+  1.000000000000000e+00
+  0.000000000000000e+00
+Node: 6
+  2.000000000000000e+00
+  1.000000000000000e+00
+  0.000000000000000e+00
+Node: 7
+  0.000000000000000e+00
+  2.000000000000000e+00
+  0.000000000000000e+00
+Node: 8
+  1.000000000000000e+00
+  2.000000000000000e+00
+  0.000000000000000e+00
+Node: 9
+  0.000000000000000e+00
+  0.000000000000000e+00
+  1.000000000000000e+00
+Node: 10
+  1.000000000000000e+00
+  0.000000000000000e+00
+  1.000000000000000e+00
+Node: 11
+  0.000000000000000e+00
+  1.000000000000000e+00
+  1.000000000000000e+00
+Node: 12
+  1.000000000000000e+00
+  1.000000000000000e+00
+  1.000000000000000e+00
+Node: 13
+ -1.000000000000000e+00
+  0.000000000000000e+00
+  0.000000000000000e+00
+Node: 14
+ -1.000000000000000e+00
+  1.000000000000000e+00
+  0.000000000000000e+00
+Node: 15
+ -1.000000000000000e+00
+  0.000000000000000e+00
+  1.000000000000000e+00
+Node: 16
+ -1.000000000000000e+00
+  1.000000000000000e+00
+  1.000000000000000e+00
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element template: element1
+Element: 1
+Element: 2
+Element: 3
+Element: 4
+Element: 5
+Element: 6
+Element: 7
+Element: 8
+Element: 9
+Element: 10
+Element: 11
+Element: 12
+Element: 13
+Element: 14
+Element: 15
+Element: 16
+Element: 17
+Element: 18
+Element: 19
+Element: 20
+Element: 21
+Element: 22
+Element: 23
+Element: 24
+Element: 25
+Element: 26
+Element: 27
+Element: 28
+Element: 29
+Element: 30
+Element: 31
+Element: 32
+Element: 33
+!#mesh mesh2d, dimension=2, face mesh=mesh1d, nodeset=nodes
+Define element template: element2
+Shape. Dimension=2, line*line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element template: element2
+Element: 1
+ Faces:
+ 1 2 3 4
+Element: 2
+ Faces:
+ 5 1 6 7
+Element: 3
+ Faces:
+ 2 5 8 9
+Define element template: element3
+Shape. Dimension=2, simplex(2)*simplex
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element template: element3
+Element: 4
+ Faces:
+ 3 6 8
+Element: 5
+ Faces:
+ 4 7 9
+Element template: element2
+Element: 6
+ Faces:
+ 10 11 12 5
+Element template: element3
+Element: 7
+ Faces:
+ 13 10 9
+Element: 8
+ Faces:
+ 14 11 8
+Element template: element2
+Element: 9
+ Faces:
+ 2 12 13 14
+Element template: element3
+Element: 10
+ Faces:
+ 15 5 16
+Element: 11
+ Faces:
+ 17 12 18
+Element template: element2
+Element: 12
+ Faces:
+ 19 11 15 17
+Element: 13
+ Faces:
+ 10 19 16 18
+Element template: element3
+Element: 14
+ Faces:
+ 2 20 21
+Element: 15
+ Faces:
+ 12 22 23
+Element template: element2
+Element: 16
+ Faces:
+ 20 22 24 14
+Element: 17
+ Faces:
+ 21 23 13 24
+Element: 18
+ Faces:
+ 25 2 26 27
+Element: 19
+ Faces:
+ 28 1 29 30
+Element: 20
+ Faces:
+ 31 32 25 28
+Element: 21
+ Faces:
+ 26 29 31 3
+Element: 22
+ Faces:
+ 27 30 32 4
+Element template: element3
+Element: 23
+ Faces:
+ 17 33 22
+Element: 24
+ Faces:
+ 23 33 18
+!#mesh mesh3d, dimension=3, face mesh=mesh2d, nodeset=nodes
+Define element template: element4
+Shape. Dimension=3, simplex(2)*simplex*line
+#Scale factor sets=0
+#Nodes=6
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.simplex(2)*l.simplex*l.Lagrange, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+ y. l.simplex(2)*l.simplex*l.Lagrange, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+ z. l.simplex(2)*l.simplex*l.Lagrange, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+Element template: element4
+Element: 1
+ Faces:
+ 1 2 3 4 5
+ Nodes:
+ 1 2 4 9 10 11
+Define element template: element5
+Shape. Dimension=3, simplex(3)*line*simplex
+#Scale factor sets=0
+#Nodes=6
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.simplex(3)*l.Lagrange*l.simplex, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+ y. l.simplex(3)*l.Lagrange*l.simplex, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+ z. l.simplex(3)*l.Lagrange*l.simplex, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+Element template: element5
+Element: 2
+ Faces:
+ 6 7 8 9 3
+ Nodes:
+ 12 11 5 4 10 2
+Element: 3
+ Faces:
+ 6 10 11 12 13
+ Nodes:
+ 2 3 5 6 10 12
+Define element template: element6
+Shape. Dimension=3, line*simplex(3)*simplex
+#Scale factor sets=0
+#Nodes=6
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.simplex(3)*l.simplex, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+ y. l.Lagrange*l.simplex(3)*l.simplex, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+ z. l.Lagrange*l.simplex(3)*l.simplex, no modify, standard node based.
+  #Nodes=6
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+Element template: element6
+Element: 4
+ Faces:
+ 14 15 9 16 17
+ Nodes:
+ 4 5 7 8 11 12
+Define element template: element7
+Shape. Dimension=3, line*line*line
+#Scale factor sets=0
+#Nodes=8
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ y. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ z. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+Element template: element7
+Element: 5
+ Faces:
+ 18 19 20 1 21 22
+ Nodes:
+ 14 13 4 1 16 15 11 9
+Define element template: element8
+Shape. Dimension=3, simplex(2;3)*simplex*simplex
+#Scale factor sets=0
+#Nodes=4
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+ y. l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+ z. l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+Element template: element8
+Element: 6
+ Faces:
+ 23 11 24 15
+ Nodes:
+ 6 12 8 5

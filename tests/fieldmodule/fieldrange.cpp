@@ -177,7 +177,7 @@ TEST(ZincFieldrange, allshapes_quadratic_2d)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_RESOURCE)));
+		TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_RESOURCE)));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
@@ -391,7 +391,7 @@ TEST(ZincFieldrange, allshapes_quadratic_deformed_2d)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+		TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
@@ -605,7 +605,7 @@ TEST(ZincFieldrange, allshapes_quadratic_3d)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_RESOURCE)));
+		TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_RESOURCE)));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
@@ -842,7 +842,7 @@ TEST(ZincFieldrange, allshapes_quadratic_deformed_3d)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+		TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);

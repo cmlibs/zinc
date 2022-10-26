@@ -279,22 +279,6 @@ public:
 		return this->mesh;
 	}
 
-	/**
-	 * Get the first ancestor of element on ancestorMesh and the mapping from
-	 * this element's xi coordinates to those of the ancestor in the form:
-	 * xi(ancestor) = b + A.xi(element) where b is in the first column of the
-	 * matrix and the rest is A. Recursive to handle 1-D to 3-D case.
-	 * @param ancestorMesh  The mesh the ancestor must be on.
-	 * @param ancestorLabelsGroup  Optional labels group for ancestorMesh,
-	 * return element must be in.
-	 * @param elementToAncestor  If the returned element is different to this
-	 * element, returns the matrix above, otherwise nullptr. Must be at least
-	 * MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS in size.
-	 * @return  Ancestor element or nullptr if not found.
-	 */
-	cmzn_element *getAncestorConversion(const FE_mesh *ancestorMesh,
-		const DsLabelsGroup *ancestorLabelsGroup, FE_value *elementToAncestor);
-
 };
 
 DECLARE_LIST_CONDITIONAL_FUNCTION(cmzn_element);
@@ -1234,6 +1218,30 @@ public:
 		}
 		return 0;
 	}
+
+	/** Convert face/line element:xi coordinates to ancestor mesh.
+	 * If field is not inherited from first parent at each level, needs
+	 * to match coordinate field values due to ambiguous element-to-face
+	 * mappings.
+	 * @param elementIndex  Index of element in this mesh. Client must
+	 * ensure index is in this mesh.
+	 * @param xiIn  Element chart coordinates in input element.
+	 * @param coordinateField  Coordinate field to match for ambiguous
+	 * element-to-face mapping. Not checked for unambiguous cases.
+	 * @param coordinates Expected coordinate values.
+	 * @param fieldcache Field cache in which to evaluate coordinateField
+	 * in ancestor elements.
+	 * @param ancestorMesh  The ancestor mesh to convert to.
+	 * @param ancestorLabelsGroup  Optional labels group for ancestorMesh,
+	 * returned element must be in.
+	 * @param xiOut  On return of a valid index, contains the ancestor element
+	 * xi coordinates. Size to MAXIMUM_ELEMENT_XI_DIMENSIONS.
+	 * @return Non-negative element index in ancestor mesh, or
+	 * DS_LABEL_INDEX_INVALID if no valid conversion.
+	 */
+	DsLabelIndex convertLocationToAncestor(const DsLabelIndex elementIndexIn, const FE_value *xiIn,
+		cmzn_field *coordinateField, const FE_value *coordinatesIn, cmzn_fieldcache *fieldcache,
+		const FE_mesh *ancestorMesh, const DsLabelsGroup *ancestorLabelsGroup, FE_value *xiOut) const;
 
 	// GRC restore implementation from descendant up
 	bool isElementAncestor(DsLabelIndex elementIndex, const FE_mesh *descendantMesh, DsLabelIndex descendantIndex);

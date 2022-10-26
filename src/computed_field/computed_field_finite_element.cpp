@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <cassert>
 #include <cmath>
 #include <map>
 #include "opencmiss/zinc/fieldmodule.h"
@@ -3865,34 +3866,33 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 		sourceValueCache->componentCount, &element, xi, this->searchMesh,
 		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
 		&& (element)))
+	{
 		return 0;
+	}
 	FE_mesh *searchFeMesh = cmzn_mesh_get_FE_mesh_internal(this->searchMesh);
 	FE_mesh *ancestorFeMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
 	if (searchFeMesh != ancestorFeMesh)
 	{
-		FE_value elementToAncestor[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		FE_value meshCoordinates[3];
+		assert(meshField->getNumberOfComponents() <= 3);
+		extraCache.setMeshLocation(element, xi);
+		cmzn_field_evaluate_real(meshField, &extraCache, 3, meshCoordinates);
 		cmzn_field_element_group *elementGroup = cmzn_mesh_get_element_group_field_internal(this->mesh);
 		const DsLabelsGroup *ancestorLabelsGroup = (elementGroup) ?
 			&(Computed_field_element_group_core_cast(elementGroup)->getLabelsGroup()) : nullptr;
-		cmzn_element *ancestorElement =
-			element->getAncestorConversion(ancestorFeMesh, ancestorLabelsGroup, elementToAncestor);
-		if (!ancestorElement)
+		FE_value ancestorXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		DsLabelIndex ancestorElementIndex = searchFeMesh->convertLocationToAncestor(
+			element->getIndex(), xi, meshField, meshCoordinates, &extraCache,
+			ancestorFeMesh, ancestorLabelsGroup, ancestorXi);
+		if (ancestorElementIndex < 0)
 		{
 			return 0;
 		}
-		const int searchDimension = element->getDimension();
-		const int ancestorDimension = ancestorElement->getDimension();
-		FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-		for (int k = 0; k < searchDimension; ++k)
-			searchXi[k] = xi[k];
-		for (int j = 0; j < ancestorDimension; ++j)
+		element = ancestorFeMesh->getElement(ancestorElementIndex);
+		for (int k = 0; k < ancestorFeMesh->getDimension(); ++k)
 		{
-			const FE_value *row = elementToAncestor + j*(1 + searchDimension);
-			xi[j] = row[0];
-			for (int k = 0; k < searchDimension; ++k)
-				xi[j] += row[1 + k]*searchXi[k];
+			xi[k] = ancestorXi[k];
 		}
-		element = ancestorElement;
 	}
 	findMeshLocationValueCache.setMeshLocation(element, xi);
 	return 1;

@@ -969,7 +969,7 @@ TEST(Fieldparameters, faceLineParameterDerivatives)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
 
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());

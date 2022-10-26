@@ -11,6 +11,7 @@
 
 #include "opencmiss/zinc/element.h"
 #include "computed_field/field_derivative.hpp"
+#include "computed_field/computed_field_private.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
@@ -314,75 +315,6 @@ cmzn_element::~cmzn_element()
 		display_message(ERROR_MESSAGE, "~cmzn_element.  Element destroyed with non-zero access count %d. Dimension %d Index %d",
 			this->access_count, this->mesh ? this->mesh->getDimension() : -1, this->index);
 	}
-}
-
-cmzn_element *cmzn_element::getAncestorConversion(const FE_mesh *ancestorMesh,
-	const DsLabelsGroup *ancestorLabelsGroup, FE_value *elementToAncestor)
-{
-	if (!((this->mesh) && (elementToAncestor)))
-	{
-		display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  Invalid argument(s)");
-		return nullptr;
-	}
-	if (this->mesh == ancestorMesh)
-	{
-		elementToAncestor = nullptr;
-		return this;
-	}
-	FE_mesh *parentMesh = this->mesh->getParentMesh();
-	const DsLabelIndex *parents;
-	const int parentsCount = this->mesh->getElementParents(this->index, parents);
-	if ((!parentMesh) || (0 == parentsCount))
-		return nullptr;
-	for (int p = 0; p < parentsCount; ++p)
-	{
-		DsLabelIndex parentIndex = parents[p];
-		if (parentIndex < 0)
-			continue;
-		cmzn_element *parent = parentMesh->getElement(parentIndex);
-		FE_element_shape *parentShape = parentMesh->getElementShape(parentIndex);
-		const int faceNumber = parentMesh->getElementFaceNumber(parentIndex, this->index);
-		if ((parentShape) && (faceNumber >= 0))
-		{
-			cmzn_element *ancestorElement = (parentMesh == ancestorMesh) ? parent :
-				parent->getAncestorConversion(ancestorMesh, ancestorLabelsGroup, elementToAncestor);
-			if ((!ancestorElement) ||
-				((ancestorLabelsGroup) && (!ancestorLabelsGroup->hasIndex(ancestorElement->getIndex()))))
-			{
-				continue;
-			}
-			const FE_value *faceToElement = get_FE_element_shape_face_to_element(parentShape, faceNumber);
-			if (!faceToElement)
-			{
-				continue;
-			}
-			const int size = ancestorElement->getDimension();
-			if (parent == ancestorElement)
-			{
-				for (int i = size*size - 1; 0 <= i; --i)
-				{
-					elementToAncestor[i] = faceToElement[i];
-				}
-			}
-			else
-			{
-				// multiply faceToElement of ancestorElement (in elementToAncestor)
-				// by faceToElement from parent. This is the 1:3 case
-				for (int i = 0; i < size; ++i)
-				{
-					elementToAncestor[i*2] = elementToAncestor[i*size] +
-						elementToAncestor[i*size+1]*faceToElement[0]+
-						elementToAncestor[i*size+2]*faceToElement[2];
-					elementToAncestor[i*2+1] =
-						elementToAncestor[i*size+1]*faceToElement[1]+
-						elementToAncestor[i*size+2]*faceToElement[3];
-				}
-			}
-			return ancestorElement;
-		}
-	}
-	//display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  No ancestor found");
-	return nullptr;
 }
 
 /** Free dynamic memory or resources held per-element e.g. reduce node element usage counts
@@ -2558,6 +2490,212 @@ bool FE_mesh::removeElementNodesFromGroup(DsLabelIndex elementIndex, DsLabelsGro
 		}
 	}
 	return true;
+}
+
+DsLabelIndex FE_mesh::convertLocationToAncestor(const DsLabelIndex elementIndexIn, const FE_value *xiIn,
+	cmzn_field *coordinateField, const FE_value *coordinatesIn, cmzn_fieldcache *fieldcache,
+	const FE_mesh *ancestorMesh, const DsLabelsGroup *ancestorLabelsGroup, FE_value *xiOut) const
+{
+	if (!((elementIndexIn >= 0) && (xiIn) && (coordinateField) &&
+		(coordinateField->getNumberOfComponents() <= 3) && (coordinatesIn) &&
+		(fieldcache) && (ancestorMesh) && (xiOut)))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::convertLocationToAncestor.  Invalid argument(s)");
+		return DS_LABEL_INDEX_INVALID;
+	}
+	if (ancestorMesh == this)
+	{
+		if ((ancestorLabelsGroup) && (!ancestorLabelsGroup->hasIndex(elementIndexIn)))
+		{
+			return DS_LABEL_INDEX_INVALID;
+		}
+		for (int d = 0; d < this->dimension; ++d)
+		{
+			xiOut[d] = xiIn[d];
+		}
+		return elementIndexIn;
+	}
+	if (!this->parentMesh)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	const int coordinatesCount = coordinateField->getNumberOfComponents();
+	const DsLabelIndex *parents;
+	const int parentsCount = this->getElementParents(elementIndexIn, parents);
+	if (0 == parentsCount)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	const cmzn_element_shape_type shapeType = FE_element_shape_get_simple_type(this->getElementShape(elementIndexIn));
+	const int parentDimension = this->parentMesh->dimension;
+	for (int p = 0; p < parentsCount; ++p)
+	{
+		const DsLabelIndex parentIndex = parents[p];
+		if (parentIndex < 0)
+		{
+			continue;
+		}
+		FE_element_shape *parentShape = this->parentMesh->getElementShape(parentIndex);
+		const int faceNumber = this->parentMesh->getElementFaceNumber(parentIndex, elementIndexIn);
+		cmzn_element *parentElement = nullptr;
+		if ((parentShape) && (faceNumber >= 0))
+		{
+			FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			for (int d = 0; d < this->dimension; ++d)
+			{
+				xi[d] = xiIn[d];
+			}
+			int facePermutationCount = 1;
+			const FE_value *faceToElement = get_FE_element_shape_face_to_element(parentShape, faceNumber);
+			if (!faceToElement)
+			{
+				continue;
+			}
+			if (this->parentMesh == ancestorMesh)
+			{
+				if ((ancestorLabelsGroup) && (!ancestorLabelsGroup->hasIndex(parentIndex)))
+				{
+					continue;
+				}
+				if (p > 0)
+				{
+					switch (shapeType)
+					{
+					case CMZN_ELEMENT_SHAPE_TYPE_LINE:
+						facePermutationCount = 2;
+						break;
+					case CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE:
+						facePermutationCount = 6;  // cycle around 3 triangle xi, forward and reverse
+						break;
+					case CMZN_ELEMENT_SHAPE_TYPE_SQUARE:
+						facePermutationCount = 8;  // +/- xi1 and xi2, and swapped
+						break;
+					default:
+						display_message(ERROR_MESSAGE, "FE_mesh::convertLocationToAncestor.  Unknown element shape type");
+						facePermutationCount = 1;
+						break;
+					}
+					parentElement = this->parentMesh->getElement(parentIndex);
+				}
+			}
+			FE_value tmpParentXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			FE_value parentXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			FE_value parentCoordinates[3];
+			bool coordinatesDefined = true;
+			FE_value minError = 0.0;
+			for (int fp = 0; fp < facePermutationCount; ++fp)
+			{
+				if (fp > 0)
+				{
+					if (shapeType == CMZN_ELEMENT_SHAPE_TYPE_LINE)
+					{
+						xi[0] = 1.0 - xiIn[0];
+					}
+					else if (shapeType == CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE)
+					{
+						const FE_value xiS = 1.0 - xiIn[0] - xiIn[1];
+						if (fp == 0)
+						{
+							xi[0] = xiIn[0];
+							xi[1] = xiIn[1];
+						}
+						else if (fp == 1)
+						{
+							xi[0] = xiIn[1];
+							xi[1] = xiS;
+						}
+						else if (fp == 2)
+						{
+							xi[0] = xiS;
+							xi[1] = xiIn[0];
+						}
+						else if (fp == 3)
+						{
+							xi[0] = xiIn[1];
+							xi[1] = xiIn[0];
+						}
+						else if (fp == 4)
+						{
+							xi[0] = xiIn[0];
+							xi[1] = xiS;
+						}
+						else if (fp == 5)
+						{
+							xi[0] = xiS;
+							xi[1] = xiIn[1];
+						}
+					}
+					else // if (shapeType == CMZN_ELEMENT_SHAPE_TYPE_SQUARE)
+					{
+						if (fp < 4)
+						{
+							xi[0] = (fp & 1) ? (1.0 - xiIn[0]) : xiIn[0];
+							xi[1] = (fp < 2) ? xiIn[1] : (1.0 - xiIn[1]);
+						}
+						else
+						{
+							xi[0] = (fp & 1) ? (1.0 - xiIn[1]) : xiIn[1];
+							xi[1] = (fp < 6) ? xiIn[0] : (1.0 - xiIn[0]);
+						}
+					}
+				}
+				FE_value *useParentXi = (facePermutationCount == 1) ? parentXi : tmpParentXi;
+				for (int j = 0; j < parentDimension; ++j)
+				{
+					const FE_value *row = faceToElement + j * (1 + this->dimension);
+					useParentXi[j] = row[0];
+					for (int k = 0; k < this->dimension; ++k)
+					{
+						useParentXi[j] += row[1 + k] * xi[k];
+					}
+				}
+				if (facePermutationCount > 1)
+				{
+					fieldcache->setMeshLocation(parentElement, useParentXi);
+					if (CMZN_OK != cmzn_field_evaluate_real(coordinateField, fieldcache, coordinatesCount, parentCoordinates))
+					{
+						coordinatesDefined = false;
+						break;
+					}
+					FE_value error = 0.0;
+					for (int c = 0; c < coordinatesCount; ++c)
+					{
+						const FE_value diff = parentCoordinates[c] - coordinatesIn[c];
+						error += diff * diff;
+					}
+					if ((fp == 0) || (error < minError))
+					{
+						minError = error;
+						for (int d = 0; d < parentDimension; ++d)
+						{
+							parentXi[d] = useParentXi[d];
+						}
+					}
+				}
+			}
+			if (!coordinatesDefined)
+			{
+				// go to next parent
+				continue;
+			}
+			if (this->parentMesh == ancestorMesh)
+			{
+				for (int d = 0; d < parentDimension; ++d)
+				{
+					xiOut[d] = parentXi[d];
+				}
+				return parentIndex;
+			}
+			DsLabelIndex ancestorIndex = this->parentMesh->convertLocationToAncestor(
+				parentIndex, parentXi, coordinateField, coordinatesIn, fieldcache,
+				ancestorMesh, ancestorLabelsGroup, xiOut);
+			if (ancestorIndex >= 0)
+			{
+				return ancestorIndex;
+			}
+		}
+	}
+	return DS_LABEL_INDEX_INVALID;
 }
 
 bool FE_mesh::isElementAncestor(DsLabelIndex elementIndex,
