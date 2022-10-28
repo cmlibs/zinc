@@ -5372,7 +5372,6 @@ int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 			(domain_type != CMZN_FIELD_DOMAIN_TYPE_NODES) &&
 			(domain_type != CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS))))
 	{
-		graphics->domain_type = domain_type;
 		if (domain_type != graphics->domain_type)
 		{
 			graphics->domain_type = domain_type;
