@@ -59,7 +59,7 @@ private:
 	{	}
 
 	friend FieldEigenvectors Fieldmodule::createFieldEigenvectors(
-		const FieldEigenvalues& eigenvaluesField);
+		const Field& sourceField);
 
 public:
 
@@ -152,10 +152,10 @@ inline FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceF
 		cmzn_fieldmodule_create_field_eigenvalues(id,sourceField.getId())));
 }
 
-inline FieldEigenvectors Fieldmodule::createFieldEigenvectors(const FieldEigenvalues& eigenValuesField)
+inline FieldEigenvectors Fieldmodule::createFieldEigenvectors(const Field& sourceField)
 {
 	return FieldEigenvectors(cmzn_fieldmodule_create_field_eigenvectors(id,
-		eigenValuesField.getId()));
+		sourceField.getId()));
 }
 
 inline FieldMatrixInvert Fieldmodule::createFieldMatrixInvert(const Field& sourceField)

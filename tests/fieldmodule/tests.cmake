@@ -24,6 +24,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldimage.cpp
 	${CURRENT_TEST}/fielditerator.cpp
 	${CURRENT_TEST}/fieldlogicaloperators.cpp
+	${CURRENT_TEST}/fieldmatrixoperatorstests.cpp
 	${CURRENT_TEST}/fieldmeshoperators.cpp
 	${CURRENT_TEST}/fieldmoduledescription.cpp
 	${CURRENT_TEST}/fieldmodulenotifier.cpp

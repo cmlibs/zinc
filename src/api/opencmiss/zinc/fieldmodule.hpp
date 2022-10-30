@@ -346,7 +346,7 @@ public:
 
 	inline FieldEigenvalues createFieldEigenvalues(const Field& sourceField);
 
-	inline FieldEigenvectors createFieldEigenvectors(const FieldEigenvalues& eigenValuesField);
+	inline FieldEigenvectors createFieldEigenvectors(const Field& sourceField);
 
 	inline FieldMatrixInvert createFieldMatrixInvert(const Field& sourceField);
 
