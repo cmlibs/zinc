@@ -959,15 +959,15 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			fieldSettings["CoordinateSystemType"] = system_string;
 			DEALLOCATE(system_string);
 			if (coordinateSystemUsesFocus)
+			{
 				fieldSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
+			}
 		}
 	}
 
 	char *className = field.getClassName();
 	switch (type)
 	{
-		case CMZN_FIELD_TYPE_INVALID:
-			break;
 		case CMZN_FIELD_TYPE_APPLY:
 		{
 			OpenCMISS::Zinc::FieldApply fieldApply = this->field.castApply();
@@ -1140,6 +1140,8 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			typeSettings["Nodeset"] = nodesetName;
 			DEALLOCATE(nodesetName);
 		} break;
+		default:
+			break;
 	}
 
 	if (className)

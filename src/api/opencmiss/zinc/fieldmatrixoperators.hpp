@@ -38,7 +38,7 @@ class FieldEigenvalues : public Field
 {
 	inline cmzn_field_eigenvalues_id getDerivedId() const
 	{
-		return reinterpret_cast<cmzn_field_eigenvalues_id>(id);
+		return reinterpret_cast<cmzn_field_eigenvalues_id>(this->id);
 	}
 
 private:
@@ -93,7 +93,7 @@ class FieldMatrixMultiply : public Field
 {
 	inline cmzn_field_matrix_multiply_id getDerivedId() const
 	{
-		return reinterpret_cast<cmzn_field_matrix_multiply_id>(id);
+		return reinterpret_cast<cmzn_field_matrix_multiply_id>(this->id);
 	}
 
 public:
@@ -133,7 +133,7 @@ class FieldTranspose : public Field
 {
 	inline cmzn_field_transpose_id getDerivedId() const
 	{
-		return reinterpret_cast<cmzn_field_transpose_id>(id);
+		return reinterpret_cast<cmzn_field_transpose_id>(this->id);
 	}
 
 public:
@@ -160,63 +160,63 @@ public:
 
 inline FieldDeterminant Fieldmodule::createFieldDeterminant(const Field& sourceField)
 {
-	return FieldDeterminant(cmzn_fieldmodule_create_field_determinant(id,
+	return FieldDeterminant(cmzn_fieldmodule_create_field_determinant(this->id,
 		sourceField.getId()));
 }
 
 inline FieldEigenvalues Field::castEigenvalues()
 {
-	return FieldEigenvalues(cmzn_field_cast_eigenvalues(id));
+	return FieldEigenvalues(cmzn_field_cast_eigenvalues(this->id));
 }
 
 inline FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceField)
 {
 	return FieldEigenvalues(reinterpret_cast<cmzn_field_eigenvalues_id>(
-		cmzn_fieldmodule_create_field_eigenvalues(id,sourceField.getId())));
+		cmzn_fieldmodule_create_field_eigenvalues(this->id, sourceField.getId())));
 }
 
-inline FieldEigenvectors Fieldmodule::createFieldEigenvectors(const Field& sourceField)
+inline FieldEigenvectors Fieldmodule::createFieldEigenvectors(const Field& eigenvaluesField)
 {
-	return FieldEigenvectors(cmzn_fieldmodule_create_field_eigenvectors(id,
-		sourceField.getId()));
+	return FieldEigenvectors(cmzn_fieldmodule_create_field_eigenvectors(this->id,
+		eigenvaluesField.getId()));
 }
 
 inline FieldMatrixInvert Fieldmodule::createFieldMatrixInvert(const Field& sourceField)
 {
-	return FieldMatrixInvert(cmzn_fieldmodule_create_field_matrix_invert(id,
+	return FieldMatrixInvert(cmzn_fieldmodule_create_field_matrix_invert(this->id,
 		sourceField.getId()));
 }
 
 inline FieldMatrixMultiply Field::castMatrixMultiply()
 {
-	return FieldMatrixMultiply(cmzn_field_cast_matrix_multiply(id));
+	return FieldMatrixMultiply(cmzn_field_cast_matrix_multiply(this->id));
 }
 
 inline FieldMatrixMultiply Fieldmodule::createFieldMatrixMultiply(int numberOfRows,
 	const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldMatrixMultiply(reinterpret_cast<cmzn_field_matrix_multiply_id>(
-		cmzn_fieldmodule_create_field_matrix_multiply(id,
+		cmzn_fieldmodule_create_field_matrix_multiply(this->id,
 			numberOfRows, sourceField1.getId(), sourceField2.getId())));
 }
 
 inline FieldProjection Fieldmodule::createFieldProjection(const Field& sourceField,
 	const Field& projectionMatrixField)
 {
-	return FieldProjection(cmzn_fieldmodule_create_field_projection(id,
+	return FieldProjection(cmzn_fieldmodule_create_field_projection(this->id,
 		sourceField.getId(), projectionMatrixField.getId()));
 }
 
 inline FieldTranspose Field::castTranspose()
 {
-	return FieldTranspose(cmzn_field_cast_transpose(id));
+	return FieldTranspose(cmzn_field_cast_transpose(this->id));
 }
 
 inline FieldTranspose Fieldmodule::createFieldTranspose(int sourceNumberOfRows,
 	const Field& sourceField)
 {
 	return FieldTranspose(reinterpret_cast<cmzn_field_transpose_id>(
-		cmzn_fieldmodule_create_field_transpose(id,
+		cmzn_fieldmodule_create_field_transpose(this->id,
 			sourceNumberOfRows, sourceField.getId())));
 }
 

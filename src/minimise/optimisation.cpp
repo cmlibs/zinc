@@ -720,7 +720,7 @@ int Minimisation::minimise_Newton()
 
 		Element element;
 		Elementiterator elementIter = mesh.createElementiterator();
-		const int elementCount = mesh.getSize();
+		//const int elementCount = mesh.getSize();
 		int elementIndex = 0;
 		while ((element = elementIter.next()).isValid())
 		{
