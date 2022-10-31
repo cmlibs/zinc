@@ -405,74 +405,6 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 
-cmzn_field_eigenvalues_id cmzn_field_cast_eigenvalues(cmzn_field_id field)
-{
-	if (field && (dynamic_cast<Computed_field_eigenvalues*>(field->core)))
-	{
-		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_eigenvalues_id>(field));
-	}
-	return 0;
-}
-
-int cmzn_field_eigenvalues_destroy(
-	cmzn_field_eigenvalues_id *eigenvalues_field_address)
-{
-	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(eigenvalues_field_address));
-}
-
-int Computed_field_is_type_eigenvalues(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if <field> has the appropriate static type string.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_eigenvalues);
-	if (field)
-	{
-		if (dynamic_cast<Computed_field_eigenvalues*>(field->core))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_eigenvalues.  Missing field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_type_eigenvalues */
-
-int Computed_field_is_type_eigenvalues_conditional(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-List conditional function version of Computed_field_is_type_eigenvalues.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_type_eigenvalues_conditional);
-	USE_PARAMETER(dummy_void);
-	return_code = Computed_field_is_type_eigenvalues(field);
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_type_eigenvalues_conditional */
-
 cmzn_field_id cmzn_fieldmodule_create_field_eigenvalues(
 	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
@@ -490,35 +422,22 @@ cmzn_field_id cmzn_fieldmodule_create_field_eigenvalues(
 	return (field);
 }
 
-int Computed_field_get_type_eigenvalues(struct Computed_field *field,
-	struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-If the field is of type 'eigenvalues', the <source_field> it calculates the
-eigenvalues of is returned.
-==============================================================================*/
+cmzn_field_eigenvalues_id cmzn_field_cast_eigenvalues(cmzn_field_id field)
 {
-	int return_code;
-
-	ENTER(Computed_field_get_type_eigenvalues);
-	if (field && (dynamic_cast<Computed_field_eigenvalues*>(field->core)) &&
-		source_field)
+	if (field && (dynamic_cast<Computed_field_eigenvalues*>(field->core)))
 	{
-		*source_field = field->source_fields[0];
-		return_code = 1;
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_eigenvalues_id>(field));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_eigenvalues.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+	return nullptr;
+}
 
-	return (return_code);
-} /* Computed_field_get_type_eigenvalues */
+int cmzn_field_eigenvalues_destroy(
+	cmzn_field_eigenvalues_id *eigenvalues_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(eigenvalues_field_address));
+}
+
 
 namespace {
 
@@ -658,12 +577,13 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
+
 cmzn_field_id cmzn_fieldmodule_create_field_eigenvectors(
 	cmzn_fieldmodule_id fieldmodule, cmzn_field_id eigenvalues_field)
 {
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) && (eigenvalues_field) &&
-		Computed_field_is_type_eigenvalues(eigenvalues_field))
+		(dynamic_cast<Computed_field_eigenvalues*>(eigenvalues_field->core)))
 	{
 		int n = eigenvalues_field->number_of_components;
 		int number_of_components = n * n;
@@ -1736,18 +1656,18 @@ const char computed_field_transpose_type_string[] = "transpose";
 
 class Computed_field_transpose : public Computed_field_core
 {
-public:
-	int source_number_of_rows;
+	int sourceNumberOfRows;
 
-	Computed_field_transpose(int source_number_of_rows) :
-		Computed_field_core(), source_number_of_rows(source_number_of_rows)
+public:
+
+	Computed_field_transpose(int sourceNumberOfRowsIn) :
+		Computed_field_core(), sourceNumberOfRows(sourceNumberOfRowsIn)
 	{
 	};
 
-private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_transpose(source_number_of_rows);
+		return new Computed_field_transpose(this->sourceNumberOfRows);
 	}
 
 	const char *get_type_string()
@@ -1774,6 +1694,21 @@ private:
 	int list();
 
 	char* get_command_string();
+
+	int getSourceNumberOfRows() const
+	{
+		return this->sourceNumberOfRows;
+	}
+
+	int setSourceNumberOfRows(int sourceNumberOfRowsIn)
+	{
+		if (check_factor(this->getSourceField(0)->getNumberOfComponents(), sourceNumberOfRowsIn))
+		{
+			this->sourceNumberOfRows = sourceNumberOfRowsIn;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
 };
 
 int Computed_field_transpose::compare(Computed_field_core *other_core)
@@ -1790,7 +1725,7 @@ Compare the type specific data
 	ENTER(Computed_field_transpose::compare);
 	if (field && (other = dynamic_cast<Computed_field_transpose*>(other_core)))
 	{
-		if (source_number_of_rows == other->source_number_of_rows)
+		if (this->sourceNumberOfRows == other->sourceNumberOfRows)
 		{
 			return_code = 1;
 		}
@@ -1816,7 +1751,7 @@ int Computed_field_transpose::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		/* returns n row x m column tranpose of m row x n column source field,
 			 where values always change along rows fastest */
-		const int m = this->source_number_of_rows;
+		const int m = this->sourceNumberOfRows;
 		const int n = getSourceField(0)->number_of_components / m;
 		FE_value *source_values = sourceCache->values;
 		for (int i = 0; i < n; i++)
@@ -1842,7 +1777,7 @@ int Computed_field_transpose::evaluateDerivative(cmzn_fieldcache& cache, RealFie
 		const FE_value *sourceDerivatives = sourceDerivativeCache->values;
 		/* returns n row x m column tranpose of m row x n column source field,
 			 where values always change along rows fastest */
-		const int m = this->source_number_of_rows;
+		const int m = this->sourceNumberOfRows;
 		const int n = getSourceField(0)->number_of_components / m;
 		/* transpose derivatives in same way as values */
 		for (int i = 0; i < n; ++i)
@@ -1873,7 +1808,7 @@ DESCRIPTION :
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
-			"    source number of rows : %d\n",source_number_of_rows);
+			"    source number of rows : %d\n", this->sourceNumberOfRows);
 		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
 			field->source_fields[0]->name);
 		return_code = 1;
@@ -1908,7 +1843,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_transpose_type_string, &error);
 		sprintf(temp_string, " source_number_of_rows %d",
-			source_number_of_rows);
+			this->sourceNumberOfRows);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " field ", &error);
 		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
@@ -1930,17 +1865,6 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int cmzn_field_transpose_get_source_number_of_rows(cmzn_field_id field)
-{
-	int source_number_of_rows = 0;
-	if (field && field->core)
-	{
-		Computed_field_transpose *fieldTranspose = static_cast<Computed_field_transpose*>(
-			field->core);
-		source_number_of_rows = fieldTranspose->source_number_of_rows;
-	}
-	return source_number_of_rows;
-}
 
 cmzn_field_id cmzn_fieldmodule_create_field_transpose(
 	struct cmzn_fieldmodule *fieldmodule,
@@ -1949,7 +1873,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_transpose(
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) && (0 < source_number_of_rows) &&
 		(source_field) && source_field->isNumerical() &&
-		(0 == (source_field->number_of_components % source_number_of_rows)))
+		check_factor(source_field->number_of_components, source_number_of_rows))
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
@@ -1961,37 +1885,50 @@ cmzn_field_id cmzn_fieldmodule_create_field_transpose(
 	return (field);
 }
 
-int Computed_field_get_type_transpose(struct Computed_field *field,
-	int *source_number_of_rows, struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_TRANSPOSE, the
-<source_number_of_rows> and <source_field> used by it are returned.
-==============================================================================*/
+cmzn_field_transpose_id cmzn_field_cast_transpose(cmzn_field_id field)
 {
-	Computed_field_transpose* core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_transpose);
-	if (field && (core = dynamic_cast<Computed_field_transpose*>(field->core)) &&
-		source_field)
+	if (field && (dynamic_cast<Computed_field_transpose*>(field->core)))
 	{
-		*source_number_of_rows = core->source_number_of_rows;
-		*source_field = field->source_fields[0];
-		return_code=1;
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_transpose_id>(field));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_transpose.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return nullptr;
+}
 
-	return (return_code);
-} /* Computed_field_get_type_transpose */
+int cmzn_field_transpose_destroy(
+	cmzn_field_transpose_id *transpose_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(transpose_field_address));
+}
+
+inline Computed_field_transpose *Computed_field_transpose_core_cast(
+	cmzn_field_transpose *transpose_field)
+{
+	return static_cast<Computed_field_transpose*>(
+		reinterpret_cast<cmzn_field*>(transpose_field)->core);
+}
+
+int cmzn_field_transpose_get_source_number_of_rows(
+	cmzn_field_transpose_id transpose_field)
+{
+	if (transpose_field)
+	{
+		Computed_field_transpose *transpose_core = Computed_field_transpose_core_cast(transpose_field);
+		return transpose_core->getSourceNumberOfRows();
+	}
+	return 0;
+}
+
+int cmzn_field_transpose_set_source_number_of_rows(
+	cmzn_field_transpose_id transpose_field, int source_number_of_rows)
+{
+	if (transpose_field)
+	{
+		Computed_field_transpose *transpose_core = Computed_field_transpose_core_cast(transpose_field);
+		return transpose_core->setSourceNumberOfRows(source_number_of_rows);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
 
 namespace {
 

@@ -43,6 +43,7 @@ class FieldNodesetOperator;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
 class FieldStoredString;
+class FieldTranspose;
 class Fieldassignment;
 class Fieldcache;
 class Fieldparameters;
@@ -328,6 +329,7 @@ public:
 	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
 	inline FieldStoredString castStoredString();
+	inline FieldTranspose castTranspose();
 };
 
 inline bool operator==(const Field& a, const Field& b)

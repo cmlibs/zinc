@@ -36,6 +36,11 @@ public:
 
 class FieldEigenvalues : public Field
 {
+	inline cmzn_field_eigenvalues_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_eigenvalues_id>(id);
+	}
+
 private:
 
 	friend FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceField);
@@ -120,19 +125,31 @@ public:
 
 class FieldTranspose : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTranspose(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldTranspose Fieldmodule::createFieldTranspose(int sourceNumberOfRows,
-		const Field& sourceField);
+	inline cmzn_field_transpose_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_transpose_id>(id);
+	}
 
 public:
 
-	FieldTranspose() : Field(0)
+	FieldTranspose() : Field()
 	{	}
 
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldTranspose(cmzn_field_transpose_id field_transpose_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_transpose_id))
+	{	}
+
+	int getSourceNumberOfRows() const
+	{
+		return cmzn_field_transpose_get_source_number_of_rows(this->getDerivedId());
+	}
+
+	int setSourceNumberOfRows(int sourceNumberOfRows)
+	{
+		return cmzn_field_transpose_set_source_number_of_rows(
+			this->getDerivedId(), sourceNumberOfRows);
+	}
 };
 
 inline FieldDeterminant Fieldmodule::createFieldDeterminant(const Field& sourceField)
@@ -178,11 +195,17 @@ inline FieldProjection Fieldmodule::createFieldProjection(const Field& sourceFie
 		sourceField.getId(), projectionMatrixField.getId()));
 }
 
+inline FieldTranspose Field::castTranspose()
+{
+	return FieldTranspose(cmzn_field_cast_transpose(id));
+}
+
 inline FieldTranspose Fieldmodule::createFieldTranspose(int sourceNumberOfRows,
 	const Field& sourceField)
 {
-	return FieldTranspose(cmzn_fieldmodule_create_field_transpose(id,
-		sourceNumberOfRows, sourceField.getId()));
+	return FieldTranspose(reinterpret_cast<cmzn_field_transpose_id>(
+		cmzn_fieldmodule_create_field_transpose(id,
+			sourceNumberOfRows, sourceField.getId())));
 }
 
 }  // namespace Zinc

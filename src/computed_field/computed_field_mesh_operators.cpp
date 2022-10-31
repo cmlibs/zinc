@@ -757,7 +757,7 @@ inline Computed_field_mesh_integral *Computed_field_mesh_integral_core_cast(
 	cmzn_field_mesh_integral *mesh_integral_field)
 {
 	return static_cast<Computed_field_mesh_integral*>(
-		reinterpret_cast<Computed_field*>(mesh_integral_field)->core);
+		reinterpret_cast<cmzn_field*>(mesh_integral_field)->core);
 }
 
 cmzn_mesh_id cmzn_field_mesh_integral_get_mesh(

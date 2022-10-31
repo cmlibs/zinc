@@ -20,4 +20,13 @@
 struct cmzn_field_eigenvalues;
 typedef struct cmzn_field_eigenvalues *cmzn_field_eigenvalues_id;
 
+/**
+ * @brief  A field calculating the transpose of a matrix.
+ *
+ * A field giving the transpose of a source field representing a matrix with a
+ * specified number of rows.
+ */
+struct cmzn_field_transpose;
+typedef struct cmzn_field_transpose *cmzn_field_transpose_id;
+
 #endif

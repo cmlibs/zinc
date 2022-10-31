@@ -160,7 +160,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_projection(
  * this division must have no remainder.
  *
  * @param field_module  Region field module which will own new field.
- * @param source_number_of_rows  Number of rows N in source_field.
+ * @param source_number_of_rows  Number of rows N in source_field. Must be a
+ * factor of its number of components.
  * @param source_field  N rows * M columns component matrix field.
  * @return  Handle to new field with M*N matrix components transposed, or
  * NULL/invalid handle on failure.
@@ -168,6 +169,66 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_projection(
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_transpose(
 	cmzn_fieldmodule_id field_module,
 	int source_number_of_rows, cmzn_field_id source_field);
+
+/**
+ * If the field is a transpose type field, return the derived field handle.
+ *
+ * @param field  The field to be cast.
+ * @return  Handle to derived transpose field, or NULL/invalid handle if
+ * wrong type or failed.
+ */
+ZINC_API cmzn_field_transpose_id cmzn_field_cast_transpose(cmzn_field_id field);
+
+/**
+ * Cast transpose field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param transpose_field  Handle to the transpose field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_transpose_base_cast(
+	cmzn_field_transpose_id transpose_field)
+{
+	return (cmzn_field_id)(transpose_field);
+}
+
+/**
+ * Destroys handle to the transpose field (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param transpose_field_address  Address of handle to the field to
+ * destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_transpose_destroy(
+	cmzn_field_transpose_id *transpose_field_address);
+
+/**
+ * Get the number of rows of the source field being transposed, equals the
+ * number of columns of the resulting field. Must be a factor of its number of
+ * components.
+ *
+ * @param transpose_field  Transpose field to query.
+ * @return  Source number of row or 0 if invalid field.
+ */
+ZINC_API int cmzn_field_transpose_get_source_number_of_rows(
+	cmzn_field_transpose_id transpose_field);
+
+/**
+ * Set the number of rows of the source field being transposed, equals the
+ * number of columns of the resulting field.
+ *
+ * @param transpose_field  Transpose field to modify.
+ * @param source_number_of_rows  Number of rows of source field. Must be a
+ * factor of its number of components.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_transpose_set_source_number_of_rows(
+	cmzn_field_transpose_id transpose_field, int source_number_of_rows);
 
 #ifdef __cplusplus
 }
