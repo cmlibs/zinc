@@ -92,8 +92,7 @@ ZINC_API int cmzn_field_eigenvalues_destroy(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_eigenvectors(
-	cmzn_fieldmodule_id field_module,
-	cmzn_field_id eigenvalues_field);
+	cmzn_fieldmodule_id field_module, cmzn_field_id eigenvalues_field);
 
 /**
  * Creates a field returning the inverse of N*N symmetric matrix valued source
@@ -104,8 +103,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_eigenvectors(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_invert(
-	cmzn_fieldmodule_id field_module,
-	cmzn_field_id source_field);
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
  * Creates a field returning the values resulting from matrix multiplication

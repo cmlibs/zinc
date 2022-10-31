@@ -20,7 +20,6 @@ namespace Zinc
 
 class FieldDeterminant : public Field
 {
-private:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldDeterminant(cmzn_field_id field_id) : Field(field_id)
 	{	}
@@ -31,7 +30,6 @@ public:
 
 	FieldDeterminant() : Field(0)
 	{	}
-
 };
 
 class FieldEigenvalues : public Field
@@ -41,10 +39,6 @@ class FieldEigenvalues : public Field
 		return reinterpret_cast<cmzn_field_eigenvalues_id>(this->id);
 	}
 
-private:
-
-	friend FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceField);
-
 public:
 
 	explicit FieldEigenvalues(cmzn_field_eigenvalues_id field_eigenvalues_id) :
@@ -53,29 +47,25 @@ public:
 
 	FieldEigenvalues() : Field(0)
 	{	}
-
 };
 
 class FieldEigenvectors : public Field
 {
-private:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldEigenvectors(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldEigenvectors Fieldmodule::createFieldEigenvectors(
-		const Field& sourceField);
+		const Field& eigenvaluesField);
 
 public:
 
 	FieldEigenvectors() : Field(0)
 	{	}
-
 };
 
 class FieldMatrixInvert : public Field
 {
-private:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldMatrixInvert(cmzn_field_id field_id) : Field(field_id)
 	{	}
@@ -86,7 +76,6 @@ public:
 
 	FieldMatrixInvert() : Field(0)
 	{	}
-
 };
 
 class FieldMatrixMultiply : public Field
@@ -114,7 +103,6 @@ public:
 
 class FieldProjection : public Field
 {
-private:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldProjection(cmzn_field_id field_id) : Field(field_id)
 	{	}
@@ -126,7 +114,6 @@ public:
 
 	FieldProjection() : Field(0)
 	{	}
-
 };
 
 class FieldTranspose : public Field
@@ -157,6 +144,7 @@ public:
 			this->getDerivedId(), sourceNumberOfRows);
 	}
 };
+
 
 inline FieldDeterminant Fieldmodule::createFieldDeterminant(const Field& sourceField)
 {
