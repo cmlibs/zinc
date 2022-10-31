@@ -1647,10 +1647,10 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_FIND_XI_DATA_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_DEFORMED_FIND_XI_DATA_RESOURCE)));
 	Field dataCordinates = zinc.fm.findFieldByName("data_coordinates");
 	EXPECT_TRUE(dataCordinates.isValid());
 
@@ -1785,7 +1785,7 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		}
 		else if (t == 11)
 		{
-			EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+			EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
 		}
 		for (int i = 0; i < 12; ++i)
 		{
@@ -1826,6 +1826,230 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		if (changeCaching)
 		{
 			zinc.fm.endChange();
+		}
+	}
+}
+
+struct FindXiMap
+{
+	double x[3];
+	int elementIdentifier;
+	double xi[3];
+	int groupElementIdentifier;
+	double groupXi[3];
+};
+
+// Test conversion of face/line location to main mesh group
+// use swizzled version of allshapes so xi directions do not match along boundaries
+// this complicates conversion to a top-level group because Zinc only has face to element
+// mapping for first parent element in the standard arrangement and other mappings must be
+// found by evaluating and matching coordinate field in one of the possible arrangements.
+TEST(ZincFieldFindMeshLocation, convert_main_mesh_group)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_ALLSHAPES_SWIZZLE_RESOURCE)));
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	const double zero3[3] = { 0.0, 0.0, 0.0 };
+	FieldConstant x = zinc.fm.createFieldConstant(3, zero3);
+	EXPECT_TRUE(x.isValid());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	FieldElementGroup groupElements = group.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(groupElements.isValid());
+	MeshGroup groupMesh3d = groupElements.getMeshGroup();
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	const double TOL = 1.0E-6;
+
+	FieldFindMeshLocation findMeshLocationFace = zinc.fm.createFieldFindMeshLocation(x, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocationFace.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationFace.setSearchMesh(mesh2d));
+	FieldFindMeshLocation findMeshLocationFaceGroup = zinc.fm.createFieldFindMeshLocation(x, coordinates, groupMesh3d);
+	EXPECT_TRUE(findMeshLocationFaceGroup.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationFaceGroup.setSearchMesh(mesh2d));
+	FindXiMap findFaceSamples[6] =
+	{
+		{
+			{ 0.0, 0.2, 0.3 },
+			1,
+			{ 0.0, 0.2, 0.3 },
+			5,
+			{ 0.8, 1.0, 0.3 }
+		},
+		{
+			{ 0.8, 0.2, 0.3 },
+			1,
+			{ 0.8, 0.2, 0.3 },
+			2,
+			{ 0.2, 0.7, 0.8 }
+		},
+		{
+			{ 1.0, 0.8, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.2 },
+			3,
+			{ 0.0, 0.8, 0.7 }
+		},
+		{
+			{ 0.3, 1.0, 0.2 },
+			2,
+			{ 0.7, 0.8, 0.0 },
+			4,
+			{ 0.3, 0.0, 0.2 }
+		},
+		{
+			{ 1.2, 1.0, 0.7 },
+			3,
+			{ 0.2, 1.0, 0.7 },
+			6,
+			{ 0.7, 0.0, 0.1 }
+		},
+		{
+			{ 1.0, 1.7, 0.2 },
+			4,
+			{ 1.0, 0.7, 0.2 },
+			6,
+			{ 0.2, 0.7, 0.1 }
+		}
+	};
+	for (int i = 0; i < 6; ++i)
+	{
+		FindXiMap &sample = findFaceSamples[i];
+		EXPECT_EQ(RESULT_OK, x.assignReal(fieldcache, 3, sample.x));
+
+		Element element;
+		double xi[3];
+		element = findMeshLocationFace.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.elementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.xi[c], xi[c], TOL);
+		}
+
+		EXPECT_EQ(RESULT_OK, groupMesh3d.removeAllElements());
+		EXPECT_EQ(RESULT_OK, groupMesh3d.addElement(mesh3d.findElementByIdentifier(sample.groupElementIdentifier)));
+		element = findMeshLocationFaceGroup.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.groupElementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.groupXi[c], xi[c], TOL);
+		}
+	}
+	EXPECT_EQ(RESULT_OK, groupMesh3d.removeAllElements());
+
+	FieldFindMeshLocation findMeshLocationLine = zinc.fm.createFieldFindMeshLocation(x, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocationLine.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationLine.setSearchMesh(mesh1d));
+	FieldFindMeshLocation findMeshLocationLineGroup = zinc.fm.createFieldFindMeshLocation(x, coordinates, groupMesh3d);
+	EXPECT_TRUE(findMeshLocationLineGroup.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationLineGroup.setSearchMesh(mesh1d));
+	FindXiMap findLineSamples[10] =
+	{
+		{
+			{ 0.0, 0.3, 0.0 },
+			1,
+			{ 0.0, 0.3, 0.0 },
+			5,
+			{ 0.7, 1.0, 0.0 }
+		},
+		{
+			{ 0.8, 0.2, 0.0 },
+			1,
+			{ 0.8, 0.2, 0.0 },
+			2,
+			{ 0.2, 1.0, 0.8 }
+		},
+		// next 2 are same location converted to different elements
+		{
+			{ 1.0, 0.0, 0.3 },
+			1,
+			{ 1.0, 0.0, 0.3 },
+			2,
+			{ 0.0, 0.7, 1.0 }
+		},
+		{
+			{ 1.0, 0.0, 0.3 },
+			1,
+			{ 1.0, 0.0, 0.3 },
+			3,
+			{ 0.0, 0.0, 0.3 }
+		},
+		// next 3 are same location converted to different elements
+		{
+			{ 1.0, 1.0, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.0 },
+			3,
+			{ 0.0, 1.0, 0.7 }
+		},
+		{
+			{ 1.0, 1.0, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.0 },
+			4,
+			{ 1.0, 0.0, 0.7 }
+		},
+		{
+			{ 1.0, 1.0, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.0 },
+			6,
+			{ 0.7, 0.0, 0.3 }
+		},
+		{
+			{ 1.3, 1.0, 0.0 },
+			3,
+			{ 0.3, 1.0, 0.0 },
+			6,
+			{ 0.0, 0.0, 0.7 }
+		},
+		{
+			{ 1.0, 1.7, 0.0 },
+			4,
+			{ 1.0, 0.7, 0.0 },
+			6,
+			{ 0.0, 0.7, 0.3 }
+		},
+		{
+			{ 1.0, 1.7, 0.3 },
+			4,
+			{ 1.0, 0.7, 0.3 },
+			6,
+			{ 0.3, 0.7, 0.0 }
+		}
+	};
+	for (int i = 0; i < 10; ++i)
+	{
+		FindXiMap &sample = findLineSamples[i];
+		EXPECT_EQ(RESULT_OK, x.assignReal(fieldcache, 3, sample.x));
+
+		Element element;
+		double xi[3];
+		element = findMeshLocationLine.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.elementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.xi[c], xi[c], TOL);
+		}
+
+		EXPECT_EQ(RESULT_OK, groupMesh3d.removeAllElements());
+		EXPECT_EQ(RESULT_OK, groupMesh3d.addElement(mesh3d.findElementByIdentifier(sample.groupElementIdentifier)));
+		element = findMeshLocationLineGroup.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.groupElementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.groupXi[c], xi[c], TOL);
 		}
 	}
 }

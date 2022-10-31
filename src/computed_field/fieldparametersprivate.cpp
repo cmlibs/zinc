@@ -87,9 +87,9 @@ int cmzn_fieldparameters::deaccess(cmzn_fieldparameters* &fieldparameters)
 	return CMZN_RESULT_OK;
 }
 
-int cmzn_fieldparameters::getElementParameterIndexes(cmzn_element *element, int valuesCount, int *valuesOut, int startIndex)
+int cmzn_fieldparameters::getElementParameterIndexes(cmzn_element *element, cmzn_element *topLevelElement, int valuesCount, int *valuesOut, int startIndex)
 {
-	return this->feFieldParameters->getElementParameterIndexes(element, valuesCount, valuesOut, startIndex);
+	return this->feFieldParameters->getElementParameterIndexes(element, topLevelElement, valuesCount, valuesOut, startIndex);
 }
 
 FieldDerivative *cmzn_fieldparameters::getFieldDerivativeMixed(FE_mesh *mesh, int meshOrder, int parameterOrder)
@@ -124,9 +124,9 @@ cmzn_node *cmzn_fieldparameters::getNodeParameter(int parameterIndex, int &field
 	return this->feFieldParameters->getNodeParameter(parameterIndex, fieldComponent, valueLabel, version);
 }
 
-int cmzn_fieldparameters::getNumberOfElementParameters(cmzn_element *element) const
+int cmzn_fieldparameters::getNumberOfElementParameters(cmzn_element *element, cmzn_element *topLevelElement) const
 {
-	return this->feFieldParameters->getNumberOfElementParameters(element);
+	return this->feFieldParameters->getNumberOfElementParameters(element, topLevelElement);
 }
 
 int cmzn_fieldparameters::getNumberOfParameters() const
@@ -202,13 +202,36 @@ cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operator(
 	return nullptr;
 }
 
+cmzn_differentialoperator_id cmzn_fieldparameters_get_higher_derivative_operator(
+	cmzn_fieldparameters_id fieldparameters, cmzn_differentialoperator_id source_operator,
+	int add_order)
+{
+	if ((fieldparameters) && (source_operator) && (source_operator->getTerm() < 0))
+	{
+		FieldDerivative &sourceFieldDerivative = source_operator->getFieldDerivative();
+		if ((sourceFieldDerivative.getFieldparameters() == nullptr) || (
+			(sourceFieldDerivative.getFieldparameters() == fieldparameters)))
+		{
+			FieldDerivative *fieldDerivative = fieldparameters->getFieldDerivativeMixed(
+				sourceFieldDerivative.getMesh(), sourceFieldDerivative.getMeshOrder(),
+				sourceFieldDerivative.getParameterOrder() + add_order);
+			if (fieldDerivative)
+			{
+				return cmzn_differentialoperator::create(fieldDerivative, -1);
+			}
+		}
+	}
+	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
+	return nullptr;
+}
+
 int cmzn_fieldparameters_get_element_parameter_indexes(
 	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element,
 	int valuesCount, int *valuesOut)
 {
 	if (fieldparameters)
 	{
-		return fieldparameters->getElementParameterIndexes(element, valuesCount, valuesOut, 1);
+		return fieldparameters->getElementParameterIndexes(element, /*topLevelElement*/nullptr, valuesCount, valuesOut, 1);
 	}
 	display_message(ERROR_MESSAGE, "Fieldparameters getElementParametersIndexes:  Invalid Fieldparameters");
 	return CMZN_RESULT_ERROR_ARGUMENT;
@@ -220,7 +243,7 @@ int cmzn_fieldparameters_get_element_parameter_indexes_zero(
 {
 	if (fieldparameters)
 	{
-		return fieldparameters->getElementParameterIndexes(element, valuesCount, valuesOut, 0);
+		return fieldparameters->getElementParameterIndexes(element, /*topLevelElement*/nullptr, valuesCount, valuesOut, 0);
 	}
 	display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexesZero:  Invalid Fieldparameters");
 	return CMZN_RESULT_ERROR_ARGUMENT;

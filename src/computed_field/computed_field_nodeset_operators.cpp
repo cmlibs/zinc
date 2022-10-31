@@ -193,9 +193,13 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 		FE_mesh *hostMesh = feField->getElementXiHostMesh();
 		FE_mesh_embedded_node_field *embeddedNodeField = feField->getEmbeddedNodeField(feNodeset);
 		if (!embeddedNodeField)
+		{
 			return 1;  // no values
+		}
 		if (element->getMesh() != hostMesh)
-			return 1;  // future: map nodes embedded in faces
+		{
+			return 0;  // can only evaluate on same mesh as points are mapped to
+		}
 		// iterate over reverse map of element to nodes maintained in embeddedNodeField
 		int size = 0;
 		const DsLabelIndex *nodeIndexes = embeddedNodeField->getNodeIndexes(element->getIndex(), size);

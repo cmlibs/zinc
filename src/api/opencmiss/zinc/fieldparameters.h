@@ -71,6 +71,27 @@ ZINC_API cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operat
 	cmzn_fieldparameters_id fieldparameters, int order);
 
 /**
+ * Returns a differential operator applying the derivative of the source
+ * differential operator with respect to these field parameters, generally
+ * per-element.
+ * Note when evaluated, parameter derivatives are always nested within and
+ * cycle faster than prior derivatives, as performed last.
+ *
+ * @param fieldparameters  The field parameters derivatives are w.r.t.
+ * @param source_operator  Existing differential operator to take further
+ * derivative of. Currently limited to be a derivative w.r.t. mesh chart from
+ * this region with all terms (-1) present and/or derivatives w.r.t. these
+ * parameters.
+ * @param add_order  The order of the parameter derivative to add to existing
+ * derivative. Sum of this and current parameter differential operator order
+ * may be 1 or 2.
+ * @return  Handle to differential operator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_differentialoperator_id cmzn_fieldparameters_get_higher_derivative_operator(
+	cmzn_fieldparameters_id fieldparameters, cmzn_differentialoperator_id source_operator,
+	int add_order);
+
+/**
  * Get the array of parameter indexes in the order used in element, used to
  * assemble vector and matrix values obtained from parameter derivatives.
  * This variant returns one-based indexes (first index is 1).
