@@ -8,6 +8,7 @@ Find mesh location field with lower dimensional search mesh restricts location t
 Add API to get mixed mesh and parameter derivative operators.
 Fix create field eigenvectors to take generic field argument.
 Add API to get/set transpose field source number of rows.
+Add API to get matrix multiply field number of rows.
 
 v3.9.0
 Add field evaluate range API.

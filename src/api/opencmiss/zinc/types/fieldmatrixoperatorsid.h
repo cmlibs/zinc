@@ -21,6 +21,16 @@ struct cmzn_field_eigenvalues;
 typedef struct cmzn_field_eigenvalues *cmzn_field_eigenvalues_id;
 
 /**
+ * @brief  A field performing matrix multiplication.
+ *
+ * A field performing matrix multiplication on two source fields, with the
+ * matrix sizes specified by first operand number of rows, also applying to
+ * the result.
+ */
+struct cmzn_field_matrix_multiply;
+typedef struct cmzn_field_matrix_multiply *cmzn_field_matrix_multiply_id;
+
+/**
  * @brief  A field calculating the transpose of a matrix.
  *
  * A field giving the transpose of a source field representing a matrix with a

@@ -91,19 +91,25 @@ public:
 
 class FieldMatrixMultiply : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMatrixMultiply(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldMatrixMultiply Fieldmodule::createFieldMatrixMultiply(int numberOfRows,
-		const Field& sourceField1, const Field& sourceField2);
+	inline cmzn_field_matrix_multiply_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_matrix_multiply_id>(id);
+	}
 
 public:
 
-	FieldMatrixMultiply() : Field(0)
+	FieldMatrixMultiply() : Field()
 	{	}
 
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldMatrixMultiply(cmzn_field_matrix_multiply_id field_matrix_multiply_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_matrix_multiply_id))
+	{	}
+
+	int getNumberOfRows() const
+	{
+		return cmzn_field_matrix_multiply_get_number_of_rows(this->getDerivedId());
+	}
 };
 
 class FieldProjection : public Field
@@ -181,11 +187,17 @@ inline FieldMatrixInvert Fieldmodule::createFieldMatrixInvert(const Field& sourc
 		sourceField.getId()));
 }
 
+inline FieldMatrixMultiply Field::castMatrixMultiply()
+{
+	return FieldMatrixMultiply(cmzn_field_cast_matrix_multiply(id));
+}
+
 inline FieldMatrixMultiply Fieldmodule::createFieldMatrixMultiply(int numberOfRows,
 	const Field& sourceField1, const Field& sourceField2)
 {
-	return FieldMatrixMultiply(cmzn_fieldmodule_create_field_matrix_multiply(id,
-		numberOfRows, sourceField1.getId(), sourceField2.getId()));
+	return FieldMatrixMultiply(reinterpret_cast<cmzn_field_matrix_multiply_id>(
+		cmzn_fieldmodule_create_field_matrix_multiply(id,
+			numberOfRows, sourceField1.getId(), sourceField2.getId())));
 }
 
 inline FieldProjection Fieldmodule::createFieldProjection(const Field& sourceField,

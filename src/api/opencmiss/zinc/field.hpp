@@ -36,6 +36,7 @@ class FieldImagefilterDiscreteGaussian;
 class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
 class FieldIsOnFace;
+class FieldMatrixMultiply;
 class FieldMeshIntegral;
 class FieldNodeGroup;
 class FieldNodeValue;
@@ -321,8 +322,9 @@ public:
 	inline FieldImagefilterDiscreteGaussian castImagefilterDiscreteGaussian();
 	inline FieldImagefilterHistogram castImagefilterHistogram();
 	inline FieldImagefilterThreshold castImagefilterThreshold();
-	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldIsOnFace castIsOnFace();
+	inline FieldMatrixMultiply castMatrixMultiply();
+	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldNodeGroup castNodeGroup();
 	inline FieldNodeValue castNodeValue();
 	inline FieldNodesetOperator castNodesetOperator();

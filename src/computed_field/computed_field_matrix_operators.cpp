@@ -890,20 +890,20 @@ const char computed_field_matrix_multiply_type_string[] = "matrix_multiply";
 
 class Computed_field_matrix_multiply : public Computed_field_core
 {
+private:
+	int numberOfRows;
+
 public:
-	int number_of_rows;
 
 	Computed_field_matrix_multiply(
-		int number_of_rows) :
-		Computed_field_core(), number_of_rows(number_of_rows)
-
+		int numberOfRowsIn) :
+		Computed_field_core(), numberOfRows(numberOfRowsIn)
 	{
 	};
 
-private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_matrix_multiply(number_of_rows);
+		return new Computed_field_matrix_multiply(this->numberOfRows);
 	}
 
 	const char *get_type_string()
@@ -932,6 +932,11 @@ private:
 	int list();
 
 	char* get_command_string();
+
+	int getNumberOfRows() const
+	{
+		return this->numberOfRows;
+	}
 };
 
 int Computed_field_matrix_multiply::compare(Computed_field_core *other_core)
@@ -948,7 +953,7 @@ Compare the type specific data
 	ENTER(Computed_field_matrix_multiply::compare);
 	if (field && (other = dynamic_cast<Computed_field_matrix_multiply*>(other_core)))
 	{
-		if (number_of_rows == other->number_of_rows)
+		if (this->numberOfRows == other->numberOfRows)
 		{
 			return_code = 1;
 		}
@@ -973,7 +978,7 @@ int Computed_field_matrix_multiply::evaluate(cmzn_fieldcache& cache, FieldValueC
 	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
-		const int m = this->number_of_rows;
+		const int m = this->numberOfRows;
 		const int s = getSourceField(0)->number_of_components / m;
 		const int n = getSourceField(1)->number_of_components / s;
 		const FE_value *a = source1Cache->values;
@@ -1006,7 +1011,7 @@ int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, R
 	// evaluate various cases with product rule
 	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
 	FE_value *derivatives = derivativeCache->values;
-	const int m = this->number_of_rows;
+	const int m = this->numberOfRows;
 	const int s = sourceField1->number_of_components / m;
 	const int n = sourceField2->number_of_components / s;
 	const int totalDerivativeOrder = fieldDerivative.getTotalOrder();
@@ -1230,7 +1235,7 @@ DESCRIPTION :
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
-			"    number of rows : %d\n",number_of_rows);
+			"    number of rows : %d\n", this->numberOfRows);
 		display_message(INFORMATION_MESSAGE,"    source fields : %s %s\n",
 			field->source_fields[0]->name,field->source_fields[1]->name);
 		return_code = 1;
@@ -1264,7 +1269,7 @@ Returns allocated command string for reproducing field. Includes type.
 		error = 0;
 		append_string(&command_string,
 			computed_field_matrix_multiply_type_string, &error);
-		sprintf(temp_string, " number_of_rows %d", number_of_rows);
+		sprintf(temp_string, " number_of_rows %d", this->numberOfRows);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " fields ", &error);
 		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
@@ -1293,17 +1298,6 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int cmzn_field_matrix_multiply_get_number_of_rows(cmzn_field_id field)
-{
-	int number_of_rows = 0;
-	if (field && field->core)
-	{
-		Computed_field_matrix_multiply *fieldMatrixMultiply = static_cast<Computed_field_matrix_multiply*>(
-			field->core);
-		number_of_rows = fieldMatrixMultiply->number_of_rows;
-	}
-	return number_of_rows;
-}
 
 cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
 	cmzn_fieldmodule_id fieldmodule, int number_of_rows,
@@ -1314,21 +1308,19 @@ cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
 		(source_field1) && source_field1->isNumerical() &&
 		(source_field2) && source_field2->isNumerical())
 	{
-		int nc1 = source_field1->number_of_components;
-		int nc2 = source_field2->number_of_components;
-		int s = 0;
-		if ((0 == (nc1 % number_of_rows)) &&
-			(0 < (s = nc1/number_of_rows)) &&
-			(0 == (nc2 % s)) &&
-			(0 < (nc2 / s)))
+		const int nc1 = source_field1->number_of_components;
+		const int nc2 = source_field2->number_of_components;
+		const int s = nc1 / number_of_rows;
+		if (check_factor(nc1, number_of_rows) &&
+			check_factor(nc2, s))
 		{
-			int result_number_of_columns = nc2 / s;
+			const int number_of_columns = nc2 / s;
 			Computed_field *source_fields[2];
 			source_fields[0] = source_field1;
 			source_fields[1] = source_field2;
 			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
-				/*number_of_components*/number_of_rows * result_number_of_columns,
+				/*number_of_components*/number_of_rows * number_of_columns,
 				/*number_of_source_fields*/2, source_fields,
 				/*number_of_source_values*/0, NULL,
 				new Computed_field_matrix_multiply(number_of_rows));
@@ -1343,39 +1335,41 @@ cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
 	return (field);
 }
 
-int Computed_field_get_type_matrix_multiply(struct Computed_field *field,
-	int *number_of_rows, struct Computed_field **source_field1,
-	struct Computed_field **source_field2)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the
-<number_of_rows> and <source_fields> used by it are returned.
-==============================================================================*/
+cmzn_field_matrix_multiply_id cmzn_field_cast_matrix_multiply(cmzn_field_id field)
 {
-	Computed_field_matrix_multiply* core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_matrix_multiply);
-	if (field && (core=dynamic_cast<Computed_field_matrix_multiply*>(field->core)) &&
-		source_field1 && source_field2)
+	if (field && (dynamic_cast<Computed_field_matrix_multiply*>(field->core)))
 	{
-		*number_of_rows = core->number_of_rows;
-		*source_field1 = field->source_fields[0];
-		*source_field2 = field->source_fields[1];
-		return_code=1;
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_matrix_multiply_id>(field));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_matrix_multiply.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return nullptr;
+}
 
-	return (return_code);
-} /* Computed_field_get_type_matrix_multiply */
+int cmzn_field_matrix_multiply_destroy(
+	cmzn_field_matrix_multiply_id *matrix_multiply_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(matrix_multiply_field_address));
+}
+
+inline Computed_field_matrix_multiply *Computed_field_matrix_multiply_core_cast(
+	cmzn_field_matrix_multiply *matrix_multiply_field)
+{
+	return static_cast<Computed_field_matrix_multiply*>(
+		reinterpret_cast<cmzn_field*>(matrix_multiply_field)->core);
+}
+
+int cmzn_field_matrix_multiply_get_number_of_rows(
+	cmzn_field_matrix_multiply_id matrix_multiply_field)
+{
+	if (matrix_multiply_field)
+	{
+		Computed_field_matrix_multiply *matrix_multiply_core =
+			Computed_field_matrix_multiply_core_cast(matrix_multiply_field);
+		return matrix_multiply_core->getNumberOfRows();
+	}
+	return 0;
+}
+
 
 namespace {
 

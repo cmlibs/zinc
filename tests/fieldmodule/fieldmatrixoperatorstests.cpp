@@ -130,3 +130,54 @@ TEST(ZincFieldTranspose, evaluate)
 		EXPECT_DOUBLE_EQ(aValues[(i % 4) * 2 + (i / 4)], valuesOut[i]);
 	}
 }
+
+TEST(ZincFieldMatrixMultiply, invalidArguments)
+{
+	ZincTestSetupCpp zinc;
+
+	const double aValues[8] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 };
+	FieldConstant a = zinc.fm.createFieldConstant(8, aValues);
+	EXPECT_TRUE(a.isValid());
+	const double bValues[6] = { 1.1, 2.2, 3.3, 4.4, 5.5, 6.6 };
+	FieldConstant b = zinc.fm.createFieldConstant(6, bValues);
+	EXPECT_TRUE(b.isValid());
+
+	FieldMatrixMultiply matrixMultiply;
+	Field noField;
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(4, noField, b);
+	EXPECT_FALSE(matrixMultiply.isValid());
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(4, a, noField);
+	EXPECT_FALSE(matrixMultiply.isValid());
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(-1, a, b);
+	EXPECT_FALSE(matrixMultiply.isValid());
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(0, a, b);
+	EXPECT_FALSE(matrixMultiply.isValid());
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(1, a, b);
+	EXPECT_FALSE(matrixMultiply.isValid());
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(9, a, b);
+	EXPECT_FALSE(matrixMultiply.isValid());
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(3, a, b);
+	EXPECT_FALSE(matrixMultiply.isValid());
+
+	EXPECT_EQ(0, matrixMultiply.getNumberOfRows());
+}
+
+TEST(ZincFieldMatrixMultiply, validArguments)
+{
+	ZincTestSetupCpp zinc;
+
+	const double aValues[8] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 };
+	FieldConstant a = zinc.fm.createFieldConstant(8, aValues);
+	EXPECT_TRUE(a.isValid());
+	const double bValues[6] = { 1.1, 2.2, 3.3, 4.4, 5.5, 6.6 };
+	FieldConstant b = zinc.fm.createFieldConstant(6, bValues);
+	EXPECT_TRUE(b.isValid());
+
+	FieldMatrixMultiply matrixMultiply;
+	Field noField;
+	matrixMultiply = zinc.fm.createFieldMatrixMultiply(4, a, b);
+	EXPECT_TRUE(matrixMultiply.isValid());
+
+	EXPECT_EQ(4, matrixMultiply.getNumberOfRows());
+	EXPECT_EQ(12, matrixMultiply.getNumberOfComponents());
+}

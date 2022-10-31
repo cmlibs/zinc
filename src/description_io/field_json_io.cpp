@@ -1054,13 +1054,14 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
 		{
-			int numberOfRows = cmzn_field_matrix_multiply_get_number_of_rows(field.getId());
+			OpenCMISS::Zinc::FieldMatrixMultiply fieldMatrixMultiply = this->field.castMatrixMultiply();
+			const int numberOfRows = fieldMatrixMultiply.getNumberOfRows();
 			typeSettings["NumberOfRows"] = numberOfRows;
 		} break;
 		case CMZN_FIELD_TYPE_TRANSPOSE:
 		{
 			OpenCMISS::Zinc::FieldTranspose fieldTranspose = this->field.castTranspose();
-			int sourceNumberOfRows = fieldTranspose.getSourceNumberOfRows();
+			const int sourceNumberOfRows = fieldTranspose.getSourceNumberOfRows();
 			typeSettings["SourceNumberOfRows"] = sourceNumberOfRows;
 		} break;
 		case CMZN_FIELD_TYPE_FINITE_ELEMENT:
