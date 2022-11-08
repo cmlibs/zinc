@@ -1,26 +1,25 @@
 {
    "Graphics" : [
       {
+         "BoundaryMode" : "ALL",
          "ElementFaceType" : "ALL",
-         "Exterior" : false,
          "FieldDomainType" : "POINT",
          "Material" : "default",
          "PointAttributes" : {
-            "BaseSize" : [ 0, 0, 0 ],
+            "BaseSize" : [ 0.1, 0.2, 0.3 ],
             "Font" : "default",
-            "Glyph" : "point",
-            "GlyphOffset" : [ 0, 0, 0 ],
-            "GlyphRepeatMode" : "NONE",
-            "GlyphShapeType" : "POINT",
+            "Glyph" : "arrow_solid",
+            "GlyphOffset" : [ 0.4, 0.5, 0.6 ],
+            "GlyphRepeatMode" : "AXES_2D",
             "LabelField" : "my_label",
-            "LabelOffset" : [ 1, 2, 0 ],
-            "LabelText" : [ "ABC", "ABC", "ABC" ],
-            "ScaleFactors" : [ 1, 1, 1 ]
+            "LabelOffset" : [ 1, 2, 0.5 ],
+            "LabelText" : [ "A 1", " B 2", " C 3 " ],
+            "ScaleFactors" : [ 1.1, 1.2, 1.3 ]
          },
          "Points" : {},
-         "RenderLineWidth" : 1,
-         "RenderPointSize" : 1,
-         "RenderPolygonMode" : "RENDER_POLYGON_SHADED",
+         "RenderLineWidth" : 1.5,
+         "RenderPointSize" : 4.5,
+         "RenderPolygonMode" : "WIREFRAME",
          "SamplingAttributes" : {
             "ElementPointSamplingMode" : "CELL_CENTRES",
             "Location" : [ 0, 0, 0 ]

@@ -190,7 +190,7 @@ void GraphicsJsonIO::ioGeneralDoubleEntries(Json::Value &graphicsSettings)
 		if (graphicsSettings["RenderLineWidth"].isDouble())
 			graphics.setRenderLineWidth(graphicsSettings["RenderLineWidth"].asDouble());
 		if (graphicsSettings["RenderPointSize"].isDouble())
-			graphics.setRenderLineWidth(graphicsSettings["RenderPointSize"].asDouble());
+			graphics.setRenderPointSize(graphicsSettings["RenderPointSize"].asDouble());
 	}
 }
 
