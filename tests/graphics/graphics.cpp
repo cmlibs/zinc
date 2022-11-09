@@ -971,6 +971,35 @@ TEST(cmzn_graphics_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(values[1], outputValues[2]);
 }
 
+// Test that orientation_scale_field can be set without coordinate field
+TEST(ZincGraphicsPoints, orientationScaleField_no_coordinateField)
+{
+	ZincTestSetupCpp zinc;
+
+	const double direction[3] = { 1.0, 0.0, 0.0 };
+	Field vectorField = zinc.fm.createFieldConstant(3, direction);
+	EXPECT_TRUE(vectorField.isValid());
+
+	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
+	EXPECT_TRUE(gr.isValid());
+
+	// ensure no coordinate field to go with vector field
+	EXPECT_FALSE(gr.getCoordinateField().isValid());
+
+	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
+	EXPECT_TRUE(pointattr.isValid());
+
+	EXPECT_EQ(RESULT_OK, pointattr.setOrientationScaleField(vectorField));
+
+	double minimumValues[3], maximumValues[3];
+	EXPECT_EQ(RESULT_OK, zinc.scene.getCoordinatesRange(Scenefilter(), minimumValues, maximumValues));
+	for (int c = 0; c < 3; ++c)
+	{
+		EXPECT_DOUBLE_EQ(0.0, minimumValues[c]);
+		EXPECT_DOUBLE_EQ(0.0, maximumValues[c]);
+	}
+}
+
 TEST(cmzn_graphics_api, point_attributes_label)
 {
 	ZincTestSetup zinc;

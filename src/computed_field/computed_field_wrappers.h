@@ -49,7 +49,8 @@ bool cmzn_field_vector_needs_wrapping(cmzn_field *vector_field);
  * system, a vector coordinate transformation field wrapper will be made for it.
  * NOTE:
  * @param coordinate_field  The coordinate field at which the vectors are located.
- * Note: must be RC i.e. already wrapped if non RC.
+ * If not supplied, vector field is used as-is. If supplied, must be RC i.e. already
+ * wrapped if non RC.
  * @return  Accessed field. Up to caller to destroy reference.
  */
 cmzn_field *cmzn_field_get_vector_field_wrapper(

@@ -9,6 +9,8 @@ Add API to get mixed mesh and parameter derivative operators.
 Fix create field eigenvectors to take generic field argument.
 Add API to get/set transpose field source number of rows.
 Add API to get matrix multiply field number of rows.
+Fix serialisation of graphics line width and point size.
+Fix wrapping of graphics vector fields where no coordinate field is set.
 
 v3.9.0
 Add field evaluate range API.
