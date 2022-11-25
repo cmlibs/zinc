@@ -68,7 +68,7 @@ include(cmake/zinc_lib_source_files.cmake)
 # Generate the version.cpp / version.h files
 set(ZINC_VERSION_STAGING_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.staged.cpp)
 set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
-if (OPENCMISS_HAVE_MULTICONFIG_ENV)
+if (IS_MULTI_CONFIG_ENV)
     set(CONFIGURE_BUILD_TYPE $<CONFIG>)
 else ()
     set(CONFIGURE_BUILD_TYPE ${CMAKE_BUILD_TYPE})

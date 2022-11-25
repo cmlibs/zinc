@@ -621,7 +621,7 @@ public:
 	Computed_field_histogram_image_filter_Functor(
 		Computed_field_histogram_image_filter *histogram_image_filter) :
 		histogram_image_filter(histogram_image_filter),
-		histogram(NULL), filter(NULL)
+		histogram(NULL), filter(nullptr)
 	{
 	}
 

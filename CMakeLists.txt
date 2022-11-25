@@ -33,8 +33,9 @@ endif ()
 
 include(MacroDefinitions)
 include(FunctionDefinitions)
-include(OCMiscFunctions)
-include(OCMultiConfigEnvironment)
+include(CMLMiscFunctions)
+
+get_property(IS_MULTI_CONFIG_ENV GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
@@ -51,7 +52,7 @@ option(ZINC_USE_NETGEN "Use Netgen" YES)
 # option(ZINC_USE_ITK "Use ITK" YES) # Not really an option until image fields are worked on
 set(ZINC_USE_ITK YES)
 
-set(DEPENDENT_LIBS bz2 xml2 fieldml-core fieldml-io ftgl optpp png ITKStatistics ITKIOGDCM)
+set(DEPENDENT_LIBS bz2 xml2 fieldml-core fieldml-io ftgl optpp png ITKRegionGrowing ITKSmoothing ITKStatistics ITKIOGDCM)
 if (TARGET zlibstatic)
     list(APPEND DEPENDENT_LIBS zlibstatic)
 else()
@@ -69,12 +70,12 @@ else()
     list(APPEND DEPENDENT_LIBS GLEW::GLEW)
 endif()
 
-if(TARGET opencmissdependencies)
-    set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
-    #set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
+if(TARGET cmlibsdependencies)
+    set(CMLIBSDEPENDENCIES_TARGET cmlibsdependencies)
+    #set(DEPENDENT_LIBS ${CMLIBSDEPENDENCIES_TARGET})
 endif()
 
-if(NOT OPENCMISS_HAVE_MULTICONFIG_ENV)
+if(NOT IS_MULTI_CONFIG_ENV)
     set(_PARAM_ANNOTATION "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
     set(ZINC_BUILD_TYPE "Release" CACHE STRING ${_PARAM_ANNOTATION})
     if(DEFINED BUILD_TYPE)
@@ -123,7 +124,7 @@ if(NOT DEFINED GRAPHICS_API )
 endif()
 
 # Set build type dependent #Defines
-if(OPENCMISS_HAVE_MULTICONFIG_ENV)
+if(IS_MULTI_CONFIG_ENV)
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DOPTIMISED" )
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DOPTIMISED" )
 else()
