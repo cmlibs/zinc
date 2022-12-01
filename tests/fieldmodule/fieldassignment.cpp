@@ -683,3 +683,29 @@ TEST(ZincFieldassignment, assignApplyEmbeddingDerivativesVersions)
 		}
 	}
 }
+
+// Test source field not being defined is detected by Fieldassignment
+TEST(ZincFieldassignment, assignSourceNotDefined)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	FieldFiniteElement bob = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	const double scaleValues[3] = { 2.0, 1.5, 0.75 };
+	FieldConstant scale = zinc.fm.createFieldConstant(3, scaleValues);
+	EXPECT_TRUE(scale.isValid());
+	FieldMultiply scaledCoordinates = coordinates * scale;
+	EXPECT_TRUE(scaledCoordinates.isValid());
+	FieldFiniteElement undefinedCoordinates = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(undefinedCoordinates.isValid());
+
+	Fieldassignment fieldassignment = bob.createFieldassignment(scaledCoordinates);
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	Fieldassignment fieldassignmentUndefined = bob.createFieldassignment(undefinedCoordinates);
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, fieldassignmentUndefined.assign());
+}
