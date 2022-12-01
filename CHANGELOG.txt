@@ -11,6 +11,7 @@ Add API to get/set transpose field source number of rows.
 Add API to get matrix multiply field number of rows.
 Fix serialisation of graphics line width and point size.
 Fix wrapping of graphics vector fields where no coordinate field is set.
+Fix Fieldassignment where source field is undefined.
 
 v3.9.0
 Add field evaluate range API.
