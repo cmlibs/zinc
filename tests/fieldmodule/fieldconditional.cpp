@@ -26,8 +26,7 @@ TEST(ZincFieldIf, valueTypeMeshLocation)
 	ZincTestSetupCpp zinc;
 
 	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(
-		TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/embedding_issue3614.exregion").c_str()));
 
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(mesh2d.isValid());

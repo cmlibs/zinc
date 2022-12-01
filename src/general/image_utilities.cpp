@@ -6666,7 +6666,7 @@ and other parameters for formats that require them.
 	struct Cmgui_image *cmgui_image;
 #if defined (ZINC_USE_IMAGEMAGICK)
 	const char *file_name_prefix;
-	char *old_magick_size, magick_size[41];
+    char *old_magick_size, magick_size[41]{};
 	int image_data_length, length, number_of_files;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;

@@ -3254,7 +3254,7 @@ char *cmzn_scene_write_description(cmzn_scene_id scene)
 	if (scene)
 	{
 		SceneJsonExport jsonExport(scene);
-		return duplicate_string(jsonExport.getExportString().c_str());
+        return duplicate_string(jsonExport.getExportString().c_str());
 	}
 	return 0;
 }

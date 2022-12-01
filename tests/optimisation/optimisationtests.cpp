@@ -181,12 +181,12 @@ TEST(ZincOptimisation, tricubicFit)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::OPTIMISATION_CUBE_TRICUBIC_LAGRANGE_RESOURCE)));
+        resourcePath("optimisation/tricubic.exfile").c_str()));
 	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(referenceCoordinates.isValid());
 	EXPECT_EQ(OK, referenceCoordinates.setName("reference_coordinates"));
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::OPTIMISATION_CUBE_TRICUBIC_LAGRANGE_RESOURCE)));
+        resourcePath("optimisation/tricubic.exfile").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -307,12 +307,12 @@ TEST(ZincOptimisation, addFieldassignment)
 
 	// read twice to get copy of coordinates in 'reference_coordinates'
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+        resourcePath("fieldmodule/cube.exformat").c_str()));
 	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(referenceCoordinates.isValid());
 	EXPECT_EQ(OK, referenceCoordinates.setName("reference_coordinates"));
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+        resourcePath("fieldmodule/cube.exformat").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -430,12 +430,12 @@ TEST(ZincOptimisation, addFieldassignmentReset)
 
 	// read twice to get copy of coordinates in 'reference_coordinates'
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(referenceCoordinates.isValid());
 	EXPECT_EQ(OK, referenceCoordinates.setName("referenceCoordinates"));
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -535,7 +535,7 @@ TEST(ZincOptimisation, leastSquaresFitNewton)
 	ZincTestSetupCpp zinc;
 
 	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/embedding_issue3614.exregion").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -587,13 +587,13 @@ TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
 	ZincTestSetupCpp zinc;
 
 	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
-	const char *filename = TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE);
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(filename));
+    std::string filename = resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2");
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(filename.c_str()));
 
 	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(referenceCoordinates.isValid());
 	EXPECT_EQ(OK, referenceCoordinates.setName("reference_coordinates"));
-	EXPECT_EQ(OK, zinc.root_region.readFile(filename));
+    EXPECT_EQ(OK, zinc.root_region.readFile(filename.c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -746,7 +746,7 @@ TEST(ZincOptimisation, fitLineTime)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("optimisation/fit_line_time.exf").c_str()));
 
 	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());

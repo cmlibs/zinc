@@ -30,7 +30,7 @@ TEST(ZincFieldparameters, validAPI)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -298,7 +298,7 @@ TEST(ZincFieldparameters, elementConstantComponent)
 TEST(ZincFieldparameters, linear_node_element_grid_mixed)
 {
 	ZincTestSetupCpp zinc;
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CUBE_NODE_ELEMENT_GRID_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube_node_element_grid.exf").c_str()));
 
 	FieldFiniteElement coordinates_node = zinc.fm.findFieldByName("coordinates_node").castFiniteElement();
 	EXPECT_TRUE(coordinates_node.isValid());
@@ -699,7 +699,7 @@ TEST(Fieldparameters, parameterDerivativeSumSquareProjectionError)
 	ZincTestSetupCpp zinc;
 
 	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/embedding_issue3614.exregion").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -812,7 +812,7 @@ TEST(Fieldparameters, parameterIndexes)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -867,7 +867,7 @@ TEST(Fieldparameters, getaddsetParameters)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

@@ -675,6 +675,9 @@ Returns an allocated copy of <source_string>, or NULL in case of error.
 	{
 		if (ALLOCATE(copy_of_string, char, strlen(source_string) + 1))
 		{
+        if (strcmp(source_string, "/Users/hsor001/Projects/continuummechanics/builds/zinc/tests/resources/bigendian.im") == 0){
+        source_string = source_string;
+        }
 			strcpy(copy_of_string,source_string);
 		}
 		else

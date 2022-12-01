@@ -447,7 +447,7 @@ TEST(ZincFieldIsExterior, evaluate3d)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+        resourcePath("allshapes.exformat").c_str()));
 
 	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
 	EXPECT_TRUE(isExteriorField.isValid());
@@ -510,7 +510,7 @@ TEST(ZincFieldIsOnFace, evaluate)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBESQUARELINE_RESOURCE)));
+        resourcePath("fieldmodule/cubesquareline.exformat").c_str()));
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	double value;
@@ -633,7 +633,7 @@ TEST(cmzn_field_edge_discontinuity, valid_arguments)
 	int result;
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_read_file(zinc.root_region,
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	cmzn_field_id coordinatesField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE((cmzn_field_id)0, coordinatesField);
@@ -714,7 +714,7 @@ TEST(ZincFieldEdgeDiscontinuity, validArguments)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -776,7 +776,7 @@ TEST(ZincFieldEdgeDiscontinuity, evaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+        resourcePath("allshapes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -943,7 +943,7 @@ TEST(ZincFieldEdgeDiscontinuity, invalidEvaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -1105,7 +1105,7 @@ TEST(ZincFieldNodeLookup, Evaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -1158,7 +1158,7 @@ TEST(ZincFieldFiniteElement, issue_3892_temporary_element_parents)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(mesh2d.isValid());
 	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
@@ -1178,7 +1178,7 @@ TEST(ZincFieldFiniteElement, issue_3892_temporary_element_parents)
 	FieldmodulecallbackCheckExterior checkExteriorCallback(cache, isExteriorField);
 	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(checkExteriorCallback));
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 	EXPECT_TRUE(checkExteriorCallback.lastEvent.isValid());
 	EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &isExteriorValue));
 	EXPECT_DOUBLE_EQ(1.0, isExteriorValue);
@@ -1296,7 +1296,7 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 TEST(ZincFieldFiniteElement, fieldcacheInvalidation)
 {
 	ZincTestSetupCpp zinc;
-	EXPECT_EQ(OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
@@ -1427,10 +1427,10 @@ TEST(ZincFieldFindMeshLocation, find_xi_cache_and_convergence_active_modificatio
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_HEART_SURFACE_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/heart_surface.exfile").c_str()));
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(mesh2d.isValid());
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_PLATE_600X300_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/plate_600x300.exfile").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -1587,7 +1587,7 @@ TEST(ZincFieldFindMeshLocation, searchMesh)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
@@ -1647,10 +1647,10 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed.exf").c_str()));
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_FIND_XI_DATA_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed_find_xi_data.exf").c_str()));
 	Field dataCordinates = zinc.fm.findFieldByName("data_coordinates");
 	EXPECT_TRUE(dataCordinates.isValid());
 
@@ -1785,7 +1785,7 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		}
 		else if (t == 11)
 		{
-			EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+            EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed.exf").c_str()));
 		}
 		for (int i = 0; i < 12; ++i)
 		{
@@ -2264,7 +2264,7 @@ TEST(ZincMesh, destroyElement)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
 	EXPECT_TRUE(notifier.isValid());
@@ -2514,7 +2514,7 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid_mixed)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CUBE_NODE_ELEMENT_GRID_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube_node_element_grid.exf").c_str()));
 
 	FieldFiniteElement coordinates_node = zinc.fm.findFieldByName("coordinates_node").castFiniteElement();
 	EXPECT_TRUE(coordinates_node.isValid());
@@ -2668,7 +2668,7 @@ TEST(ZincFieldFiniteElement, readWithChangeCache)
 	ZincTestSetupCpp zinc;
 
 	zinc.fm.beginChange();
-	EXPECT_EQ(OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 	EXPECT_TRUE(coordinates.castFiniteElement().isValid());

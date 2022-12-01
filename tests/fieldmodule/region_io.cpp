@@ -43,7 +43,7 @@ TEST(region_file_input, invalid_args)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(
-		si, TestResources::getLocation(TestResources::FIELDMODULE_REGION_INPUT_RESOURCE));
+        si, resourcePath("fieldmodule/region_input.exf").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr);
 
 	cmzn_streaminformation_region_id si_region = cmzn_streaminformation_cast_region(
@@ -81,7 +81,7 @@ TEST(region_file_output, invalid_args)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(
-		si, TestResources::getLocation(TestResources::FIELDMODULE_REGION_INPUT_RESOURCE));
+        si, resourcePath("fieldmodule/region_input.exf").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr);
 
 	cmzn_streaminformation_region_id si_region = cmzn_streaminformation_cast_region(
@@ -208,7 +208,7 @@ TEST(issue3614, read_embedded_nodes)
 	ZincTestSetup zinc;
 
 	int result = cmzn_region_read_file(zinc.root_region,
-		TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE));
+        resourcePath("fieldmodule/embedding_issue3614.exregion").c_str());
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
@@ -295,7 +295,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_streaminformation_region *>(0), node_si_region);
 
 	cmzn_streamresource_id node_sr = cmzn_streaminformation_create_streamresource_file(
-		node_si, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+        node_si, resourcePath("fieldmodule/nodes.exnode").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), node_sr);
 
 	int result = cmzn_region_read(node_region, node_si_region);
@@ -323,7 +323,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), data_si);
 
 	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_file(
-		data_si, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+        data_si, resourcePath("fieldmodule/nodes.exnode").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), data_sr);
 
 	cmzn_streaminformation_region_id data_region_si = cmzn_streaminformation_cast_region(
@@ -437,7 +437,7 @@ TEST(element_dimension_file, invalid_args)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), cube_si);
 
 	cmzn_streamresource_id cube_sr = cmzn_streaminformation_create_streamresource_file(
-		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+        cube_si, resourcePath("fieldmodule/cube.exformat").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), cube_sr);
 
 	cmzn_streaminformation_region_id cube_si_region = cmzn_streaminformation_cast_region(
@@ -499,8 +499,8 @@ TEST(region_stream_gzip_input, invalid_args)
 {
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
-	std::ifstream exnodeFile(TestResources::getLocation(TestResources::HEART_EXNODE_GZ), std::ifstream::binary);
-	std::ifstream exelemFile(TestResources::getLocation(TestResources::HEART_EXELEM_GZ), std::ifstream::binary);
+    std::ifstream exnodeFile(resourcePath("fieldmodule/heart.exnode.gz"), std::ifstream::binary);
+    std::ifstream exelemFile(resourcePath("fieldmodule/heart.exelem.gz"), std::ifstream::binary);
 	if (exnodeFile.is_open() && exelemFile.is_open())
 	{
 		exnodeFile.seekg (0, exnodeFile.end);

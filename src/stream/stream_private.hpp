@@ -26,6 +26,12 @@ struct cmzn_stream_memory_block
 	const void *memory_buffer;
 	unsigned int memory_buffer_size;
 	int to_be_deallocated;
+
+    ~cmzn_stream_memory_block() {
+        if (to_be_deallocated && memory_buffer) {
+            DEALLOCATE(memory_buffer);
+        }
+    };
 };
 
 struct cmzn_streamresource
@@ -71,8 +77,9 @@ public:
 
 	virtual ~cmzn_streamresource_file()
 	{
-		if (file_name)
+        if (file_name) {
 			DEALLOCATE(file_name);
+        }
 	}
 
 	char *getFileName()
@@ -103,19 +110,10 @@ public:
 		memory_block->memory_buffer_size = buffer_size;
 	}
 
-	~cmzn_streamresource_memory()
-	{
-		if (memory_block)
-		{
-			if (memory_block->to_be_deallocated && memory_block->memory_buffer)
-
-			{
-				DEALLOCATE(memory_block->memory_buffer);
-			}
-			delete (memory_block);
-			memory_block = NULL;
-		}
-	}
+    ~cmzn_streamresource_memory()
+    {
+        delete memory_block;
+    }
 
 	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
 	{
@@ -146,6 +144,10 @@ public:
 
 	int setBuffer(void *memory_buffer_reference, unsigned int memory_buffer_sizes)
 	{
+        if (memory_block->to_be_deallocated) {
+            delete memory_block;
+            memory_block = new cmzn_stream_memory_block();
+        }
 		memory_block->memory_buffer = memory_buffer_reference;
 		memory_block->memory_buffer_size = memory_buffer_sizes;
 		memory_block->to_be_deallocated = 1;

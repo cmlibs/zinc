@@ -37,7 +37,7 @@ cmzn_context::cmzn_context(const char *nameIn) :
 
 cmzn_context::~cmzn_context()
 {
-	if (this->defaultRegion)
+    if (this->defaultRegion)
 		cmzn_region::deaccess(this->defaultRegion);
 	// clear regions' fields and pointers to this context
 	for (std::list<cmzn_region*>::iterator iter = this->allRegions.begin(); iter != this->allRegions.end(); ++iter)
@@ -53,12 +53,12 @@ cmzn_context::~cmzn_context()
 		DESTROY(IO_stream_package)(&this->io_stream_package);
 	cmzn_timekeepermodule::deaccess(this->timekeepermodule);
 
-	/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
+    cmzn_logger::deaccess(logger);
+    DEALLOCATE(this->name);
+    /* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 		on.  When MEMORY_CHECKING is off this function does nothing */
 	list_memory(/*count_number*/0, /*show_pointers*/0, /*increment_counter*/0,
 		/*show_structures*/1);
-	if (this->name)
-		DEALLOCATE(this->name);
 }
 
 cmzn_context *cmzn_context::create(const char *name)

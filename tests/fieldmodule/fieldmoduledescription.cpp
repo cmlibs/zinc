@@ -40,7 +40,7 @@
 
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
-#include "utilities/fileio.hpp"
+
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -420,7 +420,7 @@ void TestDescriptionOutput(cmzn_region_id region, const char *description)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(
-		si, TestResources::getLocation(TestResources::FIELDMODULE_REGION_INPUT_RESOURCE));
+        si, resourcePath("fieldmodule/region_input.exf").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr);
 
 	cmzn_streaminformation_region_id si_region = cmzn_streaminformation_cast_region(
@@ -460,7 +460,7 @@ TEST(fieldmodule_description, write)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(
-		si, TestResources::getLocation(TestResources::FIELDMODULE_REGION_INPUT_RESOURCE));
+        si, resourcePath("fieldmodule/region_input.exf").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr);
 
 	cmzn_streaminformation_region_id si_region = cmzn_streaminformation_cast_region(
@@ -826,12 +826,9 @@ TEST(fieldmodule_description, read)
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::FIELDMODULE_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("fieldmodule/fieldmodule_description.json");
 
-	TestDescriptionOutput(root_region, stringBuffer);
-
-	free(stringBuffer);
+    TestDescriptionOutput(root_region, stringBuffer.c_str());
 
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);

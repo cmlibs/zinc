@@ -95,6 +95,6 @@ TEST(ZincContext, default_region)
 	EXPECT_EQ(nullRegion, nullContext.getDefaultRegion());
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nullContext.setDefaultRegion(r2));
 
-	Context otherContext = Context("other");
-	EXPECT_EQ(RESULT_ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r2));
+    Context otherContext = Context("other");
+    EXPECT_EQ(RESULT_ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r2));
 }

@@ -3276,9 +3276,9 @@ void StyledWriter::writeValue(const Value& value) {
 
 void StyledWriter::writeArrayValue(const Value& value) {
   unsigned size = value.size();
-  if (size == 0)
+  if (size == 0) {
     pushValue("[]");
-  else {
+  } else {
     bool isArrayMultiLine = isMultineArray(value);
     if (isArrayMultiLine) {
       writeWithIndent("[");
@@ -3499,9 +3499,9 @@ void StyledStreamWriter::writeValue(const Value& value) {
 
 void StyledStreamWriter::writeArrayValue(const Value& value) {
   unsigned size = value.size();
-  if (size == 0)
+  if (size == 0) {
     pushValue("[]");
-  else {
+  } else {
     bool isArrayMultiLine = isMultineArray(value);
     if (isArrayMultiLine) {
       writeWithIndent("[");

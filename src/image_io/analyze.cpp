@@ -771,6 +771,8 @@ void AnalyzeImageHandler::readImageData()
 	ALLOCATE(data, char, bytes*sz);
 	fread(data, sizeof(char), bytes*sz, file);
 	readImageInternal(static_cast<unsigned int>(sz));
+    fclose(file);
+    DEALLOCATE(data_filename);
 }
 
 int AnalyzeImageHandler::getOrientation() const

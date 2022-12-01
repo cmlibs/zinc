@@ -37,6 +37,16 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_image_id))
 	{	}
 
+    ~FieldImage()
+    {
+        if (0 != id)
+        {
+            cmzn_field_image_id temp_id = getDerivedId();
+            cmzn_field_image_destroy(&temp_id);
+            id = 0;
+        }
+    }
+
 	enum CombineMode
 	{
 		COMBINE_MODE_INVALID = CMZN_FIELD_IMAGE_COMBINE_MODE_INVALID,

@@ -49,7 +49,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), cube_si);
 
 	cmzn_streamresource_id cube_sr = cmzn_streaminformation_create_streamresource_file(
-		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE));
+        cube_si, resourcePath("fieldmodule/two_cubes.exformat").c_str());
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), cube_sr);
 
 	cmzn_streaminformation_region_id cube_si_region = cmzn_streaminformation_cast_region(
@@ -120,7 +120,7 @@ TEST(ZincNodesElements, setIdentifier)
 	EXPECT_TRUE(cubeSi.isValid());
 
 	Streamresource cubeSr = cubeSi.createStreamresourceFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str());
 	EXPECT_TRUE(cubeSr.isValid());
 
 	// test casting of stream resources
@@ -502,8 +502,8 @@ TEST(ZincMesh, destroyElement_embeddedLocation)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("optimisation/fit_line_time.exf").c_str()));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("optimisation/fit_line_time.exf").c_str()));
 
 	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
 	Element element1 = mesh1d.findElementByIdentifier(1);
@@ -517,7 +517,7 @@ TEST(ZincNodeset, destroyElementsGroupChangeManager_cube)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	// put everything in group1
 	FieldGroup group1 = zinc.fm.createFieldGroup();

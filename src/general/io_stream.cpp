@@ -1487,7 +1487,7 @@ string.  It uses fscanf:
 =============================================================================*/
 {
 	int characters_read,format_len,return_code,working_string_len;
-	char *working_format,*working_string;
+    char *working_format = nullptr,*working_string = nullptr;
 
 	ENTER(read_string);
 	/* check for valid parameters */
@@ -1548,7 +1548,6 @@ string.  It uses fscanf:
 							}
 							else
 							{
-								/*            print_message(1,*/
 								display_message(WARNING_MESSAGE,
 									"read_string.  Could not allocate memory for string");
 								return_code=0;
@@ -1558,12 +1557,11 @@ string.  It uses fscanf:
 						{
 							if (working_string)
 							{
-								REALLOCATE(*string_read,working_string,char,
-									strlen(working_string)+1);
+                                REALLOCATE(*string_read,working_string,char, strlen(working_string)+1);
 							}
 							else
 							{
-								*string_read=(char *)NULL;
+                                *string_read = nullptr;
 							}
 						}
 						else
@@ -1598,7 +1596,7 @@ string.  It uses fscanf:
 		display_message(WARNING_MESSAGE,"IO_stream_read_string.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
+    LEAVE;
 
 	return(return_code);
 } /* IO_stream_read_string */

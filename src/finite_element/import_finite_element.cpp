@@ -3856,7 +3856,7 @@ bool EXReader::readElementHeaderField()
 							result = false;
 							break;
 						}
-						char *rest_of_line = 0;
+                        char *rest_of_line = nullptr;
 						// read scale factor index expressions e.g. 0 (for unscaled) 60 1*2 3*4+1*2*3 etc.
 						if (!IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line))
 						{
@@ -3940,7 +3940,8 @@ bool EXReader::readElementHeaderField()
 							if (!result)
 								break;
 						}
-						if (!result)
+                        DEALLOCATE(rest_of_line);
+                        if (!result)
 							break;
 					}
 					fn += valueCount;

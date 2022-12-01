@@ -31,7 +31,7 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+        resourcePath("allshapes.exformat").c_str()));
 
 	zinc.fm.beginChange();
 	const double one = 1.0;
@@ -274,7 +274,7 @@ TEST(ZincFieldMeshIntegral, cube_setMesh)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+        resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
 	EXPECT_EQ(1, mesh3d.getSize());
@@ -410,7 +410,7 @@ TEST(ZincFieldMeshIntegralSquares, quadrature)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+        resourcePath("allshapes.exformat").c_str()));
 
 	zinc.fm.beginChange();
 	const double one_two[] = { 1.0, 2.0 };
@@ -458,7 +458,7 @@ TEST(FieldMeshIntegral, timeLookup)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube_tricubic_deformed.exfile").c_str()));
 
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());

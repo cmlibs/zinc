@@ -28,7 +28,7 @@ TEST(cmzn_region, build_tree)
 
 	cmzn_region_id fred = cmzn_region_create_region(zinc.root_region);
 	EXPECT_NE(static_cast<cmzn_region_id>(0), bob);
-	EXPECT_EQ(CMZN_OK, result = cmzn_region_set_name(fred, "fred"));
+    EXPECT_EQ(CMZN_OK, result = cmzn_region_set_name(fred, "freddyboy"));
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_append_child(bob, fred));
 
 	EXPECT_EQ(bob, tmp = cmzn_region_get_first_child(zinc.root_region));
@@ -44,10 +44,10 @@ TEST(cmzn_region, build_tree)
 	EXPECT_EQ(static_cast<cmzn_region_id>(0), cmzn_region_get_next_sibling(fred));
 	EXPECT_EQ(alf, tmp = cmzn_region_get_previous_sibling(fred));
 	cmzn_region_destroy(&tmp);
-	EXPECT_EQ(fred, tmp = cmzn_region_find_subregion_at_path(zinc.root_region, "bob/fred"));
+    EXPECT_EQ(fred, tmp = cmzn_region_find_subregion_at_path(zinc.root_region, "bob/freddyboy"));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_remove_child(bob, fred));
-	EXPECT_EQ(static_cast<cmzn_region_id>(0), tmp = cmzn_region_find_subregion_at_path(zinc.root_region, "bob/fred"));
+    EXPECT_EQ(static_cast<cmzn_region_id>(0), tmp = cmzn_region_find_subregion_at_path(zinc.root_region, "bob/freddyboy"));
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_insert_child_before(bob, fred, /*before*/alf));
 	EXPECT_EQ(fred, tmp = cmzn_region_get_first_child(bob));
 	cmzn_region_destroy(&tmp);
@@ -69,10 +69,10 @@ TEST(cmzn_region, build_tree)
 	EXPECT_TRUE(cmzn_region_contains_subregion(bob, fred));
 	EXPECT_FALSE(cmzn_region_contains_subregion(alf, bob));
 
-	cmzn_region_destroy(&harry);
+    cmzn_region_destroy(&fred);
+    cmzn_region_destroy(&harry);
 	cmzn_region_destroy(&joe);
 	cmzn_region_destroy(&alf);
-	cmzn_region_destroy(&fred);
 	cmzn_region_destroy(&bob);
 }
 
@@ -95,6 +95,7 @@ TEST(ZincRegion, build_tree_regionnotifier)
 {
 	ZincTestSetupCpp zinc;
 	int result;
+    char *tmpText;
 
 	Regionnotifier rootRegionnotifier = zinc.root_region.createRegionnotifier();
 	EXPECT_TRUE(rootRegionnotifier.isValid());
@@ -102,12 +103,16 @@ TEST(ZincRegion, build_tree_regionnotifier)
 	EXPECT_EQ(RESULT_OK, rootRegionnotifier.setCallback(rootRegionChange));
 	EXPECT_EQ(0, rootRegionChange.changeCount);
 
-	EXPECT_STREQ("", zinc.root_region.getPath());
+    tmpText = zinc.root_region.getPath();
+    EXPECT_STREQ("", tmpText);
+    free(tmpText);
 	Region bob = zinc.root_region.createChild("bob");
 	EXPECT_EQ(1, rootRegionChange.changeCount);
 	EXPECT_TRUE(bob.isValid());
-	EXPECT_STREQ("bob", bob.getPath());
-	EXPECT_STREQ("..", zinc.root_region.getRelativePath(bob));
+    EXPECT_STREQ("bob", tmpText = bob.getPath());
+    free(tmpText);
+    EXPECT_STREQ("..", tmpText = zinc.root_region.getRelativePath(bob));
+    free(tmpText);
 
 	Regionnotifier bobRegionnotifier = bob.createRegionnotifier();
 	EXPECT_TRUE(bobRegionnotifier.isValid());
@@ -206,15 +211,33 @@ TEST(ZincRegion, build_tree_regionnotifier)
 	EXPECT_EQ(independent, independent.getRoot());
 
 	// test paths
-	EXPECT_STREQ("bob/wills/harry", harry.getPath());
-	EXPECT_STREQ("wills/harry", harry.getRelativePath(bob));
-	EXPECT_STREQ("harry", harry.getRelativePath(bob.findChildByName("wills")));
-	EXPECT_STREQ("", harry.getRelativePath(harry));
-	EXPECT_STREQ("../wills/harry", harry.getRelativePath(fred));
-	EXPECT_STREQ("../../fred", fred.getRelativePath(harry));
-	EXPECT_STREQ("", joe.getRelativePath(joe));
-	EXPECT_STREQ("../..", bob.getRelativePath(harry));
-	EXPECT_STREQ("../../..", zinc.root_region.getRelativePath(harry));
+    tmpText = harry.getPath();
+    EXPECT_STREQ("bob/wills/harry", tmpText);
+    free(tmpText);
+    tmpText = harry.getRelativePath(bob);
+    EXPECT_STREQ("wills/harry", tmpText);
+    free(tmpText);
+    tmpText = harry.getRelativePath(bob.findChildByName("wills"));
+    EXPECT_STREQ("harry", tmpText);
+    free(tmpText);
+    tmpText = harry.getRelativePath(harry);
+    EXPECT_STREQ("", tmpText);
+    free(tmpText);
+    tmpText = harry.getRelativePath(fred);
+    EXPECT_STREQ("../wills/harry", tmpText);
+    free(tmpText);
+    tmpText = fred.getRelativePath(harry);
+    EXPECT_STREQ("../../fred", tmpText);
+    free(tmpText);
+    tmpText = joe.getRelativePath(joe);
+    EXPECT_STREQ("", tmpText);
+    free(tmpText);
+    tmpText = bob.getRelativePath(harry);
+    EXPECT_STREQ("../..", tmpText);
+    free(tmpText);
+    tmpText = zinc.root_region.getRelativePath(harry);
+    EXPECT_STREQ("../../..", tmpText);
+    free(tmpText);
 
 	// test invalid paths
 	EXPECT_EQ(nullptr, independent.getRelativePath(zinc.root_region));

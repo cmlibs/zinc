@@ -65,7 +65,7 @@ TEST(ZincFieldApply, importEmbeddingMap)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("cube.ex2").c_str()));
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
 	EXPECT_TRUE(mesh3d.isValid());
 	Element element = mesh3d.findElementByIdentifier(1);
@@ -387,7 +387,7 @@ TEST(ZincFieldApply, serialiseSibling)
 	Fieldmodule child1Fm = child1.getFieldmodule();
 	EXPECT_TRUE(child1Fm.isValid());
 
-	EXPECT_EQ(CMZN_OK, child1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, child1.readFile(resourcePath("cube.ex2").c_str()));
 	Mesh mesh3d = child1Fm.findMeshByDimension(3);
 	EXPECT_TRUE(mesh3d.isValid());
 	Element element = mesh3d.findElementByIdentifier(1);
@@ -434,7 +434,7 @@ TEST(ZincFieldApply, serialiseSibling)
 	EXPECT_TRUE(coordinatesb.isValid());
 	EXPECT_EQ(3, coordinatesb.getNumberOfComponents());
 	EXPECT_FALSE(coordinatesb.castFiniteElement().isValid());
-	EXPECT_EQ(CMZN_OK, childb1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, childb1.readFile(resourcePath("cube.ex2").c_str()));
 	// dummyCop constant handle should be defunct
 	EXPECT_TRUE(coordinatesb.castFiniteElement().isValid());
 	FieldFiniteElement coordinatesb2 = childb1Fm.findFieldByName("coordinates").castFiniteElement();

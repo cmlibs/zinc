@@ -20,11 +20,7 @@ TEST(cmzn_logger_messages, invalid_args)
 
 	EXPECT_EQ(0, cmzn_logger_get_number_of_messages(logger));
 
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(
-		TestResources::REGION_INCORRECT_RESOURCE));
-
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(
-		TestResources::REGION_INCORRECT_RESOURCE));
+    cmzn_region_read_file(zinc.root_region, resourcePath("logger/region_incorrect.exregion").c_str());
 
 	int return_code = cmzn_logger_get_number_of_messages(logger);
 	EXPECT_EQ(4, return_code);
@@ -90,8 +86,7 @@ TEST(cmzn_logger_messages_callback, invalid_args)
 
 	EXPECT_EQ(CMZN_OK, cmzn_loggernotifier_set_callback(loggerNotifier, custom_message_callback, 0));
 
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(
-		TestResources::REGION_INCORRECT_RESOURCE));
+    cmzn_region_read_file(zinc.root_region, resourcePath("logger/region_incorrect.exregion").c_str());
 
 	/* callback flushes messages. */
 	int return_code = cmzn_logger_get_number_of_messages(logger);
@@ -137,6 +132,6 @@ TEST(ZincLogger, callback)
 	EXPECT_TRUE(loggernotifier.isValid());
 	myLoggercallback thisNotifier;
 	loggernotifier.setCallback(thisNotifier);
-	zinc.root_region.readFile(TestResources::getLocation(TestResources::REGION_INCORRECT_RESOURCE));
+    zinc.root_region.readFile(resourcePath("logger/region_incorrect.exregion").c_str());
 	EXPECT_EQ(CMZN_OK, loggernotifier.clearCallback());
 }

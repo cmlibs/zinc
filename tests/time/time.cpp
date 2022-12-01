@@ -16,7 +16,6 @@
 #include <opencmiss/zinc/timekeeper.hpp>
 #include <opencmiss/zinc/timenotifier.hpp>
 
-#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -125,12 +124,9 @@ TEST(ZincTimekeeper, description_io_cpp)
 	Timekeepermodule tkm = zinc.context.getTimekeepermodule();
 	EXPECT_TRUE(tkm.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::TIMEKEEPER_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("time/timekeeper_description.json");
 
-	EXPECT_EQ(CMZN_OK, tkm.readDescription(stringBuffer));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, tkm.readDescription(stringBuffer.c_str()));
 
 	Timekeeper timekeeper = tkm.getDefaultTimekeeper();
 	EXPECT_TRUE(timekeeper.isValid());

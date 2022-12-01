@@ -29,26 +29,29 @@ include(time/tests.cmake)
 include(image/tests.cmake)
 include(logger/tests.cmake)
 
-set(TEST_RESOURCE_HEADER ${CMAKE_CURRENT_BINARY_DIR}/test_resources.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test_resources.h.cmake
-	${TEST_RESOURCE_HEADER})
-
 foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
 endforeach()
 
+include(test_resources)
+
+set(_ZINC_LINK_LIBRARY ${ZINC_SHARED_TARGET_NAME})
+if(NOT ZINC_SHARED_TARGET_NAME AND TARGET ${ZINC_STATIC_TARGET_NAME})
+  set(_ZINC_LINK_LIBRARY ${ZINC_STATIC_TARGET_NAME})
+endif()
+
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
-	target_link_libraries(${CURRENT_TEST} GTest::gtest_main zinc)
+  target_link_libraries(${CURRENT_TEST} GTest::gtest_main ${_ZINC_LINK_LIBRARY} testresources)
 	target_include_directories(${CURRENT_TEST} PRIVATE 
 	    ${ZINC_API_INCLUDE_DIR} 
 	    ${CMAKE_CURRENT_SOURCE_DIR} 
 	    ${CMAKE_CURRENT_BINARY_DIR}
 	)
 	add_test(NAME ${CURRENT_TEST} COMMAND ${CURRENT_TEST})
-  if(MSVC)
-      set(_TEST_PROPERTIES "PATH=$<TARGET_FILE_DIR:zinc>")
+  if(MSVC AND ZINC_SHARED_TARGET_NAME)
+      set(_TEST_PROPERTIES "PATH=$<TARGET_FILE_DIR:${ZINC_SHARED_TARGET_NAME}>")
       set_tests_properties(${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
   endif()
 endforeach()

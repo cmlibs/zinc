@@ -25,17 +25,14 @@
 #include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
-#include "utilities/fileio.hpp"
 
 #include "test_resources.h"
 
 #define FIELDML_OUTPUT_FOLDER "fieldmltest"
 
 namespace {
-ManageOutputFolder manageOutputFolderFieldML(FIELDML_OUTPUT_FOLDER);
-}
 
-namespace {
+ManageOutputFolder manageOutputFolderFieldML("fieldml");
 
 void check_twohermitecubes_noscalefactors_model(Fieldmodule& fm)
 {
@@ -111,7 +108,7 @@ TEST(ZincRegion, fieldml_twohermitecubes_noscalefactors)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX_TWOHERMITECUBES_NOSCALEFACTORS_RESOURCE)));
+        resourcePath("twohermitecubes_noscalefactors.exfile").c_str()));
 	check_twohermitecubes_noscalefactors_model(zinc.fm);
 
 	// test writing and re-reading into different region
@@ -200,7 +197,7 @@ TEST(ZincRegion, fieldml_figure8)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX_HERMITE_FIGURE8_RESOURCE)));
+        resourcePath("figure8.exfile").c_str()));
 	check_figure8_model(zinc.fm);
 
 #if 0
@@ -646,7 +643,7 @@ TEST(FieldIO, prolate_heart)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX_PROLATE_HEART_RESOURCE)));
+        resourcePath("data/prolate_heart.exfile").c_str()));
 	check_prolate_heart_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
@@ -696,7 +693,7 @@ TEST(FieldIO, hemisphere)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX_HEMISPHERE_RESOURCE)));
+        resourcePath("data/hemisphere.exfile").c_str()));
 	check_hemisphere_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format

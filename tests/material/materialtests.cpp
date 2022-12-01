@@ -410,14 +410,14 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	FieldImage image1 = zinc.fm.createFieldImage();
 	EXPECT_TRUE(image1.isValid());
 	EXPECT_EQ(RESULT_OK, image1.setName("image_blockcolours"));
-	EXPECT_EQ(RESULT_OK, image1.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, image1.readFile(resourcePath("blockcolours.png").c_str()));
 	Region child = zinc.root_region.createChild("child");
 	EXPECT_TRUE(child.isValid());
 	Fieldmodule childFm = child.getFieldmodule();
 	FieldImage image2 = childFm.createFieldImage();
 	EXPECT_TRUE(image2.isValid());
 	EXPECT_EQ(RESULT_OK, image2.setName("image_gray"));
-	EXPECT_EQ(RESULT_OK, image2.readFile(TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, image2.readFile(resourcePath("testimage_gray.jpg").c_str()));
 
 	Materialmodule materialmodule = zinc.context.getMaterialmodule();
 	EXPECT_TRUE(materialmodule.isValid());
@@ -466,14 +466,14 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	image1 = fm2.createFieldImage();
 	EXPECT_TRUE(image1.isValid());
 	EXPECT_EQ(RESULT_OK, image1.setName("image_blockcolours"));
-	EXPECT_EQ(RESULT_OK, image1.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, image1.readFile(resourcePath("blockcolours.png").c_str()));
 	Region child2 = rootRegion2.createChild("child");
 	EXPECT_TRUE(child2.isValid());
 	Fieldmodule childFm2 = child2.getFieldmodule();
 	image2 = childFm2.createFieldImage();
 	EXPECT_TRUE(image2.isValid());
 	EXPECT_EQ(RESULT_OK, image2.setName("image_gray"));
-	EXPECT_EQ(RESULT_OK, image2.readFile(TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, image2.readFile(resourcePath("testimage_gray.jpg").c_str()));
 
 	EXPECT_EQ(RESULT_OK, materialmodule2.readDescription(jsonString));
 	EXPECT_EQ(21, getNumberOfMaterials(materialmodule2));
