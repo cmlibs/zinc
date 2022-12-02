@@ -8,6 +8,10 @@
 cmake_minimum_required(VERSION 3.10.0)
 cmake_policy(VERSION 3.10.0)
 
+if(POLICY CMP0072)
+    cmake_policy(SET CMP0072 NEW)
+endif()
+
 if(POLICY CMP0078)
     cmake_policy(SET CMP0078 NEW)
 endif()
