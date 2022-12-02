@@ -56,3 +56,14 @@ foreach( TEST ${API_TESTS} )
   endif()
 endforeach()
 
+if(ZINC_MEMCHECK_WITH_VALGRIND)
+  add_custom_target(prepare_memcheck
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/valgrind_memcheck
+    COMMENT "Prepare for valgrind memcheck tests")
+
+  add_custom_target(valgrind_memcheck
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/valgrindmemcheck.py ${CMAKE_CURRENT_BINARY_DIR} ${TEST_LIST}
+    DEPENDS ${TEST_LIST} prepare_memcheck
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/valgrind_memcheck
+    COMMENT "Running memcheck tests")
+endif()
