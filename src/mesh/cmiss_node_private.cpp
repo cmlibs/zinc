@@ -556,7 +556,7 @@ protected:
 	{
 		// GRC cmzn_field_node_group_access missing:
 		cmzn_field_access(cmzn_field_node_group_base_cast(group));
-	}
+    }
 
 public:
 	cmzn_nodeset(FE_nodeset *fe_nodeset_in) :
@@ -731,10 +731,11 @@ public:
 	}
 
 protected:
-	~cmzn_nodeset()
+    virtual ~cmzn_nodeset()
 	{
 		if (group)
 			cmzn_field_node_group_destroy(&group);
+
 		cmzn::Deaccess(this->fe_nodeset);
 	}
 
@@ -1016,8 +1017,9 @@ int cmzn_nodeset_group_remove_element_nodes(
 cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	cmzn_field_node_group_id node_group)
 {
-	if (node_group)
+    if (node_group) {
 		return new cmzn_nodeset_group(node_group);
+    }
 	return 0;
 }
 

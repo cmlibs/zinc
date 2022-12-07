@@ -148,6 +148,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
             EXPECT_EQ(temp, temperatureField);
             cmzn_field_destroy(&temp);
         }
+        cmzn_field_destroy(&field);
     }
 
 	cmzn_field_id concatenateField = cmzn_fieldmodule_find_field_by_name(
@@ -400,6 +401,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_destroy(&crossProductField);
 	cmzn_field_destroy(&eigenvectorsField);
 	cmzn_field_destroy(&eigenvaluesField);
+    cmzn_field_destroy(&matrixMultiplyField);
 	cmzn_field_destroy(&determinantField);
 	cmzn_field_destroy(&coordinateTransformationField);
 	cmzn_field_destroy(&derivativeField);
@@ -443,7 +445,7 @@ void TestDescriptionOutput(cmzn_region_id region, const char *description)
 
 	EXPECT_EQ(CMZN_OK, cmzn_fieldmodule_read_description(fieldmodule, description));
 
-	testFields(fieldmodule);
+    testFields(fieldmodule);
 
     cmzn_region_destroy(&tetrahedron_region);
     cmzn_fieldmodule_destroy(&fieldmodule);
@@ -783,7 +785,7 @@ TEST(fieldmodule_description, write)
 	//printf("%s", description_string);
 
 	cmzn_region_id region = cmzn_region_create_child(root_region, "test");
-//	TestDescriptionOutput(region, description_string);
+    TestDescriptionOutput(region, description_string);
 	cmzn_region_destroy(&region);
 
 	cmzn_deallocate(description_string);
@@ -819,18 +821,18 @@ TEST(fieldmodule_description, write)
 	cmzn_context_destroy(&context);
 }
 
-//TEST(fieldmodule_description, read)
-//{
-//	cmzn_context_id context = cmzn_context_create("test");
-//	cmzn_region_id root_region = cmzn_context_get_default_region(context);
+TEST(fieldmodule_description, read)
+{
+    cmzn_context_id context = cmzn_context_create("test");
+    cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
-//    std::string stringBuffer = fileContents("fieldmodule/fieldmodule_description.json");
+    std::string stringBuffer = fileContents("fieldmodule/fieldmodule_description.json");
 
-//    TestDescriptionOutput(root_region, stringBuffer.c_str());
+    TestDescriptionOutput(root_region, stringBuffer.c_str());
 
-//	cmzn_region_destroy(&root_region);
-//	cmzn_context_destroy(&context);
-//}
+    cmzn_region_destroy(&root_region);
+    cmzn_context_destroy(&context);
+}
 
 // Test serialisation of field with NOT_APPLICABLE coordinate system
 TEST(Fieldmodule_description, writeFieldCoordinateSystemTypeNotApplicable)

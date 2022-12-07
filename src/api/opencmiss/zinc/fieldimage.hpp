@@ -39,12 +39,6 @@ public:
 
     ~FieldImage()
     {
-        if (0 != id)
-        {
-            cmzn_field_image_id temp_id = getDerivedId();
-            cmzn_field_image_destroy(&temp_id);
-            id = 0;
-        }
     }
 
 	enum CombineMode

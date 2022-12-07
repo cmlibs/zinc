@@ -5085,8 +5085,8 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	const int number_of_components = field->getNumberOfComponents();
 	struct FE_basis *previous_basis = 0;
 	int previous_number_of_element_values = -1;
-	DsLabelIndex *element_value, *element_values = 0;
-	DsLabelIndex *previous_element_values = 0;
+    DsLabelIndex *element_value, *element_values = nullptr;
+    DsLabelIndex *previous_element_values = nullptr;
 	const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
 	for (int component_number = 0; (component_number < number_of_components) && (return_code == CMZN_OK); ++component_number)
 	{
@@ -5224,11 +5224,11 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 			}
 			else
 			{
-				DEALLOCATE(element_values);
+                delete element_values;
 			}
 		}
 	}
-	DEALLOCATE(previous_element_values);
+    delete previous_element_values;
 	if (CMZN_OK == return_code)
 	{
 		*number_of_element_field_nodes_address=number_of_element_field_nodes;
