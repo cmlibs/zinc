@@ -12,7 +12,7 @@ SET(${CURRENT_TEST}_SRC
 #	${CURRENT_TEST}/create_if.cpp
 #	${CURRENT_TEST}/create_nodeset_operators.cpp
 #	${CURRENT_TEST}/create_vectoroperators.cpp
-#	${CURRENT_TEST}/region_io.cpp
+  ${CURRENT_TEST}/region_io.cpp
 #	${CURRENT_TEST}/create_image_processing.cpp
 #	${CURRENT_TEST}/create_fibre_axes.cpp
 #	${CURRENT_TEST}/elementbasis.cpp
@@ -27,7 +27,7 @@ SET(${CURRENT_TEST}_SRC
 #	${CURRENT_TEST}/fieldmeshoperators.cpp
 #	${CURRENT_TEST}/fieldmoduledescription.cpp
 #	${CURRENT_TEST}/fieldmodulenotifier.cpp
-  ${CURRENT_TEST}/fieldparameterstests.cpp
+#  ${CURRENT_TEST}/fieldparameterstests.cpp
 #	${CURRENT_TEST}/field_operator_derivatives.cpp
 #	${CURRENT_TEST}/fieldrange.cpp
 #	${CURRENT_TEST}/fieldsmoothing.cpp

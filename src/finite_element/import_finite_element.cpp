@@ -2483,23 +2483,22 @@ cmzn_node *EXReader::readNode()
             result = false;
             break;
         }
-//        FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
-//        FE_time_sequence *fileFeTimeSequence = feTimeSequence;
+        FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
+        FE_time_sequence *fileFeTimeSequence = feTimeSequence;
         FE_value singleTime = (this->timeIndex) ? this->timeIndex->time : 0.0;
-//        TimeSequence *timeSequence = nullptr;
-//        std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeTemplate->nodeFieldTimeSequences.find(field);
-//        if (iter != this->nodeTemplate->nodeFieldTimeSequences.end())
-//        {
-//            timeSequence = iter->second;
-//            fileFeTimeSequence = timeSequence->getFeTimeSequence();
-//            if (this->timeIndex)
-//            {
-//                // read parameters at a single time from a time sequence
-//                singleTime = timeSequence->getNearestTime();
-//            }
-//        }
-        printf("single time: %f\n", singleTime);
-        const int fileTimeCount = 1; //(fileFeTimeSequence) ? FE_time_sequence_get_number_of_times(fileFeTimeSequence) : 1;
+        TimeSequence *timeSequence = nullptr;
+        std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeTemplate->nodeFieldTimeSequences.find(field);
+        if (iter != this->nodeTemplate->nodeFieldTimeSequences.end())
+        {
+            timeSequence = iter->second;
+            fileFeTimeSequence = timeSequence->getFeTimeSequence();
+            if (this->timeIndex)
+            {
+                // read parameters at a single time from a time sequence
+                singleTime = timeSequence->getNearestTime();
+            }
+        }
+        const int fileTimeCount = (fileFeTimeSequence) ? FE_time_sequence_get_number_of_times(fileFeTimeSequence) : 1;
         const Value_type value_type = get_FE_field_value_type(field);
         switch (value_type)
         {
@@ -2530,81 +2529,71 @@ cmzn_node *EXReader::readNode()
         } break;
         case FE_VALUE_VALUE:
         {
-            static int count = 0;
-            const char feValueInputString[] = FE_VALUE_INPUT_STRING;
-//            const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
-//            printf("max. values count: %d\n", maximumValuesCount);
-//            std::vector<FE_value> valuesVector(maximumValuesCount);
-//            FE_value *values = valuesVector.data();
+            const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
+            std::vector<FE_value> valuesVector(maximumValuesCount);
+            FE_value *values = valuesVector.data();
             for (int t = 0; t < fileTimeCount; ++t)
             {
-//                FE_value fileTime = singleTime;
-//                if (fileFeTimeSequence)
-//                {
-//                    FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
-//                }
-                const bool readThisTime = true; //(!this->timeIndex) || (fileTime == singleTime);
-                    printf("component count: %d\n", componentCount);
+                FE_value fileTime = singleTime;
+                if (fileFeTimeSequence)
+                {
+                    FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
+                }
+                const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
                 for (int c = 0; c < componentCount; ++c)
                 {
-//                    const FE_node_field_template &nft = *(nodeField->getComponent(c));
-                    const int valuesCount = 1;//nft.getTotalValuesCount();
-                    printf("values count: %d\n", valuesCount);
+                    const FE_node_field_template &nft = *(nodeField->getComponent(c));
+                    const int valuesCount = nft.getTotalValuesCount();
                     for (int k = 0; k < valuesCount; ++k)
                     {
-                        FE_value localValue = 1.1;
-                        int input_result = IO_stream_scan(this->input_file, feValueInputString, &localValue);
-//printf("here %lf\n", localValue);
-//valuesVector[k] = localValue;
-//printf("again (%d): %lf\n", ++count, valuesVector[k]);
-//                        if (1 != input_result)
-//                        {
-//                            display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-//                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-//                            result = false;
-//                            break;
-//                        }
-//                        if (!std::isfinite(localValue))
-//                        {
-//                            display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
-//                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-//                            result = false;
-//                            break;
-//                        }
+                        if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &values[k]))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                            break;
+                        }
+                        if (!std::isfinite(values[k]))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
+                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                            break;
+                        }
                     }
-//                    if (!result)
-//                    {
-//                        break;
-//                    }
-//                    if (readThisTime)
-//                    {
-//                        if (this->exVersion < 2)
-//                        {
-//                            // all derivatives / value labels had same number of versions in old format
-//                            const int versionsCount = nft.getVersionsCountAtIndex(0);
-//                            if (versionsCount > 1)
-//                            {
-//                                // before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
-//                                std::vector<FE_value> tmpValuesVector(valuesVector);
-//                                FE_value *tmpValues = tmpValuesVector.data();
-//                                const int valueLabelsCount = nft.getValueLabelsCount();
-//                                for (int d = 0; d < valueLabelsCount; ++d)
-//                                {
-//                                    for (int v = 0; v < versionsCount; ++v)
-//                                    {
-//                                        values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
-//                                    }
-//                                }
-//                            }
-//                        }
-//                        if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
-//                            fileTime, valuesCount, values))
-//                        {
-//                            display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
-//                                valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-//                            result = false;
-//                        }
-//                    }
+                    if (!result)
+                    {
+                        break;
+                    }
+                    if (readThisTime)
+                    {
+                        if (this->exVersion < 2)
+                        {
+                            // all derivatives / value labels had same number of versions in old format
+                            const int versionsCount = nft.getVersionsCountAtIndex(0);
+                            if (versionsCount > 1)
+                            {
+                                // before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+                                std::vector<FE_value> tmpValuesVector(valuesVector);
+                                FE_value *tmpValues = tmpValuesVector.data();
+                                const int valueLabelsCount = nft.getValueLabelsCount();
+                                for (int d = 0; d < valueLabelsCount; ++d)
+                                {
+                                    for (int v = 0; v < versionsCount; ++v)
+                                    {
+                                        values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
+                                    }
+                                }
+                            }
+                        }
+                        if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
+                            fileTime, valuesCount, values))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
+                                valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                        }
+                    }
                 }
                 if (!result)
                 {
@@ -2620,10 +2609,10 @@ cmzn_node *EXReader::readNode()
             for (int t = 0; t < fileTimeCount; ++t)
             {
                 FE_value fileTime = singleTime;
-//                if (fileFeTimeSequence)
-//                {
-//                    FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
-//                }
+                if (fileFeTimeSequence)
+                {
+                    FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
+                }
                 const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
                 for (int c = 0; c < componentCount; ++c)
                 {
