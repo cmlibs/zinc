@@ -112,17 +112,13 @@ if( ZINC_BUILD_SHARED_LIBRARY )
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/api>
         $<INSTALL_INTERFACE:include/>
         PRIVATE ${FREETYPE_INCLUDE_DIRS})
-    if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-        # No target compile features in this setting.
-        target_compile_options(${ZINC_SHARED_TARGET} PRIVATE -std=c++11)
-    else ()
-        target_compile_features(${ZINC_SHARED_TARGET} PUBLIC cxx_auto_type)
-    endif ()
     add_dependencies(${ZINC_SHARED_TARGET} generate_version_cpp_file)
     if( WIN32 )
         target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${LINK_PUBLIC} winmm.lib)
     endif()
     set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED ON
         COMPILE_DEFINITIONS "ZINC_SHARED_OBJECT"
         DEFINE_SYMBOL "ZINC_EXPORTS")
     export(TARGETS ${ZINC_SHARED_TARGET}
@@ -142,16 +138,12 @@ if( ZINC_BUILD_STATIC_LIBRARY )
         )
     target_compile_definitions(${ZINC_STATIC_TARGET} PUBLIC STATIC_BUILD)
     add_dependencies(${ZINC_STATIC_TARGET} generate_version_cpp_file)
-    if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-        # No target compile features in this setting.
-        target_compile_options(${ZINC_STATIC_TARGET} PRIVATE -std=c++11)
-    else ()
-        target_compile_features(${ZINC_STATIC_TARGET} PUBLIC cxx_auto_type)
-    endif ()
     if(WIN32)
         target_link_libraries( ${ZINC_STATIC_TARGET} PUBLIC winmm.lib )
     endif()
     set_target_properties( ${ZINC_STATIC_TARGET} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED ON
         OUTPUT_NAME "${ZINC_LIBRARY_NAME}" PREFIX "lib" )
     export(TARGETS ${ZINC_STATIC_TARGET} ${OPENCMISSDEPENDENCIES_TARGET}
         FILE "${PROJECT_BINARY_DIR}/zinc-targets.cmake" APPEND)
