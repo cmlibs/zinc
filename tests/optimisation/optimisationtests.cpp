@@ -363,61 +363,61 @@ TEST(ZincOptimisation, addFieldassignment)
 	}
 	EXPECT_EQ(iCount, nodesetGroup.getSize());
 
-	Fieldassignment fieldassignment = coordinates.createFieldassignment(newCoordinates);
-	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(nodesetGroup));
-	EXPECT_TRUE(fieldassignment.isValid());
+    Fieldassignment fieldassignment = coordinates.createFieldassignment(newCoordinates);
+    EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(nodesetGroup));
+    EXPECT_TRUE(fieldassignment.isValid());
 
-	Fieldcache cache = zinc.fm.createFieldcache();
-	EXPECT_TRUE(cache.isValid());
+    Fieldcache cache = zinc.fm.createFieldcache();
+    EXPECT_TRUE(cache.isValid());
 
-	double volumeValueOut;
-	const double tolerance = 1.0E-6;
-	EXPECT_EQ(RESULT_OK, volume.evaluateReal(cache, 1, &volumeValueOut));
-	EXPECT_NEAR(1.0, volumeValueOut, tolerance);
+    double volumeValueOut;
+    const double tolerance = 1.0E-6;
+    EXPECT_EQ(RESULT_OK, volume.evaluateReal(cache, 1, &volumeValueOut));
+    EXPECT_NEAR(1.0, volumeValueOut, tolerance);
 
-	Optimisation optimisation = zinc.fm.createOptimisation();
-	EXPECT_TRUE(optimisation.isValid());
-	EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addDependentField(zOffset));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignment));
-	EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
+    Optimisation optimisation = zinc.fm.createOptimisation();
+    EXPECT_TRUE(optimisation.isValid());
+    EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
+    EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
+    EXPECT_EQ(RESULT_OK, result = optimisation.addDependentField(zOffset));
+    EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignment));
+    EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
 
-	EXPECT_EQ(RESULT_OK, result = optimisation.optimise());
-	char *solutionReport = optimisation.getSolutionReport();
-	EXPECT_NE((char *)0, solutionReport);
-	printf("%s\n", solutionReport);
+    EXPECT_EQ(RESULT_OK, result = optimisation.optimise());
+    char *solutionReport = optimisation.getSolutionReport();
+    EXPECT_NE((char *)0, solutionReport);
+    printf("%s\n", solutionReport);
+    cmzn_deallocate(solutionReport);
 
-	EXPECT_EQ(RESULT_OK, volume.evaluateReal(cache, 1, &volumeValueOut));
-	EXPECT_NEAR(2.0, volumeValueOut, tolerance);
-	double zOffsetOut;
-	EXPECT_EQ(RESULT_OK, zOffset.evaluateReal(cache, 1, &zOffsetOut));
-	EXPECT_NEAR(2.0, zOffsetOut, tolerance);
+    EXPECT_EQ(RESULT_OK, volume.evaluateReal(cache, 1, &volumeValueOut));
+    EXPECT_NEAR(2.0, volumeValueOut, tolerance);
+    double zOffsetOut;
+    EXPECT_EQ(RESULT_OK, zOffset.evaluateReal(cache, 1, &zOffsetOut));
+    EXPECT_NEAR(2.0, zOffsetOut, tolerance);
 
-	double x[3];
-	const double expectedX[8][3] =
-	{
-		{ 0.0, 0.0, 0.0 },
-		{ 1.0, 0.0, 0.0 },
-		{ 0.0, 1.0, 0.0 },
-		{ 1.0, 1.0, 0.0 },
-		{ 0.0, 0.0, 1.0 },
-		{ 1.0, 0.0, 3.0 },
-		{ 0.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 3.0 }
-	};
-	for (int n = 0; n < 8; ++n)
-	{
-		Node node = nodes.findNodeByIdentifier(n + 1);
-		EXPECT_TRUE(node.isValid());
-		EXPECT_EQ(RESULT_OK, cache.setNode(node));
-		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, x));
-		for (int c = 0; c < 3; ++c)
-		{
-			EXPECT_NEAR(expectedX[n][c], x[c], tolerance);
-		}
-	}
-	cmzn_deallocate(solutionReport);
+    double x[3];
+    const double expectedX[8][3] =
+    {
+        { 0.0, 0.0, 0.0 },
+        { 1.0, 0.0, 0.0 },
+        { 0.0, 1.0, 0.0 },
+        { 1.0, 1.0, 0.0 },
+        { 0.0, 0.0, 1.0 },
+        { 1.0, 0.0, 3.0 },
+        { 0.0, 1.0, 1.0 },
+        { 1.0, 1.0, 3.0 }
+    };
+    for (int n = 0; n < 8; ++n)
+    {
+        Node node = nodes.findNodeByIdentifier(n + 1);
+        EXPECT_TRUE(node.isValid());
+        EXPECT_EQ(RESULT_OK, cache.setNode(node));
+        EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, x));
+        for (int c = 0; c < 3; ++c)
+        {
+            EXPECT_NEAR(expectedX[n][c], x[c], tolerance);
+        }
+    }
 }
 
 // Optimise z displacement via a ramp in x of nodes on top of two hermite cubes
@@ -578,6 +578,7 @@ TEST(ZincOptimisation, leastSquaresFitNewton)
 
 	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outSum));
 	EXPECT_NEAR(0.0, outSum, TOL);
+    cmzn_deallocate(solutionReport);
 }
 
 // Use NEWTON method to solve least squares fit of two hermite cubes without cross derivatives
@@ -730,6 +731,7 @@ TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
 	char *solutionReport = optimisation.getSolutionReport();
 	EXPECT_NE((char *)0, solutionReport);
 	printf("%s", solutionReport);
+    cmzn_deallocate(solutionReport);
 
 	const double TOL = 1.0E-8;
 	double outSurfaceFitObjectiveValue;

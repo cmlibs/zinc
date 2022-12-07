@@ -101,6 +101,7 @@ TEST(cmzn_field_derivative, valid_args)
 
 	cmzn_field_id ft = cmzn_fieldmodule_find_field_by_name(fm, "xi");
 	EXPECT_NE(static_cast<cmzn_field *>(0), ft);
+    cmzn_field_destroy(&ft);
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_derivative(fm, f1, 1);
 	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
@@ -157,8 +158,8 @@ TEST(cmzn_field_derivative, valid_args)
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_field_destroy(&f3);
-	cmzn_field_destroy(&f4);
-	cmzn_field_derivative_destroy(&f4d);
+    cmzn_field_destroy(&f4);
+    cmzn_field_derivative_destroy(&f4d);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
@@ -787,7 +788,11 @@ TEST(ZincFieldGradient, gradientOfGradient2)
 	const double scaleValues[3] = { 0.1, 0.2, 0.15 };
 	FieldConstant scale = zinc.fm.createFieldConstant(3, scaleValues);
 	FieldAdd newCoordinates = coordinates + scale*zinc.fm.createFieldCos(projectedCoordinates);
-	EXPECT_EQ(RESULT_OK, coordinates.createFieldassignment(newCoordinates).assign());
+//	EXPECT_EQ(RESULT_OK, coordinates.createFieldassignment(newCoordinates).assign());
+    Fieldassignment fieldassignment = coordinates.createFieldassignment(newCoordinates);
+    EXPECT_TRUE(fieldassignment.isValid());
+    EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+
 
 	Field deformedGradient1 = zinc.fm.createFieldGradient(deformed, coordinates);
 	EXPECT_TRUE(deformedGradient1.isValid());

@@ -99,13 +99,16 @@ int cmzn_optimisation::setConditionalField(cmzn_field_id dependentField,
 
 int cmzn_optimisation::addFieldassignment(cmzn_fieldassignment *fieldassignment)
 {
-	if ((!fieldassignment) || (Computed_field_get_region(fieldassignment->getTargetField())
+    auto targetField = fieldassignment->getTargetField();
+    if ((!fieldassignment) || (Computed_field_get_region(targetField)
 		!= (cmzn_fieldmodule_get_region_internal(this->fieldModule))))
 	{
 		display_message(ERROR_MESSAGE, "Optimisation addFieldassignment.  Missing or invalid field assignment for this optimisation");
-		return CMZN_ERROR_ARGUMENT;
+        cmzn_field_destroy(&targetField);
+        return CMZN_ERROR_ARGUMENT;
 	}
-	this->fieldassignments.push_back(fieldassignment->access());
+    cmzn_field_destroy(&targetField);
+    this->fieldassignments.push_back(fieldassignment->access());
 	return CMZN_OK;
 }
 

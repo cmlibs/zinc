@@ -221,6 +221,7 @@ void FeMeshFieldRangesCache::evaluateMeshFieldRanges(cmzn_fieldcache& fieldcache
 			}
 		}
 	}
+    cmzn_elementiterator_destroy(&elemIter);
 	cmzn_fieldrange::deaccess(fieldrange);
 	meshFieldRanges->setTotalRange(componentsCount, totalRange);
 	meshFieldRanges->setEvaluated();

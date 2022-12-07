@@ -3161,7 +3161,6 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 {
 	int return_code;
 	struct Texture *texture;
-    int number_of_components;
 
 	ENTER(DESTROY(Texture));
 	if (texture_address)
@@ -4182,7 +4181,7 @@ positive. Cropping is not available in the depth direction.
 				texture->crop_height = crop_height;
 				/* display list needs to be compiled again */
 				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
-				return_code = 1;
+                return_code = 1;
 			}
 			else
 			{

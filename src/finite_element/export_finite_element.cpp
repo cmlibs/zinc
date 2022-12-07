@@ -2140,7 +2140,6 @@ bool EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_g
 	if (group)
 	{
 		cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-		cmzn_nodeset_destroy(&nodeset);
 		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 		cmzn_field_node_group_destroy(&node_group);
 	}
@@ -2168,9 +2167,9 @@ bool EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_g
 			}
 		}
 		cmzn_nodeiterator_destroy(&iter);
-		cmzn_nodeset_destroy(&nodeset);
 	}
-	return result;
+    cmzn_nodeset_destroy(&nodeset);
+    return result;
 }
 
 /** Write group node identifiers in compact form with ranges:
@@ -2359,8 +2358,8 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 		else
 		{
 			// write all groups
-			cmzn_fieldmodule *field_module = cmzn_region_get_fieldmodule(region);
-			cmzn_fielditerator *field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
+//			cmzn_fieldmodule *field_module = cmzn_region_get_fieldmodule(region);
+            cmzn_fielditerator *field_iter = cmzn_fieldmodule_create_fielditerator(this->fieldmodule);
 			cmzn_field *field = nullptr;
 			while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
 			{
@@ -2375,17 +2374,19 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 				}
 			}
 			cmzn_fielditerator_destroy(&field_iter);
-			cmzn_fieldmodule_destroy(&field_module);
+//			cmzn_fieldmodule_destroy(&field_module);
 		}
 	}
 
 	if (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
 	{
 		// write child regions
-		cmzn_region *childRegion = region->getFirstChild();
+        cmzn_region *childRegion = this->region->getFirstChild();
 		while (childRegion)
 		{
+            auto currentFieldmodule = this->fieldmodule;
 			return_code = this->writeRegion(childRegion);
+            this->fieldmodule = currentFieldmodule;
 			if (!return_code)
 			{
 				break;

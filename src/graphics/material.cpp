@@ -2409,6 +2409,7 @@ int cmzn_material_set_texture_field(cmzn_material_id material,
 				material->compile_status = GRAPHICS_NOT_COMPILED;
 				Graphical_material_changed(material);
 			}
+            cmzn_field_image_destroy(&image_field);
 			return CMZN_OK;
 		}
 	}

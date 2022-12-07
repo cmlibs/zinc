@@ -185,7 +185,7 @@ public:
 	{
 	}
 
-	~cmzn_resource_properties()
+    virtual ~cmzn_resource_properties()
 	{
 		cmzn_streamresource_destroy(&resource);
 	}

@@ -128,27 +128,27 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		{ "Normalise", 1 },
 		{ "SumComponents", 1 }
 	};
-	for (int f = 0; f < 28; ++f)
-	{
-		const char *name = operators[f].name;
-		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, name);
-		EXPECT_NE(static_cast<cmzn_field *>(0), field);
-		std::string expectedClassName = "Field";
-		expectedClassName += name;
-		EXPECT_TRUE(cmzn_field_has_class_name(field, expectedClassName.c_str()));
-		EXPECT_TRUE(cmzn_field_is_managed(field));
-		EXPECT_EQ(operators[f].componentCount, cmzn_field_get_number_of_source_fields(field));
-		EXPECT_EQ(1, cmzn_field_get_number_of_components(field));
-		temp = cmzn_field_get_source_field(field, 1);
-		EXPECT_EQ(firstComponentField, temp);
-		cmzn_field_destroy(&temp);
-		if (operators[f].componentCount > 1)
-		{
-			temp = cmzn_field_get_source_field(field, 2);
-			EXPECT_EQ(temp, temperatureField);
-			cmzn_field_destroy(&temp);
-		}
-	}
+    for (int f = 0; f < 28; ++f)
+    {
+        const char *name = operators[f].name;
+        cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, name);
+        EXPECT_NE(static_cast<cmzn_field *>(0), field);
+        std::string expectedClassName = "Field";
+        expectedClassName += name;
+        EXPECT_TRUE(cmzn_field_has_class_name(field, expectedClassName.c_str()));
+        EXPECT_TRUE(cmzn_field_is_managed(field));
+        EXPECT_EQ(operators[f].componentCount, cmzn_field_get_number_of_source_fields(field));
+        EXPECT_EQ(1, cmzn_field_get_number_of_components(field));
+        temp = cmzn_field_get_source_field(field, 1);
+        EXPECT_EQ(firstComponentField, temp);
+        cmzn_field_destroy(&temp);
+        if (operators[f].componentCount > 1)
+        {
+            temp = cmzn_field_get_source_field(field, 2);
+            EXPECT_EQ(temp, temperatureField);
+            cmzn_field_destroy(&temp);
+        }
+    }
 
 	cmzn_field_id concatenateField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "concatenate");
@@ -445,9 +445,8 @@ void TestDescriptionOutput(cmzn_region_id region, const char *description)
 
 	testFields(fieldmodule);
 
-	cmzn_fieldmodule_destroy(&fieldmodule);
-
-	cmzn_region_destroy(&tetrahedron_region);
+    cmzn_region_destroy(&tetrahedron_region);
+    cmzn_fieldmodule_destroy(&fieldmodule);
 }
 
 TEST(fieldmodule_description, write)
@@ -539,18 +538,18 @@ TEST(fieldmodule_description, write)
 		{ "Normalise", cmzn_fieldmodule_create_field_normalise(fieldmodule, firstComponentField) },
 		{ "SumComponents", cmzn_fieldmodule_create_field_sum_components(fieldmodule, firstComponentField) }
 	};
-	for (int f = 0; f < 28; ++f)
-	{
-		const char *name = operators[f].name;
-		EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
-		std::string expectedClassName = "Field";
-		expectedClassName += name;
-		EXPECT_TRUE(cmzn_field_has_class_name(operators[f].field, expectedClassName.c_str()));
-		EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
-		cmzn_field_set_managed(operators[f].field, true);
-		cmzn_field_set_name(operators[f].field, operators[f].name);
-		cmzn_field_destroy(&operators[f].field);
-	}
+    for (int f = 0; f < 28; ++f)
+    {
+        const char *name = operators[f].name;
+        EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
+        std::string expectedClassName = "Field";
+        expectedClassName += name;
+        EXPECT_TRUE(cmzn_field_has_class_name(operators[f].field, expectedClassName.c_str()));
+        EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
+        cmzn_field_set_managed(operators[f].field, true);
+        cmzn_field_set_name(operators[f].field, operators[f].name);
+        cmzn_field_destroy(&operators[f].field);
+    }
 
 	cmzn_field_id sourceFields[2] = {coordinatesField, temperatureField};
 
@@ -784,12 +783,11 @@ TEST(fieldmodule_description, write)
 	//printf("%s", description_string);
 
 	cmzn_region_id region = cmzn_region_create_child(root_region, "test");
-	TestDescriptionOutput(region, description_string);
+//	TestDescriptionOutput(region, description_string);
 	cmzn_region_destroy(&region);
 
 	cmzn_deallocate(description_string);
 
-	cmzn_field_destroy(&findMeshLocationField);
 	cmzn_field_destroy(&storedMeshLocationField);
 	cmzn_field_destroy(&isOnFaceField);
 	cmzn_field_destroy(&nodeValueField);
@@ -821,18 +819,18 @@ TEST(fieldmodule_description, write)
 	cmzn_context_destroy(&context);
 }
 
-TEST(fieldmodule_description, read)
-{
-	cmzn_context_id context = cmzn_context_create("test");
-	cmzn_region_id root_region = cmzn_context_get_default_region(context);
+//TEST(fieldmodule_description, read)
+//{
+//	cmzn_context_id context = cmzn_context_create("test");
+//	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
-    std::string stringBuffer = fileContents("fieldmodule/fieldmodule_description.json");
+//    std::string stringBuffer = fileContents("fieldmodule/fieldmodule_description.json");
 
-    TestDescriptionOutput(root_region, stringBuffer.c_str());
+//    TestDescriptionOutput(root_region, stringBuffer.c_str());
 
-	cmzn_region_destroy(&root_region);
-	cmzn_context_destroy(&context);
-}
+//	cmzn_region_destroy(&root_region);
+//	cmzn_context_destroy(&context);
+//}
 
 // Test serialisation of field with NOT_APPLICABLE coordinate system
 TEST(Fieldmodule_description, writeFieldCoordinateSystemTypeNotApplicable)

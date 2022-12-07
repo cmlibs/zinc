@@ -12,13 +12,14 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstdio>
+#include <math.h>
 #include <vector>
 
 #include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/status.h"
+
 #include "general/indexed_list_stl_private.hpp"
-#include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_field_private.hpp"

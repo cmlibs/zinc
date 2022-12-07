@@ -39,14 +39,7 @@ include(MacroDefinitions)
 include(FunctionDefinitions)
 include(CMLMiscFunctions)
 
-get_property(IS_MULTI_CONFIG_ENV GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-
-find_package(Python COMPONENTS Interpreter)
-find_program(VALGRIND_EXE NAMES ${PREFERRED_VALGRIND_NAMES} valgrind)
-if(VALGRIND_EXE AND Python_Interpreter_FOUND)
-  set(VALGRIND_TESTING_AVAILABLE TRUE CACHE INTERNAL "Executable required to run valgrind testing is available.")
-endif()
-mark_as_advanced(VALGRIND_EXE)
+include(EnvironmentChecks)
 
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
@@ -55,6 +48,9 @@ option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
 option(ZINC_USE_OSMESA "Use OSMesa for software rendering." OFF)
 if(VALGRIND_TESTING_AVAILABLE)
   option(ZINC_MEMCHECK_WITH_VALGRIND "Enable memory checking with valgrind." OFF)
+endif()
+if(LLVM_COVERAGE_TESTING_AVAILABLE)
+  set(ZINC_LLVM_COVERAGE OFF CACHE BOOL "Enable LLVM coverage testing.")
 endif()
 
 # Optional libraries

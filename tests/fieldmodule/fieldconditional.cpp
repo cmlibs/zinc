@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
@@ -139,6 +140,7 @@ TEST(ZincFieldIf, valueTypeMeshLocationDifferentHostMesh)
 TEST(ZincFieldIf, valueTypeString)
 {
 	ZincTestSetupCpp zinc;
+    char *text = nullptr;
 
 	FieldStringConstant constantString = zinc.fm.createFieldStringConstant("fred");
 	EXPECT_TRUE(constantString.isValid());
@@ -168,9 +170,12 @@ TEST(ZincFieldIf, valueTypeString)
 	// reset field cache and evaluate fields
 	fieldcache = zinc.fm.createFieldcache();
 	EXPECT_EQ(RESULT_OK, fieldcache.setNode(node1));
-	EXPECT_STREQ("bob", storedString.evaluateString(fieldcache));
-	EXPECT_STREQ("bob", conditionalString.evaluateString(fieldcache));
-	EXPECT_STREQ("fred", constantString.evaluateString(fieldcache));
+    EXPECT_STREQ("bob", text = storedString.evaluateString(fieldcache));
+    cmzn_deallocate(text);
+    EXPECT_STREQ("bob", text = conditionalString.evaluateString(fieldcache));
+    cmzn_deallocate(text);
+    EXPECT_STREQ("fred", text = constantString.evaluateString(fieldcache));
+    cmzn_deallocate(text);
 
 	// test field assignment works:
 	Fieldassignment fieldassignment = storedString.createFieldassignment(constantString);
@@ -178,7 +183,10 @@ TEST(ZincFieldIf, valueTypeString)
 	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
 	EXPECT_EQ(RESULT_OK, constantString.assignString(fieldcache, "bob"));
 
-	EXPECT_STREQ("fred", storedString.evaluateString(fieldcache));
-	EXPECT_STREQ("fred", conditionalString.evaluateString(fieldcache));
-	EXPECT_STREQ("bob", constantString.evaluateString(fieldcache));
+    EXPECT_STREQ("fred", text = storedString.evaluateString(fieldcache));
+    cmzn_deallocate(text);
+    EXPECT_STREQ("fred", text = conditionalString.evaluateString(fieldcache));
+    cmzn_deallocate(text);
+    EXPECT_STREQ("bob", text = constantString.evaluateString(fieldcache));
+    cmzn_deallocate(text);
 }

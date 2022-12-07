@@ -480,6 +480,7 @@ TEST(ZincMaterialmodule, writeReadDescription)
 
 	char* jsonString2 = materialmodule2.writeDescription();
 	EXPECT_STREQ(jsonString, jsonString2);
+    cmzn_deallocate(jsonString2);
 
 	// test bogus material correctly serialised
 	Material bogusMaterial2 = materialmodule2.findMaterialByName("bogus");
@@ -509,6 +510,8 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	EXPECT_EQ(RESULT_OK, context4.setDefaultRegion(Region()));
 	Materialmodule materialmodule4 = context4.getMaterialmodule();
 	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, materialmodule4.readDescription(jsonString));
+
+    cmzn_deallocate(jsonString);
 }
 
 TEST(ZincMaterialiterator, iteration)

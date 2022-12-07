@@ -70,6 +70,7 @@ TEST(cmzn_region, build_tree)
 	EXPECT_FALSE(cmzn_region_contains_subregion(alf, bob));
 
     cmzn_region_destroy(&fred);
+    cmzn_region_destroy(&fred);
     cmzn_region_destroy(&harry);
 	cmzn_region_destroy(&joe);
 	cmzn_region_destroy(&alf);

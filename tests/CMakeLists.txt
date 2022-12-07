@@ -15,19 +15,19 @@ set(API_TESTS)
 # Any tests to include must append the test name
 # to the API_TESTS list.  Any source files for the
 # test must be set to <test name>_SRC.
-include(context/tests.cmake)
-include(fieldio/tests.cmake)
+#include(context/tests.cmake)
+#include(fieldio/tests.cmake)
 include(fieldmodule/tests.cmake)
-include(glyph/tests.cmake)
-include(graphics/tests.cmake)
-include(material/tests.cmake)
-include(optimisation/tests.cmake)
-include(region/tests.cmake)
-include(selection/tests.cmake)
-include(spectrum/tests.cmake)
-include(time/tests.cmake)
-include(image/tests.cmake)
-include(logger/tests.cmake)
+#include(glyph/tests.cmake)
+#include(graphics/tests.cmake)
+#include(material/tests.cmake)
+#include(optimisation/tests.cmake)
+#include(region/tests.cmake)
+#include(selection/tests.cmake)
+#include(spectrum/tests.cmake)
+#include(time/tests.cmake)
+#include(image/tests.cmake)
+#include(logger/tests.cmake)
 
 foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
@@ -69,4 +69,40 @@ if(ZINC_MEMCHECK_WITH_VALGRIND)
     DEPENDS ${TEST_LIST} prepare_memcheck
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/valgrind_memcheck
     COMMENT "Running memcheck tests")
+endif()
+
+if(ZINC_LLVM_COVERAGE)
+  set(RAW_PROFILE_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/zinc-%m.profraw")
+  set(RAW_GATHER_PROFILE_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/zinc-*.profraw")
+  set(DATA_PROFILE_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/zinc.profdata")
+
+  unset(_CMD_STRING)
+  foreach(_TEST ${TEST_LIST})
+    list(APPEND _CMD_STRING COMMAND LLVM_PROFILE_FILE=${RAW_PROFILE_FILENAME} ./${_TEST} > /dev/null 2> /dev/null)
+  endforeach()
+
+  # Clean away old profile files
+  add_custom_target(clean_llvm_coverage
+    COMMAND ${FIND_EXE} ${CMAKE_CURRENT_BINARY_DIR} -type f -name '*.profraw' -print | xargs /bin/rm -f
+    COMMAND ${FIND_EXE} ${CMAKE_CURRENT_BINARY_DIR} -type f -name '*.profdata' -print | xargs /bin/rm -f
+    COMMENT "Clean old LLVM coverage data")
+
+  add_custom_target(prepare_llvm_coverage
+    ${_CMD_STRING}
+    COMMAND ${LLVM_PROFDATA_EXE} merge -sparse ${RAW_GATHER_PROFILE_FILENAME} -o ${DATA_PROFILE_FILENAME}
+    DEPENDS clean_llvm_coverage ${TEST_LIST}
+    COMMENT "Prepare for LLVM coverage tests")
+
+  # Unfortunately we cannot get an output in html format at this time as it is not supported at version 8.
+  add_custom_target(llvm_coverage_terminal
+    COMMAND ${LLVM_COV_EXE} report $<TARGET_FILE:zinc> -instr-profile=${DATA_PROFILE_FILENAME} -format=text -use-color
+    DEPENDS prepare_llvm_coverage
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Report LLVM coverage results in the terminal")
+
+  add_custom_target(llvm_coverage_html
+    COMMAND ${LLVM_COV_EXE} show $<TARGET_FILE:zinc> -instr-profile=${DATA_PROFILE_FILENAME} -format=html -Xdemangler c++filt -Xdemangler -n -o coverage_report --show-expansions --show-branches=count
+    DEPENDS prepare_llvm_coverage
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Report LLVM coverage results in HTML")
 endif()

@@ -797,8 +797,9 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 	cmzn_region_id region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 		region->get_FE_region(), domain_type);
-	if (fe_nodeset)
-		return new cmzn_nodeset(fe_nodeset);
+    if (fe_nodeset) {
+        return new cmzn_nodeset(fe_nodeset);
+    }
 	return 0;
 }
 

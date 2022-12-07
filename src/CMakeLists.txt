@@ -169,6 +169,17 @@ if( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
         OUTPUT_NAME_DEBUG ${ZINC_SHARED_TARGET}d.${Zinc_VERSION} )
 endif()
 
+if(ZINC_LLVM_COVERAGE)
+  if(TARGET ${ZINC_SHARED_TARGET})
+    set_property(TARGET ${ZINC_SHARED_TARGET} PROPERTY COMPILE_FLAGS "-fprofile-instr-generate -fcoverage-mapping" APPEND)
+    set_property(TARGET ${ZINC_SHARED_TARGET} PROPERTY LINK_FLAGS "-fprofile-instr-generate" APPEND)
+  endif()
+  if(TARGET ${ZINC_STATIC_TARGET})
+    set_property(TARGET ${ZINC_STATIC_TARGET} PROPERTY COMPILE_FLAGS "-fprofile-instr-generate -fcoverage-mapping" APPEND)
+    set_property(TARGET ${ZINC_STATIC_TARGET} PROPERTY LINK_FLAGS "-fprofile-instr-generate" APPEND)
+  endif()
+endif()
+
 # Additional clean files
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${FILES_FOR_CLEANING}")
 # Install rules for Zinc

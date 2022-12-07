@@ -233,7 +233,6 @@ TEST(cmzn_fieldmodule_create_image, analyze_lung)
 	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 	cmzn_field_destroy(&f1);
-
 }
 
 #include <stdint.h>
