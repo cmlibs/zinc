@@ -38,16 +38,6 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_finite_element_id))
 	{	}
 
-    ~FieldFiniteElement()
-    {
-        if (0 != id)
-        {
-            cmzn_field_finite_element_id temp_id = this->getDerivedId();
-            cmzn_field_finite_element_destroy(&temp_id);
-            id = 0;
-        }
-    }
-
 	int getNodeParameters(const Fieldcache& cache, int componentNumber,
 		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, double *valuesOut) const
 	{

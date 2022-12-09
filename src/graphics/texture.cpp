@@ -4328,19 +4328,6 @@ int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixe
 	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
-//allocate: 272: 3064 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 8: 3069 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 160000: 4132 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 16: 314 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 80: 314 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 24: 247 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 32: 313 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 80: 313 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 24: 247 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 24: 247 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 24: 247 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-//allocate: 24: 247 - /Users/hsor001/Projects/continuummechanics/builds/zinc/src/graphics/texture.cpp
-
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
 	int crop_left, int crop_bottom, int crop_width, int crop_height)

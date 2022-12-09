@@ -257,8 +257,8 @@ TEST(ZincRegion, fieldml_tetmesh)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-        resourcePath("fieldio/tetmesh.fieldml").c_str()));
+    std::string inFile = resourcePath("fieldio/tetmesh.fieldml");
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(inFile.c_str()));
 	check_tetmesh_model(zinc.fm);
 
 	// check can't merge cube model since it redefines element 1 shape
@@ -387,7 +387,7 @@ TEST(ZincRegion, fieldml_wheel_indirect)
         resourcePath("fieldio/wheel_indirect.fieldml").c_str()));
 	check_wheel_model(zinc.fm);
 
-    std::string outFile = manageOutputFolderFieldML.getPath("/wheel.fieldml");
+    std::string outFile = manageOutputFolderFieldML.getPath("/wheel_indirect.fieldml");
 	// test writing and re-reading into different region
     EXPECT_EQ(OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion = zinc.root_region.createChild("test");
@@ -762,10 +762,10 @@ TEST(ZincRegion, lines_inconsistent_node_order)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-        resourcePath("fieldio/twohermitecubes_noscalefactors.exfile").c_str()));
+        resourcePath("fieldio/lines_inconsistent_node_order.exfile").c_str()));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
-    std::string outFile = manageOutputFolderFieldML.getPath("/twohermitecubes_noscalefactors.fieldml");
+    std::string outFile = manageOutputFolderFieldML.getPath("/lines_inconsistent_node_order.fieldml");
 	// test writing and re-reading in FieldML format
     EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion1 = zinc.root_region.createChild("test1");
@@ -1628,10 +1628,10 @@ TEST(FieldIO, read_elements_before_time_varying_nodes)
     sir.createStreamresourceFile(resourcePath("fieldio/cube_element.ex2").c_str());
     StreamresourceFile fr1 = sir.createStreamresourceFile(resourcePath("fieldio/cube_node1.ex2").c_str());
 	sir.setResourceAttributeReal(fr1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
-    StreamresourceFile fr3 = sir.createStreamresourceFile(resourcePath("fieldio/cube_node1.ex2").c_str());
+    StreamresourceFile fr3 = sir.createStreamresourceFile(resourcePath("fieldio/cube_node3.ex2").c_str());
 	sir.setResourceAttributeReal(fr3, StreaminformationRegion::ATTRIBUTE_TIME, 3.0);
 	// deliberately merge out-of-order
-    StreamresourceFile fr2 = sir.createStreamresourceFile(resourcePath("fieldio/cube_node1.ex2").c_str());
+    StreamresourceFile fr2 = sir.createStreamresourceFile(resourcePath("fieldio/cube_node2.ex2").c_str());
 	sir.setResourceAttributeReal(fr2, StreaminformationRegion::ATTRIBUTE_TIME, 2.0);
 	const double times[5] = { 1.0, 1.5, 2.0, 2.5, 3.0 };
 	const double xi[3] = { 0.5, 0.5, 0.5 };

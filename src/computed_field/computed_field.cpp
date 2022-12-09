@@ -220,9 +220,7 @@ cmzn_field::~cmzn_field()
 		DEALLOCATE(this->source_values);
 	}
 	this->number_of_source_values = 0;
-    if (this->name) {
-        DEALLOCATE(this->name);
-    }
+    DEALLOCATE(this->name);
 }
 
 cmzn_field *cmzn_field::create(const char *nameIn)

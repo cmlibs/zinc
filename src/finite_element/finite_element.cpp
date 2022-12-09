@@ -2463,7 +2463,6 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 			else
 			{
 				/* Need to copy after all */
-                printf("00000000 copy after all\n");
 				node_field_list = CREATE_LIST(FE_node_field)();
 				if (COPY_LIST(FE_node_field)(node_field_list, existing_node_field_info->node_field_list))
 				{
@@ -2566,7 +2565,6 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 			ACCESS(FE_time_sequence)(existing_node_field->getTimeSequence()) : 0;
 		/* Check node fields are consistent or we are only adding times */
 		/* Need to copy node field list in case it is modified  */
-        printf("5555555 create a new list\n");
 		struct LIST(FE_node_field) *new_node_field_list = CREATE_LIST(FE_node_field)();
 		if (COPY_LIST(FE_node_field)(new_node_field_list, node_field_info->node_field_list))
 		{

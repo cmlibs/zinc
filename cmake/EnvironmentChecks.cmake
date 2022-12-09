@@ -21,7 +21,6 @@ if(VALGRIND_EXE AND Python_Interpreter_FOUND)
 endif()
 mark_as_advanced(VALGRIND_EXE)
 
-
 if(LLVM_PROFDATA_EXE AND LLVM_COV_EXE AND FIND_EXE AND LLVM_COVERAGE_COMPILER_FLAGS_OK)
   set(LLVM_COVERAGE_TESTING_AVAILABLE TRUE CACHE INTERNAL "Executables required to run the llvm coverage testing are available.")
 endif()

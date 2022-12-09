@@ -37,10 +37,6 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_image_id))
 	{	}
 
-    ~FieldImage()
-    {
-    }
-
 	enum CombineMode
 	{
 		COMBINE_MODE_INVALID = CMZN_FIELD_IMAGE_COMBINE_MODE_INVALID,

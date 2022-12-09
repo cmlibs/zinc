@@ -28,8 +28,6 @@
 
 #include "test_resources.h"
 
-#define FIELDML_OUTPUT_FOLDER "fieldmltest"
-
 namespace {
 
 ManageOutputFolder manageOutputFolderFieldML("fieldml");
@@ -108,13 +106,14 @@ TEST(ZincRegion, fieldml_twohermitecubes_noscalefactors)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-        resourcePath("twohermitecubes_noscalefactors.exfile").c_str()));
+        resourcePath("fieldio/twohermitecubes_noscalefactors.exfile").c_str()));
 	check_twohermitecubes_noscalefactors_model(zinc.fm);
 
 	// test writing and re-reading into different region
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/twohermitecubes_noscalefactors.fieldml"));
+    std::string outFile = manageOutputFolderFieldML.getPath("/twohermitecubes_noscalefactors.fieldml");
+    EXPECT_EQ(OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion = zinc.root_region.createChild("test");
-	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/twohermitecubes_noscalefactors.fieldml"));
+    EXPECT_EQ(OK, result = testRegion.readFile(outFile.c_str()));
 	Fieldmodule testFm = testRegion.getFieldmodule();
 	check_twohermitecubes_noscalefactors_model(testFm);
 }
@@ -197,7 +196,7 @@ TEST(ZincRegion, fieldml_figure8)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-        resourcePath("figure8.exfile").c_str()));
+        resourcePath("fieldio/figure8.exfile").c_str()));
 	check_figure8_model(zinc.fm);
 
 #if 0
@@ -231,10 +230,11 @@ TEST(ZincRegion, fieldml_figure8)
 	check_figure8_model(testFm2);
 
 	// test writing and re-reading EX format, via file
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/figure8.ex2"));
+    std::string outFile = manageOutputFolderFieldML.getPath("/figure8.ex2");
+    EXPECT_EQ(OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion3 = zinc.root_region.createChild("test3");
 	EXPECT_TRUE(testRegion3.isValid());
-	EXPECT_EQ(OK, result = testRegion3.readFile(FIELDML_OUTPUT_FOLDER "/figure8.ex2"));
+    EXPECT_EQ(OK, result = testRegion3.readFile(outFile.c_str()));
 	Fieldmodule testFm3 = testRegion3.getFieldmodule();
 	check_figure8_model(testFm3);
 }
@@ -554,25 +554,28 @@ TEST(ZincRegion, bifurcation)
 	check_bifurcation(zinc.fm);
 
 	// test writing and re-reading in EX format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.ex2"));
+    std::string outExFile = manageOutputFolderFieldML.getPath("/bifurcation.ex2");
+    EXPECT_EQ(OK, result = zinc.root_region.writeFile(outExFile.c_str()));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.ex2"));
+    EXPECT_EQ(OK, result = testRegion1.readFile(outExFile.c_str()));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_bifurcation(testFm1);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
+    std::string outFieldMLFile = manageOutputFolderFieldML.getPath("/bifurcation.fieldml");
+    EXPECT_EQ(OK, result = zinc.root_region.writeFile(outFieldMLFile.c_str()));
 	Region testRegion2 = zinc.root_region.createChild("test2");
-	EXPECT_EQ(OK, result = testRegion2.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
+    EXPECT_EQ(OK, result = testRegion2.readFile(outFieldMLFile.c_str()));
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
 	check_bifurcation(testFm2);
 
 	// test writing and re-reading in FieldML format, with non-contiguous
 	// element and node identifiers to test different code used in that case
 	offset_identifiers(testFm2, /*idFirst*/1, /*idBlockSize*/6, /*idBlockSpan*/8);
-	EXPECT_EQ(OK, result = testRegion2.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
+    std::string outFieldMLNonContigFile = manageOutputFolderFieldML.getPath("/bifurcation_noncontiguous.fieldml");
+    EXPECT_EQ(OK, result = testRegion2.writeFile(outFieldMLNonContigFile.c_str()));
 	Region testRegion3 = zinc.root_region.createChild("test3");
-	EXPECT_EQ(OK, result = testRegion3.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
+    EXPECT_EQ(OK, result = testRegion3.readFile(outFieldMLNonContigFile.c_str()));
 	Fieldmodule testFm3 = testRegion3.getFieldmodule();
 	check_bifurcation(testFm3, /*idFirst*/1, /*idBlockSize*/6, /*idBlockSpan*/8);
 }
@@ -643,13 +646,14 @@ TEST(FieldIO, prolate_heart)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-        resourcePath("data/prolate_heart.exfile").c_str()));
+        resourcePath("fieldio/prolate_heart.exfile").c_str()));
 	check_prolate_heart_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/prolate_heart.ex2"));
+    std::string outFile = manageOutputFolderFieldML.getPath("/prolate_heart.ex2");
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/prolate_heart.ex2"));
+    EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(outFile.c_str()));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_prolate_heart_model(testFm1);
 }
@@ -693,13 +697,14 @@ TEST(FieldIO, hemisphere)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-        resourcePath("data/hemisphere.exfile").c_str()));
+        resourcePath("fieldio/hemisphere.exfile").c_str()));
 	check_hemisphere_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/hemisphere.ex2"));
+    std::string outFile = manageOutputFolderFieldML.getPath("/hemisphere.ex2");
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/hemisphere.ex2"));
+    EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(outFile.c_str()));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_hemisphere_model(testFm1);
 }
@@ -1099,9 +1104,10 @@ TEST(FieldIO, generateHemisphereTube2d)
 	checkHemisphereTube2d(zinc.fm, elementsAroundCount, elementsUpCount, elementsTubeCount);
 
 	// test writing and re-reading in EX2 format
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/hemisphere_tube.ex2"));
+    std::string outFile = manageOutputFolderFieldML.getPath("/hemisphere_tube.ex2");
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/hemisphere_tube.ex2"));
+    EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(outFile.c_str()));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	checkHemisphereTube2d(testFm1, elementsAroundCount, elementsUpCount, elementsTubeCount);
 }
@@ -1404,9 +1410,10 @@ TEST(FieldIO, multipleSharedScaleFactors)
 	checkMultipleSharedScaleFactorsModel(zinc.fm, elementCountX, elementCountY, sizeX, sizeY);
 
 	// test writing and re-reading in EX2 format
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/multiple_scalefactors.ex2"));
+    std::string outFile = manageOutputFolderFieldML.getPath("/multiple_scalefactors.ex2");
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(outFile.c_str()));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/multiple_scalefactors.ex2"));
+    EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(outFile.c_str()));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	checkMultipleSharedScaleFactorsModel(testFm1, elementCountX, elementCountY, sizeX, sizeY);
 }

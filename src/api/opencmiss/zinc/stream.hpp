@@ -49,7 +49,7 @@ public:
 		return *this;
 	}
 
-    virtual ~Streamresource()
+    ~Streamresource()
 	{
 		if (0 != id)
 		{
@@ -98,14 +98,6 @@ public:
 
 	StreamresourceMemory() : Streamresource()
 	{  }
-
-    ~StreamresourceMemory() {
-        if (0 != id)
-        {
-            cmzn_streamresource_memory_id tmp = cmzn_streamresource_cast_memory(id);
-            cmzn_streamresource_memory_destroy(&tmp);
-        }
-    }
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit StreamresourceMemory(cmzn_streamresource_memory_id streamresource_memory_id) :

@@ -12,8 +12,6 @@
 
 #include "opencmiss/zinc/field.h"
 
-#include <stdio.h>
-
 namespace OpenCMISS
 {
 namespace Zinc
@@ -81,7 +79,7 @@ public:
 		return *this;
 	}
 
-    virtual ~Field()
+    ~Field()
 	{
 		if (0 != id)
 		{
