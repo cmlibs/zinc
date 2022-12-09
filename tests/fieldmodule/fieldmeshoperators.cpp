@@ -31,7 +31,7 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-        resourcePath("allshapes.exformat").c_str()));
+        resourcePath("fieldmodule/allshapes.ex3").c_str()));
 
 	zinc.fm.beginChange();
 	const double one = 1.0;
@@ -410,7 +410,7 @@ TEST(ZincFieldMeshIntegralSquares, quadrature)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-        resourcePath("allshapes.exformat").c_str()));
+        resourcePath("fieldmodule/allshapes.ex3").c_str()));
 
 	zinc.fm.beginChange();
 	const double one_two[] = { 1.0, 2.0 };

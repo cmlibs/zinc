@@ -1722,7 +1722,7 @@ TEST(FieldIO, allShapesElementConstant)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-        resourcePath("allshapes.exformat").c_str()));
+        resourcePath("fieldmodule/allshapes.ex3").c_str()));
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
         resourcePath("fieldio/allshapes_element_constant.ex2").c_str()));
 	checkAllShapesElementConstantModel(zinc.fm, 1.0);

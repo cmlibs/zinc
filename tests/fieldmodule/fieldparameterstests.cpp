@@ -382,11 +382,43 @@ TEST(ZincFieldparameters, invalidAPI)
     Differentialoperator parameterDerivative2 = fieldparameters.getDerivativeOperator(/*order*/3);
     EXPECT_FALSE(parameterDerivative2.isValid());
 
-    const double one = 1.0;
-    FieldConstant fieldConstant = zinc.fm.createFieldConstant(1, &one);
-    EXPECT_TRUE(fieldConstant.isValid());
-    noFieldparameters = fieldConstant.getFieldparameters();
-    EXPECT_FALSE(noFieldparameters.isValid());
+	// mixed mesh2d/mesh1d-parameter derivatives
+	Differentialoperator meshDerivative1 = mesh3d.getChartDifferentialoperator(1, -1);
+	EXPECT_TRUE(meshDerivative1.isValid());
+	Differentialoperator meshDerivative1Term = mesh3d.getChartDifferentialoperator(1, 1);
+	EXPECT_TRUE(meshDerivative1Term.isValid());
+	Differentialoperator higherDerivative1 = fieldparameters.getHigherDerivativeOperator(meshDerivative1, -1);
+	EXPECT_FALSE(higherDerivative1.isValid());
+	Differentialoperator higherDerivative2 = fieldparameters.getHigherDerivativeOperator(meshDerivative1, 0);
+	EXPECT_FALSE(higherDerivative2.isValid());
+	Differentialoperator higherDerivative3 = fieldparameters.getHigherDerivativeOperator(meshDerivative1, 3);
+	EXPECT_FALSE(higherDerivative3.isValid());
+	Differentialoperator higherDerivative4 = fieldparameters.getHigherDerivativeOperator(meshDerivative1Term, 1);  // must include all terms
+	EXPECT_FALSE(higherDerivative4.isValid());
+	FieldFiniteElement fieldFiniteElement2 = zinc.fm.createFieldFiniteElement(1);
+	EXPECT_TRUE(fieldFiniteElement2.isValid());
+	Fieldparameters fieldparameters2 = fieldFiniteElement2.getFieldparameters();
+	EXPECT_TRUE(fieldparameters2.isValid());
+	Differentialoperator higherDerivative5 = fieldparameters2.getHigherDerivativeOperator(parameterDerivative1, 1);  // different field parameters
+	EXPECT_FALSE(higherDerivative5.isValid());
+	Differentialoperator higherDerivative6 = fieldparameters.getHigherDerivativeOperator(meshDerivative1, 1);  // valid
+	EXPECT_TRUE(higherDerivative6.isValid());
+	Differentialoperator higherDerivative7 = fieldparameters.getHigherDerivativeOperator(higherDerivative6, 1);  // valid
+	EXPECT_TRUE(higherDerivative7.isValid());
+	Differentialoperator higherDerivative8 = fieldparameters.getHigherDerivativeOperator(higherDerivative7, 1);  // more than maximum parameter order
+	EXPECT_FALSE(higherDerivative8.isValid());
+	Region region2 = zinc.root_region.createChild("child");
+	Mesh mesh3d2 = region2.getFieldmodule().findMeshByDimension(3);
+	Differentialoperator mesh3d2Derivative1 = mesh3d2.getChartDifferentialoperator(1, -1);
+	EXPECT_TRUE(mesh3d2Derivative1.isValid());
+	Differentialoperator higherDerivative9 = fieldparameters.getHigherDerivativeOperator(mesh3d2Derivative1, 1);  // source derivative for mesh in other region
+	EXPECT_FALSE(higherDerivative9.isValid());
+
+	const double one = 1.0;
+	FieldConstant fieldConstant = zinc.fm.createFieldConstant(1, &one);
+	EXPECT_TRUE(fieldConstant.isValid());
+	noFieldparameters = fieldConstant.getFieldparameters();
+	EXPECT_FALSE(noFieldparameters.isValid());
 }
 
 // Test 3 component field on 2d square with mixed quadratic-linear basis
@@ -869,12 +901,12 @@ TEST(Fieldparameters, getaddsetParameters)
 
     EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 
-    Field coordinates = zinc.fm.findFieldByName("coordinates");
-    EXPECT_TRUE(coordinates.isValid());
-    Mesh mesh3d = zinc.fm.findMeshByDimension(3);
-    EXPECT_TRUE(mesh3d.isValid());
-    const int elementCount = mesh3d.getSize();
-    ASSERT_EQ(elementCount, 2);
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	const int elementCount = mesh3d.getSize();
+	ASSERT_EQ(2, elementCount);
 
     Fieldparameters noFieldparameters;
     Fieldparameters fieldparameters = coordinates.getFieldparameters();
@@ -930,4 +962,145 @@ TEST(Fieldparameters, getaddsetParameters)
 
     for (int i = 0; i < 144; ++i)
         EXPECT_DOUBLE_EQ(parameters1[i], parameters2[i]);
+}
+
+// Test element parameter and mesh derivatives are available on face and line elements
+TEST(Fieldparameters, faceLineParameterDerivatives)
+{
+	ZincTestSetupCpp zinc;
+
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed.exf").c_str()));
+
+	Field deformed = zinc.fm.findFieldByName("deformed");
+	EXPECT_TRUE(deformed.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+
+	Fieldparameters fieldparameters = deformed.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
+	int parameterCount = fieldparameters.getNumberOfParameters();
+	ASSERT_EQ(192, parameterCount);
+	// parameter-only derivatives
+	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
+	EXPECT_TRUE(parameterDerivative1.isValid());
+	// mixed mesh3d-parameter derivatives
+	Differentialoperator mesh3Derivative1 = mesh3d.getChartDifferentialoperator(1, -1);
+	EXPECT_TRUE(mesh3Derivative1.isValid());
+	Differentialoperator mesh3ParametersDerivative1 = fieldparameters.getHigherDerivativeOperator(mesh3Derivative1, 1);
+	EXPECT_TRUE(mesh3ParametersDerivative1.isValid());
+	// mixed mesh2d/mesh1d-parameter derivatives
+	Differentialoperator mesh2Derivative1 = mesh2d.getChartDifferentialoperator(1, -1);
+	EXPECT_TRUE(mesh2Derivative1.isValid());
+	Differentialoperator mesh2ParametersDerivative1 = fieldparameters.getHigherDerivativeOperator(mesh2Derivative1, 1);
+	EXPECT_TRUE(mesh2ParametersDerivative1.isValid());
+	Differentialoperator mesh1Derivative1 = mesh1d.getChartDifferentialoperator(1, -1);
+	EXPECT_TRUE(mesh1Derivative1.isValid());
+	Differentialoperator mesh1ParametersDerivative1 = fieldparameters.getHigherDerivativeOperator(mesh1Derivative1, 1);
+	EXPECT_TRUE(mesh1ParametersDerivative1.isValid());
+
+	const struct Point
+	{
+		int elementId, faceId, lineId;
+		double xi3[3];
+		double xi2[2];
+		double xi1[1];
+		int elementParameterCount;
+		double faceLineElementXiMap[3][3];  // 2 face xi, 1 line xi
+	} points[3] =
+	{
+		{ 1, 4, 2, { 0.0, 1.0, 0.5 }, { 0.5, 0.0 }, { 0.5 }, 81, { { 0.0, 0.0, 1.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 } } },
+		{ 2, 8, 17, { 0.25, 0.75, 1.0 }, { 0.25, 1 }, { 0.25 }, 54, { { 1.0, -1.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0 } } },
+		{ 6, 24, 33, { 0.7, 0.3, 0.0 }, { 0.7, 0.3 }, { 0.7 }, 30, { { 1.0, 0.0, -1.0 }, { 0.0, 1.0, -1.0 }, { 1.0, -1.0, 0.0 } } }
+	};
+	int elementIndexes[81], faceIndexes[81], lineIndexes[81];
+	double elementParametersDerivatives[243], faceParametersDerivatives[243], lineParametersDerivatives[243];
+	double elementMesh3ParametersDerivative[729], faceMesh3ParametersDerivative[729], lineMesh3ParametersDerivative[729];
+	double faceMesh2ParametersDerivative[486], lineMesh1ParametersDerivative[243];
+	const double TOL = 1.0E-12;
+	for (int p = 0; p < 3; ++p)
+	{
+		const Point &point = points[p];
+		const int paramCount = point.elementParameterCount;
+
+		Element element = mesh3d.findElementByIdentifier(point.elementId);
+		EXPECT_TRUE(element.isValid());
+		Element face = mesh2d.findElementByIdentifier(point.faceId);
+		EXPECT_TRUE(face.isValid());
+		Element line = mesh1d.findElementByIdentifier(point.lineId);
+		EXPECT_TRUE(line.isValid());
+
+		// check faces and lines inherit parameters from element
+		EXPECT_EQ(paramCount, fieldparameters.getNumberOfElementParameters(element));
+		EXPECT_EQ(paramCount, fieldparameters.getNumberOfElementParameters(face));
+		EXPECT_EQ(paramCount, fieldparameters.getNumberOfElementParameters(line));
+		ASSERT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(element, paramCount, elementIndexes));
+		ASSERT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(face, paramCount, faceIndexes));
+		ASSERT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(line, paramCount, lineIndexes));
+		for (int i = 0; i < paramCount; ++i)
+		{
+			ASSERT_EQ(elementIndexes[i], faceIndexes[i]);
+			ASSERT_EQ(elementIndexes[i], lineIndexes[i]);
+		}
+
+		// parameter-only derivatives
+		Fieldcache fieldcache = zinc.fm.createFieldcache();
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, point.xi3));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(parameterDerivative1, fieldcache, 3 * paramCount, elementParametersDerivatives));
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(face, 2, point.xi2));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(parameterDerivative1, fieldcache, 3 * paramCount, faceParametersDerivatives));
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(line, 1, point.xi1));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(parameterDerivative1, fieldcache, 3 * paramCount, lineParametersDerivatives));
+		for (int i = 0; i < 3 * paramCount; ++i)
+		{
+			EXPECT_NEAR(elementParametersDerivatives[i], faceParametersDerivatives[i], TOL);
+			EXPECT_NEAR(elementParametersDerivatives[i], lineParametersDerivatives[i], TOL);
+		}
+
+		// mixed mesh3d-parameter derivatives
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, point.xi3));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(mesh3ParametersDerivative1, fieldcache, 9 * paramCount, elementMesh3ParametersDerivative));
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(face, 2, point.xi2));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(mesh3ParametersDerivative1, fieldcache, 9 * paramCount, faceMesh3ParametersDerivative));
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(line, 1, point.xi1));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(mesh3ParametersDerivative1, fieldcache, 9 * paramCount, lineMesh3ParametersDerivative));
+		for (int i = 0; i < 9 * paramCount; ++i)
+		{
+			EXPECT_NEAR(elementMesh3ParametersDerivative[i], faceMesh3ParametersDerivative[i], TOL);
+			EXPECT_NEAR(elementMesh3ParametersDerivative[i], lineMesh3ParametersDerivative[i], TOL);
+		}
+
+		// mixed mesh2d/mesh1d-parameter derivatives
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, point.xi3));
+		EXPECT_EQ(RESULT_ERROR_GENERAL, deformed.evaluateDerivative(mesh2ParametersDerivative1, fieldcache, 9 * paramCount, elementMesh3ParametersDerivative));
+		EXPECT_EQ(RESULT_ERROR_GENERAL, deformed.evaluateDerivative(mesh1ParametersDerivative1, fieldcache, 9 * paramCount, elementMesh3ParametersDerivative));
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(face, 2, point.xi2));
+		EXPECT_EQ(RESULT_ERROR_GENERAL, deformed.evaluateDerivative(mesh1ParametersDerivative1, fieldcache, 9 * paramCount, faceMesh3ParametersDerivative));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(mesh2ParametersDerivative1, fieldcache, 6 * paramCount, faceMesh2ParametersDerivative));
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(line, 1, point.xi1));
+		EXPECT_EQ(RESULT_OK, deformed.evaluateDerivative(mesh1ParametersDerivative1, fieldcache, 3 * paramCount, lineMesh1ParametersDerivative));
+		for (int c = 0; c < 3; ++c)
+		{
+			for (int p = 0; p < paramCount; ++p)
+			{
+				double elementDerivatives[3];
+				for (int i = 0; i < 3; ++i)
+				{
+					double sum = 0.0;
+					for (int j = 0; j < 3; ++j)
+					{
+						const double dxi_dnu = point.faceLineElementXiMap[i][j];
+						if (dxi_dnu != 0.0)
+						{
+							sum += dxi_dnu * elementMesh3ParametersDerivative[(c * 3 + j) * paramCount + p];
+						}
+					}
+					elementDerivatives[i] = sum;
+				}
+				EXPECT_NEAR(elementDerivatives[0], faceMesh2ParametersDerivative[c * 2 * paramCount + p], TOL);        // face xi1
+				EXPECT_NEAR(elementDerivatives[1], faceMesh2ParametersDerivative[(c * 2 + 1) * paramCount + p], TOL);  // face xi2
+				EXPECT_NEAR(elementDerivatives[2], lineMesh1ParametersDerivative[c * paramCount      + p], TOL);  // line xi1
+			}
+		}
+	}
 }

@@ -189,8 +189,8 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 				{
 					break;
 				}
-				// only want to do boundary optimisation if this step started and finished on the boundary
-				if (xiLimited)
+				// only want to do boundary optimisation if this step started and finished on a boundary of dimension > 0
+				if (xiLimited && (number_of_xi > 1))
 				{
 					for (i = 0; i < number_of_xi; i++)
 					{

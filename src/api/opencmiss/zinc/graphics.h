@@ -1139,7 +1139,7 @@ ZINC_API char *cmzn_graphicslineattributes_shape_type_enum_to_string(
 
 /**
  * Gets the shape or profile of graphics generated for lines.
- * @see cmzn_graphicspointattributes_set_glyph_repeat_mode
+ * @see cmzn_graphicslineattributes_set_shape_type
  *
  * @param line_attributes  The line_attributes to query.
  * @return  The current shape type.

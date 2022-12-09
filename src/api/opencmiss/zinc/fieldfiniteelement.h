@@ -367,7 +367,12 @@ ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_search_mesh(
  * Set a search mesh for limiting found locations to, a subset of the main
  * mesh. The search mesh can be lower dimension such as faces or lines of
  * a 3D main mesh, in which case locations are converted to the main mesh
- * for storage. Initially the search mesh and the main mesh are the same.
+ * for return. Initially the search mesh and the main mesh are the same.
+ * Special note: if the search mesh is lower dimension than the main mesh,
+ * valid mesh locations are only returned if they are faces or lines of a
+ * main mesh element. When the main mesh is a mesh group this forces conversion
+ * of face/line locations to elements in the group where possible, and
+ * locations found on the search mesh outside the main mesh are not returned.
  *
  * @param find_mesh_location_field  The field to modify.
  * @param search_mesh  The mesh to search for locations in, must be an equal
