@@ -131,9 +131,9 @@ endif()
 set(USE_MSAA TRUE)
 
 set(USE_GLEW TRUE)
-if(WIN32)
-    set(GLEW_STATIC TRUE)
-endif()
+#if(WIN32)
+#    set(GLEW_STATIC TRUE)
+#endif()
 
 # Set graphics
 if(NOT DEFINED GRAPHICS_API )
