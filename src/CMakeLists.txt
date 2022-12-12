@@ -84,6 +84,7 @@ add_custom_target(generate_version_cpp_file
     DEPENDS ${ZINC_VERSION_STAGING_SRC}
 )
 set_source_files_properties(${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE)
+set_target_properties(generate_version_cpp_file PROPERTIES FOLDER Utilities)
 list(APPEND FILES_FOR_CLEANING ${ZINC_VERSION_SRC} ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
 list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 

@@ -18,7 +18,6 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
 #include "opencmiss/zinc/zincconfigure.h"
 
 #include "general/debug.h"
@@ -31,11 +30,11 @@ Utilities for handling images.
 #include "general/enumerator_private.hpp"
 
 #if defined (ZINC_USE_IMAGEMAGICK)
-#  if defined _MSC_VER
+//#  if defined _MSC_VER
    /* When using the gcc compiled headers from msvc we need to replace inline */
-#    define inline __inline
-#    define MAGICK_STATIC_LINK
-#  endif /* defined _MSC_VER */
+//#    define inline __inline
+//#    define MAGICK_STATIC_LINK
+//#  endif /* defined _MSC_VER */
 /* image magick interfaces */
 #include "MagickCore/MagickCore.h"
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */

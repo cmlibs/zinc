@@ -59,6 +59,17 @@ foreach( TEST ${API_TESTS} )
   list(APPEND TEST_LIST ${CURRENT_TEST})
 endforeach()
 
+if(IS_MULTI_CONFIG_ENV)
+  foreach(_TEST ${TEST_LIST})
+    string(TOLOWER ${_TEST} _TEST_LOWERCASE)
+    add_custom_target(run_${_TEST_LOWERCASE}
+      COMMAND ${CMAKE_CTEST_COMMAND} -R ${_TEST} --output-on-failure -C $<CONFIGURATION>
+      DEPENDS ${_TEST}
+      COMMENT "Run test ${_TEST}.")
+    set_target_properties(run_${_TEST_LOWERCASE} PROPERTIES FOLDER RunIndividualTests)
+  endforeach()
+endif()
+
 if(ZINC_MEMCHECK_WITH_VALGRIND)
   add_custom_target(prepare_memcheck
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/valgrind_memcheck
