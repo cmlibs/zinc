@@ -28,7 +28,7 @@
 #include "test_resources.h"
 
 namespace {
-ManageOutputFolder manageOutputFolderFieldML("fieldml");
+ManageOutputFolder manageOutputFolderFieldML("/fieldml");
 }
 
 namespace {

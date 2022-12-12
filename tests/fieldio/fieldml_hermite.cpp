@@ -30,7 +30,7 @@
 
 namespace {
 
-ManageOutputFolder manageOutputFolderFieldML("fieldml");
+ManageOutputFolder manageOutputFolderFieldML("/fieldml");
 
 void check_twohermitecubes_noscalefactors_model(Fieldmodule& fm)
 {
