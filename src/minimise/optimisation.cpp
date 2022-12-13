@@ -720,7 +720,6 @@ int Minimisation::minimise_Newton()
 
 		Element element;
 		Elementiterator elementIter = mesh.createElementiterator();
-		const int elementCount = mesh.getSize();
 		int elementIndex = 0;
 		while ((element = elementIter.next()).isValid())
 		{
@@ -783,6 +782,8 @@ int Minimisation::minimise_Newton()
 			}
 		}
 	}
+
+//    cmzn_fieldmodule_destroy(&field_module);
 
 	for (int i = 0; i < solveParameterCount; ++i)
 	{

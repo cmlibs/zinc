@@ -263,8 +263,8 @@ int cmzn_optimisation::runOptimisation()
 	{
 		Minimisation minimisation(*this);
 		return_code = minimisation.prepareOptimisation();
-		if (return_code == CMZN_OK)
-			return_code = minimisation.runOptimisation();
+        if (return_code == CMZN_OK)
+            return_code = minimisation.runOptimisation();
 	}
 	return return_code;
 }
