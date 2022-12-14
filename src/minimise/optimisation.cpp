@@ -824,7 +824,8 @@ int Minimisation::minimise_Newton()
 		return 0;
 	}
 
-    if (conditionalFieldInternal) {
+    if (conditionalFieldInternal)
+    {
         cmzn_field_destroy(&conditionalFieldInternal);
     }
 
