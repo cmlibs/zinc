@@ -54,7 +54,7 @@ cmzn_context::~cmzn_context()
 		DESTROY(IO_stream_package)(&this->io_stream_package);
 	cmzn_timekeepermodule::deaccess(this->timekeepermodule);
 
-    cmzn_logger::deaccess(logger);
+    cmzn_logger::deaccess(this->logger);
     DEALLOCATE(this->name);
     /* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 		on.  When MEMORY_CHECKING is off this function does nothing */
