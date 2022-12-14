@@ -16,7 +16,6 @@
 #include <opencmiss/zinc/light.hpp>
 #include <opencmiss/zinc/sceneviewer.hpp>
 
-#include "utilities/fileio.hpp"
 #include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -508,12 +507,10 @@ TEST(ZincSceneviewer, description_io)
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::SCENEVIEWER_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents(resourcePath("graphics/sceneviewer_description.json"));
+    EXPECT_FALSE(stringBuffer.empty());
 
-	EXPECT_EQ(CMZN_OK, sv.readDescription(stringBuffer));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, sv.readDescription(stringBuffer.c_str()));
 
 	checkSceneviewerReadDescription(sv);
 
