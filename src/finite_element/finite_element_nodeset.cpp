@@ -38,7 +38,8 @@ FE_node_field_info::~FE_node_field_info()
 {
 	if (0 == this->access_count)
 	{
-        if (this->nodeset) {
+        if (this->nodeset)
+        {
 			this->nodeset->remove_FE_node_field_info(this);
             this->nodeset = nullptr;
         }
