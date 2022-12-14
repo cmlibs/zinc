@@ -267,7 +267,7 @@ TEST(cmzn_tessellation_api, description_io_cpp)
 	Tessellationmodule tm = zinc.context.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
-    std::string stringBuffer = fileContents(resourcePath("graphics/tessellation_description.json"));
+    std::string stringBuffer = fileContents("graphics/tessellation_description.json");
     EXPECT_FALSE(stringBuffer.empty());
 
     EXPECT_EQ(CMZN_OK, tm.readDescription(stringBuffer.c_str()));

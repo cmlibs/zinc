@@ -239,7 +239,7 @@ TEST(ZincGraphicsContours, analytic_isosurfaces)
 {
 	ZincTestSetupCpp zinc;
 
-    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("allshapes.ex3").c_str()));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes.ex3").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

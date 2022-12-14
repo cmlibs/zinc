@@ -29,8 +29,8 @@ TEST(cmzn_sceneviewer_api, destroy_context_before_scene_viewer)
 	 cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
 	  CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
 	 cmzn_sceneviewermodule_destroy(&svModule);
-	 cmzn_context_destroy(&context);
-	 cmzn_sceneviewer_destroy(&sv);
+     cmzn_context_destroy(&context);
+     cmzn_sceneviewer_destroy(&sv);
 }
 
 TEST(cmzn_sceneviewer_api, background_colour)
@@ -507,7 +507,7 @@ TEST(ZincSceneviewer, description_io)
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv.isValid());
 
-    std::string stringBuffer = fileContents(resourcePath("graphics/sceneviewer_description.json"));
+    std::string stringBuffer = fileContents("graphics/sceneviewer_description.json");
     EXPECT_FALSE(stringBuffer.empty());
 
     EXPECT_EQ(CMZN_OK, sv.readDescription(stringBuffer.c_str()));

@@ -1105,7 +1105,7 @@ TEST(cmzn_graphics, point_description_io)
 	labelField.setName("my_label");
 	EXPECT_TRUE(labelField.isValid());
 
-    std::string stringBuffer = fileContents(resourcePath("graphics/graphics_points_description.json"));
+    std::string stringBuffer = fileContents("graphics/graphics_points_description.json");
     EXPECT_FALSE(stringBuffer.empty());
 
     EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer.c_str(), true));
@@ -1295,7 +1295,7 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 	orientationScaleField.setName("my_orientation_field");
 	EXPECT_TRUE(orientationScaleField.isValid());
 
-    std::string stringBuffer = fileContents(resourcePath("graphics/graphics_line_description.json"));
+    std::string stringBuffer = fileContents("graphics/graphics_line_description.json");
     EXPECT_FALSE(stringBuffer.empty());
 
     EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer.c_str(), true));
@@ -1473,7 +1473,7 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	densityField.setName("my_density");
 	EXPECT_TRUE(densityField.isValid());
 
-    std::string stringBuffer = fileContents(resourcePath("graphics/graphics_streamlines_description.json"));
+    std::string stringBuffer = fileContents("graphics/graphics_streamlines_description.json");
     EXPECT_FALSE(stringBuffer.empty());
 
     EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer.c_str(), true));
