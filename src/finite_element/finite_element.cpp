@@ -5118,7 +5118,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 			}
 			if ((i>=0)||(basis!=previous_basis))
 			{
-				DEALLOCATE(previous_element_values);
+                delete previous_element_values;
 				previous_element_values=element_values;
 				previous_number_of_element_values=number_of_element_values;
 				previous_basis=basis;
