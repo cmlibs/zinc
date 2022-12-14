@@ -9,10 +9,10 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstdio>
-#include <math.h>
 #include <vector>
 
 #include "opencmiss/zinc/element.h"
