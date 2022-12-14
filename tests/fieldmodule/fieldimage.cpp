@@ -33,10 +33,7 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_NE(static_cast<cmzn_field_image_id>(0), im);
 
 	int result;
-	printf("=============================\n");
-	printf("image: %s\n", resourcePath("blockcolours.png").c_str());
-	std::string fixedPath = "c:\\Users\\hsor001\\Projects\\continuummodelling\\zinc\\tests\\resources\\blockcolours.png";
-    EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, fixedPath.c_str()));
+    EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, resourcePath("blockcolours.png").c_str()));
 	int numberOfComponents = cmzn_field_get_number_of_components(f1);
 	EXPECT_EQ(3, numberOfComponents);
 
