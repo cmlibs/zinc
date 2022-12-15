@@ -213,11 +213,10 @@ FE_nodeset::~FE_nodeset()
 
 	this->clear();
 
-    for (size_t i = 0; i < this->node_field_info_list.size(); ++i) {
-        auto last = this->node_field_info_list.back();
-        DESTROY_LIST(FE_node_field)(&(last->node_field_list));
-        delete last;
-        this->node_field_info_list.pop_back();
+    for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
+        iter != this->node_field_info_list.end(); ++iter)
+    {
+        (*iter)->nodeset = nullptr;
     }
 }
 
@@ -649,8 +648,9 @@ FE_node_template *FE_nodeset::create_FE_node_template(cmzn_node *node)
 
 FE_node_template *FE_nodeset::create_FE_node_template()
 {
-	FE_node_template *node_template = new FE_node_template(this,
-		this->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)NULL));
+    auto nodeFieldInfo = this->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)NULL);
+    FE_node_template *node_template = new FE_node_template(this, nodeFieldInfo);
+    FE_node_field_info::deaccess(nodeFieldInfo);
 	return node_template;
 }
 
