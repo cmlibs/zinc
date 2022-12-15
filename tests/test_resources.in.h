@@ -15,7 +15,7 @@ std::string TEST_EXPORT fileContents(const std::string &fileName);
 // Note doesn't yet clear folder.
 class TEST_EXPORT ManageOutputFolder
 {
-    std::string folderName;
+    std::string *folderName;
 public:
     ManageOutputFolder(const std::string &folderNameIn);
     ~ManageOutputFolder();

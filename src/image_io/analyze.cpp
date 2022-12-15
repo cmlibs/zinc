@@ -19,12 +19,6 @@
 #include "general/message.h"
 
 #if defined (ZINC_USE_IMAGEMAGICK)
-//#  if defined _MSC_VER
-   /* When using the gcc compiled headers from msvc we need to replace inline */
-//#    define inline __inline
-//#    define MAGICK_STATIC_LINK
-//#  endif /* defined _MSC_VER */
-/* image magick interfaces */
 #include "MagickCore/MagickCore.h"
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 

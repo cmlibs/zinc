@@ -40,17 +40,19 @@ void createSubfolder(const std::string &name)
 }
 
 ManageOutputFolder::ManageOutputFolder(const std::string &folderNameIn) :
-    folderName(TESTS_OUTPUT_LOCATION + folderNameIn)
+    folderName(nullptr)
 {
-    createSubfolder(folderName);
+    folderName = new std::string(TESTS_OUTPUT_LOCATION + folderNameIn);
+    createSubfolder(*folderName);
 }
 
 ManageOutputFolder::~ManageOutputFolder()
 {
     // future: remove output folder
+    delete folderName;
 }
 
 std::string ManageOutputFolder::getPath(const std::string &fileName) const
 {
-    return folderName + fileName;
+    return *folderName + fileName;
 }
