@@ -2170,8 +2170,8 @@ int write_fieldml_file(struct cmzn_region *region, const char *pathandfilename)
             if (CMZN_OK == return_code)
                 return_code = fmlWriter.writeMeshFields(highestMeshDimension);
         }
-//		if (CMZN_OK == return_code)
-//			return_code = fmlWriter.writeFile(pathandfilename);
+        if (CMZN_OK == return_code)
+            return_code = fmlWriter.writeFile(pathandfilename);
 	}
 	else
 		return_code = CMZN_ERROR_ARGUMENT;
