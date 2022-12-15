@@ -743,59 +743,59 @@ FmlObjectHandle FieldMLWriter::writeDenseParameters(const std::string& name,
 	std::string dataSourceName(name + ".data.source");
 	FmlObjectHandle fmlDataSource = Fieldml_CreateArrayDataSource(this->fmlSession, dataSourceName.c_str(),
 		fmlDataResource, /*location*/"1", /*rank*/denseIndexCount);
-	std::vector<int> sizes(denseIndexCount);
-	std::vector<int> offsets(denseIndexCount);
-	for (int d = 0; d < denseIndexCount; ++d)
-	{
-		FmlObjectHandle fmlEnsembleType = Fieldml_GetValueType(this->fmlSession, fmlDenseIndexArguments[d]);
-		sizes[d] = Fieldml_GetMemberCount(this->fmlSession, fmlEnsembleType);
-		offsets[d] = 0.0;
-	}
-	Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlDataSource, sizes.data());
-	Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlDataSource, sizes.data());
-	FmlWriterHandle fmlArrayWriter = Fieldml_OpenArrayWriter(this->fmlSession,
-		fmlDataSource, fmlValueType, /*append*/false, sizes.data(), /*rank*/denseIndexCount);
-	if (fmlArrayWriter == FML_INVALID_OBJECT_HANDLE)
-		return FML_INVALID_OBJECT_HANDLE;
+    std::vector<int> sizes(denseIndexCount);
+    std::vector<int> offsets(denseIndexCount);
+    for (int d = 0; d < denseIndexCount; ++d)
+    {
+        FmlObjectHandle fmlEnsembleType = Fieldml_GetValueType(this->fmlSession, fmlDenseIndexArguments[d]);
+        sizes[d] = Fieldml_GetMemberCount(this->fmlSession, fmlEnsembleType);
+        offsets[d] = 0.0;
+    }
+    Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlDataSource, sizes.data());
+    Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlDataSource, sizes.data());
+    FmlWriterHandle fmlArrayWriter = Fieldml_OpenArrayWriter(this->fmlSession,
+        fmlDataSource, fmlValueType, /*append*/false, sizes.data(), /*rank*/denseIndexCount);
+    if (fmlArrayWriter == FML_INVALID_OBJECT_HANDLE)
+        return FML_INVALID_OBJECT_HANDLE;
 
-	bool failed = false;
-	const int *recordSizes = parameterGenerator.getDenseRecordSizes();
-	for (int r = parameterGenerator.getRecordCount(); 0 < r; --r)
-	{
-		if (!parameterGenerator.nextRecord())
-		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name.c_str());
-			failed = true;
-			break;
-		}
-		FmlIoErrorNumber fmlIoError = FieldML_WriteSlab(fmlArrayWriter,
-			parameterGenerator.getRecordOffsets(), recordSizes, parameterGenerator.getRecordValues());
-		if (FML_IOERR_NO_ERROR != fmlIoError)
-		{
-			failed = true;
-			break;
-		}
-	}
-	Fieldml_CloseWriter(fmlArrayWriter);
-	if (failed)
-		return FML_INVALID_OBJECT_HANDLE;
+    bool failed = false;
+    const int *recordSizes = parameterGenerator.getDenseRecordSizes();
+    for (int r = parameterGenerator.getRecordCount(); 0 < r; --r)
+    {
+        if (!parameterGenerator.nextRecord())
+        {
+            display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name.c_str());
+            failed = true;
+            break;
+        }
+        FmlIoErrorNumber fmlIoError = FieldML_WriteSlab(fmlArrayWriter,
+            parameterGenerator.getRecordOffsets(), recordSizes, parameterGenerator.getRecordValues());
+        if (FML_IOERR_NO_ERROR != fmlIoError)
+        {
+            failed = true;
+            break;
+        }
+    }
+    Fieldml_CloseWriter(fmlArrayWriter);
+    if (failed)
+        return FML_INVALID_OBJECT_HANDLE;
 
-	FmlErrorNumber fmlError;
-	FmlObjectHandle fmlParameters = FML_INVALID_OBJECT_HANDLE;
-	fmlParameters = Fieldml_CreateParameterEvaluator(this->fmlSession, name.c_str(), fmlValueType);
-	fmlError = Fieldml_SetParameterDataDescription(this->fmlSession, fmlParameters, FML_DATA_DESCRIPTION_DENSE_ARRAY);
-	if (FML_OK != fmlError)
-		return FML_INVALID_OBJECT_HANDLE;
-	fmlError = Fieldml_SetDataSource(this->fmlSession, fmlParameters, fmlDataSource);
-	if (FML_OK != fmlError)
-		return FML_INVALID_OBJECT_HANDLE;
-	for (int d = 0; d < denseIndexCount; ++d)
-	{
-		fmlError = Fieldml_AddDenseIndexEvaluator(this->fmlSession, fmlParameters,
-			fmlDenseIndexArguments[d], /*orderHandle*/FML_INVALID_OBJECT_HANDLE);
-		if (FML_OK != fmlError)
-			return FML_INVALID_OBJECT_HANDLE;
-	}
+    FmlErrorNumber fmlError;
+    FmlObjectHandle fmlParameters = FML_INVALID_OBJECT_HANDLE;
+    fmlParameters = Fieldml_CreateParameterEvaluator(this->fmlSession, name.c_str(), fmlValueType);
+    fmlError = Fieldml_SetParameterDataDescription(this->fmlSession, fmlParameters, FML_DATA_DESCRIPTION_DENSE_ARRAY);
+    if (FML_OK != fmlError)
+        return FML_INVALID_OBJECT_HANDLE;
+    fmlError = Fieldml_SetDataSource(this->fmlSession, fmlParameters, fmlDataSource);
+    if (FML_OK != fmlError)
+        return FML_INVALID_OBJECT_HANDLE;
+    for (int d = 0; d < denseIndexCount; ++d)
+    {
+        fmlError = Fieldml_AddDenseIndexEvaluator(this->fmlSession, fmlParameters,
+            fmlDenseIndexArguments[d], /*orderHandle*/FML_INVALID_OBJECT_HANDLE);
+        if (FML_OK != fmlError)
+            return FML_INVALID_OBJECT_HANDLE;
+    }
 	return fmlParameters;
 }
 
@@ -1558,75 +1558,75 @@ FmlObjectHandle FieldMLWriter::writeMeshElementEvaluator(const FE_mesh *mesh,
 	if (fmlEft == FML_INVALID_OBJECT_HANDLE)
 		return FML_INVALID_OBJECT_HANDLE;
 
-	FmlObjectHandle fmlEftLocalToGlobalNodes = FML_INVALID_OBJECT_HANDLE;
-	const int nodeCount = eft->getNumberOfLocalNodes();
-	if (nodeCount > 0)
-	{
-		// write local-to-global node map
-		FmlObjectHandle fmlElementsType = this->fmlMeshElementsType[mesh->getDimension()];
-		FmlObjectHandle fmlElementsArgument = this->getArgumentForType(fmlElementsType);
-		std::string eftLocalToGlobalNodesName = eftName + ".localtoglobalnodes";
-		FE_mesh_local_to_global_nodes_parameter_generator localToGlobalNodesParameterGenerator(meshEFTData, fmlElementsArgument, fmlEftNodesArgument);
-		FmlObjectHandle fmlNodesType = this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES];
-		if (localToGlobalNodesParameterGenerator.isDense())
-			fmlEftLocalToGlobalNodes = this->writeDenseParameters<int>(eftLocalToGlobalNodesName, fmlNodesType, localToGlobalNodesParameterGenerator);
-		else
-			fmlEftLocalToGlobalNodes = this->writeSparseParameters<int>(eftLocalToGlobalNodesName, fmlNodesType, localToGlobalNodesParameterGenerator);
-		if (fmlEftLocalToGlobalNodes == FML_INVALID_OBJECT_HANDLE)
-		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create element local to global nodes map");
-			return CMZN_ERROR_GENERAL;
-		}
-	}
+    FmlObjectHandle fmlEftLocalToGlobalNodes = FML_INVALID_OBJECT_HANDLE;
+    const int nodeCount = eft->getNumberOfLocalNodes();
+    if (nodeCount > 0)
+    {
+        // write local-to-global node map
+        FmlObjectHandle fmlElementsType = this->fmlMeshElementsType[mesh->getDimension()];
+        FmlObjectHandle fmlElementsArgument = this->getArgumentForType(fmlElementsType);
+        std::string eftLocalToGlobalNodesName = eftName + ".localtoglobalnodes";
+        FE_mesh_local_to_global_nodes_parameter_generator localToGlobalNodesParameterGenerator(meshEFTData, fmlElementsArgument, fmlEftNodesArgument);
+        FmlObjectHandle fmlNodesType = this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES];
+        if (localToGlobalNodesParameterGenerator.isDense())
+            fmlEftLocalToGlobalNodes = this->writeDenseParameters<int>(eftLocalToGlobalNodesName, fmlNodesType, localToGlobalNodesParameterGenerator);
+        else
+            fmlEftLocalToGlobalNodes = this->writeSparseParameters<int>(eftLocalToGlobalNodesName, fmlNodesType, localToGlobalNodesParameterGenerator);
+        if (fmlEftLocalToGlobalNodes == FML_INVALID_OBJECT_HANDLE)
+        {
+            display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create element local to global nodes map");
+            return CMZN_ERROR_GENERAL;
+        }
+    }
 
-	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
-	if (scaleFactorCount > 0)
-	{
-		// write scale factors
-		display_message(WARNING_MESSAGE, "FieldML Writer:  Scale factor output is not yet implemented, omitting"); // GRC TODO
-	}
+    const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+    if (scaleFactorCount > 0)
+    {
+        // write scale factors
+        display_message(WARNING_MESSAGE, "FieldML Writer:  Scale factor output is not yet implemented, omitting"); // GRC TODO
+    }
 
-	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
-	std::string meshElementEvaluatorName = eftName + ".evaluator";
-	FmlObjectHandle fmlMeshElementEvaluator = Fieldml_CreateReferenceEvaluator(this->fmlSession, meshElementEvaluatorName.c_str(), fmlEft, fmlRealType);
-	if (fmlMeshElementEvaluator == FML_INVALID_OBJECT_HANDLE)
-	{
-		display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to create mesh element evaluator");
-		return FML_INVALID_OBJECT_HANDLE;
-	}
-	// must bind mesh chart to generic chart used by EFT
-	FmlErrorNumber fmlError;
-	const int meshDimension = mesh->getDimension();
-	FmlObjectHandle fmlChartArgument =
-		(3 == meshDimension) ? this->libraryImport("chart.3d.argument") :
-		(2 == meshDimension) ? this->libraryImport("chart.2d.argument") :
-		this->libraryImport("chart.1d.argument");
-	FmlObjectHandle fmlMeshType = Fieldml_GetObjectByName(this->fmlSession, eft->getMesh()->getName());
-	FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(this->fmlSession, fmlMeshType);
-	FmlObjectHandle fmlMeshChartArgument = getArgumentForType(fmlMeshChartType);
-	if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator, fmlChartArgument, fmlMeshChartArgument)))
-	{
-		display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind mesh chart to generic chart");
-		return FML_INVALID_OBJECT_HANDLE;
-	}
-	if (nodeCount > 0)
-	{
-		if ((FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator,
-				fmlEftNodeParametersArgument, this->fmlNodesParametersArguments[CMZN_FIELD_DOMAIN_TYPE_NODES])))
-			|| ((FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator,
-				this->getArgumentForType(this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES]), fmlEftLocalToGlobalNodes)))))
-		{
-			display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind global node parameters and/or local-to-global nodes map for mesh element evaluator");
-			return FML_INVALID_OBJECT_HANDLE;
-		}
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE, "FieldML Writer:  Only implemented for node-based mesh element evaluator");
-		return FML_INVALID_OBJECT_HANDLE;
-		// GRC future: bind scale factors
-	}
-	return fmlMeshElementEvaluator;
+    FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
+    std::string meshElementEvaluatorName = eftName + ".evaluator";
+    FmlObjectHandle fmlMeshElementEvaluator = Fieldml_CreateReferenceEvaluator(this->fmlSession, meshElementEvaluatorName.c_str(), fmlEft, fmlRealType);
+    if (fmlMeshElementEvaluator == FML_INVALID_OBJECT_HANDLE)
+    {
+        display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to create mesh element evaluator");
+        return FML_INVALID_OBJECT_HANDLE;
+    }
+    // must bind mesh chart to generic chart used by EFT
+    FmlErrorNumber fmlError;
+    const int meshDimension = mesh->getDimension();
+    FmlObjectHandle fmlChartArgument =
+        (3 == meshDimension) ? this->libraryImport("chart.3d.argument") :
+        (2 == meshDimension) ? this->libraryImport("chart.2d.argument") :
+        this->libraryImport("chart.1d.argument");
+    FmlObjectHandle fmlMeshType = Fieldml_GetObjectByName(this->fmlSession, eft->getMesh()->getName());
+    FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(this->fmlSession, fmlMeshType);
+    FmlObjectHandle fmlMeshChartArgument = getArgumentForType(fmlMeshChartType);
+    if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator, fmlChartArgument, fmlMeshChartArgument)))
+    {
+        display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind mesh chart to generic chart");
+        return FML_INVALID_OBJECT_HANDLE;
+    }
+    if (nodeCount > 0)
+    {
+        if ((FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator,
+                fmlEftNodeParametersArgument, this->fmlNodesParametersArguments[CMZN_FIELD_DOMAIN_TYPE_NODES])))
+            || ((FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator,
+                this->getArgumentForType(this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES]), fmlEftLocalToGlobalNodes)))))
+        {
+            display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind global node parameters and/or local-to-global nodes map for mesh element evaluator");
+            return FML_INVALID_OBJECT_HANDLE;
+        }
+    }
+    else
+    {
+        display_message(WARNING_MESSAGE, "FieldML Writer:  Only implemented for node-based mesh element evaluator");
+        return FML_INVALID_OBJECT_HANDLE;
+        // GRC future: bind scale factors
+    }
+    return fmlMeshElementEvaluator;
 }
 
 FmlObjectHandle FieldMLWriter::writeMeshfieldtemplate(const FE_mesh *mesh, const FE_mesh_field_template *mft,
@@ -2067,64 +2067,64 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 		cmzn::Deaccess(iter);
 	}
 
-	// Create set of indexes for EFTs, so MFTs can map to them
-	FmlObjectHandle fmlEftIndexes = FML_INVALID_OBJECT_HANDLE;
-	FmlErrorNumber fmlError;
-	if (efts.size() > 0)
-	{
-		std::string eftIndexName = meshName + ".eftIndexes";
-		fmlEftIndexes = Fieldml_CreateEnsembleType(this->fmlSession, eftIndexName.c_str());
-		if (FML_OK != (fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlEftIndexes, 1, static_cast<int>(efts.size()), 1)))
-		{
-			display_message(ERROR_MESSAGE, "FieldMLWriter:  Failed to create mesh EFT indexes ensemble");
-			return CMZN_ERROR_MEMORY;
-		}
-		this->getArgumentForType(fmlEftIndexes);
-	}
+    // Create set of indexes for EFTs, so MFTs can map to them
+    FmlObjectHandle fmlEftIndexes = FML_INVALID_OBJECT_HANDLE;
+    FmlErrorNumber fmlError;
+    if (efts.size() > 0)
+    {
+        std::string eftIndexName = meshName + ".eftIndexes";
+        fmlEftIndexes = Fieldml_CreateEnsembleType(this->fmlSession, eftIndexName.c_str());
+        if (FML_OK != (fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlEftIndexes, 1, static_cast<int>(efts.size()), 1)))
+        {
+            display_message(ERROR_MESSAGE, "FieldMLWriter:  Failed to create mesh EFT indexes ensemble");
+            return CMZN_ERROR_MEMORY;
+        }
+        this->getArgumentForType(fmlEftIndexes);
+    }
 
-	// write element field templates and associated local-to-global maps
-	std::vector<FmlObjectHandle> fmlMeshElementEvaluators(efts.size(), FML_INVALID_OBJECT_HANDLE);
-	char idString[30];
-	const int eftsSize = static_cast<int>(efts.size());
-	for (int e = 0; e < eftsSize; ++e)
-	{
-		sprintf(idString, ".eft%d", e + 1);
-		FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(efts[e]);
-		fmlMeshElementEvaluators[e] = this->writeMeshElementEvaluator(mesh, meshEFTData, meshName + idString);
-		if (FML_INVALID_OBJECT_HANDLE == fmlMeshElementEvaluators[e])
-		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh element field template data");
-			return CMZN_ERROR_GENERAL;
-		}
-	}
+    // write element field templates and associated local-to-global maps
+    std::vector<FmlObjectHandle> fmlMeshElementEvaluators(efts.size(), FML_INVALID_OBJECT_HANDLE);
+    char idString[30];
+    const int eftsSize = static_cast<int>(efts.size());
+    for (int e = 0; e < eftsSize; ++e)
+    {
+        sprintf(idString, ".eft%d", e + 1);
+        FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(efts[e]);
+        fmlMeshElementEvaluators[e] = this->writeMeshElementEvaluator(mesh, meshEFTData, meshName + idString);
+        if (FML_INVALID_OBJECT_HANDLE == fmlMeshElementEvaluators[e])
+        {
+            display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh element field template data");
+            return CMZN_ERROR_GENERAL;
+        }
+    }
 
-	// write mesh field templates
-	std::map<const FE_mesh_field_template *, FmlObjectHandle> fmlMftsMap;
-	const int mftsSize = static_cast<int>(mfts.size());
-	for (int m = 0; m < mftsSize; ++m)
-	{
-		sprintf(idString, ".fieldtemplate%d", m + 1);
-		FmlObjectHandle fmlMft = this->writeMeshfieldtemplate(mesh, mfts[m], meshName + idString,
-			mftIsDense[m], mftEftCounts[m], fmlEftIndexes,
-			static_cast<int>(efts.size()), outputEftIndexes, fmlMeshElementEvaluators);
-		if (FML_INVALID_OBJECT_HANDLE == fmlMft)
-		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh field template");
-			return CMZN_ERROR_GENERAL;
-		}
-		fmlMftsMap[mfts[m]] = fmlMft;
-	}
+    // write mesh field templates
+    std::map<const FE_mesh_field_template *, FmlObjectHandle> fmlMftsMap;
+    const int mftsSize = static_cast<int>(mfts.size());
+    for (int m = 0; m < mftsSize; ++m)
+    {
+        sprintf(idString, ".fieldtemplate%d", m + 1);
+        FmlObjectHandle fmlMft = this->writeMeshfieldtemplate(mesh, mfts[m], meshName + idString,
+            mftIsDense[m], mftEftCounts[m], fmlEftIndexes,
+            static_cast<int>(efts.size()), outputEftIndexes, fmlMeshElementEvaluators);
+        if (FML_INVALID_OBJECT_HANDLE == fmlMft)
+        {
+            display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh field template");
+            return CMZN_ERROR_GENERAL;
+        }
+        fmlMftsMap[mfts[m]] = fmlMft;
+    }
 
-	// write fields
-	for (size_t f = 0; f < fields.size(); ++f)
-	{
-		FmlObjectHandle fmlField = this->writeMeshField(mesh, fields[f], fmlMftsMap);
-		if (FML_INVALID_OBJECT_HANDLE == fmlField)
-		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh field");
-			return CMZN_ERROR_GENERAL;
-		}
-	}
+    // write fields
+    for (size_t f = 0; f < fields.size(); ++f)
+    {
+        FmlObjectHandle fmlField = this->writeMeshField(mesh, fields[f], fmlMftsMap);
+        if (FML_INVALID_OBJECT_HANDLE == fmlField)
+        {
+            display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh field");
+            return CMZN_ERROR_GENERAL;
+        }
+    }
 	return CMZN_OK;
 }
 
@@ -2141,36 +2141,37 @@ int write_fieldml_file(struct cmzn_region *region, const char *pathandfilename)
 	int return_code = CMZN_OK;
 	if (region && pathandfilename && (*pathandfilename != '\0'))
 	{
-		char *location = duplicate_string(pathandfilename);
-		char *lastDirSep = strrchr(location, '/');
-		char *lastDirSepWin = strrchr(location, '\\');
-		if (lastDirSepWin > lastDirSep)
-			lastDirSep = lastDirSepWin;
-		const char *filename;
-		if (lastDirSep)
-		{
-			*lastDirSep = '\0';
-			filename = lastDirSep + 1;
-		}
-		else
-		{
-			location[0] = '\0';
-			filename = pathandfilename;
-		}
-		FieldMLWriter fmlWriter(region, location, filename);
-		if (CMZN_OK == return_code)
-			return_code = fmlWriter.writeNodesets();
-		// Currently only writes highest dimension mesh
-		int highestMeshDimension = fmlWriter.getHighestMeshDimension();
-		if (0 < highestMeshDimension)
-		{
-			if (CMZN_OK == return_code)
-				return_code = fmlWriter.writeMesh(highestMeshDimension, /*writeIfEmpty*/false);
-			if (CMZN_OK == return_code)
-				return_code = fmlWriter.writeMeshFields(highestMeshDimension);
-		}
-		if (CMZN_OK == return_code)
-			return_code = fmlWriter.writeFile(pathandfilename);
+        char *location = duplicate_string(pathandfilename);
+        char *lastDirSep = strrchr(location, '/');
+        char *lastDirSepWin = strrchr(location, '\\');
+        if (lastDirSepWin > lastDirSep)
+            lastDirSep = lastDirSepWin;
+        const char *filename;
+        if (lastDirSep)
+        {
+            *lastDirSep = '\0';
+            filename = lastDirSep + 1;
+        }
+        else
+        {
+            location[0] = '\0';
+            filename = pathandfilename;
+        }
+        FieldMLWriter fmlWriter(region, location, filename);
+        DEALLOCATE(location);
+        if (CMZN_OK == return_code)
+            return_code = fmlWriter.writeNodesets();
+        // Currently only writes highest dimension mesh
+        int highestMeshDimension = fmlWriter.getHighestMeshDimension();
+        if (0 < highestMeshDimension)
+        {
+            if (CMZN_OK == return_code)
+                return_code = fmlWriter.writeMesh(highestMeshDimension, /*writeIfEmpty*/false);
+            if (CMZN_OK == return_code)
+                return_code = fmlWriter.writeMeshFields(highestMeshDimension);
+        }
+//		if (CMZN_OK == return_code)
+//			return_code = fmlWriter.writeFile(pathandfilename);
 	}
 	else
 		return_code = CMZN_ERROR_ARGUMENT;

@@ -256,7 +256,7 @@ public:
 		mesh(0),
 		field_module(cmzn_region_get_fieldmodule(region)),
 		filename(filename),
-		fmlSession(Fieldml_CreateFromFile(filename)),
+        fmlSession(Fieldml_CreateFromFile(filename)),
 		fmlNodesType(FML_INVALID_OBJECT_HANDLE),
 		fmlNodesArgument(FML_INVALID_OBJECT_HANDLE),
 		fmlMeshType(FML_INVALID_OBJECT_HANDLE),
@@ -3347,35 +3347,35 @@ int FieldMLReader::readReferenceFields()
 int FieldMLReader::parse()
 {
 	int return_code = 1;
-	if ((!region) || (!filename) || (!field_module))
-	{
-		display_message(ERROR_MESSAGE, "FieldMLReader::parse.  Invalid construction arguments");
-		return_code = 0;
-	}
-	if (fmlSession == (const FmlSessionHandle)FML_INVALID_HANDLE)
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML: could not parse file %s", filename);
-		return_code = 0;
-	}
-	else
-	{
-		int parseErrorCount = Fieldml_GetErrorCount(fmlSession);
-		return_code = (parseErrorCount == 0);
-		for (int i = 1; i <= parseErrorCount; i++)
-		{
-			char *error_string = Fieldml_GetError(fmlSession, i);
-			display_message(ERROR_MESSAGE, "FieldML Parse error: %s", error_string);
-			Fieldml_FreeString(error_string);
-		}
-	}
+    if ((!region) || (!filename) || (!field_module))
+    {
+        display_message(ERROR_MESSAGE, "FieldMLReader::parse.  Invalid construction arguments");
+        return_code = 0;
+    }
+    if (fmlSession == (const FmlSessionHandle)FML_INVALID_HANDLE)
+    {
+        display_message(ERROR_MESSAGE, "Read FieldML: could not parse file %s", filename);
+        return_code = 0;
+    }
+    else
+    {
+        int parseErrorCount = Fieldml_GetErrorCount(fmlSession);
+        return_code = (parseErrorCount == 0);
+        for (int i = 1; i <= parseErrorCount; i++)
+        {
+            char *error_string = Fieldml_GetError(fmlSession, i);
+            display_message(ERROR_MESSAGE, "FieldML Parse error: %s", error_string);
+            Fieldml_FreeString(error_string);
+        }
+    }
 	if (!return_code)
 		return 0;
 	cmzn_region_begin_change(region);
-	return_code = return_code && this->readGlobals();
-	return_code = return_code && this->readMeshes();
-	return_code = return_code && this->readAggregateFields();
-	return_code = return_code && this->readReferenceFields();
-	cmzn_region_end_change(region);
+    return_code = return_code && this->readGlobals();
+    return_code = return_code && this->readMeshes();
+    return_code = return_code && this->readAggregateFields();
+    return_code = return_code && this->readReferenceFields();
+    cmzn_region_end_change(region);
 	return return_code;
 }
 
@@ -3419,6 +3419,6 @@ bool is_FieldML_memory_block(unsigned int memory_buffer_size, const void *memory
 
 int parse_fieldml_file(struct cmzn_region *region, const char *filename)
 {
-	FieldMLReader fmlReader(region, filename);
-	return fmlReader.parse();
+    FieldMLReader fmlReader(region, filename);
+    return fmlReader.parse();
 }

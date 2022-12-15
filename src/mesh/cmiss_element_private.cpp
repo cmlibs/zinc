@@ -577,7 +577,7 @@ int cmzn_elementtemplate::defineField(FE_field *field, int componentNumber, cmzn
 		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	int return_code = this->fe_element_template->defineField(field, componentNumber - 1, eft);
+    int return_code = this->fe_element_template->defineField(field, componentNumber - 1, eft);
 	if (CMZN_OK != return_code)
 		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Failed");
 	return return_code;
