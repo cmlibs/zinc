@@ -37,8 +37,6 @@ cmzn_context::cmzn_context(const char *nameIn) :
 
 cmzn_context::~cmzn_context()
 {
-    if (this->defaultRegion)
-		cmzn_region::deaccess(this->defaultRegion);
 	// clear regions' fields and pointers to this context
 	for (std::list<cmzn_region*>::iterator iter = this->allRegions.begin(); iter != this->allRegions.end(); ++iter)
 	{
