@@ -23,7 +23,7 @@ TEST(cmzn_logger_messages, invalid_args)
     cmzn_region_read_file(zinc.root_region, resourcePath("logger/region_incorrect.exregion").c_str());
 
 	int return_code = cmzn_logger_get_number_of_messages(logger);
-	EXPECT_EQ(4, return_code);
+    EXPECT_EQ(2, return_code);
 
 	for (int i = 0; i < return_code; i++)
 	{
