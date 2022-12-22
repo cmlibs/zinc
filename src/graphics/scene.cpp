@@ -292,11 +292,11 @@ cmzn_scene *cmzn_scene::create(cmzn_region *regionIn, cmzn_graphics_module *grap
 		&& scene->top_region_change_callback_list)
 	{
 		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(scene->region);
-		scene->fieldmodulenotifier = cmzn_fieldmodule_create_fieldmodulenotifier(fieldmodule);
-		cmzn_fieldmodulenotifier_set_callback(scene->fieldmodulenotifier,
+        scene->fieldmodulenotifier = cmzn_fieldmodule_create_fieldmodulenotifier(fieldmodule);
+        cmzn_fieldmodulenotifier_set_callback(scene->fieldmodulenotifier,
 			cmzn_fieldmoduleevent_to_scene, static_cast<void*>(scene));
-		cmzn_fieldmodule_destroy(&fieldmodule);
-	}
+        cmzn_fieldmodule_destroy(&fieldmodule);
+    }
 	else
 	{
 		cmzn_scene::deaccess(scene);

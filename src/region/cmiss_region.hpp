@@ -250,16 +250,27 @@ public:
 		if (!region)
 			return CMZN_ERROR_ARGUMENT;
 		--(region->access_count);
-		if (region->access_count <= 0)
-			delete region;
+        if (region->access_count <= 0)
+        {
+            if (region->access_count == 0)
+            {
+                delete region;
+            }
+            else
+            {
+                printf("still wanting to delete stuff.\n");
+            }
 		region = nullptr;
+        }
 		return CMZN_OK;
 	}
 
 	static void reaccess(cmzn_region* &region, cmzn_region *newRegion)
 	{
 		if (newRegion)
+        {
 			++(newRegion->access_count);
+        }
 		if ((region) && (--(region->access_count) == 0))
 			delete region;
 		region = newRegion;

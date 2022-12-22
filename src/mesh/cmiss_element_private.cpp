@@ -2219,7 +2219,7 @@ cmzn_meshchanges::~cmzn_meshchanges()
 cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && meshIn && 
-		(eventIn->getRegion()->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
+        (eventIn->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
 		return new cmzn_meshchanges(eventIn, meshIn);
 	return 0;
 }

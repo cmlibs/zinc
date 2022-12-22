@@ -116,7 +116,7 @@ void cmzn_regionnotifier::clearCallback()
 
 void cmzn_regionnotifier::regionDestroyed()
 {
-	this->region = nullptr;
+//	this->region = nullptr;
 }
 
 cmzn_region::cmzn_region(cmzn_context* contextIn) :
@@ -139,12 +139,12 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	access_count(1)
 {
 	Computed_field_manager_set_region(this->field_manager, this);
-	// cmzn_region must be fully constructed before creating FE_region
+    // cmzn_region must be fully constructed before creating FE_region
 	// get any existing region from context to share element bases and shapes with
 	cmzn_region *baseRegion = contextIn->getBaseRegion();
-	this->fe_region = new FE_region(this, (baseRegion) ? baseRegion->fe_region : nullptr);
+    this->fe_region = new FE_region(this, (baseRegion) ? baseRegion->fe_region : nullptr);
 	// create scene last as technically builds on FE_region
-	this->scene = cmzn_scene::create(this, contextIn->getGraphicsmodule());
+    this->scene = cmzn_scene::create(this, contextIn->getGraphicsmodule());
 }
 
 cmzn_region::~cmzn_region()
@@ -154,7 +154,7 @@ cmzn_region::~cmzn_region()
 		iter != this->fieldmodulenotifierList.end(); ++iter)
 	{
 		cmzn_fieldmodulenotifier *notifier = *iter;
-		notifier->regionDestroyed();
+        notifier->regionDestroyed();
 		cmzn_fieldmodulenotifier::deaccess(notifier);
 	}
 
@@ -188,10 +188,10 @@ cmzn_region::~cmzn_region()
 
 	this->detachFields();
 
-	if (this->context)
+    if (this->name)
+        DEALLOCATE(this->name);
+    if (this->context)
 		this->context->removeRegion(this);
-	if (this->name)
-		DEALLOCATE(this->name);
 }
 
 cmzn_region *cmzn_region::create(cmzn_context* contextIn)
@@ -563,19 +563,19 @@ int cmzn_region::addField(cmzn_field *field)
 		return 0;
 	int cache_index = this->field_cache_size;
 	int number_in_manager = NUMBER_IN_MANAGER(Computed_field)(this->field_manager);
-	if (cache_index == number_in_manager)
+    if (cache_index == number_in_manager)
 	{
 		++this->field_cache_size;
 	}
 	else
 	{
-		std::vector<int> index_used(this->field_cache_size, 0);
+        std::vector<int> index_used(this->field_cache_size, 0);
 		const cmzn_set_cmzn_field& fields = Computed_field_manager_get_fields(this->field_manager);
 		for (cmzn_set_cmzn_field::const_iterator iter = fields.begin(); iter != fields.end(); ++iter)
 		{
 			index_used[cmzn_field_get_cache_index_private((*iter))] = 1;
 		}
-		for (int i = 0; i < this->field_cache_size; i++)
+        for (int i = 0; i < this->field_cache_size; i++)
 		{
 			if (!index_used[i])
 			{
@@ -584,9 +584,9 @@ int cmzn_region::addField(cmzn_field *field)
 			}
 		}
 	}
-	if (Computed_field_add_to_manager_private(field, this->field_manager))
+    if (Computed_field_add_to_manager_private(field, this->field_manager))
 	{
-		int i = 1;
+        int i = 1;
 		for (std::list<cmzn_fieldcache_id>::iterator iter = this->field_caches.begin();
 			iter != this->field_caches.end(); ++iter)
 		{
@@ -595,6 +595,7 @@ int cmzn_region::addField(cmzn_field *field)
 			++i;
 		}
 		cmzn_field_set_cache_index_private(field, cache_index);
+
 		return 1;
 	}
 	return 0;

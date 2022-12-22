@@ -506,12 +506,12 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
 		{
 			field->setNameAutomatic(manager);
 		}
-		return_code = ADD_OBJECT_TO_MANAGER(cmzn_field)(field,manager);
+        return_code = ADD_OBJECT_TO_MANAGER(cmzn_field)(field,manager);
 		if (return_code)
 		{
 			// notify field types which need to perform extra tasks once added to region
 			field->core->fieldAddedToRegion();
-		}
+        }
 	}
 	else
 	{
@@ -549,7 +549,7 @@ cmzn_field *Computed_field_create_generic(
 						"Computed_field_create_generic.  Source field is from a different region");
 					return_code = 0;
 				}
-			}
+            }
 			else
 			{
 				display_message(ERROR_MESSAGE,
@@ -559,8 +559,8 @@ cmzn_field *Computed_field_create_generic(
 		}
 		if (return_code)
 		{
-			field = cmzn_field::create(name);
-			if (field)
+            field = cmzn_field::create(name);
+            if (field)
 			{
 				field->number_of_components = number_of_components;
 				if (0 < number_of_source_fields)
@@ -595,7 +595,7 @@ cmzn_field *Computed_field_create_generic(
 						return_code = 0;
 					}
 				}
-				if (return_code)
+                if (return_code)
 				{
 					// 2nd stage of construction - can fail
 					if (!field_core->attach_to_field(field))
@@ -603,21 +603,21 @@ cmzn_field *Computed_field_create_generic(
 						return_code = 0;
 					}
 				}
-				field->core = field_core;
+                field->core = field_core;
 				field_core = nullptr;  // now owned by field, clear so not destroyed below
 				if (return_code)
 				{
 					// only some field types implement the following, e.g. set default
 					// coordinate system of new field to that of a source field:
-					field->core->inherit_source_field_attributes();
-					if (!region->addField(field))
+                    field->core->inherit_source_field_attributes();
+                    if (!region->addField(field))
 					{
 						display_message(ERROR_MESSAGE,
 							"Computed_field_create_generic.  Unable to add field to region");
 						return_code = 0;
 					}
 				}
-				if (!return_code)
+                if (!return_code)
 				{
 					cmzn_field::deaccess(field);
 				}

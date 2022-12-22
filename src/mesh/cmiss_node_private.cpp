@@ -1240,7 +1240,7 @@ cmzn_nodesetchanges::~cmzn_nodesetchanges()
 cmzn_nodesetchanges *cmzn_nodesetchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && nodesetIn &&
-		(eventIn->getRegion()->get_FE_region() == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
+        (eventIn->get_FE_region() == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
 		return new cmzn_nodesetchanges(eventIn, nodesetIn);
 	return 0;
 }
