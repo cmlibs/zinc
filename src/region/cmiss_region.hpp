@@ -252,15 +252,8 @@ public:
 		--(region->access_count);
         if (region->access_count <= 0)
         {
-            if (region->access_count == 0)
-            {
-                delete region;
-            }
-            else
-            {
-                printf("still wanting to delete stuff.\n");
-            }
-		region = nullptr;
+            delete region;
+            region = nullptr;
         }
 		return CMZN_OK;
 	}
