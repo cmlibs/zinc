@@ -252,7 +252,10 @@ public:
 		--(region->access_count);
         if (region->access_count <= 0)
         {
-            delete region;
+            if (region->access_count == 0)
+            {
+                delete region;
+            }
             region = nullptr;
         }
 		return CMZN_OK;
