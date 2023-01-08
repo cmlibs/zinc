@@ -99,7 +99,7 @@ TEST(cmzn_logger_messages_callback, invalid_args)
 	cmzn_logger_destroy(&logger);
 }
 
-class myLoggercallback : public Loggercallback
+class TestLoggercallback : public Loggercallback
 {
 private:
 
@@ -118,20 +118,20 @@ private:
 	}
 
 public:
-	myLoggercallback() : Loggercallback()
+    TestLoggercallback() : Loggercallback()
 	{
 	}
 };
 
 TEST(ZincLogger, callback)
 {
-	ZincTestSetupCpp zinc;
+    ZincTestSetupCpp zinc;
 
-	Logger logger = zinc.context.getLogger();
-	Loggernotifier loggernotifier = logger.createLoggernotifier();
-	EXPECT_TRUE(loggernotifier.isValid());
-	myLoggercallback thisNotifier;
-	loggernotifier.setCallback(thisNotifier);
+    Logger logger = zinc.context.getLogger();
+    Loggernotifier loggernotifier = logger.createLoggernotifier();
+    EXPECT_TRUE(loggernotifier.isValid());
+    TestLoggercallback thisNotifier;
+    loggernotifier.setCallback(thisNotifier);
     zinc.root_region.readFile(resourcePath("logger/region_incorrect.exregion").c_str());
-	EXPECT_EQ(CMZN_OK, loggernotifier.clearCallback());
+    EXPECT_EQ(CMZN_OK, loggernotifier.clearCallback());
 }
