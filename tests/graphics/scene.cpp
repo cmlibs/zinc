@@ -475,7 +475,7 @@ TEST(cmzn_scene, threejs_export_glyph_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer, *memory_buffer2, *memory_buffer3;
+    const char *memory_buffer = nullptr, *memory_buffer2 = nullptr, *memory_buffer3 = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -571,7 +571,7 @@ TEST(cmzn_scene, threejs_export_point_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer, *memory_buffer2;
+    const char *memory_buffer = nullptr, *memory_buffer2 = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -655,7 +655,7 @@ TEST(cmzn_scene, threejs_export_lines_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    char *memory_buffer, *memory_buffer2;
+    char *memory_buffer = nullptr, *memory_buffer2 = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -746,7 +746,7 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer, *memory_buffer2;
+    const char *memory_buffer = nullptr, *memory_buffer2 = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -825,7 +825,7 @@ TEST(cmzn_scene, threejs_export_region_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -894,7 +894,7 @@ TEST(cmzn_scene, threejs_export_empty_surface_cpp)
     StreamresourceMemory memory_sr2 = si.createStreamresourceMemory();
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -984,7 +984,7 @@ TEST(cmzn_scene, threejs_export_empty_vertices_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -1035,7 +1035,7 @@ TEST(cmzn_scene, threejs_export_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -1098,7 +1098,7 @@ TEST(cmzn_scene, threejs_export_inline)
     cmzn_streamresource_memory_id memory_sr = cmzn_streamresource_cast_memory(
         data_sr);
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = cmzn_streamresource_memory_get_buffer(memory_sr, (const void**)&memory_buffer, &size);
@@ -1163,7 +1163,7 @@ TEST(cmzn_scene, threejs_export)
     cmzn_streamresource_memory_id memory_sr2 = cmzn_streamresource_cast_memory(
         data_sr2);
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = cmzn_streamresource_memory_get_buffer(memory_sr2, (const void**)&memory_buffer, &size);
@@ -1215,7 +1215,7 @@ TEST(cmzn_scene, graphics_description_cpp)
 
     EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
@@ -1285,7 +1285,7 @@ TEST(cmzn_scene, graphics_description)
     cmzn_streamresource_memory_id memory_sr = cmzn_streamresource_cast_memory(
         data_sr);
 
-    const char *memory_buffer;
+    const char *memory_buffer = nullptr;
     unsigned int size = 0;
 
     result = cmzn_streamresource_memory_get_buffer(memory_sr, (const void**)&memory_buffer, &size);

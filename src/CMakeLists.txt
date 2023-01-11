@@ -7,11 +7,11 @@
 # Set the minimum version of cmake required to 2.8.1
 # The FATAL_ERROR is needed if using cmake < 2.4
 
-IF( MSVC )
+if( MSVC )
     SET( ZINC_C_INLINE __inline )
-ELSE()
+else()
     SET( ZINC_C_INLINE "static inline" )
-ENDIF()
+endif()
 
 set(FILES_FOR_CLEANING)
 
@@ -75,16 +75,7 @@ else ()
 endif ()
 configure_file(${PROJECT_SOURCE_DIR}/cmake/configure_version_cpp_file.in.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake @ONLY)
-add_custom_command(OUTPUT ${ZINC_VERSION_STAGING_SRC}
-    COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
-    COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
-)
-add_custom_target(generate_version_cpp_file
-    DEPENDS ${ZINC_VERSION_STAGING_SRC}
-)
 set_source_files_properties(${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE)
-set_target_properties(generate_version_cpp_file PROPERTIES FOLDER Utilities)
 list(APPEND FILES_FOR_CLEANING ${ZINC_VERSION_SRC} ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
 list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 
@@ -113,7 +104,6 @@ if( ZINC_BUILD_SHARED_LIBRARY )
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/api>
         $<INSTALL_INTERFACE:include/>
         PRIVATE ${FREETYPE_INCLUDE_DIRS})
-    add_dependencies(${ZINC_SHARED_TARGET} generate_version_cpp_file)
     if( WIN32 )
         target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${LINK_PUBLIC} winmm.lib)
     endif()
@@ -138,7 +128,6 @@ if( ZINC_BUILD_STATIC_LIBRARY )
         $<INSTALL_INTERFACE:include/>
         )
     target_compile_definitions(${ZINC_STATIC_TARGET} PUBLIC STATIC_BUILD)
-    add_dependencies(${ZINC_STATIC_TARGET} generate_version_cpp_file)
     if(WIN32)
         target_link_libraries( ${ZINC_STATIC_TARGET} PUBLIC winmm.lib )
     endif()
@@ -149,6 +138,18 @@ if( ZINC_BUILD_STATIC_LIBRARY )
     export(TARGETS ${ZINC_STATIC_TARGET} ${OPENCMISSDEPENDENCIES_TARGET}
         FILE "${PROJECT_BINARY_DIR}/zinc-targets.cmake" APPEND)
 endif()
+
+set(_ACTIVE_TARGET NOT_FOUND)
+if( TARGET ${ZINC_SHARED_TARGET})
+  set(_ACTIVE_TARGET ${ZINC_SHARED_TARGET})
+elseif( TARGET ${ZINC_STATIC_TARGET})
+  set(_ACTIVE_TARGET ${ZINC_STATIC_TARGET})
+endif()
+add_custom_command(TARGET ${_ACTIVE_TARGET} PRE_BUILD
+  COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
+  COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
+  COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
+)
 
 set_target_properties( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES
     OUTPUT_NAME_RELEASE ${ZINC_LIBRARY_NAME}
