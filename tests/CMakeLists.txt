@@ -57,7 +57,7 @@ foreach( TEST ${API_TESTS} )
     set_tests_properties(TEST_${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
     #gtest_discover_tests(${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
     add_custom_command(TARGET ${CURRENT_TEST} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ZINC_SHARED_TARGET_NAME}> $<TARGET_PDB_FILE:${ZINC_SHARED_TARGET_NAME}> $<TARGET_FILE_DIR:${CURRENT_TEST}>
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ZINC_SHARED_TARGET_NAME}> $<$<CONFIG:Debug,RelWithDebInfo>:$<TARGET_PDB_FILE:${ZINC_SHARED_TARGET_NAME}>> $<TARGET_FILE_DIR:${CURRENT_TEST}>
       COMMENT "Conditionally copy shared libraries to test directory.")
   endif()
 
