@@ -68,7 +68,7 @@ if(IS_MULTI_CONFIG_ENV)
   foreach(_TEST ${TEST_LIST})
     string(TOLOWER ${_TEST} _TEST_LOWERCASE)
     add_custom_target(run_${_TEST_LOWERCASE}
-      COMMAND ${CMAKE_CTEST_COMMAND} -R TEST_{_TEST} --output-on-failure
+      COMMAND ${CMAKE_CTEST_COMMAND} -R TEST_${_TEST} --output-on-failure -C $<CONFIG>
       DEPENDS ${_TEST}
       COMMENT "Run test ${_TEST}.")
     set_target_properties(run_${_TEST_LOWERCASE} PROPERTIES FOLDER RunIndividualTests)

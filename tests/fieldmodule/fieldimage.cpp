@@ -68,7 +68,7 @@ TEST(cmzn_field_image, create_evaluate)
 	ASSERT_DOUBLE_EQ(1.0, height);
 	double depth = cmzn_field_image_get_texture_coordinate_depth(im);
 	ASSERT_DOUBLE_EQ(1.0, depth);
-	double double_sizes[3];
+	double double_sizes[3] = {};
 	cmzn_field_image_get_texture_coordinate_sizes(im, 3, &double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
@@ -91,7 +91,7 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_EQ(32, height_texels);
 	int depth_texels = cmzn_field_image_get_depth_in_pixels(im2);
 	EXPECT_EQ(1, depth_texels);
-	int int_sizes[3];
+	int int_sizes[3] = {};
 	cmzn_field_image_get_size_in_pixels(im2, 3, &int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[1]);
@@ -160,7 +160,7 @@ TEST(ZincFieldImage, create_evaluate)
 	ASSERT_DOUBLE_EQ(1.0, height);
 	double depth = im.getTextureCoordinateDepth();
 	ASSERT_DOUBLE_EQ(1.0, depth);
-	double double_sizes[3];
+	double double_sizes[3] = {};
 	im.getTextureCoordinateSizes(3, &double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
@@ -182,7 +182,7 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_EQ(32, height_texels);
 	int depth_texels = im2.getDepthInPixels();
 	EXPECT_EQ(1, depth_texels);
-	int int_sizes[3];
+	int int_sizes[3] = {};
 	im2.getSizeInPixels(3, &int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[1]);
