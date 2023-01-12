@@ -5,6 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 # Find dependent packages
 find_package(GoogleTest ${GTEST_VERSION} REQUIRED)
+include(GoogleTest)
 
 list(INSERT CMAKE_MODULE_PATH  0 "${CMAKE_CURRENT_SOURCE_DIR}")
 # Test for pthread requirement, and OS X 10.9
@@ -44,16 +45,20 @@ set(TEST_LIST)
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
-  target_link_libraries(${CURRENT_TEST} GTest::gtest_main ${_ZINC_LINK_LIBRARY} testresources)
+    target_link_libraries(${CURRENT_TEST} GTest::gtest_main ${_ZINC_LINK_LIBRARY} testresources)
 	target_include_directories(${CURRENT_TEST} PRIVATE 
 	    ${ZINC_API_INCLUDE_DIR} 
 	    ${CMAKE_CURRENT_SOURCE_DIR} 
 	    ${CMAKE_CURRENT_BINARY_DIR}
 	)
-	add_test(NAME ${CURRENT_TEST} COMMAND ${CURRENT_TEST})
-  if(MSVC AND ZINC_SHARED_TARGET_NAME)
-      set(_TEST_PROPERTIES "PATH=$<TARGET_FILE_DIR:${ZINC_SHARED_TARGET_NAME}>")
-      set_tests_properties(${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
+	add_test(NAME TEST_${CURRENT_TEST} COMMAND ${CURRENT_TEST})
+  if(DEFINED ZINC_SHARED_TARGET_NAME AND TARGET ${ZINC_SHARED_TARGET_NAME} AND MSVC)
+    set(_TEST_PROPERTIES "PATH=$<TARGET_FILE_DIR:${ZINC_SHARED_TARGET_NAME}>")
+    set_tests_properties(TEST_${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
+    #gtest_discover_tests(${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
+    add_custom_command(TARGET ${CURRENT_TEST} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ZINC_SHARED_TARGET_NAME}> $<TARGET_PDB_FILE:${ZINC_SHARED_TARGET_NAME}> $<TARGET_FILE_DIR:${CURRENT_TEST}>
+      COMMENT "Conditionally copy shared libraries to test directory.")
   endif()
 
   list(APPEND TEST_LIST ${CURRENT_TEST})
@@ -63,7 +68,7 @@ if(IS_MULTI_CONFIG_ENV)
   foreach(_TEST ${TEST_LIST})
     string(TOLOWER ${_TEST} _TEST_LOWERCASE)
     add_custom_target(run_${_TEST_LOWERCASE}
-      COMMAND ${CMAKE_CTEST_COMMAND} -R ${_TEST} --output-on-failure -C $<CONFIGURATION>
+      COMMAND ${CMAKE_CTEST_COMMAND} -R TEST_{_TEST} --output-on-failure
       DEPENDS ${_TEST}
       COMMENT "Run test ${_TEST}.")
     set_target_properties(run_${_TEST_LOWERCASE} PROPERTIES FOLDER RunIndividualTests)
