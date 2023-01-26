@@ -2380,6 +2380,7 @@ cmzn_field_id cmzn_material_get_texture_field(cmzn_material_id material,
 int cmzn_material_set_texture_field(cmzn_material_id material,
 	int texture_number, cmzn_field_id texture_field)
 {
+    int return_code = CMZN_ERROR_ARGUMENT;
     if (material)
 	{
         cmzn_field_image_id image_field = cmzn_field_cast_image(texture_field);
@@ -2411,12 +2412,15 @@ int cmzn_material_set_texture_field(cmzn_material_id material,
                     material->compile_status = GRAPHICS_NOT_COMPILED;
                     Graphical_material_changed(material);
                 }
-                cmzn_field_image_destroy(&image_field);
-                return CMZN_OK;
+                return_code = CMZN_OK;
             }
         }
+        if (image_field)
+        {
+            cmzn_field_image_destroy(&image_field);
+        }
 	}
-	return CMZN_ERROR_ARGUMENT;
+    return return_code;
 }
 
 int set_shader_program_type_texture_mode(cmzn_material *material_to_be_modified,
