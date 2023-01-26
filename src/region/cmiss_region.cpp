@@ -116,7 +116,7 @@ void cmzn_regionnotifier::clearCallback()
 
 void cmzn_regionnotifier::regionDestroyed()
 {
-//	this->region = nullptr;
+    this->region = nullptr;
 }
 
 cmzn_region::cmzn_region(cmzn_context* contextIn) :
