@@ -9,6 +9,3 @@ LIST(APPEND API_TESTS ${CURRENT_TEST})
 SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/optimisationtests.cpp
     )
-
-SET(OPTIMISATION_CUBE_TRICUBIC_LAGRANGE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/tricubic.exfile")
-SET("data/fit_line_time.exf" "${CMAKE_CURRENT_LIST_DIR}/data/fit_line_time.exf")
