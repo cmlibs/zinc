@@ -1366,31 +1366,31 @@ TEST(FieldIO, variableNodeVersionsWithTime2d)
     int result;
 
     createVariableNodeVersionsWithTime2d(zinc.fm);
-//	checkVariableNodeVersionsWithTime2d(zinc.fm);
+    checkVariableNodeVersionsWithTime2d(zinc.fm);
 
-//	// test writing and re-reading in EX2 format
-//    std::string nodes_time0 = std::string(TESTS_OUTPUT_LOCATION) + "/variable_node_versions_nodes_time0.ex2";
-//    std::string nodes_time1 = std::string(TESTS_OUTPUT_LOCATION) + "/variable_node_versions_nodes_time1.ex2";
-//    std::string nodes_elements = std::string(TESTS_OUTPUT_LOCATION) + "/variable_node_versions_elements.ex2";
+    // test writing and re-reading in EX2 format
+    std::string nodes_time0 = std::string(TESTS_OUTPUT_LOCATION) + "/variable_node_versions_nodes_time0.ex2";
+    std::string nodes_time1 = std::string(TESTS_OUTPUT_LOCATION) + "/variable_node_versions_nodes_time1.ex2";
+    std::string nodes_elements = std::string(TESTS_OUTPUT_LOCATION) + "/variable_node_versions_elements.ex2";
 
-//    EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 0.0, nodes_time0.c_str()));
-//    EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 1.0, nodes_time1.c_str()));
-//	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
-//    StreamresourceFile srf = sir.createStreamresourceFile(nodes_elements.c_str());
-//	sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_MESH1D | Field::DOMAIN_TYPE_MESH2D);
-//	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
+    EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 0.0, nodes_time0.c_str()));
+    EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 1.0, nodes_time1.c_str()));
+    StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+    StreamresourceFile srf = sir.createStreamresourceFile(nodes_elements.c_str());
+    sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_MESH1D | Field::DOMAIN_TYPE_MESH2D);
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
 
-//	Region region2 = zinc.context.createRegion();
-//	sir = region2.createStreaminformationRegion();
-//    StreamresourceFile srf_nodes_time0 = sir.createStreamresourceFile(nodes_time0.c_str());
-//	// time is now stored in EX3 file, no need to specify on read
-//	//sir.setResourceAttributeReal(srf_nodes_time0, StreaminformationRegion::ATTRIBUTE_TIME, 0.0);
-//    StreamresourceFile srf_nodes_time1 = sir.createStreamresourceFile(nodes_time1.c_str());
-//	//sir.setResourceAttributeReal(srf_nodes_time1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
-//    StreamresourceFile srf_elements = sir.createStreamresourceFile(nodes_elements.c_str());
-//	EXPECT_EQ(RESULT_OK, result = region2.read(sir));
-//	Fieldmodule fm2 = region2.getFieldmodule();
-//	checkVariableNodeVersionsWithTime2d(fm2);
+    Region region2 = zinc.context.createRegion();
+    sir = region2.createStreaminformationRegion();
+    StreamresourceFile srf_nodes_time0 = sir.createStreamresourceFile(nodes_time0.c_str());
+    // time is now stored in EX3 file, no need to specify on read
+    //sir.setResourceAttributeReal(srf_nodes_time0, StreaminformationRegion::ATTRIBUTE_TIME, 0.0);
+    StreamresourceFile srf_nodes_time1 = sir.createStreamresourceFile(nodes_time1.c_str());
+    //sir.setResourceAttributeReal(srf_nodes_time1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
+    StreamresourceFile srf_elements = sir.createStreamresourceFile(nodes_elements.c_str());
+    EXPECT_EQ(RESULT_OK, result = region2.read(sir));
+    Fieldmodule fm2 = region2.getFieldmodule();
+    checkVariableNodeVersionsWithTime2d(fm2);
 }
 
 namespace {
