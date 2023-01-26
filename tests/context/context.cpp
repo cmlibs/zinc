@@ -98,3 +98,11 @@ TEST(ZincContext, default_region)
     Context otherContext = Context("other");
     EXPECT_EQ(RESULT_ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r2));
 }
+
+TEST(cmzn_context, region_lifetime)
+{
+    cmzn_context_id context = cmzn_context_create("test");
+    cmzn_region_id region = cmzn_context_create_region(context);
+    cmzn_context_destroy(&context);
+    cmzn_region_destroy(&region);
+}
