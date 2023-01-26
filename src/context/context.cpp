@@ -47,7 +47,6 @@ cmzn_context::~cmzn_context()
 		cmzn_region *region = *iter;
 		region->detachFields();
 		region->clearContext();
-        cmzn_region::deaccess(region);
 	}
 	delete this->graphics_module;
 	if (this->element_point_ranges_selection)
