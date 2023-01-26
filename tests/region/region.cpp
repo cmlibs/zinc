@@ -88,7 +88,7 @@ public:
 		changeCount(0)
 	{ }
 
-	virtual void operator()(const Regionevent& event)
+    virtual void operator()(const Regionevent& /*event*/)
 	{
 		++(this->changeCount);
 	}
@@ -108,14 +108,14 @@ TEST(ZincRegion, build_tree_regionnotifier)
 
     tmpText = zinc.root_region.getPath();
     EXPECT_STREQ("", tmpText);
-    free(tmpText);
+    cmzn_deallocate(tmpText);
 	Region bob = zinc.root_region.createChild("bob");
 	EXPECT_EQ(1, rootRegionChange.changeCount);
 	EXPECT_TRUE(bob.isValid());
     EXPECT_STREQ("bob", tmpText = bob.getPath());
-    free(tmpText);
+    cmzn_deallocate(tmpText);
     EXPECT_STREQ("..", tmpText = zinc.root_region.getRelativePath(bob));
-    free(tmpText);
+    cmzn_deallocate(tmpText);
 
 	Regionnotifier bobRegionnotifier = bob.createRegionnotifier();
 	EXPECT_TRUE(bobRegionnotifier.isValid());
