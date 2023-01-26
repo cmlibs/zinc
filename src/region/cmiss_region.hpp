@@ -252,13 +252,10 @@ public:
 		--(region->access_count);
         if (region->access_count <= 0)
         {
-            if (region->access_count == 0)
-            {
-                delete region;
-            }
-            region = nullptr;
+            delete region;
         }
-		return CMZN_OK;
+        region = nullptr;
+        return CMZN_OK;
 	}
 
 	static void reaccess(cmzn_region* &region, cmzn_region *newRegion)
