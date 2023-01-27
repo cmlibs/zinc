@@ -17,7 +17,7 @@ class ManageOutputFolder
 {
 	std::string folderName;
 public:
-	ManageOutputFolder(const char *folderNameIn);
+    ManageOutputFolder(const std::string &folderNameIn);
 	~ManageOutputFolder();
 };
 

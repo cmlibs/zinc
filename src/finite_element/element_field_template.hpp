@@ -460,8 +460,8 @@ private:
 		if (this->impl->isLocked())
 		{
 			FE_element_field_template *tmp = this->impl;
-			this->impl = tmp->cloneForModify();
-			FE_element_field_template::deaccess(tmp);
+            this->impl = tmp->cloneForModify();
+            FE_element_field_template::deaccess(tmp);
 		}
 	}
 

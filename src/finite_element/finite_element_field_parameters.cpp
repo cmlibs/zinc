@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/result.h"
 #include "finite_element/finite_element_field.hpp"
 #include "finite_element/finite_element_field_parameters.hpp"
@@ -97,6 +98,7 @@ void FE_field_parameters::generateMaps()
 			++nodeRangeCount;
 		}
 	}
+    cmzn_nodeiterator_destroy(&nodeIter);
 	this->parameterCount = parameterIndex;
 	// following could be improved knowing the number of elements
 	// basically want a fraction of typical or minimum element span
@@ -424,7 +426,8 @@ template <class ProcessValuesOperator> int FE_field_parameters::processParameter
 		if ((valueIndex + nodeValuesCount) > this->parameterCount)
 		{
 			display_message(ERROR_MESSAGE, "Fieldparameters %s:  Not enough values supplied", processValues.getApiName());
-			return CMZN_RESULT_ERROR_ARGUMENT;
+            cmzn_nodeiterator_destroy(&nodeIter);
+            return CMZN_RESULT_ERROR_ARGUMENT;
 		}
 		for (int c = 0; c < componentCount; ++c)
 		{
@@ -434,11 +437,13 @@ template <class ProcessValuesOperator> int FE_field_parameters::processParameter
 			if (CMZN_RESULT_OK != processResult)
 			{
 				display_message(ERROR_MESSAGE, "Fieldparameters %s:  Failed to process node field component", processValues.getApiName());
-				return processResult;
+                cmzn_nodeiterator_destroy(&nodeIter);
+                return processResult;
 			}
 			valueIndex += componentValuesCount;
 		}
 	}
+    cmzn_nodeiterator_destroy(&nodeIter);
 	return CMZN_RESULT_OK;
 }
 

@@ -19,7 +19,7 @@ class FE_region_changes;
 struct cmzn_fieldmoduleevent
 {
 private:
-	cmzn_region *region;
+    cmzn_region *region;
 	cmzn_field_change_flags changeFlags;
 	struct MANAGER_MESSAGE(Computed_field) *managerMessage;
 	FE_region_changes *feRegionChanges;
@@ -36,11 +36,7 @@ public:
 		return new cmzn_fieldmoduleevent(regionIn);
 	}
 
-	cmzn_fieldmoduleevent *access()
-	{
-		++(this->access_count);
-		return this;
-	}
+    cmzn_fieldmoduleevent *access();
 
 	static void deaccess(cmzn_fieldmoduleevent* &event);
 
@@ -78,10 +74,7 @@ public:
 		return this->feRegionChanges;
 	}
 
-	cmzn_region *getRegion()
-	{
-		return this->region;
-	}
+    FE_region *get_FE_region();
 };
 
 struct cmzn_fieldmodulenotifier

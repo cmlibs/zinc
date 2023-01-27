@@ -302,7 +302,7 @@ TEST(ZincFieldmodulenotifier, partial_mesh_change)
 	FieldmodulecallbackRecordChange recordChange;
 	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(recordChange));
 
-	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 	EXPECT_EQ(Field::CHANGE_FLAG_ADD | Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
 
 	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
@@ -419,7 +419,7 @@ TEST(ZincFieldmodulenotifier, defineFaces)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_PART_SURFACES_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/part_surfaces.ex2").c_str()));
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
 	EXPECT_EQ(6, mesh3d.getSize());
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);

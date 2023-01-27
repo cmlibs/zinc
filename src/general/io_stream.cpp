@@ -127,7 +127,7 @@ DESCRIPTION :
 
 #if defined (HAVE_ZLIB)
 	/* IO_STREAM_GZIP_FILE_TYPE */
-	gzFile *gzip_file_handle;
+	gzFile gzip_file_handle;
 	z_stream gzStream;
 	int last_gzip_return;
 #endif /* defined (HAVE_ZLIB) */
@@ -445,7 +445,7 @@ DESCRIPTION :
 
 #if defined (HAVE_ZLIB)
 			/* IO_STREAM_GZIP_FILE_TYPE */
-			io_stream->gzip_file_handle = (gzFile *)NULL;
+			io_stream->gzip_file_handle = nullptr;
 			io_stream->last_gzip_return = Z_OK;
 #endif /* defined (HAVE_ZLIB) */
 
@@ -576,7 +576,7 @@ int IO_stream_open_for_read_compression_specified(struct IO_stream *stream, cons
 #if defined (HAVE_ZLIB)
 				if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP == data_compression_type)
 				{
-					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					stream->gzip_file_handle = gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
@@ -740,7 +740,7 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
-					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					stream->gzip_file_handle = gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
@@ -1487,7 +1487,7 @@ string.  It uses fscanf:
 =============================================================================*/
 {
 	int characters_read,format_len,return_code,working_string_len;
-	char *working_format,*working_string;
+    char *working_format = nullptr,*working_string = nullptr;
 
 	ENTER(read_string);
 	/* check for valid parameters */
@@ -1548,7 +1548,6 @@ string.  It uses fscanf:
 							}
 							else
 							{
-								/*            print_message(1,*/
 								display_message(WARNING_MESSAGE,
 									"read_string.  Could not allocate memory for string");
 								return_code=0;
@@ -1558,12 +1557,11 @@ string.  It uses fscanf:
 						{
 							if (working_string)
 							{
-								REALLOCATE(*string_read,working_string,char,
-									strlen(working_string)+1);
+                                REALLOCATE(*string_read,working_string,char, strlen(working_string)+1);
 							}
 							else
 							{
-								*string_read=(char *)NULL;
+                                *string_read = nullptr;
 							}
 						}
 						else
@@ -1598,7 +1596,7 @@ string.  It uses fscanf:
 		display_message(WARNING_MESSAGE,"IO_stream_read_string.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
+    LEAVE;
 
 	return(return_code);
 } /* IO_stream_read_string */

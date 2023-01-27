@@ -33,7 +33,7 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_NE(static_cast<cmzn_field_image_id>(0), im);
 
 	int result;
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, resourcePath("blockcolours.png").c_str()));
 	int numberOfComponents = cmzn_field_get_number_of_components(f1);
 	EXPECT_EQ(3, numberOfComponents);
 
@@ -68,7 +68,7 @@ TEST(cmzn_field_image, create_evaluate)
 	ASSERT_DOUBLE_EQ(1.0, height);
 	double depth = cmzn_field_image_get_texture_coordinate_depth(im);
 	ASSERT_DOUBLE_EQ(1.0, depth);
-	double double_sizes[3];
+	double double_sizes[3] = {};
 	cmzn_field_image_get_texture_coordinate_sizes(im, 3, &double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
@@ -91,7 +91,7 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_EQ(32, height_texels);
 	int depth_texels = cmzn_field_image_get_depth_in_pixels(im2);
 	EXPECT_EQ(1, depth_texels);
-	int int_sizes[3];
+	int int_sizes[3] = {};
 	cmzn_field_image_get_size_in_pixels(im2, 3, &int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[1]);
@@ -126,7 +126,7 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_TRUE(castImage.isValid());
 
 	int result;
-	EXPECT_EQ(OK, result = im.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+    EXPECT_EQ(OK, result = im.readFile(resourcePath("blockcolours.png").c_str()));
 	int numberOfComponents = im.getNumberOfComponents();
 	EXPECT_EQ(3, numberOfComponents);
 
@@ -160,7 +160,7 @@ TEST(ZincFieldImage, create_evaluate)
 	ASSERT_DOUBLE_EQ(1.0, height);
 	double depth = im.getTextureCoordinateDepth();
 	ASSERT_DOUBLE_EQ(1.0, depth);
-	double double_sizes[3];
+	double double_sizes[3] = {};
 	im.getTextureCoordinateSizes(3, &double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
@@ -182,7 +182,7 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_EQ(32, height_texels);
 	int depth_texels = im2.getDepthInPixels();
 	EXPECT_EQ(1, depth_texels);
-	int int_sizes[3];
+	int int_sizes[3] = {};
 	im2.getSizeInPixels(3, &int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[1]);
@@ -208,7 +208,7 @@ TEST(cmzn_field_image, enumerations)
 	EXPECT_NE(static_cast<cmzn_field_image_id>(0), im);
 
 	int result;
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, resourcePath("blockcolours.png").c_str()));
 
 	EXPECT_EQ(CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL, result = cmzn_field_image_get_combine_mode(im));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_combine_mode(im, CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND));
@@ -242,7 +242,7 @@ TEST(ZincFieldImage, enumerations)
 	EXPECT_TRUE(im.isValid());
 
 	int result;
-	EXPECT_EQ(OK, result = im.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+    EXPECT_EQ(OK, result = im.readFile(resourcePath("blockcolours.png").c_str()));
 
 	EXPECT_EQ(FieldImage::COMBINE_MODE_DECAL, im.getCombineMode());
 	EXPECT_EQ(OK, result = im.setCombineMode(FieldImage::COMBINE_MODE_BLEND));

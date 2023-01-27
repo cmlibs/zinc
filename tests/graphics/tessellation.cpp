@@ -14,7 +14,6 @@
 
 #include "opencmiss/zinc/tessellation.hpp"
 
-#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -268,12 +267,10 @@ TEST(cmzn_tessellation_api, description_io_cpp)
 	Tessellationmodule tm = zinc.context.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::TESSELLATION_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("graphics/tessellation_description.json");
+    EXPECT_FALSE(stringBuffer.empty());
 
-	EXPECT_EQ(CMZN_OK, tm.readDescription(stringBuffer));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, tm.readDescription(stringBuffer.c_str()));
 
 	Tessellation tessellation = tm.findTessellationByName("default");
 	EXPECT_TRUE(tessellation.isValid());

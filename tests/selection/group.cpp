@@ -322,7 +322,7 @@ TEST(ZincFieldElementGroup, add_remove_conditional)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
@@ -411,7 +411,7 @@ TEST(ZincFieldNodeGroup, add_remove_conditional)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
@@ -531,7 +531,7 @@ TEST(ZincFieldElementGroup, add_remove_with_subelement_handling)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
@@ -816,7 +816,7 @@ TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	int size0, size3;
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
@@ -957,7 +957,7 @@ TEST(ZincFieldGroup, issue_3852_dependency_on_mesh_or_nodeset_group)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+        resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

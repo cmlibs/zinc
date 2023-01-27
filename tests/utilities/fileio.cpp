@@ -16,21 +16,21 @@
 
 namespace {
 
-void createSubfolder(const char *name)
+void createSubfolder(const std::string &name)
 {
 #ifdef _WIN32
-	_mkdir(name);
+    _mkdir(name.c_str());
 #else 
-	mkdir(name, 0777);
+    mkdir(name.c_str(), 0755);
 #endif
 }
 
 }
 
-ManageOutputFolder::ManageOutputFolder(const char *folderNameIn) :
+ManageOutputFolder::ManageOutputFolder(const std::string &folderNameIn) :
 	folderName(folderNameIn)
 {
-	createSubfolder(folderNameIn);
+    createSubfolder(folderNameIn);
 }
 
 ManageOutputFolder::~ManageOutputFolder()

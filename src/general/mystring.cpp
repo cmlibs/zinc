@@ -535,7 +535,7 @@ int append_string(char **stringAddress, const char *string1, int *error, bool pr
 	{
 		if (!(*error))
 		{
-			const int currentLength = (*stringAddress) ? strlen(*stringAddress) : 0;
+			const size_t currentLength = (*stringAddress) ? strlen(*stringAddress) : 0;
 			char *newString;
 			if (ALLOCATE(newString, char, currentLength + strlen(string1) + 1))
 			{

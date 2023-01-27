@@ -1522,6 +1522,8 @@ public:
 
 		virtual ~Component()
 		{
+            elementScalarDOFs.clear();
+            elementVectorDOFs.clear();
 		}
 
 		/** @param elementIndex  Element index >= 0. Not checked. */
@@ -1583,7 +1585,7 @@ public:
 					return 0;
 				}
 			}
-			return values;
+            return values;
 		}
 
 		/** @param elementIndex  The element to set values for.

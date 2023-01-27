@@ -93,7 +93,7 @@ TEST(cmzn_field_derivative, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	int result = cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+    int result = cmzn_region_read_file(root_region, resourcePath("fieldmodule/cube.exformat").c_str());
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
@@ -101,6 +101,7 @@ TEST(cmzn_field_derivative, valid_args)
 
 	cmzn_field_id ft = cmzn_fieldmodule_find_field_by_name(fm, "xi");
 	EXPECT_NE(static_cast<cmzn_field *>(0), ft);
+    cmzn_field_destroy(&ft);
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_derivative(fm, f1, 1);
 	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
@@ -157,8 +158,8 @@ TEST(cmzn_field_derivative, valid_args)
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_field_destroy(&f3);
-	cmzn_field_destroy(&f4);
-	cmzn_field_derivative_destroy(&f4d);
+    cmzn_field_destroy(&f4);
+    cmzn_field_derivative_destroy(&f4d);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
@@ -204,7 +205,7 @@ TEST(ZincFieldDerivative, valid_args)
 	Fieldmodule fm = rootRegion.getFieldmodule();
 	EXPECT_TRUE(fm.isValid());
 
-	EXPECT_EQ(RESULT_OK, rootRegion.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, rootRegion.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field f1 = fm.findFieldByName("coordinates");
 	EXPECT_TRUE(f1.isValid());
@@ -296,7 +297,7 @@ TEST(cmzn_fieldmodule_create_field_curl, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+    cmzn_region_read_file(root_region, resourcePath("fieldmodule/cube.exformat").c_str());
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
@@ -372,7 +373,7 @@ TEST(cmzn_fieldmodule_create_field_divergence, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+    cmzn_region_read_file(root_region, resourcePath("fieldmodule/cube.exformat").c_str());
 
 	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
@@ -417,7 +418,7 @@ TEST(cmzn_fieldmodule_create_field_divergence, grad_mag)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+    cmzn_region_read_file(root_region, resourcePath("fieldmodule/cube.exformat").c_str());
 
 	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
@@ -522,7 +523,7 @@ TEST(cmzn_fieldmodule_create_field_gradient, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+    cmzn_region_read_file(root_region, resourcePath("fieldmodule/cube.exformat").c_str());
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
@@ -715,7 +716,7 @@ TEST(ZincFieldGradient, gradientOfGradient1)
 {
 	ZincTestSetupCpp zinc;
 
-	int result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE));
+    int result = zinc.root_region.readFile(resourcePath("fieldmodule/cube_tricubic_deformed.exfile").c_str());
 	EXPECT_EQ(CMZN_OK, result);
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
@@ -770,7 +771,7 @@ TEST(ZincFieldGradient, gradientOfGradient2)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube_tricubic_deformed.exfile").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	Field deformed = zinc.fm.findFieldByName("deformed");
@@ -787,7 +788,11 @@ TEST(ZincFieldGradient, gradientOfGradient2)
 	const double scaleValues[3] = { 0.1, 0.2, 0.15 };
 	FieldConstant scale = zinc.fm.createFieldConstant(3, scaleValues);
 	FieldAdd newCoordinates = coordinates + scale*zinc.fm.createFieldCos(projectedCoordinates);
-	EXPECT_EQ(RESULT_OK, coordinates.createFieldassignment(newCoordinates).assign());
+//	EXPECT_EQ(RESULT_OK, coordinates.createFieldassignment(newCoordinates).assign());
+    Fieldassignment fieldassignment = coordinates.createFieldassignment(newCoordinates);
+    EXPECT_TRUE(fieldassignment.isValid());
+    EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+
 
 	Field deformedGradient1 = zinc.fm.createFieldGradient(deformed, coordinates);
 	EXPECT_TRUE(deformedGradient1.isValid());
@@ -892,9 +897,9 @@ TEST(cmzn_field, issue_3317_grid_derivatives_wrt_xi)
 	ZincTestSetup zinc;
 
 	int result;
-	result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+    result = cmzn_region_read_file(zinc.root_region, resourcePath("fieldmodule/cube.exformat").c_str());
 	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_GRID_RESOURCE));
+    result = cmzn_region_read_file(zinc.root_region, resourcePath("fieldmodule/cube_grid.exelem").c_str());
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(zinc.fm, 3);
@@ -955,7 +960,7 @@ TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_XYZP_RESOURCE)));
+        resourcePath("fieldmodule/cube_xyzp.exformat").c_str()));
 
 	Field dependent = zinc.fm.findFieldByName("dependent");
 	EXPECT_TRUE(dependent.isValid());

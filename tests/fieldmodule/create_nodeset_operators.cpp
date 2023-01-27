@@ -79,7 +79,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_minimum, valid_args)
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
 	cmzn_region_read_file(root_region,
-		TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+        resourcePath("fieldmodule/nodes.exnode").c_str());
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 
@@ -157,7 +157,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_maximum, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+    cmzn_region_read_file(root_region, resourcePath("fieldmodule/nodes.exnode").c_str());
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 
@@ -189,7 +189,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_maximum, multiplecomponents)
 {
 	ZincTestSetup zinc;
 	int result = 0;
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
+    cmzn_region_read_file(zinc.root_region, resourcePath("fieldmodule/nodes.exnode").c_str());
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_component(zinc.fm, f1, 1);
 	cmzn_field_id f3 = cmzn_fieldmodule_create_field_component(zinc.fm, f1, 2);
@@ -284,7 +284,7 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	ZincTestSetupCpp zinc;
 
 	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/embedding_issue3614.exregion").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

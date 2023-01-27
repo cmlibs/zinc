@@ -17,7 +17,6 @@
 #include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 
-#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -347,12 +346,9 @@ TEST(cmzn_spectrum_api, description_io_cpp)
 	Spectrummodule sm = zinc.context.getSpectrummodule();
 	EXPECT_TRUE(sm.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::SPECTRUM_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("spectrum/spectrum_description.json");
 
-	EXPECT_EQ(CMZN_OK, sm.readDescription(stringBuffer));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, sm.readDescription(stringBuffer.c_str()));
 
 	Spectrum spectrum = sm.findSpectrumByName("default");
 	EXPECT_TRUE(spectrum.isValid());
@@ -520,8 +516,7 @@ TEST(ZincSpectrum, autorange)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
