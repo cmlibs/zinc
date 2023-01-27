@@ -51,7 +51,7 @@ TEST(ZincFieldsmoothing, smoothHermiteCubes)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EX_TWOHERMITECUBES_NOSCALEFACTORS_RESOURCE)));
+        resourcePath("fieldio/twohermitecubes_noscalefactors.exfile").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 	Mesh mesh = zinc.fm.findMeshByDimension(3);

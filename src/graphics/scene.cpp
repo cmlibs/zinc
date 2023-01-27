@@ -292,11 +292,11 @@ cmzn_scene *cmzn_scene::create(cmzn_region *regionIn, cmzn_graphics_module *grap
 		&& scene->top_region_change_callback_list)
 	{
 		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(scene->region);
-		scene->fieldmodulenotifier = cmzn_fieldmodule_create_fieldmodulenotifier(fieldmodule);
-		cmzn_fieldmodulenotifier_set_callback(scene->fieldmodulenotifier,
+        scene->fieldmodulenotifier = cmzn_fieldmodule_create_fieldmodulenotifier(fieldmodule);
+        cmzn_fieldmodulenotifier_set_callback(scene->fieldmodulenotifier,
 			cmzn_fieldmoduleevent_to_scene, static_cast<void*>(scene));
-		cmzn_fieldmodule_destroy(&fieldmodule);
-	}
+        cmzn_fieldmodule_destroy(&fieldmodule);
+    }
 	else
 	{
 		cmzn_scene::deaccess(scene);
@@ -1302,9 +1302,9 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 				cmzn_graphics_compile_visible_graphics, (void *)renderer,
 				scene->list_of_graphics);
 		}
-
 		/* check whether scene contents need building */
 		return_code = cmzn_scene_build_graphics_objects(scene, renderer);
+
 		/* call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_compile_visible_graphics, (void *)renderer,
@@ -3254,7 +3254,7 @@ char *cmzn_scene_write_description(cmzn_scene_id scene)
 	if (scene)
 	{
 		SceneJsonExport jsonExport(scene);
-		return duplicate_string(jsonExport.getExportString().c_str());
+        return duplicate_string(jsonExport.getExportString().c_str());
 	}
 	return 0;
 }

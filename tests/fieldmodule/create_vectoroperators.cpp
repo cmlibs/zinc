@@ -159,7 +159,7 @@ TEST(cmzn_field_dot_product, issue_3694_dot_product_derivatives)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

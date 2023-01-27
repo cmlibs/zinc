@@ -32,7 +32,7 @@ TEST(ZincElementbasis, element_bases_3d)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_EX2_ELEMENT_BASES_3D_RESOURCE)));
+        resourcePath("fieldmodule/element_bases_3d.ex2").c_str()));
 
 	const int total_element_count = 12;
 	const Element::ShapeType cube_face_shapes[6] = {

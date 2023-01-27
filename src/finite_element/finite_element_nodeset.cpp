@@ -38,10 +38,14 @@ FE_node_field_info::~FE_node_field_info()
 {
 	if (0 == this->access_count)
 	{
-		if (this->nodeset)
+        if (this->nodeset)
+        {
 			this->nodeset->remove_FE_node_field_info(this);
+            this->nodeset = nullptr;
+        }
+
 		DESTROY(LIST(FE_node_field))(&(this->node_field_list));
-	}
+    }
 	else
 	{
 		display_message(ERROR_MESSAGE, "~FE_node_field_info.  Non-zero access count");
@@ -209,11 +213,11 @@ FE_nodeset::~FE_nodeset()
 
 	this->clear();
 
-	for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
-		iter != this->node_field_info_list.end(); ++iter)
-	{
-		(*iter)->nodeset = nullptr;
-	}
+    for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
+        iter != this->node_field_info_list.end(); ++iter)
+    {
+        (*iter)->nodeset = nullptr;
+    }
 }
 
 /** Private: assumes current change log pointer is null or invalid */
@@ -327,7 +331,7 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
 		}
 		else
 		{
-			/* Need to copy after all */
+            /* Need to copy after all */
 			struct LIST(FE_node_field) *node_field_list = CREATE_LIST(FE_node_field)();
 			if (COPY_LIST(FE_node_field)(node_field_list, existing_node_field_info->node_field_list))
 			{
@@ -644,8 +648,9 @@ FE_node_template *FE_nodeset::create_FE_node_template(cmzn_node *node)
 
 FE_node_template *FE_nodeset::create_FE_node_template()
 {
-	FE_node_template *node_template = new FE_node_template(this,
-		this->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)NULL));
+    auto nodeFieldInfo = this->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)NULL);
+    FE_node_template *node_template = new FE_node_template(this, nodeFieldInfo);
+    FE_node_field_info::deaccess(nodeFieldInfo);
 	return node_template;
 }
 

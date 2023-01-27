@@ -36,13 +36,6 @@ Global types
 ------------
 */
 
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\graphics\graphics_object.cpp(6122):		CAST_TO_FE_VALUE(coordinates,vertex->coordinates,3);
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\graphics\render_gl.cpp(2299):				CAST_TO_FE_VALUE(feData,data_vertex,(int)data_values_per_vertex);
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\graphics\render_to_finite_elements.cpp(548):					CAST_TO_FE_VALUE(position, point_list[i], 3);
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\graphics\render_to_finite_elements.cpp(691):					CAST_TO_FE_VALUE(position, surfpts[i], 3);
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\graphics\render_to_finite_elements.cpp(861):				CAST_TO_FE_VALUE(position, vertex_list[i]->coordinates, 3);
-  //D:\hsor001\work\musculoskeletal\zinc\core\source\graphics\render_vrml.cpp(501):		CAST_TO_FE_VALUE(feData,data,number_of_data_components);
-
 #define CAST_TO_FE_VALUE(FE, OTHER, LENGTH) \
 	{ \
 		int cast_i; \

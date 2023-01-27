@@ -106,6 +106,7 @@ int Minimisation::prepareOptimisation()
 {
 	int return_code = CMZN_OK;
 	cmzn_fieldmodule_begin_change(field_module);
+
 	if (optimisation.objectiveFields.size() != objectiveFields.size())
 		return_code = CMZN_ERROR_ARGUMENT;
 	if ((return_code == CMZN_OK) && (CMZN_OK != construct_dof_arrays()))
@@ -720,7 +721,6 @@ int Minimisation::minimise_Newton()
 
 		Element element;
 		Elementiterator elementIter = mesh.createElementiterator();
-		const int elementCount = mesh.getSize();
 		int elementIndex = 0;
 		while ((element = elementIter.next()).isValid())
 		{
@@ -823,6 +823,11 @@ int Minimisation::minimise_Newton()
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to add solution vector.");
 		return 0;
 	}
+
+    if (conditionalFieldInternal)
+    {
+        cmzn_field_destroy(&conditionalFieldInternal);
+    }
 
 	return 1;
 }

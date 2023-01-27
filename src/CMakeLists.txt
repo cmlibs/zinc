@@ -7,11 +7,11 @@
 # Set the minimum version of cmake required to 2.8.1
 # The FATAL_ERROR is needed if using cmake < 2.4
 
-IF( MSVC )
+if( MSVC )
     SET( ZINC_C_INLINE __inline )
-ELSE()
+else()
     SET( ZINC_C_INLINE "static inline" )
-ENDIF()
+endif()
 
 set(FILES_FOR_CLEANING)
 
@@ -68,24 +68,28 @@ include(cmake/zinc_lib_source_files.cmake)
 # Generate the version.cpp / version.h files
 set(ZINC_VERSION_STAGING_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.staged.cpp)
 set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
-if (OPENCMISS_HAVE_MULTICONFIG_ENV)
+if (IS_MULTI_CONFIG_ENV)
     set(CONFIGURE_BUILD_TYPE $<CONFIG>)
 else ()
     set(CONFIGURE_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 endif ()
 configure_file(${PROJECT_SOURCE_DIR}/cmake/configure_version_cpp_file.in.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake @ONLY)
-add_custom_command(OUTPUT ${ZINC_VERSION_STAGING_SRC}
-    COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
-    COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
-)
-add_custom_target(generate_version_cpp_file
-    DEPENDS ${ZINC_VERSION_STAGING_SRC}
-)
 set_source_files_properties(${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE)
 list(APPEND FILES_FOR_CLEANING ${ZINC_VERSION_SRC} ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
 list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
+
+add_custom_command(OUTPUT ${ZINC_VERSION_STAGING_SRC}
+  COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
+  COMMENT "Generate version staging file."
+)
+add_custom_command(OUTPUT ${ZINC_VERSION_SRC}
+#  COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
+  COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
+#  COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
+  DEPENDS "${ZINC_VERSION_STAGING_SRC}"
+  COMMENT "Generate version.cpp file."
+)
 
 #print_list_duplications( ZINC_LIB_SRCS )
 #print_list_duplications( ZINC_LIB_HDRS )
@@ -102,6 +106,7 @@ endif()
 set(ZINC_LIBRARY_NAME zinc)
 if( ZINC_BUILD_SHARED_LIBRARY )
     set( ZINC_SHARED_TARGET ${ZINC_LIBRARY_NAME} )
+    set(ZINC_SHARED_TARGET_NAME ${ZINC_SHARED_TARGET} PARENT_SCOPE)
     add_library(${ZINC_SHARED_TARGET} SHARED ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS})
     list( APPEND ZINC_SHARED_DEFINITIONS -DZINC_SHARED_OBJECT )
     set( ZINC_SHARED_DEFINITIONS ${ZINC_SHARED_DEFINITIONS} PARENT_SCOPE )
@@ -111,17 +116,12 @@ if( ZINC_BUILD_SHARED_LIBRARY )
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/api>
         $<INSTALL_INTERFACE:include/>
         PRIVATE ${FREETYPE_INCLUDE_DIRS})
-    if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-        # No target compile features in this setting.
-        target_compile_options(${ZINC_SHARED_TARGET} PRIVATE -std=c++11)
-    else ()
-        target_compile_features(${ZINC_SHARED_TARGET} PUBLIC cxx_auto_type)
-    endif ()
-    add_dependencies(${ZINC_SHARED_TARGET} generate_version_cpp_file)
     if( WIN32 )
         target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${LINK_PUBLIC} winmm.lib)
     endif()
     set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED ON
         COMPILE_DEFINITIONS "ZINC_SHARED_OBJECT"
         DEFINE_SYMBOL "ZINC_EXPORTS")
     export(TARGETS ${ZINC_SHARED_TARGET}
@@ -139,21 +139,28 @@ if( ZINC_BUILD_STATIC_LIBRARY )
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/api>
         $<INSTALL_INTERFACE:include/>
         )
-    add_dependencies(${ZINC_STATIC_TARGET} generate_version_cpp_file)
-    if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-        # No target compile features in this setting.
-        target_compile_options(${ZINC_STATIC_TARGET} PRIVATE -std=c++11)
-    else ()
-        target_compile_features(${ZINC_STATIC_TARGET} PUBLIC cxx_auto_type)
-    endif ()
+    target_compile_definitions(${ZINC_STATIC_TARGET} PUBLIC STATIC_BUILD)
     if(WIN32)
         target_link_libraries( ${ZINC_STATIC_TARGET} PUBLIC winmm.lib )
     endif()
     set_target_properties( ${ZINC_STATIC_TARGET} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED ON
         OUTPUT_NAME "${ZINC_LIBRARY_NAME}" PREFIX "lib" )
     export(TARGETS ${ZINC_STATIC_TARGET} ${OPENCMISSDEPENDENCIES_TARGET}
         FILE "${PROJECT_BINARY_DIR}/zinc-targets.cmake" APPEND)
 endif()
+
+set(_ACTIVE_TARGET NOT_FOUND)
+if( TARGET ${ZINC_SHARED_TARGET})
+  set(_ACTIVE_TARGET ${ZINC_SHARED_TARGET})
+elseif( TARGET ${ZINC_STATIC_TARGET})
+  set(_ACTIVE_TARGET ${ZINC_STATIC_TARGET})
+endif()
+add_custom_command(TARGET ${_ACTIVE_TARGET} POST_BUILD
+  COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
+  COMMENT "Remove version staging file."
+)
 
 set_target_properties( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES
     OUTPUT_NAME_RELEASE ${ZINC_LIBRARY_NAME}
@@ -165,6 +172,17 @@ if( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
     set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
         OUTPUT_NAME_RELEASE ${ZINC_SHARED_TARGET}.${Zinc_VERSION}
         OUTPUT_NAME_DEBUG ${ZINC_SHARED_TARGET}d.${Zinc_VERSION} )
+endif()
+
+if(ZINC_LLVM_COVERAGE)
+  if(TARGET ${ZINC_SHARED_TARGET})
+    set_property(TARGET ${ZINC_SHARED_TARGET} PROPERTY COMPILE_FLAGS "-fprofile-instr-generate -fcoverage-mapping" APPEND)
+    set_property(TARGET ${ZINC_SHARED_TARGET} PROPERTY LINK_FLAGS "-fprofile-instr-generate" APPEND)
+  endif()
+  if(TARGET ${ZINC_STATIC_TARGET})
+    set_property(TARGET ${ZINC_STATIC_TARGET} PROPERTY COMPILE_FLAGS "-fprofile-instr-generate -fcoverage-mapping" APPEND)
+    set_property(TARGET ${ZINC_STATIC_TARGET} PROPERTY LINK_FLAGS "-fprofile-instr-generate" APPEND)
+  endif()
 endif()
 
 # Additional clean files
@@ -195,4 +213,3 @@ install(FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
     DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc/types
     COMPONENT Development
 )
-

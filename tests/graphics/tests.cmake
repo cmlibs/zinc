@@ -18,12 +18,4 @@ SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/sceneviewer.cpp
     ${CURRENT_TEST}/streamlines.cpp
     ${CURRENT_TEST}/tessellation.cpp
-    utilities/fileio.cpp
     )
-
-SET(SCENEVIEWER_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/sceneviewer_description.json")
-SET(TESSELLATION_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/tessellation_description.json")
-SET(GRAPHICS_LINE_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/graphics_line_description.json")
-SET(GRAPHICS_STREAMLINES_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/graphics_streamlines_description.json")
-SET(GRAPHICS_POINTS_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/graphics_points_description.json")
-SET(TESTIMAGE_GRAY_JPG_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/testimage_gray.jpg")

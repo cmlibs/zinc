@@ -36,7 +36,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points)
 {
 	ZincTestSetup zinc;
 
-	EXPECT_EQ(CMZN_OK, cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, cmzn_region_read_file(zinc.root_region, resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	cmzn_field_id graphicCoordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), graphicCoordinateField);
@@ -75,7 +75,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());
@@ -113,7 +113,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points)
 {
 	ZincTestSetup zinc;
 
-	EXPECT_EQ(CMZN_OK, cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, cmzn_region_read_file(zinc.root_region,resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	cmzn_field_id graphicCoordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), graphicCoordinateField);
@@ -152,7 +152,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());
@@ -184,7 +184,7 @@ TEST(cmzn_scene_convert_points_to_nodes, element_points)
 {
 	ZincTestSetup zinc;
 
-	EXPECT_EQ(CMZN_OK, cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, cmzn_region_read_file(zinc.root_region, resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	cmzn_field_id graphicCoordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), graphicCoordinateField);
@@ -237,7 +237,7 @@ TEST(cmzn_scene_convert_points_to_nodes,element_points_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());

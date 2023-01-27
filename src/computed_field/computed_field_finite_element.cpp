@@ -1314,7 +1314,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 						}
 						else
 						{
-							values[offset] = valueCache.values[c];
+                            values[offset] = valueCache.values[c];
 							elementFieldChange = true;
 						}
 					} break;
@@ -1330,7 +1330,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 						}
 						else
 						{
-							values[offset] = static_cast<int>(valueCache.values[c]);
+                            values[offset] = static_cast<int>(valueCache.values[c]);
 							result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET; // GRC: don't know why partial for integer?
 							elementFieldChange = true;
 						}

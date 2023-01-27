@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/field.h>
 #include <opencmiss/zinc/fieldarithmeticoperators.h>
 #include <opencmiss/zinc/fieldcache.h>
@@ -127,4 +128,5 @@ TEST(ZincFieldStringConstant, valid_arguments)
 	Fieldcache fieldcache = zinc.fm.createFieldcache();
 	char *string_out = fieldStringConstant.evaluateString(fieldcache);
 	EXPECT_STREQ(string_in, string_out);
+    cmzn_deallocate(string_out);
 }

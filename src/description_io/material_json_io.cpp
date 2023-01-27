@@ -131,7 +131,9 @@ int writeMaterialToJson(const Material& material, Json::Value& materialSettings,
 				rootRegion = thisRootRegion;
 			if (!(region == rootRegion))
 				texturePath += "/";
-			texturePath += textureField.getName();
+            name = textureField.getName();
+            texturePath += name;
+            cmzn_deallocate(name);
 			materialSettings["TextureFields"].append(texturePath);
 			tLastTexture = t;
 		}

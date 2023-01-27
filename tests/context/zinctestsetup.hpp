@@ -20,7 +20,7 @@ public:
 	cmzn_context_id context;
 
 	ZincTestSetup() :
-		context(cmzn_context_create("test"))
+        context(cmzn_context_create("test"))
 	{
 	}
 

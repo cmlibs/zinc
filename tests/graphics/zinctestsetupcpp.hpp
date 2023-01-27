@@ -31,7 +31,7 @@ public:
 	Scene scene;
 
 	ZincTestSetupCpp() :
-		context("test"),
+        context("test_graphics"),
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldmodule()),
 		glyphmodule(context.getGlyphmodule()),
