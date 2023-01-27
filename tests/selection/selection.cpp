@@ -180,6 +180,8 @@ TEST(cmzn_selectionnotifier, destroy_scene)
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_clear_callback(selectionnotifier));
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_destroy(&selectionnotifier));
+
+    cmzn_field_group_destroy(&group);
 }
 
 // test that group changes from child regions are propagated to parent selection
@@ -226,6 +228,8 @@ TEST(cmzn_selectionnotifier, hierarchical_change)
 	cmzn_region_destroy(&childRegion);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_destroy(&selectionnotifier));
+
+    cmzn_field_group_destroy(&group);
 }
 
 // test that removing selection group reports REMOVE

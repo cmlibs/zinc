@@ -49,7 +49,7 @@ public:
 		return *this;
 	}
 
-	~Streamresource()
+    ~Streamresource()
 	{
 		if (0 != id)
 		{

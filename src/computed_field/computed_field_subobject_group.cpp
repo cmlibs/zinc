@@ -877,6 +877,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 		}
 	}
 	cmzn::Deaccess(iter);
+    cmzn_fieldcache_destroy(&cache);
 	const int newSize = this->getSize();
 	if (newSize != oldSize)
 	{

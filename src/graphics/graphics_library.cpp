@@ -15,16 +15,21 @@ Functions for interfacing with the graphics library.
 #include "opencmiss/zinc/zincconfigure.h"
 
 #if defined (OPENGL_API)
-#if defined (USE_GLEW)
-#		include <GL/glew.h>
-#endif
+#  if defined (USE_GLEW)
+#    include <GL/glew.h>
+#  endif
 #  if defined (UNIX)
 #    include <dlfcn.h>
-#if defined (DARWIN)
-#		include <OpenGL/OpenGL.h>
-#else
+#    if defined (DARWIN)
+#      include <OpenGL/OpenGL.h>
+#    elif defined (GLEW_OSMESA)
+#      ifndef GLAPI 
+#        define GLAPI extern
+#      endif
+#      include <GL/osmesa.h>
+#    else
 #      include <GL/glx.h>
-#endif
+#    endif
 #  endif /* defined (UNIX) */
 #  include <math.h>
 #  include <string.h>
@@ -69,13 +74,16 @@ int has_current_context()
 		return 1;
 #endif
 #if defined (UNIX)
-#if defined (DARWIN)
+#  if defined (DARWIN)
 	if (NULL != CGLGetCurrentContext())
 		return 1;
-#else
+#  elif defined (GLEW_OSMESA)
+	if (NULL != OSMesaGetCurrentContext())
+		return 1;
+#  else
 	if (NULL!= glXGetCurrentContext())
 		return 1;
-#endif
+#  endif
 #endif
 	return 0;
 }
@@ -761,7 +769,7 @@ Finds and loads gl function symbols at runtime.
 			requires the Display, it is done in the initialize_graphics_library above */
 		if (1 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
 		{
-			function_ptr = (void *) glXGetProcAddressARB((const GLubyte *) function_name);
+			function_ptr = (void *) glewGetProcAddress((const GLubyte *) function_name);
 		}
 		else
 		{

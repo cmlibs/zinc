@@ -577,7 +577,7 @@ int cmzn_elementtemplate::defineField(FE_field *field, int componentNumber, cmzn
 		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	int return_code = this->fe_element_template->defineField(field, componentNumber - 1, eft);
+    int return_code = this->fe_element_template->defineField(field, componentNumber - 1, eft);
 	if (CMZN_OK != return_code)
 		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Failed");
 	return return_code;
@@ -2219,7 +2219,7 @@ cmzn_meshchanges::~cmzn_meshchanges()
 cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && meshIn && 
-		(eventIn->getRegion()->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
+        (eventIn->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
 		return new cmzn_meshchanges(eventIn, meshIn);
 	return 0;
 }

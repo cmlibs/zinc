@@ -19,12 +19,6 @@
 #include "general/message.h"
 
 #if defined (ZINC_USE_IMAGEMAGICK)
-#  if defined _MSC_VER
-   /* When using the gcc compiled headers from msvc we need to replace inline */
-#    define inline __inline
-#    define MAGICK_STATIC_LINK
-#  endif /* defined _MSC_VER */
-/* image magick interfaces */
 #include "MagickCore/MagickCore.h"
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
@@ -771,6 +765,8 @@ void AnalyzeImageHandler::readImageData()
 	ALLOCATE(data, char, bytes*sz);
 	fread(data, sizeof(char), bytes*sz, file);
 	readImageInternal(static_cast<unsigned int>(sz));
+    fclose(file);
+    DEALLOCATE(data_filename);
 }
 
 int AnalyzeImageHandler::getOrientation() const
