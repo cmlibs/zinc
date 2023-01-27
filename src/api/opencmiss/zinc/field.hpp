@@ -36,6 +36,7 @@ class FieldImagefilterDiscreteGaussian;
 class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
 class FieldIsOnFace;
+class FieldMatrixMultiply;
 class FieldMeshIntegral;
 class FieldNodeGroup;
 class FieldNodeValue;
@@ -43,6 +44,7 @@ class FieldNodesetOperator;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
 class FieldStoredString;
+class FieldTranspose;
 class Fieldassignment;
 class Fieldcache;
 class Fieldparameters;
@@ -320,14 +322,16 @@ public:
 	inline FieldImagefilterDiscreteGaussian castImagefilterDiscreteGaussian();
 	inline FieldImagefilterHistogram castImagefilterHistogram();
 	inline FieldImagefilterThreshold castImagefilterThreshold();
-	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldIsOnFace castIsOnFace();
+	inline FieldMatrixMultiply castMatrixMultiply();
+	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldNodeGroup castNodeGroup();
 	inline FieldNodeValue castNodeValue();
 	inline FieldNodesetOperator castNodesetOperator();
 	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
 	inline FieldStoredString castStoredString();
+	inline FieldTranspose castTranspose();
 };
 
 inline bool operator==(const Field& a, const Field& b)
