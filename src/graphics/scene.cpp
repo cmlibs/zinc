@@ -339,19 +339,21 @@ void cmzn_scene::removeSelectionnotifier(cmzn_selectionnotifier *selectionnotifi
 
 void cmzn_scene::registerCoordinateField(cmzn_field *coordinateField)
 {
-	if (coordinateField)
+	if (!coordinateField)
 	{
-		SceneCoordinateFieldWrapperMap::iterator iter = coordinateFieldWrappers.find(coordinateField);
-		if (iter == coordinateFieldWrappers.end())
-		{
-			cmzn_field *wrapperField = cmzn_field_get_coordinate_field_wrapper(coordinateField);
-			this->coordinateFieldWrappers[coordinateField] = std::pair<cmzn_field *, int>(wrapperField, 1);
-		}
-		else
-		{
-			// increment number of instances of coordinateField using this wrapper
-			++(iter->second.second);
-		}
+		display_message(ERROR_MESSAGE, "cmzn_scene::registerCoordinateField.  Missing coordinate field");
+		return;
+	}
+	SceneCoordinateFieldWrapperMap::iterator iter = coordinateFieldWrappers.find(coordinateField);
+	if (iter == coordinateFieldWrappers.end())
+	{
+		cmzn_field *wrapperField = cmzn_field_get_coordinate_field_wrapper(coordinateField);
+		this->coordinateFieldWrappers[coordinateField] = std::pair<cmzn_field *, int>(wrapperField, 1);
+	}
+	else
+	{
+		// increment number of instances of coordinateField using this wrapper
+		++(iter->second.second);
 	}
 }
 
@@ -377,32 +379,39 @@ void cmzn_scene::deregisterCoordinateField(cmzn_field *coordinateField)
 
 cmzn_field *cmzn_scene::getCoordinateFieldWrapper(cmzn_field *coordinateField)
 {
+	if (!coordinateField)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::getCoordinateFieldWrapper.  Missing coordinate field");
+		return nullptr;
+	}
 	SceneCoordinateFieldWrapperMap::iterator iter = this->coordinateFieldWrappers.find(coordinateField);
 	if (iter == this->coordinateFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::getCoordinateFieldWrapper.  Field %s not registered.",
 			coordinateField->getName());
-		return 0;
+		return nullptr;
 	}
 	return iter->second.first;
 }
 
 void cmzn_scene::registerVectorField(cmzn_field *vectorField, cmzn_field *coordinateField)
 {
-	if (vectorField && coordinateField)
+	if (!vectorField)
 	{
-		std::pair<cmzn_field *, cmzn_field *> key(vectorField, coordinateField);
-		SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.find(key);
-		if (iter == this->vectorFieldWrappers.end())
-		{
-			cmzn_field *wrapperField = cmzn_field_get_vector_field_wrapper(vectorField, coordinateField);
-			this->vectorFieldWrappers[key] = std::pair<cmzn_field *, int>(wrapperField, 1);
-		}
-		else
-		{
-			// increment number of instances of pair of fields using this wrapper
-			++(iter->second.second);
-		}
+		display_message(ERROR_MESSAGE, "cmzn_scene::registerVectorField.  Missing vector field");
+		return;
+	}
+	std::pair<cmzn_field *, cmzn_field *> key(vectorField, coordinateField);
+	SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.find(key);
+	if (iter == this->vectorFieldWrappers.end())
+	{
+		cmzn_field *wrapperField = cmzn_field_get_vector_field_wrapper(vectorField, coordinateField);
+		this->vectorFieldWrappers[key] = std::pair<cmzn_field *, int>(wrapperField, 1);
+	}
+	else
+	{
+		// increment number of instances of pair of fields using this wrapper
+		++(iter->second.second);
 	}
 }
 
@@ -413,7 +422,7 @@ void cmzn_scene::deregisterVectorField(cmzn_field *vectorField, cmzn_field *coor
 	if (iter == this->vectorFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterVectorField.  Vector, coordinate fields %s, %s not registered.",
-			vectorField->getName(), coordinateField->getName());
+			vectorField->getName(), (coordinateField) ? coordinateField->getName() : "None");
 	}
 	else if (1 < iter->second.second)
 	{
@@ -429,13 +438,18 @@ void cmzn_scene::deregisterVectorField(cmzn_field *vectorField, cmzn_field *coor
 
 cmzn_field *cmzn_scene::getVectorFieldWrapper(cmzn_field *vectorField, cmzn_field *coordinateField)
 {
+	if (!vectorField)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::getVectorFieldWrapper.  Missing vector field");
+		return nullptr;
+	}
 	std::pair<cmzn_field *, cmzn_field *> key(vectorField, coordinateField);
 	SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.find(key);
 	if (iter == this->vectorFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::getVectorFieldWrapper.  Vector, coordinate fields %s, %s not registered.",
-			vectorField->getName(), coordinateField->getName());
-		return 0;
+			vectorField->getName(), (coordinateField) ? coordinateField->getName() : "None");
+		return nullptr;
 	}
 	return iter->second.first;
 }
@@ -818,7 +832,9 @@ void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 	this->beginChange();
 	const int change_flags = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
 	if (change_flags & CMZN_FIELD_CHANGE_FLAG_DEFINITION)
+	{
 		this->refreshFieldWrappers();
+	}
 	struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
 	FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
 		(void *)&change_data, this->list_of_graphics);
