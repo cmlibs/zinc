@@ -689,11 +689,11 @@ TEST(ZincFieldassignment, assignSourceNotDefined)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("cube.ex2").c_str()));
 	FieldFiniteElement bob = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(bob.isValid());
 	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("cube.ex2").c_str()));
 	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
 	const double scaleValues[3] = { 2.0, 1.5, 0.75 };
