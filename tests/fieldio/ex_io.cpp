@@ -312,7 +312,7 @@ TEST(FieldIO, ex3NodeTimesequence)
     const double expecteddx = 1.68;
     const double expectedCountTime = evaluationTime;
     const double expectedCount = 3.0;
-    const double expectedPressureTimeCount = 0;
+    const int expectedPressureTimeCount = 0;
     const double expectedPressureTime = 0.0;
     const double expectedPressure = 101325.0;
     checkEx3NodeTimeSequenceSingleTime(region2, evaluationTime,
@@ -338,7 +338,7 @@ TEST(FieldIO, ex3NodeTimesequenceSingleTime)
 	const double expecteddx = 1.2;
 	const double expectedCountTime = 1.5;
 	const double expectedCount = 3.0;
-	const double expectedPressureTimeCount = 1;
+	const int expectedPressureTimeCount = 1;
 	const double expectedPressureTime = evaluationTime;
 	const double expectedPressure = 101325.0;
 	checkEx3NodeTimeSequenceSingleTime(zinc.root_region, evaluationTime,
