@@ -28,7 +28,7 @@ TEST(ZincFieldIsDefined, evaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+        resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
 	EXPECT_EQ(1, mesh3d.getSize());

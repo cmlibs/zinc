@@ -119,7 +119,7 @@ public:
 				|| (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field, field->manager) ||
 					Computed_field_is_not_source_field_of_others(field)))
 			{
-				REACCESS(Texture)(&texture, texture_in);
+                REACCESS(Texture)(&(this->texture), texture_in);
 				field->number_of_components = new_number_of_components;
 				this->field->setChanged();
 				return_code = 1;
@@ -135,7 +135,7 @@ public:
 		else
 		{
 			// just called from copy() - copy texture reference
-			REACCESS(Texture)(&texture, texture_in);
+            REACCESS(Texture)(&(this->texture), texture_in);
 			this->field->setChanged();
 			return_code = 1;
 		}

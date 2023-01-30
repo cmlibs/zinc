@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstdio>
@@ -17,8 +18,8 @@
 #include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/status.h"
+
 #include "general/indexed_list_stl_private.hpp"
-#include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_field_private.hpp"
@@ -5082,8 +5083,8 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	const int number_of_components = field->getNumberOfComponents();
 	struct FE_basis *previous_basis = 0;
 	int previous_number_of_element_values = -1;
-	DsLabelIndex *element_value, *element_values = 0;
-	DsLabelIndex *previous_element_values = 0;
+    DsLabelIndex *element_value, *element_values = nullptr;
+    DsLabelIndex *previous_element_values = nullptr;
 	const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
 	for (int component_number = 0; (component_number < number_of_components) && (return_code == CMZN_OK); ++component_number)
 	{
@@ -5117,7 +5118,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 			}
 			if ((i>=0)||(basis!=previous_basis))
 			{
-				DEALLOCATE(previous_element_values);
+                delete previous_element_values;
 				previous_element_values=element_values;
 				previous_number_of_element_values=number_of_element_values;
 				previous_basis=basis;
@@ -5221,11 +5222,11 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 			}
 			else
 			{
-				DEALLOCATE(element_values);
+                delete element_values;
 			}
 		}
 	}
-	DEALLOCATE(previous_element_values);
+    delete previous_element_values;
 	if (CMZN_OK == return_code)
 	{
 		*number_of_element_field_nodes_address=number_of_element_field_nodes;

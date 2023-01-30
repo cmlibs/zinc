@@ -658,9 +658,9 @@ GL_EXT_texture_object extension.
 {
 	int return_code;
 #if defined (OPENGL_API)
-	GLfloat values[4];
+	GLfloat values[4] = {};
 	GLint number_of_components;
-	gtMatrix texture_coordinate_transform;
+	gtMatrix texture_coordinate_transform = {};
 #endif /* defined (OPENGL_API) */
 
 	ENTER(direct_render_Texture_environment);
@@ -1688,9 +1688,9 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 				} break;
 				case TEXTURE_RESIZE_NEAREST_FILTER:
 				{
-					i_factor = source_depth_texels / depth_texels;
-					j_factor = source_height_texels / height_texels;
-					k_factor = source_width_texels / width_texels;
+					i_factor = source_depth_texels / (GLfloat)depth_texels;
+					j_factor = source_height_texels / (GLfloat)height_texels;
+					k_factor = source_width_texels / (GLfloat)width_texels;
 					padding_bytes = (destination_row_width_bytes -
 						width_texels*bytes_per_pixel);
 					destination = image;
@@ -1905,7 +1905,7 @@ and overwritten.
 		pad_z_start = 0, pad_z_end = 0, return_code, source_row_width_bytes,
 		tile_row_width_bytes, start_x = 0, start_y = 0, start_z = 0,
 		tile_x, tile_y, tile_z, y, z;
-	Triple cropped_size;
+	Triple cropped_size = {};
 	unsigned char *destination, *destination_y_start, *destination_z_start, *source;
 
 	ENTER(Texture_get_image_tile);
@@ -2161,7 +2161,7 @@ Separating this out so we can set it for each activated tile.
 ==============================================================================*/
 {
 	int return_code;
-	GLfloat values[4];
+	GLfloat values[4] = {};
 
 	ENTER(Texture_activate_texture_target_environment);
 	return_code = 1;
@@ -3200,7 +3200,7 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 				{
 					DEALLOCATE(texture->file_number_pattern);
 				}
-				DEALLOCATE(texture->image);
+                DEALLOCATE(texture->image);
 				if (texture->property_list)
 				{
 					DESTROY(LIST(Texture_property))(&texture->property_list);
@@ -4181,7 +4181,7 @@ positive. Cropping is not available in the depth direction.
 				texture->crop_height = crop_height;
 				/* display list needs to be compiled again */
 				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
-				return_code = 1;
+                return_code = 1;
 			}
 			else
 			{
@@ -4531,14 +4531,14 @@ interpolated or not.  When closer than half a texel to a boundary the colour
 is constant from the half texel location to the edge.
 ==============================================================================*/
 {
-	ZnReal local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
+	ZnReal local_xi[3] = {}, max_v, pos[3] = {}, weight, weight_i, weight_j, weight_k, v;
 	int bytes_per_pixel, component_max, dimension, i, in_border, j, k,
 		max_i, max_j, max_k, n, number_of_bytes_per_component,
-		number_of_components, original_size[3], return_code, row_width_bytes,
-		size[3];
-	long int high_offset[3], low_offset[3], offset, offset_i, offset_j, offset_k,
+		number_of_components, original_size[3] = {}, return_code, row_width_bytes,
+		size[3] = {};
+	long int high_offset[3] = {}, low_offset[3] = {}, offset, offset_i, offset_j, offset_k,
 		v_i, x_i, y_i, z_i;
-	unsigned char *pixel_ptr;
+	unsigned char *pixel_ptr = nullptr;
 	unsigned short short_value;
 
 	ENTER(Texture_get_pixel_values);
@@ -6324,8 +6324,8 @@ by vertex programs.
 {
 	int return_code;
 #if (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program) || defined GL_VERSION_2_0
-	GLfloat texture_scaling[4];
-	GLfloat texel_size[4];
+	GLfloat texture_scaling[4] = {};
+	GLfloat texel_size[4] = {};
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 #if defined (GL_VERSION_2_0)
 	GLint loc1 = -1;

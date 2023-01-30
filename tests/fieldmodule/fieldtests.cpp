@@ -206,7 +206,7 @@ TEST(ZincField, nonNumericFieldCoordinateSystem)
 	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
 	Element element1 = mesh3d.createElement(1, elementtemplate);
 	EXPECT_TRUE(element1.isValid());
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_NON_NUMERIC_COORDINATE_SYSTEM_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/non_numeric_coordinate_system.exf").c_str()));
 	storedMeshLocation = zinc.fm.findFieldByName("stored_mesh_location").castStoredMeshLocation();
 	EXPECT_TRUE(storedMeshLocation.isValid());
 	EXPECT_EQ(Field::COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE, storedMeshLocation.getCoordinateSystemType());

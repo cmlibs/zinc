@@ -1112,8 +1112,6 @@ class BatchAllocator {
 public:
   BatchAllocator(unsigned int objectsPerPage = 255)
       : freeHead_(0), objectsPerPage_(objectsPerPage) {
-    //      printf( "Size: %d => %s\n", sizeof(AllocatedType),
-    // typeid(AllocatedType).name() );
     assert(sizeof(AllocatedType) * objectPerAllocation >=
            sizeof(AllocatedType*)); // We must be able to store a slist in the
                                     // object free space.
@@ -3278,9 +3276,9 @@ void StyledWriter::writeValue(const Value& value) {
 
 void StyledWriter::writeArrayValue(const Value& value) {
   unsigned size = value.size();
-  if (size == 0)
+  if (size == 0) {
     pushValue("[]");
-  else {
+  } else {
     bool isArrayMultiLine = isMultineArray(value);
     if (isArrayMultiLine) {
       writeWithIndent("[");
@@ -3501,9 +3499,9 @@ void StyledStreamWriter::writeValue(const Value& value) {
 
 void StyledStreamWriter::writeArrayValue(const Value& value) {
   unsigned size = value.size();
-  if (size == 0)
+  if (size == 0) {
     pushValue("[]");
-  else {
+  } else {
     bool isArrayMultiLine = isMultineArray(value);
     if (isArrayMultiLine) {
       writeWithIndent("[");

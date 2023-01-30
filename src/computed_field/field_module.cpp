@@ -62,7 +62,7 @@
 #include "computed_field/computed_field_vector_operators.hpp"
 
 cmzn_fieldmoduleevent::cmzn_fieldmoduleevent(cmzn_region *regionIn) :
-	region(cmzn_region_access(regionIn)),
+    region(regionIn),
 	changeFlags(CMZN_FIELD_CHANGE_FLAG_NONE),
 	managerMessage(0),
 	feRegionChanges(0),
@@ -74,8 +74,17 @@ cmzn_fieldmoduleevent::~cmzn_fieldmoduleevent()
 {
 	if (managerMessage)
 		MANAGER_MESSAGE_DEACCESS(Computed_field)(&(this->managerMessage));
-	FE_region_changes::deaccess(this->feRegionChanges);
-	cmzn_region::deaccess(this->region);
+    if (this->feRegionChanges)
+        FE_region_changes::deaccess(this->feRegionChanges);
+    this->region = nullptr;
+//    if (this->region)
+//        cmzn_region::deaccess(this->region);
+}
+
+cmzn_fieldmoduleevent *cmzn_fieldmoduleevent::access()
+{
+    ++(this->access_count);
+    return this;
 }
 
 void cmzn_fieldmoduleevent::deaccess(cmzn_fieldmoduleevent* &event)
@@ -83,7 +92,7 @@ void cmzn_fieldmoduleevent::deaccess(cmzn_fieldmoduleevent* &event)
 	if (event)
 	{
 		--(event->access_count);
-		if (event->access_count <= 0)
+        if (event->access_count <= 0)
 		{
 			delete event;
 		}
@@ -94,6 +103,11 @@ void cmzn_fieldmoduleevent::deaccess(cmzn_fieldmoduleevent* &event)
 void cmzn_fieldmoduleevent::setFeRegionChanges(FE_region_changes *changes)
 {
 	this->feRegionChanges = changes->access();
+}
+
+FE_region *cmzn_fieldmoduleevent::get_FE_region()
+{
+    return this->region ? this->region->get_FE_region() : nullptr;
 }
 
 /**
@@ -269,7 +283,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 }
 
 cmzn_fieldmodulenotifier::cmzn_fieldmodulenotifier(cmzn_fieldmodule *fieldmodule) :
-	region(fieldmodule->region),
+    region(fieldmodule->region),
 	function(nullptr),
 	user_data(nullptr),
 	access_count(1)
@@ -285,8 +299,9 @@ void cmzn_fieldmodulenotifier::deaccess(cmzn_fieldmodulenotifier* &notifier)
 {
 	if (notifier)
 	{
+
 		--(notifier->access_count);
-		if (notifier->access_count <= 0)
+        if (notifier->access_count == 0)
 		{
 			delete notifier;
 		}
@@ -318,10 +333,10 @@ void cmzn_fieldmodulenotifier::clearCallback()
 
 void cmzn_fieldmodulenotifier::regionDestroyed()
 {
-	this->region = nullptr;
+    this->region = nullptr;
 	if (this->function)
 	{
-		cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(static_cast<cmzn_region*>(0));
+        cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(nullptr);
 		event->setChangeFlags(CMZN_FIELD_CHANGE_FLAG_FINAL);
 		(this->function)(event, this->user_data);
 		cmzn_fieldmoduleevent::deaccess(event);

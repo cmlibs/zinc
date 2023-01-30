@@ -27,7 +27,7 @@ public:
 	Fieldmodule fm;
 
 	ZincTestSetupCpp() :
-		context("test"),
+        context("test_zinc_setup"),
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldmodule())
 	{

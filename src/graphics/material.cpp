@@ -2380,39 +2380,47 @@ cmzn_field_id cmzn_material_get_texture_field(cmzn_material_id material,
 int cmzn_material_set_texture_field(cmzn_material_id material,
 	int texture_number, cmzn_field_id texture_field)
 {
-	cmzn_field_image_id image_field = cmzn_field_cast_image(texture_field);
-	if (material && ((0 == texture_field) || image_field))
+    int return_code = CMZN_ERROR_ARGUMENT;
+    if (material)
 	{
-		Material_image_texture *image_texture = 0;
-		switch (texture_number)
-		{
-			case 1:
-				image_texture = &(material->image_texture);
-				break;
-			case 2:
-				image_texture = &(material->second_image_texture);
-				break;
-			case 3:
-				image_texture = &(material->third_image_texture);
-				break;
-			case 4:
-				image_texture = &(material->fourth_image_texture);
-				break;
-			default:
-				break;
-		}
-		if (image_texture)
-		{
-			if (image_texture->field != image_field)
-			{
-				Material_image_texture_set_field(image_texture, image_field);
-				material->compile_status = GRAPHICS_NOT_COMPILED;
-				Graphical_material_changed(material);
-			}
-			return CMZN_OK;
-		}
+        cmzn_field_image_id image_field = cmzn_field_cast_image(texture_field);
+        if ((0 == texture_field) || image_field)
+        {
+            Material_image_texture *image_texture = 0;
+            switch (texture_number)
+            {
+                case 1:
+                    image_texture = &(material->image_texture);
+                    break;
+                case 2:
+                    image_texture = &(material->second_image_texture);
+                    break;
+                case 3:
+                    image_texture = &(material->third_image_texture);
+                    break;
+                case 4:
+                    image_texture = &(material->fourth_image_texture);
+                    break;
+                default:
+                    break;
+            }
+            if (image_texture)
+            {
+                if (image_texture->field != image_field)
+                {
+                    Material_image_texture_set_field(image_texture, image_field);
+                    material->compile_status = GRAPHICS_NOT_COMPILED;
+                    Graphical_material_changed(material);
+                }
+                return_code = CMZN_OK;
+            }
+        }
+        if (image_field)
+        {
+            cmzn_field_image_destroy(&image_field);
+        }
 	}
-	return CMZN_ERROR_ARGUMENT;
+    return return_code;
 }
 
 int set_shader_program_type_texture_mode(cmzn_material *material_to_be_modified,

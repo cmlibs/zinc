@@ -107,7 +107,7 @@ TEST(ZincField, field_operator_derivatives_3d)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
+        resourcePath("fieldmodule/cube_tricubic_deformed.exfile").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -665,7 +665,7 @@ TEST(ZincFieldDerivative, higher_derivatives)
 	int result;
 
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
+        resourcePath("fieldmodule/cube_tricubic_deformed.exfile").c_str()));
 
 	FieldFiniteElement deformed = zinc.fm.findFieldByName("deformed").castFiniteElement();
 	EXPECT_TRUE(deformed.isValid());
@@ -781,7 +781,7 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

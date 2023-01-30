@@ -556,7 +556,7 @@ protected:
 	{
 		// GRC cmzn_field_node_group_access missing:
 		cmzn_field_access(cmzn_field_node_group_base_cast(group));
-	}
+    }
 
 public:
 	cmzn_nodeset(FE_nodeset *fe_nodeset_in) :
@@ -731,10 +731,11 @@ public:
 	}
 
 protected:
-	~cmzn_nodeset()
+    virtual ~cmzn_nodeset()
 	{
 		if (group)
 			cmzn_field_node_group_destroy(&group);
+
 		cmzn::Deaccess(this->fe_nodeset);
 	}
 
@@ -797,8 +798,9 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 	cmzn_region_id region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 		region->get_FE_region(), domain_type);
-	if (fe_nodeset)
-		return new cmzn_nodeset(fe_nodeset);
+    if (fe_nodeset) {
+        return new cmzn_nodeset(fe_nodeset);
+    }
 	return 0;
 }
 
@@ -1015,8 +1017,9 @@ int cmzn_nodeset_group_remove_element_nodes(
 cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	cmzn_field_node_group_id node_group)
 {
-	if (node_group)
+    if (node_group) {
 		return new cmzn_nodeset_group(node_group);
+    }
 	return 0;
 }
 
@@ -1237,7 +1240,7 @@ cmzn_nodesetchanges::~cmzn_nodesetchanges()
 cmzn_nodesetchanges *cmzn_nodesetchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && nodesetIn &&
-		(eventIn->getRegion()->get_FE_region() == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
+        (eventIn->get_FE_region() == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
 		return new cmzn_nodesetchanges(eventIn, nodesetIn);
 	return 0;
 }

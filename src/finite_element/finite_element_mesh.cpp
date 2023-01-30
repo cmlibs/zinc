@@ -218,19 +218,19 @@ int FE_element_template::defineField(FE_field *field, int componentNumber, FE_el
 		return result;
 	}
 	this->mesh->noteChangedElementTemplate(this);
-	return this->fields[fieldIndex]->define(componentNumber, eft);
+    return this->fields[fieldIndex]->define(componentNumber, eft);
 }
 
 int FE_element_template::defineField(FE_field *field, int componentNumber, cmzn_elementfieldtemplate *eftExt)
 {
 	if (!eftExt)
 		return CMZN_ERROR_ARGUMENT;
-	if (!eftExt->validateAndLock())
+    if (!eftExt->validateAndLock())
 	{
 		display_message(ERROR_MESSAGE, "Elementtemplate::defineField.  Element field template is invalid or incomplete");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	return this->defineField(field, componentNumber, eftExt->get_FE_element_field_template());
+    return this->defineField(field, componentNumber, eftExt->get_FE_element_field_template());
 }
 
 FE_element_field_template *FE_element_template::getElementfieldtemplate(FE_field *field, int componentNumber) const
