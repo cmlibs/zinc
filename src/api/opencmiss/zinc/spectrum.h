@@ -68,6 +68,17 @@ ZINC_API cmzn_spectrumiterator_id cmzn_spectrummodule_create_spectrumiterator(
 	cmzn_spectrummodule_id spectrummodule);
 
 /**
+ * Define standard spectrums including rgb and mono which are useful for
+ * colouring image fields.
+ *
+ * @param spectrummodule  Handle to spectrum module to modify.
+ * @return  Result OK if successfully created standard spectrums,
+ * ERROR_ARGUMENT if invalid spectrummodule.
+ */
+ZINC_API int cmzn_spectrummodule_define_standard_spectrums(
+	cmzn_spectrummodule_id spectrummodule);
+
+/**
  * Begin caching or increment cache level for this spectrum module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.

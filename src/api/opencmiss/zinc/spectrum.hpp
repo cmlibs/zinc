@@ -551,6 +551,11 @@ public:
 		return Spectrumiterator(cmzn_spectrummodule_create_spectrumiterator(id));
 	}
 
+	int defineStandardSpectrums()
+	{
+		return cmzn_spectrummodule_define_standard_spectrums(this->id);
+	}
+
 	Spectrum findSpectrumByName(const char *name) const
 	{
 		return Spectrum(cmzn_spectrummodule_find_spectrum_by_name(id, name));
