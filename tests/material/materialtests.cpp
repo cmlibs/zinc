@@ -28,7 +28,9 @@ int getNumberOfMaterials(Materialmodule& materialmodule)
 	Materialiterator iter = materialmodule.createMaterialiterator();
 	Material material;
 	while ((material = iter.next()).isValid())
+	{
 		++count;
+	}
 	return count;
 }
 

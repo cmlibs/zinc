@@ -642,7 +642,8 @@ public:
 
 	MeshLocationFieldValueCache() :
 		FieldValueCache(),
-		element(0)
+		element(nullptr),
+		xi{}
 	{
 	}
 
