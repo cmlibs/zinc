@@ -447,7 +447,7 @@ TEST(ZincFieldIsExterior, evaluate3d)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+        resourcePath("fieldmodule/allshapes.ex3").c_str()));
 
 	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
 	EXPECT_TRUE(isExteriorField.isValid());
@@ -510,7 +510,7 @@ TEST(ZincFieldIsOnFace, evaluate)
 	ZincTestSetupCpp zinc;
 
 	EXPECT_EQ(OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBESQUARELINE_RESOURCE)));
+        resourcePath("fieldmodule/cubesquareline.exformat").c_str()));
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	double value;
@@ -633,7 +633,7 @@ TEST(cmzn_field_edge_discontinuity, valid_arguments)
 	int result;
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_read_file(zinc.root_region,
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	cmzn_field_id coordinatesField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE((cmzn_field_id)0, coordinatesField);
@@ -714,7 +714,7 @@ TEST(ZincFieldEdgeDiscontinuity, validArguments)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -776,7 +776,7 @@ TEST(ZincFieldEdgeDiscontinuity, evaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+        resourcePath("fieldmodule/allshapes.ex3").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -943,7 +943,7 @@ TEST(ZincFieldEdgeDiscontinuity, invalidEvaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -1105,7 +1105,7 @@ TEST(ZincFieldNodeLookup, Evaluate)
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+        resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
@@ -1158,7 +1158,7 @@ TEST(ZincFieldFiniteElement, issue_3892_temporary_element_parents)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(mesh2d.isValid());
 	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
@@ -1178,7 +1178,7 @@ TEST(ZincFieldFiniteElement, issue_3892_temporary_element_parents)
 	FieldmodulecallbackCheckExterior checkExteriorCallback(cache, isExteriorField);
 	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(checkExteriorCallback));
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 	EXPECT_TRUE(checkExteriorCallback.lastEvent.isValid());
 	EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &isExteriorValue));
 	EXPECT_DOUBLE_EQ(1.0, isExteriorValue);
@@ -1296,7 +1296,7 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 TEST(ZincFieldFiniteElement, fieldcacheInvalidation)
 {
 	ZincTestSetupCpp zinc;
-	EXPECT_EQ(OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
@@ -1427,10 +1427,10 @@ TEST(ZincFieldFindMeshLocation, find_xi_cache_and_convergence_active_modificatio
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_HEART_SURFACE_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/heart_surface.exfile").c_str()));
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(mesh2d.isValid());
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_PLATE_600X300_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/plate_600x300.exfile").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -1587,7 +1587,7 @@ TEST(ZincFieldFindMeshLocation, searchMesh)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
@@ -1647,10 +1647,10 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed.exf").c_str()));
 	Field deformed = zinc.fm.findFieldByName("deformed");
 	EXPECT_TRUE(deformed.isValid());
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_FIND_XI_DATA_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed_find_xi_data.exf").c_str()));
 	Field dataCordinates = zinc.fm.findFieldByName("data_coordinates");
 	EXPECT_TRUE(dataCordinates.isValid());
 
@@ -1785,7 +1785,7 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		}
 		else if (t == 11)
 		{
-			EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_ALLSHAPES_QUADRATIC_DEFORMED_RESOURCE)));
+            EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes_quadratic_deformed.exf").c_str()));
 		}
 		for (int i = 0; i < 12; ++i)
 		{
@@ -1826,6 +1826,230 @@ TEST(ZincFieldFindMeshLocation, find_nearest_3d)
 		if (changeCaching)
 		{
 			zinc.fm.endChange();
+		}
+	}
+}
+
+struct FindXiMap
+{
+	double x[3];
+	int elementIdentifier;
+	double xi[3];
+	int groupElementIdentifier;
+	double groupXi[3];
+};
+
+// Test conversion of face/line location to main mesh group
+// use swizzled version of allshapes so xi directions do not match along boundaries
+// this complicates conversion to a top-level group because Zinc only has face to element
+// mapping for first parent element in the standard arrangement and other mappings must be
+// found by evaluating and matching coordinate field in one of the possible arrangements.
+TEST(ZincFieldFindMeshLocation, convert_main_mesh_group)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+    EXPECT_EQ(OK, result = zinc.root_region.readFile( resourcePath("fieldmodule/allshapes_swizzle.ex3").c_str()));
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	const double zero3[3] = { 0.0, 0.0, 0.0 };
+	FieldConstant x = zinc.fm.createFieldConstant(3, zero3);
+	EXPECT_TRUE(x.isValid());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	FieldElementGroup groupElements = group.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(groupElements.isValid());
+	MeshGroup groupMesh3d = groupElements.getMeshGroup();
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	const double TOL = 1.0E-6;
+
+	FieldFindMeshLocation findMeshLocationFace = zinc.fm.createFieldFindMeshLocation(x, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocationFace.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationFace.setSearchMesh(mesh2d));
+	FieldFindMeshLocation findMeshLocationFaceGroup = zinc.fm.createFieldFindMeshLocation(x, coordinates, groupMesh3d);
+	EXPECT_TRUE(findMeshLocationFaceGroup.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationFaceGroup.setSearchMesh(mesh2d));
+	FindXiMap findFaceSamples[6] =
+	{
+		{
+			{ 0.0, 0.2, 0.3 },
+			1,
+			{ 0.0, 0.2, 0.3 },
+			5,
+			{ 0.8, 1.0, 0.3 }
+		},
+		{
+			{ 0.8, 0.2, 0.3 },
+			1,
+			{ 0.8, 0.2, 0.3 },
+			2,
+			{ 0.2, 0.7, 0.8 }
+		},
+		{
+			{ 1.0, 0.8, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.2 },
+			3,
+			{ 0.0, 0.8, 0.7 }
+		},
+		{
+			{ 0.3, 1.0, 0.2 },
+			2,
+			{ 0.7, 0.8, 0.0 },
+			4,
+			{ 0.3, 0.0, 0.2 }
+		},
+		{
+			{ 1.2, 1.0, 0.7 },
+			3,
+			{ 0.2, 1.0, 0.7 },
+			6,
+			{ 0.7, 0.0, 0.1 }
+		},
+		{
+			{ 1.0, 1.7, 0.2 },
+			4,
+			{ 1.0, 0.7, 0.2 },
+			6,
+			{ 0.2, 0.7, 0.1 }
+		}
+	};
+	for (int i = 0; i < 6; ++i)
+	{
+		FindXiMap &sample = findFaceSamples[i];
+		EXPECT_EQ(RESULT_OK, x.assignReal(fieldcache, 3, sample.x));
+
+		Element element;
+		double xi[3];
+		element = findMeshLocationFace.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.elementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.xi[c], xi[c], TOL);
+		}
+
+		EXPECT_EQ(RESULT_OK, groupMesh3d.removeAllElements());
+		EXPECT_EQ(RESULT_OK, groupMesh3d.addElement(mesh3d.findElementByIdentifier(sample.groupElementIdentifier)));
+		element = findMeshLocationFaceGroup.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.groupElementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.groupXi[c], xi[c], TOL);
+		}
+	}
+	EXPECT_EQ(RESULT_OK, groupMesh3d.removeAllElements());
+
+	FieldFindMeshLocation findMeshLocationLine = zinc.fm.createFieldFindMeshLocation(x, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocationLine.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationLine.setSearchMesh(mesh1d));
+	FieldFindMeshLocation findMeshLocationLineGroup = zinc.fm.createFieldFindMeshLocation(x, coordinates, groupMesh3d);
+	EXPECT_TRUE(findMeshLocationLineGroup.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationLineGroup.setSearchMesh(mesh1d));
+	FindXiMap findLineSamples[10] =
+	{
+		{
+			{ 0.0, 0.3, 0.0 },
+			1,
+			{ 0.0, 0.3, 0.0 },
+			5,
+			{ 0.7, 1.0, 0.0 }
+		},
+		{
+			{ 0.8, 0.2, 0.0 },
+			1,
+			{ 0.8, 0.2, 0.0 },
+			2,
+			{ 0.2, 1.0, 0.8 }
+		},
+		// next 2 are same location converted to different elements
+		{
+			{ 1.0, 0.0, 0.3 },
+			1,
+			{ 1.0, 0.0, 0.3 },
+			2,
+			{ 0.0, 0.7, 1.0 }
+		},
+		{
+			{ 1.0, 0.0, 0.3 },
+			1,
+			{ 1.0, 0.0, 0.3 },
+			3,
+			{ 0.0, 0.0, 0.3 }
+		},
+		// next 3 are same location converted to different elements
+		{
+			{ 1.0, 1.0, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.0 },
+			3,
+			{ 0.0, 1.0, 0.7 }
+		},
+		{
+			{ 1.0, 1.0, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.0 },
+			4,
+			{ 1.0, 0.0, 0.7 }
+		},
+		{
+			{ 1.0, 1.0, 0.7 },
+			2,
+			{ 0.0, 0.3, 0.0 },
+			6,
+			{ 0.7, 0.0, 0.3 }
+		},
+		{
+			{ 1.3, 1.0, 0.0 },
+			3,
+			{ 0.3, 1.0, 0.0 },
+			6,
+			{ 0.0, 0.0, 0.7 }
+		},
+		{
+			{ 1.0, 1.7, 0.0 },
+			4,
+			{ 1.0, 0.7, 0.0 },
+			6,
+			{ 0.0, 0.7, 0.3 }
+		},
+		{
+			{ 1.0, 1.7, 0.3 },
+			4,
+			{ 1.0, 0.7, 0.3 },
+			6,
+			{ 0.3, 0.7, 0.0 }
+		}
+	};
+	for (int i = 0; i < 10; ++i)
+	{
+		FindXiMap &sample = findLineSamples[i];
+		EXPECT_EQ(RESULT_OK, x.assignReal(fieldcache, 3, sample.x));
+
+		Element element;
+		double xi[3];
+		element = findMeshLocationLine.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.elementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.xi[c], xi[c], TOL);
+		}
+
+		EXPECT_EQ(RESULT_OK, groupMesh3d.removeAllElements());
+		EXPECT_EQ(RESULT_OK, groupMesh3d.addElement(mesh3d.findElementByIdentifier(sample.groupElementIdentifier)));
+		element = findMeshLocationLineGroup.evaluateMeshLocation(fieldcache, 3, xi);
+		EXPECT_EQ(sample.groupElementIdentifier, element.getIdentifier());
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(sample.groupXi[c], xi[c], TOL);
 		}
 	}
 }
@@ -1900,6 +2124,7 @@ TEST(ZincFieldStoredString, valid_arguments)
 	EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
 	char *string_out = fieldStoredString.evaluateString(fieldcache);
 	EXPECT_STREQ(string_in, string_out);
+    cmzn_deallocate(string_out);
 }
 
 TEST(ZincElementfieldtemplate, element_based_constant)
@@ -2264,7 +2489,7 @@ TEST(ZincMesh, destroyElement)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes.exformat").c_str()));
 
 	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
 	EXPECT_TRUE(notifier.isValid());
@@ -2514,150 +2739,150 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid_mixed)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CUBE_NODE_ELEMENT_GRID_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube_node_element_grid.exf").c_str()));
 
-	FieldFiniteElement coordinates_node = zinc.fm.findFieldByName("coordinates_node").castFiniteElement();
-	EXPECT_TRUE(coordinates_node.isValid());
-	FieldFiniteElement coordinates_element = zinc.fm.findFieldByName("coordinates_element").castFiniteElement();
-	EXPECT_TRUE(coordinates_element.isValid());
-	FieldFiniteElement coordinates_grid = zinc.fm.findFieldByName("coordinates_grid").castFiniteElement();
-	EXPECT_TRUE(coordinates_grid.isValid());
-	FieldFiniteElement coordinates_mixed = zinc.fm.findFieldByName("coordinates_mixed").castFiniteElement();
-	EXPECT_TRUE(coordinates_mixed.isValid());
+    FieldFiniteElement coordinates_node = zinc.fm.findFieldByName("coordinates_node").castFiniteElement();
+    EXPECT_TRUE(coordinates_node.isValid());
+    FieldFiniteElement coordinates_element = zinc.fm.findFieldByName("coordinates_element").castFiniteElement();
+    EXPECT_TRUE(coordinates_element.isValid());
+    FieldFiniteElement coordinates_grid = zinc.fm.findFieldByName("coordinates_grid").castFiniteElement();
+    EXPECT_TRUE(coordinates_grid.isValid());
+    FieldFiniteElement coordinates_mixed = zinc.fm.findFieldByName("coordinates_mixed").castFiniteElement();
+    EXPECT_TRUE(coordinates_mixed.isValid());
 
-	// test against trilinear interpolation of these node coordinates
-	const double node_coordinates[8][3] =
-	{
-		{  0.00,  0.00,  0.00 },
-		{  1.08, -0.09, -0.24 },
-		{ -0.04,  0.90,  0.23 },
-		{  1.10,  1.07,  0.04 },
-		{  0.00, -0.10,  0.81 },
-		{  0.84,  0.08,  1.29 },
-		{ -0.20,  0.85,  1.09 },
-		{  1.22,  1.11,  0.99 }
-	};
+    // test against trilinear interpolation of these node coordinates
+    const double node_coordinates[8][3] =
+    {
+        {  0.00,  0.00,  0.00 },
+        {  1.08, -0.09, -0.24 },
+        { -0.04,  0.90,  0.23 },
+        {  1.10,  1.07,  0.04 },
+        {  0.00, -0.10,  0.81 },
+        {  0.84,  0.08,  1.29 },
+        { -0.20,  0.85,  1.09 },
+        {  1.22,  1.11,  0.99 }
+    };
 
-	// check all 3 fields compute the same values and derivatives
-	Mesh mesh = zinc.fm.findMeshByDimension(3);
-	EXPECT_TRUE(mesh.isValid());
-	Element element1 = mesh.findElementByIdentifier(1);
-	EXPECT_TRUE(element1.isValid());
-	Differentialoperator d_dxi1 = mesh.getChartDifferentialoperator(1, 1);
-	EXPECT_TRUE(d_dxi1.isValid());
-	Differentialoperator d_dxi2 = mesh.getChartDifferentialoperator(1, 2);
-	EXPECT_TRUE(d_dxi2.isValid());
-	Differentialoperator d_dxi3 = mesh.getChartDifferentialoperator(1, 3);
-	EXPECT_TRUE(d_dxi3.isValid());
-	Fieldcache cache = zinc.fm.createFieldcache();
+    // check all 3 fields compute the same values and derivatives
+    Mesh mesh = zinc.fm.findMeshByDimension(3);
+    EXPECT_TRUE(mesh.isValid());
+    Element element1 = mesh.findElementByIdentifier(1);
+    EXPECT_TRUE(element1.isValid());
+    Differentialoperator d_dxi1 = mesh.getChartDifferentialoperator(1, 1);
+    EXPECT_TRUE(d_dxi1.isValid());
+    Differentialoperator d_dxi2 = mesh.getChartDifferentialoperator(1, 2);
+    EXPECT_TRUE(d_dxi2.isValid());
+    Differentialoperator d_dxi3 = mesh.getChartDifferentialoperator(1, 3);
+    EXPECT_TRUE(d_dxi3.isValid());
+    Fieldcache cache = zinc.fm.createFieldcache();
 
-	const int numberInXi1 = 2;
-	const int numberInXi2 = 3;
-	const int numberInXi3 = 2;
-	const double scale1 = 1.0/static_cast<double>(numberInXi1);
-	const double scale2 = 1.0/static_cast<double>(numberInXi2);
-	const double scale3 = 1.0/static_cast<double>(numberInXi3);
-	double phi1a, phi1b, phi2a, phi2b, phi3a, phi3b;
-	double basis_values[8];
-	double d1[3], d2[3], d3[3], x[3], xi[3];
-	double d1out[3], d2out[3], d3out[3], xout[3];
-	const double tol = 1.0E-12;
-	for (int n3 = 0; n3 <= numberInXi3; ++n3)
-	{
-		xi[2] = phi3b = n3*scale3;
-		phi3a = 1.0 - phi3b;
-		for (int n2 = 0; n2 <= numberInXi2; ++n2)
-		{
-			xi[1] = phi2b = n2*scale2;
-			phi2a = 1.0 - phi2b;
-			for (int n1 = 0; n1 <= numberInXi1; ++n1)
-			{
-				xi[0] = phi1b = n1*scale1;
-				phi1a = 1.0 - phi1b;
-				// interpolate here to get known values:
-				basis_values[0] = phi1a*phi2a*phi3a;
-				basis_values[1] = phi1b*phi2a*phi3a;
-				basis_values[2] = phi1a*phi2b*phi3a;
-				basis_values[3] = phi1b*phi2b*phi3a;
-				basis_values[4] = phi1a*phi2a*phi3b;
-				basis_values[5] = phi1b*phi2a*phi3b;
-				basis_values[6] = phi1a*phi2b*phi3b;
-				basis_values[7] = phi1b*phi2b*phi3b;
-				for (int c = 0; c < 3; ++c)
-				{
-					x[c] = 0.0;
-					for (int n = 0; n < 8; ++n)
-						x[c] += basis_values[n]*node_coordinates[n][c];
-				}
-				// dx_dxi1
-				basis_values[0] = -phi2a*phi3a;
-				basis_values[1] = +phi2a*phi3a;
-				basis_values[2] = -phi2b*phi3a;
-				basis_values[3] = +phi2b*phi3a;
-				basis_values[4] = -phi2a*phi3b;
-				basis_values[5] = +phi2a*phi3b;
-				basis_values[6] = -phi2b*phi3b;
-				basis_values[7] = +phi2b*phi3b;
-				for (int c = 0; c < 3; ++c)
-				{
-					d1[c] = 0.0;
-					for (int n = 0; n < 8; ++n)
-						d1[c] += basis_values[n]*node_coordinates[n][c];
-				}
-				// dx_dxi2
-				basis_values[0] = -phi1a*phi3a;
-				basis_values[1] = -phi1b*phi3a;
-				basis_values[2] = +phi1a*phi3a;
-				basis_values[3] = +phi1b*phi3a;
-				basis_values[4] = -phi1a*phi3b;
-				basis_values[5] = -phi1b*phi3b;
-				basis_values[6] = +phi1a*phi3b;
-				basis_values[7] = +phi1b*phi3b;
-				for (int c = 0; c < 3; ++c)
-				{
-					d2[c] = 0.0;
-					for (int n = 0; n < 8; ++n)
-						d2[c] += basis_values[n]*node_coordinates[n][c];
-				}
-				// dx_dxi3
-				basis_values[0] = -phi1a*phi2a;
-				basis_values[1] = -phi1b*phi2a;
-				basis_values[2] = -phi1a*phi2b;
-				basis_values[3] = -phi1b*phi2b;
-				basis_values[4] = +phi1a*phi2a;
-				basis_values[5] = +phi1b*phi2a;
-				basis_values[6] = +phi1a*phi2b;
-				basis_values[7] = +phi1b*phi2b;
-				for (int c = 0; c < 3; ++c)
-				{
-					d3[c] = 0.0;
-					for (int n = 0; n < 8; ++n)
-						d3[c] += basis_values[n]*node_coordinates[n][c];
-				}
-				EXPECT_EQ(CMZN_RESULT_OK, result = cache.setMeshLocation(element1, 3, xi));
-				for (int f = 0; f < 4; ++f)
-				{
-					Field test_field =
-						(f == 0) ? coordinates_node :
-						(f == 1) ? coordinates_element :
-						(f == 2) ? coordinates_grid :
-						coordinates_mixed;
-					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateReal(cache, 3, xout));
-					for (int c = 0; c < 3; ++c)
-						EXPECT_NEAR(x[c], xout[c], tol);
-					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi1, cache, 3, d1out));
-					for (int c = 0; c < 3; ++c)
-						EXPECT_NEAR(d1[c], d1out[c], tol);
-					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi2, cache, 3, d2out));
-					for (int c = 0; c < 3; ++c)
-						EXPECT_NEAR(d2[c], d2out[c], tol);
-					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi3, cache, 3, d3out));
-					for (int c = 0; c < 3; ++c)
-						EXPECT_NEAR(d3[c], d3out[c], tol);
-				}
-			}
-		}
-	}
+    const int numberInXi1 = 2;
+    const int numberInXi2 = 3;
+    const int numberInXi3 = 2;
+    const double scale1 = 1.0/static_cast<double>(numberInXi1);
+    const double scale2 = 1.0/static_cast<double>(numberInXi2);
+    const double scale3 = 1.0/static_cast<double>(numberInXi3);
+    double phi1a, phi1b, phi2a, phi2b, phi3a, phi3b;
+    double basis_values[8];
+    double d1[3], d2[3], d3[3], x[3], xi[3];
+    double d1out[3], d2out[3], d3out[3], xout[3];
+    const double tol = 1.0E-12;
+    for (int n3 = 0; n3 <= numberInXi3; ++n3)
+    {
+        xi[2] = phi3b = n3*scale3;
+        phi3a = 1.0 - phi3b;
+        for (int n2 = 0; n2 <= numberInXi2; ++n2)
+        {
+            xi[1] = phi2b = n2*scale2;
+            phi2a = 1.0 - phi2b;
+            for (int n1 = 0; n1 <= numberInXi1; ++n1)
+            {
+                xi[0] = phi1b = n1*scale1;
+                phi1a = 1.0 - phi1b;
+                // interpolate here to get known values:
+                basis_values[0] = phi1a*phi2a*phi3a;
+                basis_values[1] = phi1b*phi2a*phi3a;
+                basis_values[2] = phi1a*phi2b*phi3a;
+                basis_values[3] = phi1b*phi2b*phi3a;
+                basis_values[4] = phi1a*phi2a*phi3b;
+                basis_values[5] = phi1b*phi2a*phi3b;
+                basis_values[6] = phi1a*phi2b*phi3b;
+                basis_values[7] = phi1b*phi2b*phi3b;
+                for (int c = 0; c < 3; ++c)
+                {
+                    x[c] = 0.0;
+                    for (int n = 0; n < 8; ++n)
+                        x[c] += basis_values[n]*node_coordinates[n][c];
+                }
+                // dx_dxi1
+                basis_values[0] = -phi2a*phi3a;
+                basis_values[1] = +phi2a*phi3a;
+                basis_values[2] = -phi2b*phi3a;
+                basis_values[3] = +phi2b*phi3a;
+                basis_values[4] = -phi2a*phi3b;
+                basis_values[5] = +phi2a*phi3b;
+                basis_values[6] = -phi2b*phi3b;
+                basis_values[7] = +phi2b*phi3b;
+                for (int c = 0; c < 3; ++c)
+                {
+                    d1[c] = 0.0;
+                    for (int n = 0; n < 8; ++n)
+                        d1[c] += basis_values[n]*node_coordinates[n][c];
+                }
+                // dx_dxi2
+                basis_values[0] = -phi1a*phi3a;
+                basis_values[1] = -phi1b*phi3a;
+                basis_values[2] = +phi1a*phi3a;
+                basis_values[3] = +phi1b*phi3a;
+                basis_values[4] = -phi1a*phi3b;
+                basis_values[5] = -phi1b*phi3b;
+                basis_values[6] = +phi1a*phi3b;
+                basis_values[7] = +phi1b*phi3b;
+                for (int c = 0; c < 3; ++c)
+                {
+                    d2[c] = 0.0;
+                    for (int n = 0; n < 8; ++n)
+                        d2[c] += basis_values[n]*node_coordinates[n][c];
+                }
+                // dx_dxi3
+                basis_values[0] = -phi1a*phi2a;
+                basis_values[1] = -phi1b*phi2a;
+                basis_values[2] = -phi1a*phi2b;
+                basis_values[3] = -phi1b*phi2b;
+                basis_values[4] = +phi1a*phi2a;
+                basis_values[5] = +phi1b*phi2a;
+                basis_values[6] = +phi1a*phi2b;
+                basis_values[7] = +phi1b*phi2b;
+                for (int c = 0; c < 3; ++c)
+                {
+                    d3[c] = 0.0;
+                    for (int n = 0; n < 8; ++n)
+                        d3[c] += basis_values[n]*node_coordinates[n][c];
+                }
+                EXPECT_EQ(CMZN_RESULT_OK, result = cache.setMeshLocation(element1, 3, xi));
+                for (int f = 0; f < 4; ++f)
+                {
+                    Field test_field =
+                        (f == 0) ? coordinates_node :
+                        (f == 1) ? coordinates_element :
+                        (f == 2) ? coordinates_grid :
+                        coordinates_mixed;
+                    EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateReal(cache, 3, xout));
+                    for (int c = 0; c < 3; ++c)
+                        EXPECT_NEAR(x[c], xout[c], tol);
+                    EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi1, cache, 3, d1out));
+                    for (int c = 0; c < 3; ++c)
+                        EXPECT_NEAR(d1[c], d1out[c], tol);
+                    EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi2, cache, 3, d2out));
+                    for (int c = 0; c < 3; ++c)
+                        EXPECT_NEAR(d2[c], d2out[c], tol);
+                    EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi3, cache, 3, d3out));
+                    for (int c = 0; c < 3; ++c)
+                        EXPECT_NEAR(d3[c], d3out[c], tol);
+                }
+            }
+        }
+    }
 }
 
 // Test that reading a finite element model from file while change cache
@@ -2668,7 +2893,7 @@ TEST(ZincFieldFiniteElement, readWithChangeCache)
 	ZincTestSetupCpp zinc;
 
 	zinc.fm.beginChange();
-	EXPECT_EQ(OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_EQ(OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 	EXPECT_TRUE(coordinates.castFiniteElement().isValid());

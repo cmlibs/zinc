@@ -273,6 +273,9 @@ int cmzn_nodeset_assign_field_from_source(
 													}
 												}
 												fieldcache->setAssignInCacheOnly(false);
+											}
+											if ((evaluateValueVersionsCount > 0) && (return_code == CMZN_OK))
+											{
 												// evaluate source values and assign to destination
 												for (int v = 0; v < valueVersionsCount; ++v)
 												{

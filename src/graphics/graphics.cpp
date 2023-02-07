@@ -36,6 +36,7 @@
 #include "general/object.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_module.hpp"
@@ -1346,26 +1347,40 @@ int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
 	{
 		if (coordinate_field != graphics->coordinate_field)
 		{
-			if (graphics->scene && graphics->coordinate_field)
+			if (graphics->scene)
 			{
-				graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
+				if (graphics->coordinate_field)
+				{
+					graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
+				}
 				if (graphics->point_orientation_scale_field)
+				{
 					graphics->scene->deregisterVectorField(
 						graphics->point_orientation_scale_field, graphics->coordinate_field);
+				}
 				if (graphics->stream_vector_field)
+				{
 					graphics->scene->deregisterVectorField(
 						graphics->stream_vector_field, graphics->coordinate_field);
+				}
 			}
-			REACCESS(Computed_field)(&(graphics->coordinate_field), coordinate_field);
-			if (graphics->scene && graphics->coordinate_field)
+			cmzn_field::reaccess(graphics->coordinate_field, coordinate_field);
+			if (graphics->scene)
 			{
-				graphics->scene->registerCoordinateField(graphics->coordinate_field);
+				if (graphics->coordinate_field)
+				{
+					graphics->scene->registerCoordinateField(graphics->coordinate_field);
+				}
 				if (graphics->point_orientation_scale_field)
+				{
 					graphics->scene->registerVectorField(
 						graphics->point_orientation_scale_field, graphics->coordinate_field);
+				}
 				if (graphics->stream_vector_field)
+				{
 					graphics->scene->registerVectorField(
 						graphics->stream_vector_field, graphics->coordinate_field);
+				}
 			}
 			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
@@ -2810,7 +2825,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 						return_code = 0;
 					}
 				}
-				if (return_code && graphics->point_orientation_scale_field)
+				if (return_code && (graphics->point_orientation_scale_field))
 				{
 					graphics_to_object_data->wrapper_orientation_scale_field =
 						graphics->scene->getVectorFieldWrapper(graphics->point_orientation_scale_field, coordinate_field);
@@ -2821,7 +2836,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 						return_code = 0;
 					}
 				}
-				if (return_code && graphics->stream_vector_field)
+				if (return_code && (graphics->stream_vector_field))
 				{
 					graphics_to_object_data->wrapper_stream_vector_field =
 						graphics->scene->getVectorFieldWrapper(graphics->stream_vector_field, coordinate_field);
@@ -5053,7 +5068,7 @@ Must call cmzn_graphics_to_graphics_object afterwards to complete.
 int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 	struct cmzn_scene *scene)
 {
-	if (graphics && ((NULL == scene) || (NULL == graphics->scene)))
+	if ((graphics) && ((!scene) || (!graphics->scene)))
 	{
 		if (scene != graphics->scene)
 		{
@@ -5062,32 +5077,37 @@ int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 				// deregister coordinate/vector field wrappers
 				if (graphics->coordinate_field)
 				{
-					if (graphics->point_orientation_scale_field)
-						graphics->scene->deregisterVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
-					if (graphics->stream_vector_field)
-						graphics->scene->deregisterVectorField(graphics->stream_vector_field, graphics->coordinate_field);
 					graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
 				}
+				if (graphics->point_orientation_scale_field)
+				{
+					graphics->scene->deregisterVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
+				}
+				if (graphics->stream_vector_field)
+				{
+					graphics->scene->deregisterVectorField(graphics->stream_vector_field, graphics->coordinate_field);
+				}
 			}
-			if (scene && (!scene->isEditorCopy()))
+			if ((scene) && (!scene->isEditorCopy()))
 			{
 				graphics->scene = scene;
-				if (graphics->scene)
+				// register coordinate/vector field wrappers
+				if (graphics->coordinate_field)
 				{
-					// register coordinate/vector field wrappers
-					if (graphics->coordinate_field)
-					{
-						if (graphics->point_orientation_scale_field)
-							graphics->scene->registerVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
-						if (graphics->stream_vector_field)
-							graphics->scene->registerVectorField(graphics->stream_vector_field, graphics->coordinate_field);
-						graphics->scene->registerCoordinateField(graphics->coordinate_field);
-					}
+					graphics->scene->registerCoordinateField(graphics->coordinate_field);
+				}
+				if (graphics->point_orientation_scale_field)
+				{
+					graphics->scene->registerVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
+				}
+				if (graphics->stream_vector_field)
+				{
+					graphics->scene->registerVectorField(graphics->stream_vector_field, graphics->coordinate_field);
 				}
 			}
 			else
 			{
-				graphics->scene = 0;
+				graphics->scene = nullptr;
 			}
 		}
 		return 1;
@@ -5372,7 +5392,6 @@ int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 			(domain_type != CMZN_FIELD_DOMAIN_TYPE_NODES) &&
 			(domain_type != CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS))))
 	{
-		graphics->domain_type = domain_type;
 		if (domain_type != graphics->domain_type)
 		{
 			graphics->domain_type = domain_type;
@@ -5696,17 +5715,18 @@ int cmzn_graphics_streamlines_set_stream_vector_field(
 	cmzn_field_id stream_vector_field)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(streamlines);
-	if (graphics)
+	if ((graphics) && ((!stream_vector_field) ||
+		Computed_field_is_stream_vector_capable(stream_vector_field, nullptr)))
 	{
 		if (stream_vector_field != graphics->stream_vector_field)
 		{
-			if (graphics->scene && graphics->stream_vector_field && graphics->coordinate_field)
+			if ((graphics->scene) && (graphics->stream_vector_field))
 			{
 				graphics->scene->deregisterVectorField(
 					graphics->stream_vector_field, graphics->coordinate_field);
 			}
-			REACCESS(Computed_field)(&(graphics->stream_vector_field), stream_vector_field);
-			if (graphics->scene && graphics->stream_vector_field && graphics->coordinate_field)
+			cmzn_field::reaccess(graphics->stream_vector_field, stream_vector_field);
+			if ((graphics->scene) && (graphics->stream_vector_field))
 			{
 				graphics->scene->registerVectorField(
 					graphics->stream_vector_field, graphics->coordinate_field);
@@ -6345,18 +6365,18 @@ int cmzn_graphicspointattributes_set_orientation_scale_field(
 	cmzn_field_id orientation_scale_field)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
-	if (graphics && ((0 == orientation_scale_field) ||
-		Computed_field_is_orientation_scale_capable(orientation_scale_field, (void *)0)))
+	if ((graphics) && ((!orientation_scale_field) ||
+		Computed_field_is_orientation_scale_capable(orientation_scale_field, nullptr)))
 	{
 		if (orientation_scale_field != graphics->point_orientation_scale_field)
 		{
-			if (graphics->scene && graphics->point_orientation_scale_field && graphics->coordinate_field)
+			if ((graphics->scene) && (graphics->point_orientation_scale_field))
 			{
 				graphics->scene->deregisterVectorField(
 					graphics->point_orientation_scale_field, graphics->coordinate_field);
 			}
-			REACCESS(Computed_field)(&(graphics->point_orientation_scale_field), orientation_scale_field);
-			if (graphics->scene && graphics->point_orientation_scale_field && graphics->coordinate_field)
+			cmzn_field::reaccess(graphics->point_orientation_scale_field, orientation_scale_field);
+			if ((graphics->scene) && (graphics->point_orientation_scale_field))
 			{
 				graphics->scene->registerVectorField(
 					graphics->point_orientation_scale_field, graphics->coordinate_field);

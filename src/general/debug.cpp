@@ -33,6 +33,56 @@ Function definitions for debugging.
 
 /*#define MEMORY_CHECKING*/
 
+
+void *cmzn_allocate(int bytes)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+    void *return_ptr;
+
+    ENTER(cmzn_allocate);
+    if (bytes)
+    {
+        ALLOCATE(return_ptr, char, bytes);
+    }
+    else
+    {
+        return_ptr = NULL;
+    }
+    LEAVE;
+
+    return (return_ptr);
+} /* cmzn_allocate */
+
+int cmzn_deallocate(void *ptr)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2002
+
+DESCRIPTION :
+Frees the memory associated with the pointer.  Used to clean up when functions
+return buffers allocated internally to cmiss.
+==============================================================================*/
+{
+    int return_code;
+
+    ENTER(cmzn_deallocate);
+    if (ptr)
+    {
+        DEALLOCATE(ptr);
+        return_code = 1;
+    }
+    else
+    {
+        return_code=0;
+    }
+    LEAVE;
+
+    return (return_code);
+} /* cmzn_deallocate */
+
 #if defined (MEMORY_CHECKING)
 /* Must override all these Macros before we use them to ensure we don't get
 	stuck in an infinite loop of allocating */
@@ -72,7 +122,8 @@ DESCRIPTION :
 Keeps a record of where a block of memory was allocated
 ==============================================================================*/
 {
-	char *filename_line, *type;
+    char *filename, *type;
+    size_t line;
 	size_t count,size;
 	void *ptr;
 	int access_count;
@@ -100,12 +151,13 @@ DESCRIPTION :
 	{
 		block->ptr = pointer;
 		block->size = size;
+        block->line = line;
 		block->count = count;
 		block->access_count = 0;
 
-		if (ALLOCATE(block->filename_line, char, strlen(filename)+20))
+        if (ALLOCATE(block->filename, char, strlen(filename)+1))
 		{
-			sprintf(block->filename_line,"%s : %10d",filename,line);
+            sprintf(block->filename,"%s",filename);
 			if (ALLOCATE(block->type,char,strlen(type_string)+1))
 			{
 				strcpy(block->type, type_string);
@@ -115,7 +167,7 @@ DESCRIPTION :
 				display_message(ERROR_MESSAGE,"CREATE(Memory_block).  "
 					"Unable to allocate memory for memory_block type string identifier");
 				DEALLOCATE(block);
-				DEALLOCATE(block->filename_line);
+                DEALLOCATE(block->filename);
 				block = (struct Memory_block *)NULL;
 			}
 		}
@@ -153,9 +205,9 @@ DESCRIPTION :
 	{
 		if (block->access_count <= 0)
 		{
-			if (block->filename_line)
+            if (block->filename)
 			{
-				DEALLOCATE(block->filename_line);
+                DEALLOCATE(block->filename);
 			}
 			if (block->type)
 			{
@@ -226,7 +278,7 @@ DESCRIPTION :
 		{
 			if (!list_memory_data->count||(block->count==list_memory_data->count))
 			{
-				printf("%s @ %x size %ld type %s\n",block->filename_line,block->ptr,
+                printf("%s : %zu @ %p size %ld type %s\n",block->filename, block->line ,block->ptr,
 					block->size, block->type);
 			}
 			list_memory_data->count_total[block->count] += block->size;
@@ -236,7 +288,7 @@ DESCRIPTION :
 		{
 			if (!list_memory_data->count||(block->count==list_memory_data->count))
 			{
-				printf("%s size %ld type %s\n",block->filename_line,block->size,
+                printf("%s : %zu size %ld type %s\n",block->filename, block->line, block->size,
 					block->type);
 			}
 			list_memory_data->count_total[block->count] += block->size;
@@ -394,8 +446,9 @@ Wrapper for allocate which keeps track of allocated memory.
 				{
 					memory_block_list = CREATE(LIST(Memory_block))();
 				}
-				if (new_block=CREATE(Memory_block)((void *)result,
-					filename, line, type, size, maximum_count))
+                new_block=CREATE(Memory_block)((void *)result,
+                    filename, line, type, size, maximum_count);
+                if (new_block != nullptr)
 				{
 					if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
 					{
@@ -474,16 +527,17 @@ Wrapper for deallocate which keeps track of allocated memory.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"deallocate.  Could not find ptr %x in memory block list",ptr);
+                    "deallocate.  Could not find ptr %p in memory block list", ptr);
 				display_message(ERROR_MESSAGE,
 					"deallocate.  called from %s at line %d",filename,line);
-				printf("deallocate.  Could not find ptr %x in memory block list\n",ptr);
+                printf("deallocate.  Could not find ptr %p in memory block list\n", ptr);
 				printf("deallocate.  called from %s at line %d\n",filename,line);
 			}
 			display_message_call_in_progress=0;
 		}
 #endif /* defined (MEMORY_CHECKING) */
 		free(ptr);
+        ptr = nullptr;
 	}
 	LEAVE;
 } /* deallocate */
@@ -511,7 +565,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 	if (0<size)
 	{
 #if defined (MEMORY_CHECKING)
-		if (!display_message_call_in_progress)
+        if (!display_message_call_in_progress)
 		{
 			display_message_call_in_progress=1;
 			if (!memory_block_list)
@@ -527,9 +581,6 @@ Wrapper for reallocate which keeps track of allocated memory.
 						"reallocate.  Could not find ptr %x in memory block list", ptr);
 					display_message(ERROR_MESSAGE,
 						"reallocate.  called from %s at line %d.", filename, line);
-					printf("reallocate.  Could not find ptr %x in memory block list\n",
-						ptr);
-					printf("reallocate.  called from %s at line %d.\n", filename, line);
 				}
 			}
 			else
@@ -569,8 +620,8 @@ Wrapper for reallocate which keeps track of allocated memory.
 					if (strcmp(type, block->type))
 					{
 						display_message(ERROR_MESSAGE,"reallocate.  "
-							"Allocation types don't match %s realloced at %s : %10d",
-							block->filename_line, filename, line);
+                            "Allocation types don't match %s : %10zu realloced at %s : %10d",
+                            block->filename, block->line, filename, line);
 					}
 					REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
 				}
@@ -581,8 +632,9 @@ Wrapper for reallocate which keeps track of allocated memory.
 						previous_total_allocated_memory,previous_size,size,
 						total_allocated_memory,filename,line);
 				}
-				if (new_block=CREATE(Memory_block)((void *)result,
-					filename, line, type, size, maximum_count))
+                new_block=CREATE(Memory_block)((void *)result,
+                    filename, line, type, size, maximum_count);
+                if (new_block != nullptr)
 				{
 					if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
 					{
@@ -667,7 +719,7 @@ actual object type and then the appropriate list function is called.
 		list_memory_data.show_structures = show_structures;
 		list_memory_data.total = 0;
 
-		printf("cmzn Memory Dump\n");
+        printf("cmzn Memory Dump:\n");
 
 		if (memory_block_list)
 		{
@@ -741,55 +793,6 @@ prevented).
 
 	return (return_code);
 } /* set_check_memory_output */
-
-void *cmzn_allocate(int bytes)
-/*******************************************************************************
-LAST MODIFIED : 12 August 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	void *return_ptr;
-
-	ENTER(cmzn_allocate);
-	if (bytes)
-	{
-		ALLOCATE(return_ptr, char, bytes);
-	}
-	else
-	{
-		return_ptr = NULL;
-	}
-	LEAVE;
-
-	return (return_ptr);
-} /* cmzn_allocate */
-
-int cmzn_deallocate(void *ptr)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2002
-
-DESCRIPTION :
-Frees the memory associated with the pointer.  Used to clean up when functions
-return buffers allocated internally to cmiss.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(cmzn_deallocate);
-	if (ptr)
-	{
-		DEALLOCATE(ptr);
-		return_code = 1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_deallocate */
 
 #  if defined (UNIX)
 #include <execinfo.h>

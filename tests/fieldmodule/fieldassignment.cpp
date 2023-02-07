@@ -36,7 +36,7 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodes.isValid());
@@ -105,7 +105,7 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 
 	// reset and try nodeset and conditional field options
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	FieldNodeGroup nodeGroup = zinc.fm.createFieldNodeGroup(nodes);
 	EXPECT_TRUE(nodeGroup.isValid());
@@ -164,11 +164,11 @@ TEST(ZincFieldassignment, transformDerivatives)
 	ZincTestSetupCpp zinc;
 
 	// read coordinates and save a copy
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 	FieldFiniteElement copyCoordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(copyCoordinates.isValid());
 	EXPECT_EQ(RESULT_OK, copyCoordinates.setName("copyCoordinates"));
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes_hermite_nocross.ex2").c_str()));
 	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
 
@@ -510,12 +510,12 @@ TEST(ZincFieldassignment, assignNodeValueVersions)
 	ZincTestSetupCpp zinc;
 
 	// read texture_coordinates and save a copy to assign back from later
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CYLINDER_TEXTURE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cylinder_texture.ex2").c_str()));
 	Field orig_texture_coordinates = zinc.fm.findFieldByName("texture_coordinates");
 	EXPECT_TRUE(orig_texture_coordinates.isValid());
 	EXPECT_EQ(RESULT_OK, orig_texture_coordinates.setName("orig_texture_coordinates"));
 	// reload to get texture_coordinates to modify
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CYLINDER_TEXTURE_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cylinder_texture.ex2").c_str()));
 	FieldFiniteElement texture_coordinates = zinc.fm.findFieldByName("texture_coordinates").castFiniteElement();
 	EXPECT_TRUE(texture_coordinates.isValid());
 
@@ -564,7 +564,7 @@ TEST(ZincFieldassignment, assignApplyEmbeddingDerivativesVersions)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_EMBED_HOST_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/embed_host.exf").c_str()));
 
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
 	EXPECT_TRUE(mesh3d.isValid());
@@ -585,7 +585,7 @@ TEST(ZincFieldassignment, assignApplyEmbeddingDerivativesVersions)
 	EXPECT_TRUE(dataRegion.isValid());
 	Fieldmodule dataFm = dataRegion.getFieldmodule();
 	EXPECT_TRUE(dataFm.isValid());
-	EXPECT_EQ(RESULT_OK, dataRegion.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_EMBED_NETWORK_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, dataRegion.readFile(resourcePath("fieldmodule/embed_network.exf").c_str()));
 	FieldFiniteElement dataCoordinates = dataFm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(dataCoordinates.isValid());
 	{
@@ -682,4 +682,30 @@ TEST(ZincFieldassignment, assignApplyEmbeddingDerivativesVersions)
 			}
 		}
 	}
+}
+
+// Test source field not being defined is detected by Fieldassignment
+TEST(ZincFieldassignment, assignSourceNotDefined)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("cube.ex2").c_str()));
+	FieldFiniteElement bob = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(resourcePath("cube.ex2").c_str()));
+	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	const double scaleValues[3] = { 2.0, 1.5, 0.75 };
+	FieldConstant scale = zinc.fm.createFieldConstant(3, scaleValues);
+	EXPECT_TRUE(scale.isValid());
+	FieldMultiply scaledCoordinates = coordinates * scale;
+	EXPECT_TRUE(scaledCoordinates.isValid());
+	FieldFiniteElement undefinedCoordinates = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(undefinedCoordinates.isValid());
+
+	Fieldassignment fieldassignment = bob.createFieldassignment(scaledCoordinates);
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	Fieldassignment fieldassignmentUndefined = bob.createFieldassignment(undefinedCoordinates);
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, fieldassignmentUndefined.assign());
 }

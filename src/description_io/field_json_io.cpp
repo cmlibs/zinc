@@ -238,10 +238,8 @@ OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 				field = fieldmodule.createFieldEigenvalues(sourcefields[0]);
 				break;
 			case CMZN_FIELD_TYPE_EIGENVECTORS:
-			{
-				field = OpenCMISS::Zinc::Field(cmzn_fieldmodule_create_field_eigenvectors(
-					fieldmodule.getId(),	sourcefields[0].getId()));
-			}	break;
+				field = fieldmodule.createFieldEigenvectors(sourcefields[0]);
+				break;
 			case CMZN_FIELD_TYPE_MATRIX_INVERT:
 				field = fieldmodule.createFieldMatrixInvert(sourcefields[0]);
 				break;
@@ -642,6 +640,7 @@ OpenCMISS::Zinc::Field importMeshOperatorsField(enum cmzn_field_type type,
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
+    USE_PARAMETER(fieldSettings);
 	OpenCMISS::Zinc::Field field;
 	switch (type)
 	{
@@ -686,6 +685,7 @@ OpenCMISS::Zinc::Field importNodesetOperatorsField(enum cmzn_field_type type,
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
+    USE_PARAMETER(fieldSettings);
 	OpenCMISS::Zinc::Field field;
 	switch (type)
 	{
@@ -785,6 +785,9 @@ OpenCMISS::Zinc::Field importTimeValueField(enum cmzn_field_type type,
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
+    USE_PARAMETER(typeSettings);
+    USE_PARAMETER(jsonImport);
+
 	OpenCMISS::Zinc::Field field(0);
 	switch (type)
 	{
@@ -961,14 +964,63 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			fieldSettings["CoordinateSystemType"] = system_string;
 			DEALLOCATE(system_string);
 			if (coordinateSystemUsesFocus)
+			{
 				fieldSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
+			}
 		}
 	}
 
 	char *className = field.getClassName();
 	switch (type)
 	{
-		case CMZN_FIELD_TYPE_INVALID:
+        case CMZN_FIELD_TYPE_ABS:
+        case CMZN_FIELD_TYPE_ADD:
+        case CMZN_FIELD_TYPE_DIVIDE:
+        case CMZN_FIELD_TYPE_EXP:
+        case CMZN_FIELD_TYPE_LOG:
+        case CMZN_FIELD_TYPE_MULTIPLY:
+        case CMZN_FIELD_TYPE_POWER:
+        case CMZN_FIELD_TYPE_SQRT:
+        case CMZN_FIELD_TYPE_SUBTRACT:
+        case CMZN_FIELD_TYPE_CONCATENATE:
+        case CMZN_FIELD_TYPE_IDENTITY:
+        case CMZN_FIELD_TYPE_IF:
+        case CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION:
+        case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION:
+        case CMZN_FIELD_TYPE_CURL:
+        case CMZN_FIELD_TYPE_DIVERGENCE:
+        case CMZN_FIELD_TYPE_GRADIENT:
+        case CMZN_FIELD_TYPE_FIBRE_AXES:
+        case CMZN_FIELD_TYPE_EMBEDDED:
+        case CMZN_FIELD_TYPE_IS_EXTERIOR:
+        case CMZN_FIELD_TYPE_STORED_STRING:
+        case CMZN_FIELD_TYPE_EQUAL_TO:
+        case CMZN_FIELD_TYPE_AND:
+        case CMZN_FIELD_TYPE_GREATER_THAN:
+        case CMZN_FIELD_TYPE_IS_DEFINED:
+        case CMZN_FIELD_TYPE_LESS_THAN:
+        case CMZN_FIELD_TYPE_NOT:
+        case CMZN_FIELD_TYPE_OR:
+        case CMZN_FIELD_TYPE_XOR:
+        case CMZN_FIELD_TYPE_DETERMINANT:
+        case CMZN_FIELD_TYPE_EIGENVALUES:
+        case CMZN_FIELD_TYPE_EIGENVECTORS:
+        case CMZN_FIELD_TYPE_MATRIX_INVERT:
+        case CMZN_FIELD_TYPE_PROJECTION:
+        case CMZN_FIELD_TYPE_TIME_LOOKUP:
+        case CMZN_FIELD_TYPE_ACOS:
+        case CMZN_FIELD_TYPE_ASIN:
+        case CMZN_FIELD_TYPE_ATAN:
+        case CMZN_FIELD_TYPE_ATAN2:
+        case CMZN_FIELD_TYPE_COS:
+        case CMZN_FIELD_TYPE_SIN:
+        case CMZN_FIELD_TYPE_TAN:
+        case CMZN_FIELD_TYPE_CROSS_PRODUCT:
+        case CMZN_FIELD_TYPE_DOT_PRODUCT:
+        case CMZN_FIELD_TYPE_MAGNITUDE:
+        case CMZN_FIELD_TYPE_NORMALISE:
+        case CMZN_FIELD_TYPE_SUM_COMPONENTS:
+        case CMZN_FIELD_TYPE_INVALID:
 			break;
 		case CMZN_FIELD_TYPE_APPLY:
 		{
@@ -1056,12 +1108,14 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
 		{
-			int numberOfRows = cmzn_field_matrix_multiply_get_number_of_rows(field.getId());
+			OpenCMISS::Zinc::FieldMatrixMultiply fieldMatrixMultiply = this->field.castMatrixMultiply();
+			const int numberOfRows = fieldMatrixMultiply.getNumberOfRows();
 			typeSettings["NumberOfRows"] = numberOfRows;
 		} break;
 		case CMZN_FIELD_TYPE_TRANSPOSE:
 		{
-			int sourceNumberOfRows = cmzn_field_transpose_get_source_number_of_rows(field.getId());
+			OpenCMISS::Zinc::FieldTranspose fieldTranspose = this->field.castTranspose();
+			const int sourceNumberOfRows = fieldTranspose.getSourceNumberOfRows();
 			typeSettings["SourceNumberOfRows"] = sourceNumberOfRows;
 		} break;
 		case CMZN_FIELD_TYPE_FINITE_ELEMENT:
@@ -1140,6 +1194,8 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			typeSettings["Nodeset"] = nodesetName;
 			DEALLOCATE(nodesetName);
 		} break;
+		default:
+			break;
 	}
 
 	if (className)

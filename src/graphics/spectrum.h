@@ -93,14 +93,19 @@ Spectrum type is private.
 		return this;
 	}
 
+	static void deaccess(cmzn_spectrum*& spectrum);
+
+	/** Convenience function for standard spectrum creation */
+	void addComponent(int fieldComponent, double rangeMinimum, double rangeMaximum,
+		cmzn_spectrumcomponent_colour_mapping_type colourMappingType, double colourMinimum, double colourMaximum,
+		bool extendBelow, bool extendAbove);
+
 	cmzn_spectrum_change_detail *extractChangeDetail()
 	{
 		cmzn_spectrum_change_detail *change_detail = new cmzn_spectrum_change_detail(this->changeDetail);
 		this->changeDetail.clear();
 		return change_detail;
 	}
-
-	static void deaccess(cmzn_spectrum*& spectrum);
 
 	int setName(const char *newName);
 }; /* struct cmzn_spectrum */

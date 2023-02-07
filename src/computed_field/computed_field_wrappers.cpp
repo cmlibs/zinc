@@ -107,8 +107,9 @@ bool cmzn_field_vector_needs_wrapping(cmzn_field *vector_field)
 {
 	Coordinate_system_type coordinate_system_type = vector_field->getCoordinateSystem().getType();
 	if ((RECTANGULAR_CARTESIAN == coordinate_system_type) ||
+		(NOT_APPLICABLE == coordinate_system_type) ||
 		((1 == cmzn_field_get_number_of_components(vector_field)) &&
-		(FIBRE != coordinate_system_type)))
+			(FIBRE != coordinate_system_type)))
 	{
 		return false;
 	}
@@ -118,20 +119,19 @@ bool cmzn_field_vector_needs_wrapping(cmzn_field *vector_field)
 cmzn_field *cmzn_field_get_vector_field_wrapper(
 	cmzn_field *vector_field, cmzn_field *coordinate_field)
 {
-	struct Computed_field *wrapper_field = 0;
+	cmzn_field *wrapper_field = nullptr;
 
-	if (vector_field&&coordinate_field&&
-		Computed_field_is_orientation_scale_capable(vector_field,NULL)&&
-		Computed_field_has_up_to_3_numerical_components(coordinate_field,NULL))
+	if ((vector_field) && Computed_field_is_orientation_scale_capable(vector_field, nullptr) &&
+		((!coordinate_field) || Computed_field_has_up_to_3_numerical_components(coordinate_field, nullptr)))
 	{
-		Coordinate_system_type coordinate_system_type = vector_field->getCoordinateSystem().getType();
-		if (!cmzn_field_vector_needs_wrapping(vector_field))
+		if ((!coordinate_field) || (!cmzn_field_vector_needs_wrapping(vector_field)))
 		{
 			/* RC fields and non-fibre scalars are already OK */
-			wrapper_field = ACCESS(Computed_field)(vector_field);
+			return vector_field->access();
 		}
-		else if ((FIBRE == coordinate_system_type) &&
-			(3>=cmzn_field_get_number_of_components(vector_field)))
+		Coordinate_system_type coordinate_system_type = vector_field->getCoordinateSystem().getType();
+		if ((FIBRE == coordinate_system_type) &&
+			(3 >= cmzn_field_get_number_of_components(vector_field)))
 		{
 			wrapper_field = findWrapperField(vector_field, "_cmiss_rc_fibre_wrapper", CMZN_FIELD_TYPE_FIBRE_AXES);
 			if ((wrapper_field) && (wrapper_field->getSourceField(1) == coordinate_field))

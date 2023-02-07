@@ -331,4 +331,13 @@ int cross_product_FE_value_vector3(const FE_value *a, const FE_value *b, FE_valu
  */
 int cross_product_FE_value_vector4(const FE_value *a, const FE_value *b, const FE_value *c, FE_value *result);
 
+/**
+ * @return  Whether value is a factor of size i.e. that a product of value and
+ * another natural number gives size.
+ */
+inline bool check_factor(int size, int value)
+{
+	return (1 <= value) && (value <= size) && (0 == (size % value));
+}
+
 #endif /* !defined (MATRIX_VECTOR_H) */

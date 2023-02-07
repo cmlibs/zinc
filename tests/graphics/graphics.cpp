@@ -27,7 +27,6 @@
 #include "opencmiss/zinc/result.hpp"
 
 #include "utilities/testenum.hpp"
-#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -971,6 +970,35 @@ TEST(cmzn_graphics_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(values[1], outputValues[2]);
 }
 
+// Test that orientation_scale_field can be set without coordinate field
+TEST(ZincGraphicsPoints, orientationScaleField_no_coordinateField)
+{
+	ZincTestSetupCpp zinc;
+
+	const double direction[3] = { 1.0, 0.0, 0.0 };
+	Field vectorField = zinc.fm.createFieldConstant(3, direction);
+	EXPECT_TRUE(vectorField.isValid());
+
+	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
+	EXPECT_TRUE(gr.isValid());
+
+	// ensure no coordinate field to go with vector field
+	EXPECT_FALSE(gr.getCoordinateField().isValid());
+
+	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
+	EXPECT_TRUE(pointattr.isValid());
+
+	EXPECT_EQ(RESULT_OK, pointattr.setOrientationScaleField(vectorField));
+
+	double minimumValues[3], maximumValues[3];
+	EXPECT_EQ(RESULT_OK, zinc.scene.getCoordinatesRange(Scenefilter(), minimumValues, maximumValues));
+	for (int c = 0; c < 3; ++c)
+	{
+		EXPECT_DOUBLE_EQ(0.0, minimumValues[c]);
+		EXPECT_DOUBLE_EQ(0.0, maximumValues[c]);
+	}
+}
+
 TEST(cmzn_graphics_api, point_attributes_label)
 {
 	ZincTestSetup zinc;
@@ -1097,6 +1125,69 @@ TEST(cmzn_graphics_api, point_attributes_label_cpp)
 
 }
 
+namespace {
+
+void check_point_description(const Scene& scene, const Field& labelField)
+{
+	Graphics gr = scene.getFirstGraphics();
+	EXPECT_TRUE(gr.isValid());
+
+	GraphicsPoints points = gr.castPoints();
+	EXPECT_TRUE(points.isValid());
+
+	EXPECT_EQ(Field::DOMAIN_TYPE_POINT, gr.getFieldDomainType());
+
+	// these are general graphics settings
+	EXPECT_DOUBLE_EQ(1.5, gr.getRenderLineWidth());
+	EXPECT_DOUBLE_EQ(4.5, gr.getRenderPointSize());
+	EXPECT_DOUBLE_EQ(Graphics::RENDER_POLYGON_MODE_WIREFRAME, gr.getRenderPolygonMode());
+
+	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
+	EXPECT_TRUE(pointattr.isValid());
+
+	Glyph arrowSolid = scene.getGlyphmodule().findGlyphByName("arrow_solid");
+	EXPECT_EQ(arrowSolid, pointattr.getGlyph());
+	EXPECT_EQ(Glyph::SHAPE_TYPE_ARROW_SOLID, pointattr.getGlyphShapeType());
+
+	double outputBaseSize[3];
+	EXPECT_EQ(RESULT_OK, pointattr.getBaseSize(3, outputBaseSize));
+	EXPECT_DOUBLE_EQ(0.1, outputBaseSize[0]);
+	EXPECT_DOUBLE_EQ(0.2, outputBaseSize[1]);
+	EXPECT_DOUBLE_EQ(0.3, outputBaseSize[2]);
+
+	double outputGlyphOffset[3];
+	EXPECT_EQ(RESULT_OK, pointattr.getGlyphOffset(3, outputGlyphOffset));
+	EXPECT_DOUBLE_EQ(0.4, outputGlyphOffset[0]);
+	EXPECT_DOUBLE_EQ(0.5, outputGlyphOffset[1]);
+	EXPECT_DOUBLE_EQ(0.6, outputGlyphOffset[2]);
+
+	EXPECT_EQ(Glyph::REPEAT_MODE_AXES_2D, pointattr.getGlyphRepeatMode());
+
+	EXPECT_EQ(labelField, pointattr.getLabelField());
+
+	double outputLabelOffset[3];
+	EXPECT_EQ(RESULT_OK, pointattr.getLabelOffset(3, outputLabelOffset));
+	EXPECT_DOUBLE_EQ(1.0, outputLabelOffset[0]);
+	EXPECT_DOUBLE_EQ(2.0, outputLabelOffset[1]);
+	EXPECT_DOUBLE_EQ(0.5, outputLabelOffset[2]);
+
+	const char *expectedLabelText[3] = { "A 1", " B 2", " C 3 " };
+	for (int i = 0; i < 3; ++i)
+	{
+		char *outText = pointattr.getLabelText(i + 1);
+		EXPECT_STREQ(expectedLabelText[i], outText);
+		cmzn_deallocate(outText);
+	}
+
+	double outputScaleFactors[3];
+	EXPECT_EQ(RESULT_OK, pointattr.getScaleFactors(3, outputScaleFactors));
+	EXPECT_DOUBLE_EQ(1.1, outputScaleFactors[0]);
+	EXPECT_DOUBLE_EQ(1.2, outputScaleFactors[1]);
+	EXPECT_DOUBLE_EQ(1.3, outputScaleFactors[2]);
+}
+
+}
+
 TEST(cmzn_graphics, point_description_io)
 {
 	ZincTestSetupCpp zinc;
@@ -1106,40 +1197,22 @@ TEST(cmzn_graphics, point_description_io)
 	labelField.setName("my_label");
 	EXPECT_TRUE(labelField.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::GRAPHICS_POINTS_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+	std::string stringBuffer = fileContents("graphics/graphics_points_description.json");
+    EXPECT_FALSE(stringBuffer.empty());
 
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer, true));
+    EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer.c_str(), true));
+	check_point_description(zinc.scene, labelField);
 
-	free(stringBuffer);
+	char* descriptionString = zinc.scene.writeDescription();
+	EXPECT_NE(nullptr, descriptionString);
 
+	EXPECT_EQ(RESULT_OK, zinc.scene.removeAllGraphics());
 	Graphics gr = zinc.scene.getFirstGraphics();
-	EXPECT_TRUE(gr.isValid());
+	EXPECT_FALSE(gr.isValid());
 
-	EXPECT_EQ(Field::DOMAIN_TYPE_POINT, gr.getFieldDomainType());
-
-	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
-	EXPECT_TRUE(pointattr.isValid());
-
-	Field tempLabelField = pointattr.getLabelField();
-	EXPECT_EQ(tempLabelField.getId(), labelField.getId());
-
-	double outputValues[3];
-	EXPECT_EQ(OK, pointattr.getLabelOffset(3, outputValues));
-	EXPECT_EQ(values[0], outputValues[0]);
-	EXPECT_EQ(values[1], outputValues[1]);
-	EXPECT_EQ(0.0, outputValues[2]);
-
-	for (int labelNumber = 1; labelNumber <= 3; ++labelNumber)
-	{
-		char *outText = pointattr.getLabelText(labelNumber);
-		EXPECT_STREQ("ABC", outText);
-		cmzn_deallocate(outText);
-	}
-
-	char *return_string = zinc.scene.writeDescription();
-	EXPECT_TRUE(return_string != 0);
-	cmzn_deallocate(return_string);
+	EXPECT_EQ(RESULT_OK, zinc.scene.readDescription(descriptionString, true));
+	check_point_description(zinc.scene, labelField);
+	cmzn_deallocate(descriptionString);
 }
 
 TEST(cmzn_graphics, render_polygon_mode)
@@ -1298,12 +1371,10 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 	orientationScaleField.setName("my_orientation_field");
 	EXPECT_TRUE(orientationScaleField.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::GRAPHICS_LINE_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("graphics/graphics_line_description.json");
+    EXPECT_FALSE(stringBuffer.empty());
 
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer, true));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer.c_str(), true));
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 
@@ -1478,12 +1549,10 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	densityField.setName("my_density");
 	EXPECT_TRUE(densityField.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::GRAPHICS_STREAMLINES_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("graphics/graphics_streamlines_description.json");
+    EXPECT_FALSE(stringBuffer.empty());
 
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer, true));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer.c_str(), true));
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());
@@ -1680,8 +1749,7 @@ TEST(ZincGraphics, partialEdit)
 	const int one = 1;
 	EXPECT_EQ(RESULT_OK, tess.setRefinementFactors(1, &one));
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_EX2_PART_SURFACES_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/part_surfaces.ex2").c_str()));
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	const int sizeBefore = mesh2d.getSize();
 	EXPECT_EQ(27, sizeBefore);
@@ -1759,8 +1827,7 @@ TEST(ZincGraphics, boundaryMode_range3d)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes.ex3").c_str()));
 
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
 	EXPECT_EQ(6, mesh3d.getSize());
@@ -1900,8 +1967,7 @@ TEST(ZincGraphics, boundaryMode_range2d)
 {
 	ZincTestSetupCpp zinc;
 
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDIO_EXF_TRIANGLE_MESH_1371_RESOURCE)));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldio/triangle_mesh_1371.exf").c_str()));
 
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_EQ(37, mesh2d.getSize());

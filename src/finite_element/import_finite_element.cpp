@@ -28,6 +28,7 @@
 #include "finite_element/node_field_template.hpp"
 #include "general/debug.h"
 #include "general/math.h"
+#include "general/object.h"
 #include "general/io_stream.h"
 #include "general/mystring.h"
 #include "general/message.h"
@@ -1944,6 +1945,7 @@ bool EXReader::readNodeValueLabelsVersions(FE_node_field_template& nft)
 			&& (0 == strlen(valueLabelName))
 			&& this->checkConsumeNextChar(')'))
 		{
+            DEALLOCATE(valueLabelName);
 			break; // empty list ()
 		}
 		cmzn_node_value_label valueLabel = CMZN_NODE_VALUE_LABEL_INVALID;
@@ -2462,251 +2464,251 @@ cmzn_node *EXReader::readNode()
 	const size_t fieldCount = this->nodeTemplate->headerFields.size();
 	for (size_t f = 0; (f < fieldCount) && result; ++f)
 	{
-		FE_field *field = this->nodeTemplate->headerFields[f];
-		// only GENERAL_FE_FIELD can store values at nodes
-		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
-			continue;
-		const int componentCount = get_FE_field_number_of_components(field);
-		const FE_node_field *nodeField = node->getNodeField(field);
-		if (!nodeField)
-		{
-			display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
-			result = false;
-			break;
-		}
-		const int number_of_values = nodeField->getTotalValuesCount();
-		if (number_of_values <= 0)
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
-			result = false;
-			break;
-		}
-		FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
-		FE_time_sequence *fileFeTimeSequence = feTimeSequence;
-		FE_value singleTime = (this->timeIndex) ? this->timeIndex->time : 0.0;
-		TimeSequence *timeSequence = nullptr;
-		std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeTemplate->nodeFieldTimeSequences.find(field);
-		if (iter != this->nodeTemplate->nodeFieldTimeSequences.end())
-		{
-			timeSequence = iter->second;
-			fileFeTimeSequence = timeSequence->getFeTimeSequence();
-			if (this->timeIndex)
-			{
-				// read parameters at a single time from a time sequence
-				singleTime = timeSequence->getNearestTime();
-			}
-		}
-		const int fileTimeCount = (fileFeTimeSequence) ? FE_time_sequence_get_number_of_times(fileFeTimeSequence) : 1;
-		const Value_type value_type = get_FE_field_value_type(field);
-		switch (value_type)
-		{
-		case ELEMENT_XI_VALUE:
-		{
-			cmzn_element *element;
-			FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-			if (number_of_values == componentCount)
-			{
-				for (int k = 0; k < number_of_values; ++k)
-				{
-					if (!(this->readElementXiValue(field, element, xi)
-						&& set_FE_nodal_element_xi_value(node, field, /*component_number*/k, element, xi)))
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Error reading element_xi value for field %s at node %d.  %s",
-							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-						result = false;
-						break;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for element_xi valued field %s at node %d.  %s",
-					get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-				result = false;
-			}
-		} break;
-		case FE_VALUE_VALUE:
-		{
-			const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
-			std::vector<FE_value> valuesVector(maximumValuesCount);
-			FE_value *values = valuesVector.data();
-			for (int t = 0; t < fileTimeCount; ++t)
-			{
-				FE_value fileTime = singleTime;
-				if (fileFeTimeSequence)
-				{
-					FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
-				}
-				const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
-				for (int c = 0; c < componentCount; ++c)
-				{
-					const FE_node_field_template &nft = *(nodeField->getComponent(c));
-					const int valuesCount = nft.getTotalValuesCount();
-					for (int k = 0; k < valuesCount; ++k)
-					{
-						if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-						if (!std::isfinite(values[k]))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-					if (!result)
-					{
-						break;
-					}
-					if (readThisTime)
-					{
-						if (this->exVersion < 2)
-						{
-							// all derivatives / value labels had same number of versions in old format
-							const int versionsCount = nft.getVersionsCountAtIndex(0);
-							if (versionsCount > 1)
-							{
-								// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
-								std::vector<FE_value> tmpValuesVector(valuesVector);
-								FE_value *tmpValues = tmpValuesVector.data();
-								const int valueLabelsCount = nft.getValueLabelsCount();
-								for (int d = 0; d < valueLabelsCount; ++d)
-								{
-									for (int v = 0; v < versionsCount; ++v)
-									{
-										values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
-									}
-								}
-							}
-						}
-						if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
-							fileTime, valuesCount, values))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
-								valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-						}
-					}
-				}
-				if (!result)
-				{
-					break;
-				}
-			}
-		} break;
-		case INT_VALUE:
-		{
-			const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
-			std::vector<int> valuesVector(maximumValuesCount);
-			int *values = valuesVector.data();
-			for (int t = 0; t < fileTimeCount; ++t)
-			{
-				FE_value fileTime = singleTime;
-				if (fileFeTimeSequence)
-				{
-					FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
-				}
-				const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
-				for (int c = 0; c < componentCount; ++c)
-				{
-					const FE_node_field_template &nft = *(nodeField->getComponent(c));
-					const int valuesCount = nft.getTotalValuesCount();
-					for (int k = 0; k < valuesCount; ++k)
-					{
-						if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-					if (!result)
-					{
-						break;
-					}
-					if (readThisTime)
-					{
-						if (this->exVersion < 2)
-						{
-							// all derivatives / value labels had same number of versions in old format
-							const int versionsCount = nft.getVersionsCountAtIndex(0);
-							if (versionsCount > 1)
-							{
-								// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
-								std::vector<int> tmpValuesVector(valuesVector);
-								int *tmpValues = tmpValuesVector.data();
-								const int valueLabelsCount = nft.getValueLabelsCount();
-								for (int d = 0; d < valueLabelsCount; ++d)
-								{
-									for (int v = 0; v < versionsCount; ++v)
-									{
-										values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
-									}
-								}
-							}
-						}
-						if (!cmzn_node_set_field_component_int_values(node, field, c,
-							fileTime, valuesCount, values))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
-								valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-						}
-					}
-				}
-				if (!result)
-				{
-					break;
-				}
-			}
-		} break;
-		case STRING_VALUE:
-		{
-			if (number_of_values == componentCount)
-			{
-				for (int k = 0; k < number_of_values; ++k)
-				{
-					char *theString = this->readString();
-					if (theString)
-					{
-						if (!set_FE_nodal_string_value(node, field, /*component_number*/k, theString))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error setting string value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-						DEALLOCATE(theString);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "Error reading string value for field %s at node %d.  %s",
-							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-						result = false;
-						break;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for string valued field %s at node %d.  %s",
-					get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-				result = false;
-			}
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Unsupported value_type %s for node %d.  %s",
-				Value_type_string(value_type), nodeIdentifier, this->getFileLocation());
-			result = false;
-		} break;
-		}
+        FE_field *field = this->nodeTemplate->headerFields[f];
+        // only GENERAL_FE_FIELD can store values at nodes
+        if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
+            continue;
+        const int componentCount = get_FE_field_number_of_components(field);
+        const FE_node_field *nodeField = node->getNodeField(field);
+        if (!nodeField)
+        {
+            display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
+            result = false;
+            break;
+        }
+        const int number_of_values = nodeField->getTotalValuesCount();
+        if (number_of_values <= 0)
+        {
+            display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
+            result = false;
+            break;
+        }
+        FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
+        FE_time_sequence *fileFeTimeSequence = feTimeSequence;
+        FE_value singleTime = (this->timeIndex) ? this->timeIndex->time : 0.0;
+        TimeSequence *timeSequence = nullptr;
+        std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeTemplate->nodeFieldTimeSequences.find(field);
+        if (iter != this->nodeTemplate->nodeFieldTimeSequences.end())
+        {
+            timeSequence = iter->second;
+            fileFeTimeSequence = timeSequence->getFeTimeSequence();
+            if (this->timeIndex)
+            {
+                // read parameters at a single time from a time sequence
+                singleTime = timeSequence->getNearestTime();
+            }
+        }
+        const int fileTimeCount = (fileFeTimeSequence) ? FE_time_sequence_get_number_of_times(fileFeTimeSequence) : 1;
+        const Value_type value_type = get_FE_field_value_type(field);
+        switch (value_type)
+        {
+        case ELEMENT_XI_VALUE:
+        {
+            cmzn_element *element;
+            FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+            if (number_of_values == componentCount)
+            {
+                for (int k = 0; k < number_of_values; ++k)
+                {
+                    if (!(this->readElementXiValue(field, element, xi)
+                        && set_FE_nodal_element_xi_value(node, field, /*component_number*/k, element, xi)))
+                    {
+                        display_message(ERROR_MESSAGE, "EX Reader.  Error reading element_xi value for field %s at node %d.  %s",
+                            get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                        result = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for element_xi valued field %s at node %d.  %s",
+                    get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                result = false;
+            }
+        } break;
+        case FE_VALUE_VALUE:
+        {
+            const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
+            std::vector<FE_value> valuesVector(maximumValuesCount);
+            FE_value *values = valuesVector.data();
+            for (int t = 0; t < fileTimeCount; ++t)
+            {
+                FE_value fileTime = singleTime;
+                if (fileFeTimeSequence)
+                {
+                    FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
+                }
+                const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
+                for (int c = 0; c < componentCount; ++c)
+                {
+                    const FE_node_field_template &nft = *(nodeField->getComponent(c));
+                    const int valuesCount = nft.getTotalValuesCount();
+                    for (int k = 0; k < valuesCount; ++k)
+                    {
+                        if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &values[k]))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                            break;
+                        }
+                        if (!std::isfinite(values[k]))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
+                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                            break;
+                        }
+                    }
+                    if (!result)
+                    {
+                        break;
+                    }
+                    if (readThisTime)
+                    {
+                        if (this->exVersion < 2)
+                        {
+                            // all derivatives / value labels had same number of versions in old format
+                            const int versionsCount = nft.getVersionsCountAtIndex(0);
+                            if (versionsCount > 1)
+                            {
+                                // before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+                                std::vector<FE_value> tmpValuesVector(valuesVector);
+                                FE_value *tmpValues = tmpValuesVector.data();
+                                const int valueLabelsCount = nft.getValueLabelsCount();
+                                for (int d = 0; d < valueLabelsCount; ++d)
+                                {
+                                    for (int v = 0; v < versionsCount; ++v)
+                                    {
+                                        values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
+                                    }
+                                }
+                            }
+                        }
+                        if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
+                            fileTime, valuesCount, values))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
+                                valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    break;
+                }
+            }
+        } break;
+        case INT_VALUE:
+        {
+            const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
+            std::vector<int> valuesVector(maximumValuesCount);
+            int *values = valuesVector.data();
+            for (int t = 0; t < fileTimeCount; ++t)
+            {
+                FE_value fileTime = singleTime;
+                if (fileFeTimeSequence)
+                {
+                    FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
+                }
+                const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
+                for (int c = 0; c < componentCount; ++c)
+                {
+                    const FE_node_field_template &nft = *(nodeField->getComponent(c));
+                    const int valuesCount = nft.getTotalValuesCount();
+                    for (int k = 0; k < valuesCount; ++k)
+                    {
+                        if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
+                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                            break;
+                        }
+                    }
+                    if (!result)
+                    {
+                        break;
+                    }
+                    if (readThisTime)
+                    {
+                        if (this->exVersion < 2)
+                        {
+                            // all derivatives / value labels had same number of versions in old format
+                            const int versionsCount = nft.getVersionsCountAtIndex(0);
+                            if (versionsCount > 1)
+                            {
+                                // before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+                                std::vector<int> tmpValuesVector(valuesVector);
+                                int *tmpValues = tmpValuesVector.data();
+                                const int valueLabelsCount = nft.getValueLabelsCount();
+                                for (int d = 0; d < valueLabelsCount; ++d)
+                                {
+                                    for (int v = 0; v < versionsCount; ++v)
+                                    {
+                                        values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
+                                    }
+                                }
+                            }
+                        }
+                        if (!cmzn_node_set_field_component_int_values(node, field, c,
+                            fileTime, valuesCount, values))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
+                                valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    break;
+                }
+            }
+        } break;
+        case STRING_VALUE:
+        {
+            if (number_of_values == componentCount)
+            {
+                for (int k = 0; k < number_of_values; ++k)
+                {
+                    char *theString = this->readString();
+                    if (theString)
+                    {
+                        if (!set_FE_nodal_string_value(node, field, /*component_number*/k, theString))
+                        {
+                            display_message(ERROR_MESSAGE, "EX Reader.  Error setting string value for field %s at node %d.  %s",
+                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            result = false;
+                            break;
+                        }
+                        DEALLOCATE(theString);
+                    }
+                    else
+                    {
+                        display_message(ERROR_MESSAGE, "Error reading string value for field %s at node %d.  %s",
+                            get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                        result = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for string valued field %s at node %d.  %s",
+                    get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                result = false;
+            }
+        } break;
+        default:
+        {
+            display_message(ERROR_MESSAGE, "EX Reader.  Unsupported value_type %s for node %d.  %s",
+                Value_type_string(value_type), nodeIdentifier, this->getFileLocation());
+            result = false;
+        } break;
+        }
 	}
 	if (result && existingNode && (fieldCount > 0)) // nothing to merge if no fields
 	{
@@ -3856,7 +3858,7 @@ bool EXReader::readElementHeaderField()
 							result = false;
 							break;
 						}
-						char *rest_of_line = 0;
+                        char *rest_of_line = nullptr;
 						// read scale factor index expressions e.g. 0 (for unscaled) 60 1*2 3*4+1*2*3 etc.
 						if (!IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line))
 						{
@@ -3940,7 +3942,8 @@ bool EXReader::readElementHeaderField()
 							if (!result)
 								break;
 						}
-						if (!result)
+                        DEALLOCATE(rest_of_line);
+                        if (!result)
 							break;
 					}
 					fn += valueCount;

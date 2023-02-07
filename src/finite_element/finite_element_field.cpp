@@ -272,7 +272,7 @@ int FE_field::setName(const char *nameIn)
  */
 cmzn_element *FE_field::getOrInheritOnElement(cmzn_element *element,
 	int inheritFaceNumber, cmzn_element *topLevelElement,
-	FE_value *coordinateTransformation)
+	FE_value *coordinateTransformation) const
 {
 	const FE_mesh *mesh = element->getMesh();
 	if (!mesh)

@@ -60,7 +60,7 @@ TEST(cmzn_fieldmodule_create_image, read_png)
 	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation_image(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
-	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
+    cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, resourcePath("image-1.png").c_str());
 	cmzn_streaminformation_image_id sii = cmzn_streaminformation_cast_image(si);
 	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, sii));
 	cmzn_streaminformation_image_destroy(&sii);
@@ -81,7 +81,8 @@ TEST(ZincFieldImage, read_png)
 	StreaminformationImage si = im.createStreaminformationImage();
 	EXPECT_TRUE(si.isValid());
 
-	Streamresource sr = si.createStreamresourceFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
+    std::string resource = resourcePath("image-1.png");
+    Streamresource sr = si.createStreamresourceFile(resource.c_str());
 	EXPECT_TRUE(sr.isValid());
 
 	EXPECT_EQ(CMZN_OK, im.read(si));
@@ -168,7 +169,7 @@ TEST(ZincFieldImage, issue_3707_keep_attributes_after_read_image)
 	EXPECT_EQ(OK, im.setTextureCoordinateDepth(2.2));
 	ASSERT_DOUBLE_EQ(2.2, depth = im.getTextureCoordinateDepth());
 
-	EXPECT_EQ(OK, im.readFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE)));
+    EXPECT_EQ(OK, im.readFile(resourcePath("image-1.png").c_str()));
 
 	// Check attributes kept their non-default values
 
@@ -196,7 +197,7 @@ TEST(cmzn_fieldmodule_create_image, analyze_bigendian)
 	cmzn_streaminformation_image_id sii = cmzn_streaminformation_cast_image(si);
 	EXPECT_EQ(CMZN_OK, cmzn_streaminformation_image_set_file_format(sii, CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE));
 
-	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_ANALYZE_BIGENDIAN_RESOURCE));
+    cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, resourcePath("bigendian.hdr").c_str());
 
 	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, sii));
 
@@ -223,7 +224,7 @@ TEST(cmzn_fieldmodule_create_image, analyze_lung)
 	cmzn_streaminformation_image_id sii = cmzn_streaminformation_cast_image(si);
 	EXPECT_EQ(CMZN_OK, cmzn_streaminformation_image_set_file_format(sii, CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE));
 
-	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_ANALYZE_LITTLEENDIAN_RESOURCE));
+    cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, resourcePath("littleendian.hdr").c_str());
 
 	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, sii));
 
@@ -232,7 +233,6 @@ TEST(cmzn_fieldmodule_create_image, analyze_lung)
 	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 	cmzn_field_destroy(&f1);
-
 }
 
 #include <stdint.h>
@@ -354,8 +354,9 @@ bool systemBigEndian()
 TEST(ByteSwap, bigendian)
 {
 	struct dsr hdr;
-	FILE *file = fopen(TestResources::getLocation(TestResources::IMAGE_ANALYZE_BIGENDIAN_RESOURCE), "rb");
+    FILE *file = fopen(resourcePath("bigendian.hdr").c_str(), "rb");
 	fread(&hdr, sizeof(hdr), 1, file);
+    fclose(file);
 
 	int sizeof_hdr = hdr.hk.sizeof_hdr;
 	if (sizeof_hdr != 348)
@@ -366,8 +367,9 @@ TEST(ByteSwap, bigendian)
 TEST(ByteSwap, littleendian)
 {
 	struct dsr hdr;
-	FILE *file = fopen(TestResources::getLocation(TestResources::IMAGE_ANALYZE_LITTLEENDIAN_RESOURCE), "rb");
+    FILE *file = fopen(resourcePath("littleendian.hdr").c_str(), "rb");
 	fread(&hdr, sizeof(hdr), 1, file);
+    fclose(file);
 
 	EXPECT_EQ(348, hdr.hk.sizeof_hdr);
 }
@@ -410,10 +412,13 @@ TEST(ByteSwap, size4)
 
 union floatbitconvert
 {
-	float f;
-	uint32_t u;
+    float f;
+    uint32_t u;
 };
 
+#ifdef STATIC_BUILD
+float halffloat2float(uint16_t input);
+#else
 float halffloat2float(uint16_t input)
 {
 	floatbitconvert myresult, nan;
@@ -480,6 +485,7 @@ float halffloat2float(uint16_t input)
 
 	return myresult.f;
 }
+#endif
 
 TEST(FloatConversion, halfFloat)
 {
@@ -523,7 +529,7 @@ TEST(ZincFieldImageFromSource, evaluateImageFromNonImageSource)
 	int result;
 
 	// load a single 2-D element mesh merely to define xi
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_PLATE_600X300_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/plate_600x300.exfile").c_str()));
 	Field plate_coordinates = zinc.fm.findFieldByName("plate_coordinates");
 	EXPECT_TRUE(plate_coordinates.isValid());
 	const double offsetConst[3] = { 300.0, 150.0, -350.0 };

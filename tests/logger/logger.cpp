@@ -20,14 +20,10 @@ TEST(cmzn_logger_messages, invalid_args)
 
 	EXPECT_EQ(0, cmzn_logger_get_number_of_messages(logger));
 
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(
-		TestResources::REGION_INCORRECT_RESOURCE));
-
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(
-		TestResources::REGION_INCORRECT_RESOURCE));
+    cmzn_region_read_file(zinc.root_region, resourcePath("logger/region_incorrect.exregion").c_str());
 
 	int return_code = cmzn_logger_get_number_of_messages(logger);
-	EXPECT_EQ(4, return_code);
+    EXPECT_EQ(2, return_code);
 
 	for (int i = 0; i < return_code; i++)
 	{
@@ -90,8 +86,7 @@ TEST(cmzn_logger_messages_callback, invalid_args)
 
 	EXPECT_EQ(CMZN_OK, cmzn_loggernotifier_set_callback(loggerNotifier, custom_message_callback, 0));
 
-	cmzn_region_read_file(zinc.root_region, TestResources::getLocation(
-		TestResources::REGION_INCORRECT_RESOURCE));
+    cmzn_region_read_file(zinc.root_region, resourcePath("logger/region_incorrect.exregion").c_str());
 
 	/* callback flushes messages. */
 	int return_code = cmzn_logger_get_number_of_messages(logger);
@@ -104,7 +99,7 @@ TEST(cmzn_logger_messages_callback, invalid_args)
 	cmzn_logger_destroy(&logger);
 }
 
-class myLoggercallback : public Loggercallback
+class TestLoggercallback : public Loggercallback
 {
 private:
 
@@ -123,20 +118,20 @@ private:
 	}
 
 public:
-	myLoggercallback() : Loggercallback()
+    TestLoggercallback() : Loggercallback()
 	{
 	}
 };
 
 TEST(ZincLogger, callback)
 {
-	ZincTestSetupCpp zinc;
+    ZincTestSetupCpp zinc;
 
-	Logger logger = zinc.context.getLogger();
-	Loggernotifier loggernotifier = logger.createLoggernotifier();
-	EXPECT_TRUE(loggernotifier.isValid());
-	myLoggercallback thisNotifier;
-	loggernotifier.setCallback(thisNotifier);
-	zinc.root_region.readFile(TestResources::getLocation(TestResources::REGION_INCORRECT_RESOURCE));
-	EXPECT_EQ(CMZN_OK, loggernotifier.clearCallback());
+    Logger logger = zinc.context.getLogger();
+    Loggernotifier loggernotifier = logger.createLoggernotifier();
+    EXPECT_TRUE(loggernotifier.isValid());
+    TestLoggercallback thisNotifier;
+    loggernotifier.setCallback(thisNotifier);
+    zinc.root_region.readFile(resourcePath("logger/region_incorrect.exregion").c_str());
+    EXPECT_EQ(CMZN_OK, loggernotifier.clearCallback());
 }

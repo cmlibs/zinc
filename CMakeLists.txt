@@ -8,6 +8,14 @@
 cmake_minimum_required(VERSION 3.10.0)
 cmake_policy(VERSION 3.10.0)
 
+if(POLICY CMP0072)
+    cmake_policy(SET CMP0072 NEW)
+endif()
+
+if(POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+endif()
+
 if(POLICY CMP0078)
     cmake_policy(SET CMP0078 NEW)
 endif()
@@ -17,7 +25,7 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.9.0 LANGUAGES C CXX)
+project(Zinc VERSION 3.10.0 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
 set(Zinc_DEVELOPER_VERSION "")
@@ -25,7 +33,7 @@ set(Zinc_DEVELOPER_VERSION "")
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
-find_package(OPENCMISSDEPENDENCIES REQUIRED)
+find_package(CMLIBSDEPENDENCIES REQUIRED)
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
     list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -33,20 +41,21 @@ endif ()
 
 include(MacroDefinitions)
 include(FunctionDefinitions)
-include(OCMiscFunctions)
+include(CMLMiscFunctions)
 
-set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
-if(TARGET opencmissdependencies)
-    set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
-    #set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
-endif()
-
-include(OCMultiConfigEnvironment)
+include(EnvironmentChecks)
 
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
+option(ZINC_USE_OSMESA "Use OSMesa for software rendering." OFF)
+if(VALGRIND_TESTING_AVAILABLE)
+  option(ZINC_MEMCHECK_WITH_VALGRIND "Enable memory checking with valgrind." OFF)
+endif()
+if(LLVM_COVERAGE_TESTING_AVAILABLE)
+  set(ZINC_LLVM_COVERAGE OFF CACHE BOOL "Enable LLVM coverage testing.")
+endif()
 
 # Optional libraries
 option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)
@@ -57,7 +66,39 @@ option(ZINC_USE_NETGEN "Use Netgen" YES)
 # option(ZINC_USE_ITK "Use ITK" YES) # Not really an option until image fields are worked on
 set(ZINC_USE_ITK YES)
 
-if(NOT OPENCMISS_HAVE_MULTICONFIG_ENV)
+set(DEPENDENT_LIBS bz2 fieldml-core fieldml-io ftgl optpp png ITKRegionGrowing ITKSmoothing ITKStatistics ITKIOGDCM)
+if (TARGET zlibstatic)
+    list(APPEND DEPENDENT_LIBS zlibstatic)
+elseif (TARGET zlib)
+    list(APPEND DEPENDENT_LIBS zlib)
+else()
+    list(APPEND DEPENDENT_LIBS ZLIB::ZLIB)
+endif()
+if (TARGET xml2)
+    list(APPEND DEPENDENT_LIBS xml2)
+else()
+    list(APPEND DEPENDENT_LIBS LibXml2::LibXml2)
+endif()
+if (ZINC_USE_IMAGEMAGICK)
+    list(APPEND DEPENDENT_LIBS MagickCore)
+endif()
+if (ZINC_USE_NETGEN)
+    list(APPEND DEPENDENT_LIBS nglib)
+endif()
+if (ZINC_USE_OSMESA)
+    list(APPEND DEPENDENT_LIBS GLEW::glew_s_osmesa)
+else()
+    list(APPEND DEPENDENT_LIBS GLEW::GLEW)
+endif()
+
+if(TARGET cmlibsdependencies)
+    set(CMLIBSDEPENDENCIES_TARGET cmlibsdependencies)
+    #set(DEPENDENT_LIBS ${CMLIBSDEPENDENCIES_TARGET})
+endif()
+
+if(IS_MULTI_CONFIG_ENV)
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+else()
     set(_PARAM_ANNOTATION "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
     set(ZINC_BUILD_TYPE "Release" CACHE STRING ${_PARAM_ANNOTATION})
     if(DEFINED BUILD_TYPE)
@@ -72,7 +113,7 @@ if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
 endif()
 
 if (NOT DEFINED ZINC_PACKAGE_CONFIG_DIR)
-    set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake")
+    set(ZINC_PACKAGE_CONFIG_DIR "share/cmake/ZINC")
 endif ()
 set(ZINC_PACKAGE_CONFIG_DIR "${ZINC_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
 
@@ -96,9 +137,9 @@ endif()
 set(USE_MSAA TRUE)
 
 set(USE_GLEW TRUE)
-if(WIN32)
-    set(GLEW_STATIC TRUE)
-endif()
+#if(WIN32)
+#    set(GLEW_STATIC TRUE)
+#endif()
 
 # Set graphics
 if(NOT DEFINED GRAPHICS_API )
@@ -106,7 +147,7 @@ if(NOT DEFINED GRAPHICS_API )
 endif()
 
 # Set build type dependent #Defines
-if(OPENCMISS_HAVE_MULTICONFIG_ENV)
+if(IS_MULTI_CONFIG_ENV)
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DOPTIMISED" )
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DOPTIMISED" )
 else()
@@ -145,9 +186,12 @@ SET_PLATFORM_DEFINES( )
 SET_OPERATING_SYSTEM_DEFINES( ) # <-- mostly set automatically by cmake just adding WIN32_SYSTEM to be used instead of WIN32
 SET_GRAPHICS_DEFINES( )
 
-if(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+if(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS AND NOT ZINC_USE_OSMESA)
     find_package(OpenGL REQUIRED )
-    set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENGL_LIBRARIES} )
+    list(APPEND DEPENDENT_LIBS ${OPENGL_LIBRARIES})
+elseif(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS AND ZINC_USE_OSMESA)
+    find_package(OSMesa REQUIRED)
+    list(APPEND DEPENDENT_LIBS ${OSMesa_LIBRARIES} ${OSMesa_GLU_LIBRARIES})
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)

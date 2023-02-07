@@ -17,7 +17,6 @@
 #include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 
-#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -347,12 +346,9 @@ TEST(cmzn_spectrum_api, description_io_cpp)
 	Spectrummodule sm = zinc.context.getSpectrummodule();
 	EXPECT_TRUE(sm.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::SPECTRUM_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+    std::string stringBuffer = fileContents("spectrum/spectrum_description.json");
 
-	EXPECT_EQ(CMZN_OK, sm.readDescription(stringBuffer));
-
-	free(stringBuffer);
+    EXPECT_EQ(CMZN_OK, sm.readDescription(stringBuffer.c_str()));
 
 	Spectrum spectrum = sm.findSpectrumByName("default");
 	EXPECT_TRUE(spectrum.isValid());
@@ -452,6 +448,59 @@ TEST(cmzn_spectrum_api, iteration_cpp)
 	EXPECT_FALSE((s = iter.next()).isValid());
 }
 
+namespace {
+
+int getNumberOfSpectrums(Spectrummodule& sm)
+{
+	int count = 0;
+	Spectrumiterator iter = sm.createSpectrumiterator();
+	while (iter.next().isValid())
+	{
+		++count;
+	}
+	return count;
+}
+
+}
+
+TEST(ZincSpectrummodule, defineStandardSpectrums)
+{
+	ZincTestSetupCpp zinc;
+
+	Spectrummodule sm = zinc.context.getSpectrummodule();
+	EXPECT_TRUE(sm.isValid());
+
+	EXPECT_EQ(1, getNumberOfSpectrums(sm));
+
+	Spectrum spectrum = sm.getDefaultSpectrum();
+	EXPECT_TRUE(spectrum.isValid());
+	Spectrum tmpSpectrum = sm.findSpectrumByName("default");
+	EXPECT_EQ(spectrum, tmpSpectrum);
+
+	EXPECT_EQ(OK, sm.defineStandardSpectrums());
+	EXPECT_EQ(3, getNumberOfSpectrums(sm));
+
+	Spectrum monoSpectrum = sm.findSpectrumByName("mono");
+	EXPECT_TRUE(monoSpectrum.isValid());
+	EXPECT_EQ(1, monoSpectrum.getNumberOfSpectrumcomponents());
+	Spectrumcomponent sc = monoSpectrum.getFirstSpectrumcomponent();
+	EXPECT_TRUE(sc.isValid());
+	EXPECT_EQ(sc.COLOUR_MAPPING_TYPE_MONOCHROME, sc.getColourMappingType());
+
+	Spectrum rgbSpectrum = sm.findSpectrumByName("rgb");
+	EXPECT_TRUE(rgbSpectrum.isValid());
+	EXPECT_EQ(3, rgbSpectrum.getNumberOfSpectrumcomponents());
+	sc = rgbSpectrum.getFirstSpectrumcomponent();
+	EXPECT_TRUE(sc.isValid());
+	EXPECT_EQ(sc.COLOUR_MAPPING_TYPE_RED, sc.getColourMappingType());
+	sc = rgbSpectrum.getNextSpectrumcomponent(sc);
+	EXPECT_TRUE(sc.isValid());
+	EXPECT_EQ(sc.COLOUR_MAPPING_TYPE_GREEN, sc.getColourMappingType());
+	sc = rgbSpectrum.getNextSpectrumcomponent(sc);
+	EXPECT_TRUE(sc.isValid());
+	EXPECT_EQ(sc.COLOUR_MAPPING_TYPE_BLUE, sc.getColourMappingType());
+}
+
 class SpectrumcallbackRecordChange : public Spectrummodulecallback
 {
 	int changeFlags;
@@ -520,8 +569,7 @@ TEST(ZincSpectrum, autorange)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+    EXPECT_EQ(OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());

@@ -149,14 +149,15 @@ public:
 	 * @return  Non-accessed field. */
 	cmzn_field *getCoordinateFieldWrapper(cmzn_field *coordinateField);
 
-	/** Register that the vector field is in use with coordinate field in graphics.
-	* Ensures a wrapper RC vector field exists for it. Note it is required that coordinateField has a wrapper! */
+	/** Register that the vector field, with optional coordinate field, is in use in graphics.
+	* Ensures a wrapper RC vector field exists for it. If supplied, coordinate field must have a wrapper. */
 	void registerVectorField(cmzn_field *vectorField, cmzn_field *coordinateField);
 
-	/** Remove wrapping for this instance of vector and coordinate field. */
+	/** Remove wrapping for this instance of vector and optional coordinate field. */
 	void deregisterVectorField(cmzn_field *vectorField, cmzn_field *coordinateField);
 
-	/** Get the wrapper for vector field with coordinate field; will be itself if both are RC.
+	/** Get the wrapper for vector field with optional coordinate field.
+	 * Will be itself if RC, or no coordinate field.
 	 * @return  Non-accessed field. */
 	cmzn_field *getVectorFieldWrapper(cmzn_field *vectorField, cmzn_field *coordinateField);
 

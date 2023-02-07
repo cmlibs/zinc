@@ -346,7 +346,7 @@ public:
 
 	inline FieldEigenvalues createFieldEigenvalues(const Field& sourceField);
 
-	inline FieldEigenvectors createFieldEigenvectors(const FieldEigenvalues& eigenValuesField);
+	inline FieldEigenvectors createFieldEigenvectors(const Field& eigenvaluesField);
 
 	inline FieldMatrixInvert createFieldMatrixInvert(const Field& sourceField);
 
@@ -477,11 +477,11 @@ public:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit Fieldmoduleevent(cmzn_fieldmoduleevent_id in_fieldmoduleevent_id) :
 		id(in_fieldmoduleevent_id)
-	{  }
+    { }
 
 	Fieldmoduleevent(const Fieldmoduleevent& fieldmoduleEvent) :
 		id(cmzn_fieldmoduleevent_access(fieldmoduleEvent.id))
-	{  }
+    { }
 
 	Fieldmoduleevent& operator=(const Fieldmoduleevent& fieldmoduleEvent)
 	{
