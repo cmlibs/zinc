@@ -17,6 +17,7 @@
 #include <opencmiss/zinc/fieldarithmeticoperators.h>
 #include <opencmiss/zinc/fieldcomposite.h>
 #include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldconditional.h>
 #include <opencmiss/zinc/fieldcoordinatetransformation.h>
 #include <opencmiss/zinc/fieldderivatives.h>
 #include <opencmiss/zinc/fieldfiniteelement.h>
@@ -80,20 +81,32 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 
 	cmzn_field_id firstComponentField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "firstComponent");
-	EXPECT_NE(static_cast<cmzn_field *>(0), firstComponentField);
-	EXPECT_TRUE(cmzn_field_has_class_name(firstComponentField, "FieldComponent"));
-	EXPECT_TRUE(cmzn_field_is_managed(firstComponentField));
-	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(firstComponentField));
-	EXPECT_EQ(1, cmzn_field_get_number_of_components(firstComponentField));
-	temp = cmzn_field_get_source_field(firstComponentField, 1);
-	EXPECT_EQ(temp, coordinatesField);
-	cmzn_field_destroy(&temp);
+	cmzn_field_id secondComponentField = cmzn_fieldmodule_find_field_by_name(
+		fieldmodule, "secondComponent");
+	cmzn_field_id thirdComponentField = cmzn_fieldmodule_find_field_by_name(
+		fieldmodule, "thirdComponent");
+	cmzn_field_id componentFields[3] = { firstComponentField, secondComponentField, thirdComponentField };
+	for (int c = 0; c < 3; ++c)
+	{
+		EXPECT_NE(nullptr, componentFields[c]);
+		EXPECT_TRUE(cmzn_field_has_class_name(componentFields[c], "FieldComponent"));
+		EXPECT_TRUE(cmzn_field_is_managed(componentFields[c]));
+		EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(componentFields[c]));
+		EXPECT_EQ(1, cmzn_field_get_number_of_components(componentFields[c]));
+		temp = cmzn_field_get_source_field(componentFields[c], 1);
+		EXPECT_EQ(temp, coordinatesField);
+		cmzn_field_destroy(&temp);
+		cmzn_field_component_id component = cmzn_field_cast_component(componentFields[c]);
+		EXPECT_NE(nullptr, component);
+		EXPECT_EQ(c + 1, cmzn_field_component_get_component_index(component));
+		cmzn_field_component_destroy(&component);
+	}
 
 	struct
 	{
 		const char *name;
 		const int componentCount;
-	} operators[28] =
+	} operators[30] =
 	{
 		// arithmetic operators
 		{ "Abs", 1 },
@@ -105,6 +118,10 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		{ "Power", 2 },
 		{ "Sqrt", 1 },
 		{ "Subtract", 2 },
+		// composite
+		{ "Identity", 1 },
+		// conditional operators
+		{ "If", 3 },
 		// logical operators
 		{ "And", 2 },
 		{ "EqualTo", 2 },
@@ -128,7 +145,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		{ "Normalise", 1 },
 		{ "SumComponents", 1 }
 	};
-    for (int f = 0; f < 28; ++f)
+    for (int f = 0; f < 30; ++f)
     {
         const char *name = operators[f].name;
         cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, name);
@@ -142,7 +159,16 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
         temp = cmzn_field_get_source_field(field, 1);
         EXPECT_EQ(firstComponentField, temp);
         cmzn_field_destroy(&temp);
-        if (operators[f].componentCount > 1)
+		if (operators[f].componentCount == 3)  // If
+		{
+			temp = cmzn_field_get_source_field(field, 2);
+			EXPECT_EQ(temp, secondComponentField);
+			cmzn_field_destroy(&temp);
+			temp = cmzn_field_get_source_field(field, 3);
+			EXPECT_EQ(temp, thirdComponentField);
+			cmzn_field_destroy(&temp);
+		}
+        else if (operators[f].componentCount > 1)
         {
             temp = cmzn_field_get_source_field(field, 2);
             EXPECT_EQ(temp, temperatureField);
@@ -409,6 +435,8 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_destroy(&stringConstantField);
 	cmzn_field_destroy(&constantField);
 	cmzn_field_destroy(&concatenateField);
+	cmzn_field_destroy(&thirdComponentField);
+	cmzn_field_destroy(&secondComponentField);
 	cmzn_field_destroy(&firstComponentField);
 	cmzn_field_destroy(&componentField);
 	cmzn_field_destroy(&temperatureField);
@@ -502,11 +530,23 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_managed(firstComponentField, false);
 	cmzn_field_set_name(firstComponentField, "firstComponent");
 
+	cmzn_field_id secondComponentField = cmzn_fieldmodule_create_field_component(
+		fieldmodule, coordinatesField, 2);
+	EXPECT_NE(static_cast<cmzn_field*>(0), secondComponentField);
+	cmzn_field_set_managed(secondComponentField, false);
+	cmzn_field_set_name(secondComponentField, "secondComponent");
+
+	cmzn_field_id thirdComponentField = cmzn_fieldmodule_create_field_component(
+		fieldmodule, coordinatesField, 3);
+	EXPECT_NE(static_cast<cmzn_field*>(0), thirdComponentField);
+	cmzn_field_set_managed(thirdComponentField, false);
+	cmzn_field_set_name(thirdComponentField, "thirdComponent");
+
 	struct
 	{
 		const char *name;
 		cmzn_field_id field;
-	} operators[28] =
+	} operators[30] =
 	{
 		{ "Abs", cmzn_fieldmodule_create_field_abs(fieldmodule, firstComponentField) },
 		{ "Add", cmzn_fieldmodule_create_field_add(fieldmodule, firstComponentField, temperatureField) },
@@ -517,6 +557,10 @@ TEST(fieldmodule_description, write)
 		{ "Power", cmzn_fieldmodule_create_field_power(fieldmodule, firstComponentField, temperatureField) },
 		{ "Sqrt", cmzn_fieldmodule_create_field_sqrt(fieldmodule, firstComponentField) },
 		{ "Subtract", cmzn_fieldmodule_create_field_subtract(fieldmodule, firstComponentField, temperatureField) },
+		// composite operators
+		{ "Identity", cmzn_fieldmodule_create_field_identity(fieldmodule, firstComponentField) },
+		// conditional operators
+		{ "If", cmzn_fieldmodule_create_field_if(fieldmodule, firstComponentField, secondComponentField, thirdComponentField) },
 		// logical operators
 		{ "And", cmzn_fieldmodule_create_field_and(fieldmodule, firstComponentField, temperatureField) },
 		{ "EqualTo", cmzn_fieldmodule_create_field_equal_to(fieldmodule, firstComponentField, temperatureField) },
@@ -540,7 +584,7 @@ TEST(fieldmodule_description, write)
 		{ "Normalise", cmzn_fieldmodule_create_field_normalise(fieldmodule, firstComponentField) },
 		{ "SumComponents", cmzn_fieldmodule_create_field_sum_components(fieldmodule, firstComponentField) }
 	};
-    for (int f = 0; f < 28; ++f)
+    for (int f = 0; f < 30; ++f)
     {
         const char *name = operators[f].name;
         EXPECT_NE(static_cast<cmzn_field *>(0), operators[f].field);
@@ -810,6 +854,8 @@ TEST(fieldmodule_description, write)
 	cmzn_field_destroy(&stringConstantField);
 	cmzn_field_destroy(&constantField);
 	cmzn_field_destroy(&concatenateField);
+	cmzn_field_destroy(&thirdComponentField);
+	cmzn_field_destroy(&secondComponentField);
 	cmzn_field_destroy(&firstComponentField);
 	cmzn_field_destroy(&componentField);
 	cmzn_field_destroy(&temperatureField);
