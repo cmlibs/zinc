@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.10.1
+Fix serialisation of field types identity and if.
+
 v3.10.0
 Allow integrals over face and line meshes in optimisation objective fields.
 Evaluate parameter and top-level/field element xi derivatives on faces and lines, and convert field element xi derivatives to face and line xi.
@@ -9,6 +12,7 @@ Add API to get mixed mesh and parameter derivative operators.
 Fix create field eigenvectors to take generic field argument.
 Add API to get/set transpose field source number of rows.
 Add API to get matrix multiply field number of rows.
+Add API to define standard spectrums.
 Fix serialisation of graphics line width and point size.
 Fix wrapping of graphics vector fields where no coordinate field is set.
 Fix Fieldassignment where source field is undefined.

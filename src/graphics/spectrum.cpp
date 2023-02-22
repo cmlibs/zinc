@@ -139,7 +139,7 @@ public:
 
 	cmzn_spectrum_id createSpectrum()
 	{
-		cmzn_spectrum_id spectrum = NULL;
+		cmzn_spectrum_id spectrum = nullptr;
 		char temp_name[20];
 		int i = NUMBER_IN_MANAGER(cmzn_spectrum)(this->spectrumManager);
 		do
@@ -159,6 +159,8 @@ public:
 	}
 
 	cmzn_spectrumiterator *createSpectrumiterator();
+
+	int defineStandardSpectrums();
 
 	cmzn_spectrum *findSpectrumByName(const char *name)
 	{
@@ -260,6 +262,18 @@ cmzn_spectrumiterator_id cmzn_spectrummodule_create_spectrumiterator(
 	if (spectrummodule)
 		return spectrummodule->createSpectrumiterator();
 	return 0;
+}
+
+int cmzn_spectrummodule_define_standard_spectrums(
+	cmzn_spectrummodule_id spectrummodule)
+{
+	if (spectrummodule)
+	{
+		return spectrummodule->defineStandardSpectrums();
+	}
+	display_message(ERROR_MESSAGE,
+		"Spectrummodule defineStandardSpectrums: Missing spectrum module");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct MANAGER(cmzn_spectrum) *cmzn_spectrummodule_get_manager(
@@ -486,6 +500,23 @@ void cmzn_spectrum::deaccess(cmzn_spectrum*& spectrum)
 		}
 		spectrum = nullptr;
 	}
+}
+
+void cmzn_spectrum::addComponent(int fieldComponent, double rangeMinimum, double rangeMaximum,
+	cmzn_spectrumcomponent_colour_mapping_type colourMappingType, double colourMinimum, double colourMaximum,
+	bool extendBelow, bool extendAbove)
+{
+	cmzn_spectrumcomponent* spectrumcomponent = cmzn_spectrum_create_spectrumcomponent(this);
+	cmzn_spectrumcomponent_set_field_component(spectrumcomponent, fieldComponent);
+	cmzn_spectrumcomponent_set_range_minimum(spectrumcomponent, rangeMinimum);
+	cmzn_spectrumcomponent_set_range_maximum(spectrumcomponent, rangeMaximum);
+
+	cmzn_spectrumcomponent_set_colour_mapping_type(spectrumcomponent, colourMappingType);
+	cmzn_spectrumcomponent_set_colour_minimum(spectrumcomponent, colourMinimum);
+	cmzn_spectrumcomponent_set_colour_maximum(spectrumcomponent, colourMaximum);
+	cmzn_spectrumcomponent_set_extend_below(spectrumcomponent, extendBelow);
+	cmzn_spectrumcomponent_set_extend_above(spectrumcomponent, extendAbove);
+	cmzn_spectrumcomponent_destroy(&spectrumcomponent);
 }
 
 int cmzn_spectrum::setName(const char *newName)
@@ -722,11 +753,45 @@ cmzn_spectrumiterator *cmzn_spectrummodule::createSpectrumiterator()
 	return CREATE_LIST_ITERATOR(cmzn_spectrum)(this->spectrumManager->object_list);
 }
 
+int cmzn_spectrummodule::defineStandardSpectrums()
+{
+	this->beginChange();
+	cmzn_spectrum* spectrum = nullptr;
+
+	const char* monoName = "mono";
+	spectrum = this->findSpectrumByName(monoName);
+	if (!spectrum)
+	{
+		spectrum = createSpectrum();
+		cmzn_spectrum_set_name(spectrum, monoName);
+		cmzn_spectrum_set_managed(spectrum, true);
+		spectrum->addComponent(1, 0.0, 1.0, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME, 0.0, 1.0, true, true);
+		cmzn_spectrum_destroy(&spectrum);
+	}
+
+	const char* rgbName = "rgb";
+	spectrum = this->findSpectrumByName(rgbName);
+	if (!spectrum)
+	{
+		spectrum = createSpectrum();
+		cmzn_spectrum_set_name(spectrum, rgbName);
+		cmzn_spectrum_set_managed(spectrum, true);
+		spectrum->addComponent(1, 0.0, 1.0, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED, 0.0, 1.0, true, true);
+		spectrum->addComponent(2, 0.0, 1.0, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN, 0.0, 1.0, true, true);
+		spectrum->addComponent(3, 0.0, 1.0, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE, 0.0, 1.0, true, true);
+		cmzn_spectrum_destroy(&spectrum);
+	}
+
+	this->endChange();
+	return CMZN_OK;
+}
+
 int Spectrum_manager_set_owner(struct MANAGER(cmzn_spectrum) *manager,
 	struct cmzn_spectrummodule *spectrummodule)
 {
 	return MANAGER_SET_OWNER(cmzn_spectrum)(manager, spectrummodule);
 }
+
 /*
 Global functions
 ----------------

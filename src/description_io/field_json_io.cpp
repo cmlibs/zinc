@@ -220,6 +220,9 @@ OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 			case CMZN_FIELD_TYPE_ABS:
 				field = fieldmodule.createFieldAbs(sourcefields[0]);
 				break;
+			case CMZN_FIELD_TYPE_IDENTITY:
+				field = fieldmodule.createFieldIdentity(sourcefields[0]);
+				break;
 			case CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION:
 			{
 				field = fieldmodule.createFieldCoordinateTransformation(sourcefields[0]);
@@ -393,7 +396,7 @@ OpenCMISS::Zinc::Field importGenericThreeSourcesField(enum cmzn_field_type type,
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_IF:
-				field = fieldmodule.createFieldIf(sourcefields[0], sourcefields[1], sourcefields[3]);
+				field = fieldmodule.createFieldIf(sourcefields[0], sourcefields[1], sourcefields[2]);
 				break;
 			default:
 				break;

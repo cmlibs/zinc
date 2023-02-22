@@ -92,6 +92,20 @@
          "Name" : "GreaterThan"
       },
       {
+         "FieldIdentity" : {
+            "SourceFields" : [ "firstComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "Identity"
+      },
+      {
+         "FieldIf" : {
+            "SourceFields" : [ "firstComponent", "secondComponent", "thirdComponent" ]
+         },
+         "IsManaged" : true,
+         "Name" : "If"
+      },
+      {
          "FieldIsDefined" : {
             "SourceFields" : [ "firstComponent" ]
          },
@@ -411,6 +425,14 @@
          "Name" : "nodesetSumSquares"
       },
       {
+         "FieldComponent" : {
+            "SourceComponentIndexes" : [ 2 ],
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : false,
+         "Name" : "secondComponent"
+      },
+      {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldConstant" : {
             "Values" : [ 3, 2, 1 ]
@@ -449,6 +471,14 @@
          },
          "IsManaged" : false,
          "Name" : "temperature_1"
+      },
+      {
+         "FieldComponent" : {
+            "SourceComponentIndexes" : [ 3 ],
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : false,
+         "Name" : "thirdComponent"
       },
       {
          "FieldTimeLookup" : {
