@@ -25,7 +25,7 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.10.0 LANGUAGES C CXX)
+project(Zinc VERSION 3.10.1 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
 set(Zinc_DEVELOPER_VERSION "")
@@ -269,9 +269,9 @@ file(WRITE ${DEPFILE}
 )
 
 file(APPEND ${DEPFILE} "if (ZINC_USE_STATIC)\n")
-file(APPEND ${DEPFILE} "    set(USE_OPENCMISSDEPENDENCIES TRUE)\n")
-file(APPEND ${DEPFILE} "    set(OPENCMISSDEPENDENCIES_DIR \"${OPENCMISSDEPENDENCIES_DIR}\")\n")
-file(APPEND ${DEPFILE} "    find_dependency(OPENCMISSDEPENDENCIES)\n")
+file(APPEND ${DEPFILE} "    set(USE_CMLIBSDEPENDENCIES TRUE)\n")
+file(APPEND ${DEPFILE} "    set(CMLIBSDEPENDENCIES_DIR \"${CMLIBSDEPENDENCIES_DIR}\")\n")
+file(APPEND ${DEPFILE} "    find_dependency(CMLIBSDEPENDENCIES)\n")
 file(APPEND ${DEPFILE} "endif ()\n")
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
 
@@ -312,8 +312,9 @@ if(ZINC_BUILD_SHARED_LIBRARY )
     set(ZINC_BUILD_STRING "shared")
 endif()
 if(ZINC_BUILD_STATIC_LIBRARY )
-    set(ZINC_BUILD_STRING "${ZINC_BUILD_STRING} static")
+    set(ZINC_BUILD_STRING ${ZINC_BUILD_STRING} static)
 endif()
+string(REPLACE ";" " and " ZINC_BUILD_STRING "${ZINC_BUILD_STRING}")
 
 if(ZINC_PRINT_CONFIG_SUMMARY)
     message(STATUS "")
