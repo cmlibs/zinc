@@ -1,5 +1,9 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v2.10.2
+Fix behaviour of get/create subregion groups, with get now able to discover subregion groups by name.
+Fix scene set selection group so if not set, inherits subregion group of parent/ancestor scene selection group.
+
 v3.10.1
 Fix serialisation of field types identity and if.
 

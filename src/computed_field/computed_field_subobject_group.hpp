@@ -82,6 +82,12 @@ public:
 
 	virtual ~Computed_field_subobject_group();
 
+	/** @return Non-accessed owner group field, if any */
+	Computed_field_group* getOwnerGroup() const
+	{
+		return this->ownerGroup;
+	}
+
 	const char* get_type_string()
 	{
 		return ("sub_group_object");
@@ -93,14 +99,18 @@ public:
 	bool check_dependency_for_group_special()
 	{
 		if (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		{
 			return true;
+		}
 		else if (field->manager_change_status & MANAGER_CHANGE_ADD(Computed_field))
 		{
 			const cmzn_field_subobject_group_change_detail *change_detail =
 				dynamic_cast<const cmzn_field_subobject_group_change_detail *>(get_change_detail());
 			const int changeSummary = change_detail->getChangeSummary();
 			if (changeSummary & CMZN_FIELD_GROUP_CHANGE_ADD)
+			{
 				return true;
+			}
 		}
 		return false;
 	}

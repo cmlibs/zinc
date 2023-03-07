@@ -93,8 +93,9 @@ private:
 	cmzn_field_group_subelement_handling_mode subelementHandlingMode;
 	Computed_field *local_node_group, *local_data_group, *local_element_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
-	Region_field_map subregion_group_map;
+	Region_field_map child_region_group_map;  // map to accessed FieldGroup in child regions
 
+	/* @param index  0 (1-D), 1 (2-D) or 2 (3-D) */
 	void clearLocalElementGroup(int index);
 	void setLocalElementGroup(int index, cmzn_field_element_group *element_group);
 	void clearLocalNodeGroup(bool isData);
@@ -106,19 +107,25 @@ public:
 
 	virtual ~Computed_field_group();
 
-	/** @return allocated name for node group for master_nodeset */
-	char *get_standard_node_group_name(cmzn_nodeset_id master_nodeset);
+	/** @return allocated name for nodeset group for master_nodeset */
+	char *get_standard_nodeset_group_name(cmzn_nodeset_id master_nodeset);
 
-	cmzn_field_node_group_id create_node_group(cmzn_nodeset_id nodeset);
+	/**
+	 * Note: with canCreate==false, only finds a field node group if it's in a field group.
+	 * @param canGet  If true, can find an existing group, including by name.
+	 * @param canCreate  If true, can create an existing group if not found.
+	 * @return  Accessed field node group, or nullptr if none */
+	cmzn_field_node_group* getOrCreateFieldNodeGroup(cmzn_nodeset* nodeset, bool canGet = true, bool canCreate = true);
 
-	cmzn_field_node_group_id get_node_group(cmzn_nodeset_id nodeset);
+	/** @return allocated name for mesh group for master mesh */
+	char *get_standard_mesh_group_name(cmzn_mesh_id master_mesh);
 
-	/** @return allocated name for element group for master_mesh */
-	char *get_standard_element_group_name(cmzn_mesh_id master_mesh);
-
-	cmzn_field_element_group_id create_element_group(cmzn_mesh_id mesh);
-
-	cmzn_field_element_group_id get_element_group(cmzn_mesh_id mesh);
+	/**
+	 * Note: with canCreate==false, only finds a field node group if it's in a field group.
+	 * @param canGet  If true, can find an existing group, including by name.
+	 * @param canCreate  If true, can create an existing group if not found.
+	 * @return  Accessed field node group, or nullptr if none */
+	cmzn_field_element_group* getOrCreateFieldElementGroup(cmzn_mesh* mesh, bool canGet = true, bool canCreate = true);
 
 	cmzn_field_id get_subobject_group_for_domain(cmzn_field_id domain);
 
@@ -128,9 +135,11 @@ public:
 	int clear_region_tree_cad_primitive();
 #endif /*defined (USE_OPENCASCADE) */
 
-	cmzn_field_group_id getSubRegionGroup(cmzn_region_id subregion);
-
-	cmzn_field_group_id createSubRegionGroup(cmzn_region_id subregion);
+	/**
+	 * @param canGet  If true, can find an existing group, including by name.
+	 * @param canCreate  If true, can create an existing group if not found.
+	 * @return  Accessed subregion, or nullptr if none */
+	cmzn_field_group* getOrCreateSubregionFieldGroup(cmzn_region *subregion, bool canGet=true, bool canCreate=true);
 
 	cmzn_field_group_id getFirstNonEmptyGroup();
 
@@ -191,11 +200,15 @@ public:
 
 	int setSubelementHandlingMode(cmzn_field_group_subelement_handling_mode mode);
 
-	// for use by subobject group only. Assumes within begin/end change if creating
+	/** Get local element group core.
+	 * For use by subobject group only. Assumes within begin/end change if creating.
+	 * @return  Non-accessed element group core, or nullptr if none/failed to create. */
 	Computed_field_element_group *getElementGroupPrivate(FE_mesh *fe_mesh, bool create = false);
 
-	// for use by subobject group only. Assumes within begin/end change if creating
-	Computed_field_node_group *getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create = false);
+	/** Get local element group core.
+	 * For use by subobject group only. Assumes within begin/end change if creating.
+	 * @return  Non-accessed node group core, or nullptr if none/failed to create. */
+	Computed_field_node_group* getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create = false);
 
 private:
 

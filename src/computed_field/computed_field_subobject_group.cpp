@@ -542,9 +542,16 @@ int Computed_field_element_group::addElementFacesRecursive(FE_mesh& parentMesh, 
 	FE_mesh *faceMesh = this->getFeMesh()->getFaceMesh();
 	if (faceMesh)
 	{
+		if (!(this->ownerGroup))
+		{
+			// shouldn't get here: indicates parent has child, but child doesn't have pointer to parent
+			return CMZN_ERROR_GENERAL;
+		}
 		faceElementGroup = this->ownerGroup->getElementGroupPrivate(faceMesh, /*create*/true);
 		if (!faceElementGroup)
+		{
 			return CMZN_ERROR_GENERAL;
+		}
 	}
 	const FE_mesh::ElementShapeFaces *elementShapeFaces =
 		this->getFeMesh()->getParentMesh()->getElementShapeFacesConst(parentIndex);

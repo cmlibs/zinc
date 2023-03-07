@@ -256,6 +256,23 @@ public:
 			this->notifyClients();
 	}
 
+	/**
+	 * @return  Non-accessed selection field, or nullptr if none.
+	 */
+	cmzn_field_group* getSelectionGroup() const
+	{
+		return this->selection_group;
+	}
+
+	int setSelectionGroup(cmzn_field_group* selectionGroupIn);
+
+	/**
+	 * Get either directly set selection group field, or if set for a parent
+	 * scene, return its subregion group field for this region.
+	 * @return  Non-accessed selection field, or nullptr if none.
+	 */
+	cmzn_field_group* getLocalSelectionGroupForHighlighting();
+
 	void notifySelectionevent(cmzn_selectionevent_id selectionevent);
 
 	void processFieldmoduleevent(cmzn_fieldmoduleevent *event);
@@ -456,9 +473,6 @@ int cmzn_scene_is_visible_hierarchical(cmzn_scene_id scene);
  */
 cmzn_graphics_id cmzn_scene_get_graphics_at_position(
 	cmzn_scene_id scene, int pos);
-
-cmzn_field_id cmzn_scene_get_selection_group_private_for_highlighting(
-	cmzn_scene_id scene);
 
 int cmzn_region_modify_scene(struct cmzn_region *region,
 	struct cmzn_graphics *graphics, int delete_flag, int position);

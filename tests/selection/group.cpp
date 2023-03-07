@@ -190,6 +190,7 @@ TEST(ZincFieldGroup, add_remove_nodes)
 	EXPECT_FALSE(nodesetGroup.containsNode(node));
 
 	// test for empty groups
+	childGroup = FieldGroup();  // so not rediscovered by name
 	EXPECT_FALSE((nonEmptyGroup = group.getFirstNonEmptySubregionFieldGroup()).isValid());
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_FALSE((childGroup = group.getSubregionFieldGroup(childRegion)).isValid());
@@ -311,6 +312,7 @@ TEST(ZincFieldGroup, add_remove_elements)
 	EXPECT_FALSE(meshGroup.containsElement(element));
 
 	// test for empty groups
+	childGroup = FieldGroup();  // so not rediscovered by name
 	EXPECT_FALSE((nonEmptyGroup = group.getFirstNonEmptySubregionFieldGroup()).isValid());
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_FALSE((childGroup = group.getSubregionFieldGroup(childRegion)).isValid());
@@ -515,11 +517,9 @@ TEST(ZincFieldGroup, subelementHandlingMode)
 	EXPECT_EQ(OK, result = group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL, mode = group.getSubelementHandlingMode());
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_NONE, mode = childGroup.getSubelementHandlingMode());
-	// rediscovery of subregion and subobject groups are inconsistent
-	// former works on create, latter on find. Create makes more sense.
+
+	// subregion group can now be rediscovered by name using getSubregionFieldGroup()
 	FieldGroup tempGroup = group.getSubregionFieldGroup(childRegion);
-	EXPECT_FALSE(tempGroup.isValid());
-	tempGroup = group.createSubregionFieldGroup(childRegion);
 	EXPECT_TRUE(tempGroup.isValid());
 	EXPECT_EQ(childGroup, tempGroup);
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_NONE, mode = childGroup.getSubelementHandlingMode());
@@ -926,6 +926,7 @@ TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
 	// caching changes correctly propagates to the parent group
 	callback.clear();
 	zinc.fm.beginChange();
+	childGroup = FieldGroup();  // so not rediscovered by name
 	EXPECT_EQ(OK, result = group.removeRegion(childRegion));
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
