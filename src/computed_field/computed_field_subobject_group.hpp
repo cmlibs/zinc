@@ -105,12 +105,24 @@ public:
 		else if (field->manager_change_status & MANAGER_CHANGE_ADD(Computed_field))
 		{
 			const cmzn_field_subobject_group_change_detail *change_detail =
-				dynamic_cast<const cmzn_field_subobject_group_change_detail *>(get_change_detail());
+				dynamic_cast<const cmzn_field_subobject_group_change_detail *>(this->get_change_detail());
 			const int changeSummary = change_detail->getChangeSummary();
 			if (changeSummary & CMZN_FIELD_GROUP_CHANGE_ADD)
 			{
 				return true;
 			}
+		}
+		return false;
+	}
+
+	bool is_change_remove() const
+	{
+		const cmzn_field_subobject_group_change_detail* change_detail =
+			dynamic_cast<const cmzn_field_subobject_group_change_detail*>(this->get_change_detail());
+		const int changeSummary = change_detail->getChangeSummary();
+		if (changeSummary & CMZN_FIELD_GROUP_CHANGE_REMOVE)
+		{
+			return true;
 		}
 		return false;
 	}

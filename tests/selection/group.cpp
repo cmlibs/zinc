@@ -1248,3 +1248,124 @@ TEST(ZincFieldGroup, fieldCleanupOrder)
 	FieldElementGroup elementGroup = group.createFieldElementGroup(mesh2d);
 	EXPECT_TRUE(elementGroup.isValid());
 }
+
+// Test bug where main group with subelement groups falls to zero access count
+// while change cache is in effect. The subelement groups remain linked to their owner
+// group and vice-versa. If another group is created and the subelement groups
+// rediscovered, their owner pointers are cleared when the original owner group is
+// later destroyed.
+TEST(ZincFieldGroup, orphaned_subelement_groups)
+{
+	ZincTestSetupCpp zinc;
+	char* name;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_EQ(RESULT_OK, group.setName("bob"));
+	EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	FieldElementGroup elementGroup2d = group.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(elementGroup2d.isValid());
+	name = elementGroup2d.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+	EXPECT_TRUE(meshGroup2d.isValid());
+	for (int nid = 2; nid <= 4; ++nid)
+	{
+		EXPECT_EQ(RESULT_OK, meshGroup2d.addElement(mesh2d.findElementByIdentifier(nid)));
+	}
+	EXPECT_EQ(3, meshGroup2d.getSize());
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	FieldElementGroup elementGroup1d = group.getFieldElementGroup(mesh1d);
+	EXPECT_TRUE(elementGroup1d.isValid());
+	name = elementGroup1d.getName();
+	EXPECT_STREQ("bob.mesh1d", name);
+	cmzn_deallocate(name);
+	MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+	EXPECT_TRUE(meshGroup1d.isValid());
+	EXPECT_EQ(10, meshGroup1d.getSize());
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldNodeGroup nodeGroup = group.getFieldNodeGroup(nodes);
+	EXPECT_TRUE(nodeGroup.isValid());
+	name = nodeGroup.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+	EXPECT_EQ(8, nodesetGroup.getSize());
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.beginChange());
+	// clear group to orphan its subelement groups
+	group = FieldGroup();
+	Field tmpField = zinc.fm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh2d");
+	EXPECT_EQ(elementGroup2d, tmpField);
+	tmpField = zinc.fm.findFieldByName("bob.mesh1d");
+	EXPECT_EQ(elementGroup1d, tmpField);
+	tmpField = zinc.fm.findFieldByName("bob.nodes");
+	EXPECT_EQ(nodeGroup, tmpField);
+	// now create another group of the same name and find the subelement groups
+	// which aren't cleared because this test still holds a handle to them
+	group = zinc.fm.createFieldGroup();
+	EXPECT_EQ(RESULT_OK, group.setName("bob"));
+	EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+	tmpField = group.getFieldElementGroup(mesh2d);
+	EXPECT_EQ(elementGroup2d, tmpField);
+	EXPECT_EQ(3, meshGroup2d.getSize());
+	tmpField = group.getFieldElementGroup(mesh1d);
+	EXPECT_EQ(elementGroup1d, tmpField);
+	EXPECT_EQ(10, meshGroup1d.getSize());
+	tmpField = group.getFieldNodeGroup(nodes);
+	EXPECT_EQ(nodeGroup, tmpField);
+	EXPECT_EQ(8, nodesetGroup.getSize());
+	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
+
+	// get meshGroup3d
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	FieldElementGroup elementGroup3d = group.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(elementGroup3d.isValid());
+	name = elementGroup3d.getName();
+	EXPECT_STREQ("bob.mesh3d", name);
+	cmzn_deallocate(name);
+	MeshGroup meshGroup3d = elementGroup3d.getMeshGroup();
+	EXPECT_TRUE(meshGroup3d.isValid());
+	EXPECT_EQ(0, meshGroup3d.getSize());
+
+	// following formerly crashed due to nullptr to owner group in subelement groups
+	EXPECT_EQ(RESULT_OK, meshGroup3d.addElement(mesh3d.findElementByIdentifier(1)));
+	EXPECT_EQ(1, meshGroup3d.getSize());
+	EXPECT_EQ(6, meshGroup2d.getSize());
+	EXPECT_EQ(12, meshGroup1d.getSize());
+	EXPECT_EQ(8, nodesetGroup.getSize());
+
+	// now test what happens if we don't hold handles to the subelement groups and mesh groups
+	elementGroup3d = FieldElementGroup();
+	meshGroup3d = MeshGroup();
+	elementGroup2d = FieldElementGroup();
+	meshGroup2d = MeshGroup();
+	elementGroup1d = FieldElementGroup();
+	meshGroup1d = MeshGroup();
+	nodeGroup = FieldNodeGroup();
+	nodesetGroup = NodesetGroup();
+	tmpField = Field();
+	EXPECT_EQ(RESULT_OK, zinc.fm.beginChange());
+	// clear group to orphan its subelement groups
+	group = FieldGroup();
+	tmpField = zinc.fm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh3d");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh2d");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh1d");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.nodes");
+	EXPECT_FALSE(tmpField.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
+}

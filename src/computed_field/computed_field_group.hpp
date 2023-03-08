@@ -95,10 +95,19 @@ private:
 	std::map<Computed_field *, Computed_field *> domain_selection_group;
 	Region_field_map child_region_group_map;  // map to accessed FieldGroup in child regions
 
-	/* @param index  0 (1-D), 1 (2-D) or 2 (3-D) */
-	void clearLocalElementGroup(int index);
+	/*
+	 * @param index  0 (1-D), 1 (2-D) or 2 (3-D)
+	 * @param clear  If true, clear the subelement group.
+	 * @param remove  If true, remove the subelement group.
+	 */
+	void clearRemoveLocalElementGroup(int index, bool clear = true, bool remove = true);
 	void setLocalElementGroup(int index, cmzn_field_element_group *element_group);
-	void clearLocalNodeGroup(bool isData);
+	/*
+	 * @param isData  True for datapoints, false for nodes.
+	 * @param clear  If true, clear the subelement group.
+	 * @param remove  If true, remove the subelement group.
+	 */
+	void clearRemoveLocalNodeGroup(bool isData, bool clear = true, bool remove = true);
 	void setLocalNodeGroup(bool isData, cmzn_field_node_group *node_group);
 
 public:

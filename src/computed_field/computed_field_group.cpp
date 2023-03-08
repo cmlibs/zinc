@@ -57,10 +57,12 @@ Computed_field_group::Computed_field_group(cmzn_region *region)
 
 Computed_field_group::~Computed_field_group()
 {
-	clearLocalNodeGroup(/*isData*/false);
-	clearLocalNodeGroup(/*isData*/true);
+	clearRemoveLocalNodeGroup(/*isData*/false, /*clear*/false, /*remove*/true);
+	clearRemoveLocalNodeGroup(/*isData*/true, /*clear*/false, /*remove*/true);
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-		clearLocalElementGroup(i);
+	{
+		clearRemoveLocalElementGroup(i, /*clear*/false, /*remove*/true);
+	}
 	for (Region_field_map_iterator iter = child_region_group_map.begin();
 		iter != child_region_group_map.end(); ++iter)
 	{
@@ -75,16 +77,26 @@ Computed_field_group::~Computed_field_group()
 	}
 }
 
-void Computed_field_group::clearLocalElementGroup(int index)
+void Computed_field_group::clearRemoveLocalElementGroup(int index, bool clear, bool remove)
 {
-	if (this->local_element_group[index])
+	cmzn_field*& element_group_field = this->local_element_group[index];
+	if (element_group_field)
 	{
 		Computed_field_subobject_group *subobject_group =
-			static_cast<Computed_field_subobject_group *>(this->local_element_group[index]->core);
-		subobject_group->clear();
-		subobject_group->setOwnerGroup(nullptr);
-		check_subobject_group_dependency(subobject_group);
-		cmzn_field_destroy(&this->local_element_group[index]);
+			static_cast<Computed_field_subobject_group *>(element_group_field->core);
+		if ((!subobject_group->isEmpty()) || subobject_group->is_change_remove())
+		{
+			this->change_detail.changeRemoveLocal();
+		}
+		if (clear)
+		{
+			subobject_group->clear();
+		}
+		if (remove)
+		{
+			subobject_group->setOwnerGroup(nullptr);
+			cmzn_field::deaccess(element_group_field);
+		}
 	}
 }
 
@@ -92,7 +104,7 @@ void Computed_field_group::setLocalElementGroup(int index, cmzn_field_element_gr
 {
 	if (cmzn_field_element_group_base_cast(element_group) != this->local_element_group[index])
 	{
-		clearLocalElementGroup(index);
+		clearRemoveLocalElementGroup(index, /*clear*/false, /*remove*/true);
 		if (element_group)
 		{
 			Computed_field_element_group_core_cast(element_group)->setOwnerGroup(this);
@@ -101,17 +113,26 @@ void Computed_field_group::setLocalElementGroup(int index, cmzn_field_element_gr
 	}
 }
 
-void Computed_field_group::clearLocalNodeGroup(bool isData)
+void Computed_field_group::clearRemoveLocalNodeGroup(bool isData, bool clear, bool remove)
 {
-	cmzn_field_id *node_group_field_address = (isData) ? &local_data_group : &local_node_group;
-	if (*node_group_field_address)
+	cmzn_field*& node_group_field = (isData) ? local_data_group : local_node_group;
+	if (node_group_field)
 	{
 		Computed_field_subobject_group *subobject_group =
-			static_cast<Computed_field_subobject_group *>((*node_group_field_address)->core);
-		subobject_group->clear();
-		subobject_group->setOwnerGroup(nullptr);
-		check_subobject_group_dependency(subobject_group);
-		cmzn_field_destroy(node_group_field_address);
+			static_cast<Computed_field_subobject_group *>(node_group_field->core);
+		if ((!subobject_group->isEmpty()) || subobject_group->is_change_remove())
+		{
+			this->change_detail.changeRemoveLocal();
+		}
+		if (clear)
+		{
+			subobject_group->clear();
+		}
+		if (remove)
+		{
+			subobject_group->setOwnerGroup(nullptr);
+			cmzn_field::deaccess(node_group_field);
+		}
 	}
 }
 
@@ -120,7 +141,7 @@ void Computed_field_group::setLocalNodeGroup(bool isData, cmzn_field_node_group 
 	cmzn_field_id& local_node_group_field = (isData) ? this->local_data_group : this->local_node_group;
 	if (cmzn_field_node_group_base_cast(node_group) != local_node_group_field)
 	{
-		clearLocalNodeGroup(isData);
+		clearRemoveLocalNodeGroup(isData, /*clear*/false, /*remove*/true);
 		if (node_group)
 		{
 			Computed_field_node_group_core_cast(node_group)->setOwnerGroup(this);
@@ -264,10 +285,12 @@ int Computed_field_group::clearLocal()
 	cmzn_field_group_subelement_handling_mode oldSubelementHandlingMode = this->subelementHandlingMode;
 	this->subelementHandlingMode = CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE;
 	contains_all = false;
-	clearLocalNodeGroup(/*isData*/false); 
-	clearLocalNodeGroup(/*isData*/true);
+	clearRemoveLocalNodeGroup(/*isData*/false); 
+	clearRemoveLocalNodeGroup(/*isData*/true);
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-		clearLocalElementGroup(i);
+	{
+		clearRemoveLocalElementGroup(i);
+	}
 	change_detail.changeRemoveLocal();
 	this->subelementHandlingMode = oldSubelementHandlingMode;
 	this->field->setChanged();
@@ -990,13 +1013,17 @@ int Computed_field_group::remove_empty_subgroups()
 	{
 		Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_node_group->core);
 		if (group_base->isEmpty())
-			this->clearLocalNodeGroup(/*isData*/false);
+		{
+			this->clearRemoveLocalNodeGroup(/*isData*/false, /*clear*/false, /*remove*/true);
+		}
 	}
 	if (local_data_group)
 	{
 		Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_data_group->core);
 		if (group_base->isEmpty())
-			this->clearLocalNodeGroup(/*isData*/true);
+		{
+			this->clearRemoveLocalNodeGroup(/*isData*/true, /*clear*/false, /*remove*/true);
+		}
 	}
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 	{
@@ -1005,7 +1032,9 @@ int Computed_field_group::remove_empty_subgroups()
 			Computed_field_subobject_group *subobject_group = static_cast<Computed_field_subobject_group *>(
 				this->local_element_group[i]->core);
 			if (subobject_group->isEmpty())
-				this->clearLocalElementGroup(i);
+			{
+				this->clearRemoveLocalElementGroup(i, /*clear*/false, /*remove*/true);
+			}
 		}
 	}
 	/* remove empty subregion group */
