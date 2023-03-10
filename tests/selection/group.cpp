@@ -1369,3 +1369,130 @@ TEST(ZincFieldGroup, orphaned_subelement_groups)
 	EXPECT_FALSE(tmpField.isValid());
 	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
 }
+
+// Test get/create subobject groups in subregions.
+TEST(ZincFieldGroup, getCreateSubregionSubobjectGroups)
+{
+	ZincTestSetupCpp zinc;
+	char* name;
+	Field tmpField;
+
+	Region child = zinc.root_region.createChild("child");
+	EXPECT_TRUE(child.isValid());
+
+	FieldGroup bob = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	FieldElementGroup bobMesh2d = bob.getFieldElementGroup(mesh2d);
+	EXPECT_FALSE(bobMesh2d.isValid());
+	bobMesh2d = bob.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(bobMesh2d.isValid());
+	name = bobMesh2d.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldNodeGroup bobNodes = bob.getFieldNodeGroup(nodes);
+	EXPECT_FALSE(bobNodes.isValid());
+	bobNodes = bob.createFieldNodeGroup(nodes);
+	EXPECT_TRUE(bobNodes.isValid());
+	name = bobNodes.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+
+	FieldGroup childBob = bob.getSubregionFieldGroup(child);
+	EXPECT_FALSE(childBob.isValid());
+	childBob = bob.createSubregionFieldGroup(child);
+	EXPECT_TRUE(childBob.isValid());
+	name = childBob.getName();
+	EXPECT_STREQ("bob", name);
+	cmzn_deallocate(name);
+	Fieldmodule childFm = child.getFieldmodule();
+	Mesh childMesh2d = childFm.findMeshByDimension(2);
+	FieldElementGroup childBobMesh2d = bob.getFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childBobMesh2d.isValid());
+	childBobMesh2d = bob.createFieldElementGroup(childMesh2d);
+	EXPECT_TRUE(childBobMesh2d.isValid());
+	name = childBobMesh2d.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	Nodeset childNodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldNodeGroup childBobNodes = bob.getFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childBobNodes.isValid());
+	childBobNodes = bob.createFieldNodeGroup(childNodes);
+	EXPECT_TRUE(childBobNodes.isValid());
+	name = childBobNodes.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+
+	// orphan subobject groups in child region and try to get them back by name
+	childBob = FieldGroup();
+	bob.clear();
+	bob.removeEmptySubgroups();
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.mesh2d");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.nodes");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+	FieldElementGroup childBobMesh2dGet = bob.getFieldElementGroup(childMesh2d);
+	EXPECT_TRUE(childBobMesh2dGet.isValid());
+	EXPECT_EQ(childBobMesh2d, childBobMesh2dGet);
+	name = childBobMesh2dGet.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	FieldNodeGroup childBobNodesTmp = bob.getFieldNodeGroup(childNodes);
+	EXPECT_TRUE(childBobNodesTmp.isValid());
+	EXPECT_EQ(childBobNodes, childBobNodesTmp);
+	name = childBobNodesTmp.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+
+	// orphan subobject groups in child region and test can't create them
+	childBob = FieldGroup();
+	bob.clear();
+	bob.removeEmptySubgroups();
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.mesh2d");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.nodes");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+	FieldElementGroup childBobMesh2dCreate = bob.createFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childBobMesh2dCreate.isValid());
+	FieldNodeGroup childBobNodesCreate = bob.createFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childBobNodesCreate.isValid());
+	// as a side effect, the subregion group is created:
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+
+	// test can't get a subregion subobject group if existing field of wrong type is using expected name
+	FieldGroup fred = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(fred.isValid());
+	EXPECT_EQ(RESULT_OK, fred.setName("fred"));
+	const double one = 1.0;
+	FieldConstant childFredMesh2dConstant = childFm.createFieldConstant(1, &one);
+	EXPECT_TRUE(childFredMesh2dConstant.isValid());
+	EXPECT_EQ(RESULT_OK, childFredMesh2dConstant.setName("fred.mesh2d"));
+	FieldElementGroup childFredMesh2dErr = fred.getFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childFredMesh2dErr.isValid());
+	childFredMesh2dErr = fred.createFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childFredMesh2dErr.isValid());
+	FieldConstant childFredNodesConstant = childFm.createFieldConstant(1, &one);
+	EXPECT_TRUE(childFredNodesConstant.isValid());
+	EXPECT_EQ(RESULT_OK, childFredNodesConstant.setName("fred.nodes"));
+	FieldNodeGroup childFredNodesErr = fred.getFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childFredNodesErr.isValid());
+	childFredNodesErr = fred.createFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childFredNodesErr.isValid());
+	// as a side effect, the subregion group is created:
+	tmpField = childFm.findFieldByName("fred");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+}

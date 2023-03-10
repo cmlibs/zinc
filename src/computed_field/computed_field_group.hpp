@@ -116,18 +116,12 @@ public:
 
 	virtual ~Computed_field_group();
 
-	/** @return allocated name for nodeset group for master_nodeset */
-	char *get_standard_nodeset_group_name(cmzn_nodeset_id master_nodeset);
-
 	/**
 	 * Note: with canCreate==false, only finds a field node group if it's in a field group.
 	 * @param canGet  If true, can find an existing group, including by name.
 	 * @param canCreate  If true, can create an existing group if not found.
 	 * @return  Accessed field node group, or nullptr if none */
 	cmzn_field_node_group* getOrCreateFieldNodeGroup(cmzn_nodeset* nodeset, bool canGet = true, bool canCreate = true);
-
-	/** @return allocated name for mesh group for master mesh */
-	char *get_standard_mesh_group_name(cmzn_mesh_id master_mesh);
 
 	/**
 	 * Note: with canCreate==false, only finds a field node group if it's in a field group.

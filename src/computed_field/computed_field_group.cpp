@@ -39,6 +39,7 @@
 #endif /* defined (USE_OPENCASCADE) */
 #include <cstdlib>
 #include <list>
+#include <string>
 
 char computed_field_group_type_string[] = "group";
 
@@ -656,15 +657,24 @@ cmzn_field_group_id Computed_field_group::getFirstNonEmptyGroup()
 	return 0;
 }
 
-char *Computed_field_group::get_standard_nodeset_group_name(cmzn_nodeset_id master_nodeset)
+namespace {
+
+std::string getStandardMeshGroupName(const char* groupFieldName, cmzn_mesh* mesh)
 {
-	char *name = cmzn_field_get_name(this->getField());
-	int error = 0;
-	append_string(&name, ".", &error);
-	char *nodeset_name = cmzn_nodeset_get_name(master_nodeset);
-	append_string(&name, nodeset_name, &error);
-	DEALLOCATE(nodeset_name);
-	return name;
+	std::string meshGroupName(groupFieldName);
+	meshGroupName.append(".");
+	meshGroupName.append(cmzn_mesh_get_FE_mesh_internal(mesh)->getName());
+	return meshGroupName;
+}
+
+std::string getStandardNodesetGroupName(const char* groupFieldName, cmzn_nodeset* nodeset)
+{
+	std::string nodesetGroupName(groupFieldName);
+	nodesetGroupName.append(".");
+	nodesetGroupName.append(cmzn_nodeset_get_FE_nodeset_internal(nodeset)->getName());
+	return nodesetGroupName;
+}
+
 }
 
 cmzn_field_node_group* Computed_field_group::getOrCreateFieldNodeGroup(cmzn_nodeset* nodeset, bool canGet, bool canCreate)
@@ -679,7 +689,9 @@ cmzn_field_node_group* Computed_field_group::getOrCreateFieldNodeGroup(cmzn_node
 	if (subregion != this->region)
 	{
 		this->region->beginHierarchicalChange();
-		subregion_group = this->getOrCreateSubregionFieldGroup(subregion, canGet || canCreate, canCreate);
+		subregion_group = this->getOrCreateSubregionFieldGroup(subregion,
+			canGet || canCreate,
+			canCreate || subregion->findFieldByName(getStandardNodesetGroupName(this->field->name, nodeset).c_str()));
 		if (!subregion_group)
 		{
 			this->region->endHierarchicalChange();
@@ -695,52 +707,52 @@ cmzn_field_node_group* Computed_field_group::getOrCreateFieldNodeGroup(cmzn_node
 
 	cmzn_field_node_group* node_group = nullptr;
 	const bool use_data = cmzn_nodeset_is_data_internal(nodeset);
-	cmzn_field* local_node_group_field = (use_data) ? group_core->local_data_group : group_core->local_node_group;
-	if (local_node_group_field)
+	cmzn_field* localSubobjectField = (use_data) ? group_core->local_data_group : group_core->local_node_group;
+	if (localSubobjectField)
 	{
 		if (canGet)
 		{
-			node_group = cmzn_field_cast_node_group(local_node_group_field);
+			node_group = cmzn_field_cast_node_group(localSubobjectField);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "FieldGroup.createFieldNodeGroup.  Found existing node group field in group %s", this->field->name);
+			display_message(ERROR_MESSAGE, "FieldGroup.createFieldNodeGroup.  Found existing node group field %s", localSubobjectField->name);
 		}
 	}
 	else
 	{
 		// find by name & check it is for same FE_nodeset
-		cmzn_nodeset* master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
-		char* name = group_core->get_standard_nodeset_group_name(master_nodeset);
-		cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(subregion);
-		cmzn_field* existing_field = cmzn_fieldmodule_find_field_by_name(fieldmodule, name);
-		if (existing_field)
+		std::string subobjectFieldName = getStandardNodesetGroupName(group_core->field->name, nodeset);
+		cmzn_field* existingField = subregion->findFieldByName(subobjectFieldName.c_str()); // not accessed
+		if (existingField)
 		{
-			node_group = cmzn_field_cast_node_group(existing_field);
+			node_group = cmzn_field_cast_node_group(existingField);
 			if (node_group)
 			{
 				if (Computed_field_node_group_core_cast(node_group)->getFeNodeset() != cmzn_nodeset_get_FE_nodeset_internal(nodeset))
 				{
-					display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldNodeGroup.  Found existing node group field of name %s for wrong nodeset", name);
+					display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldNodeGroup.  Found existing node group field of name %s for wrong nodeset", subobjectFieldName.c_str());
 					cmzn_field_node_group_destroy(&node_group);
 				}
 				else if (!canGet)
 				{
-					display_message(ERROR_MESSAGE, "FieldGroup.createFieldNodeGroup.  Found existing node group field of name %s", name);
+					display_message(ERROR_MESSAGE, "FieldGroup.createFieldNodeGroup.  Found existing node group field of name %s", subobjectFieldName.c_str());
 					cmzn_field_node_group_destroy(&node_group);
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldNodeGroup.  Found existing non-group field of name %s", name);
+				display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldNodeGroup.  Found existing non-group field of name %s", subobjectFieldName.c_str());
 			}
 		}
-		if ((!existing_field) && canCreate)
+		if ((!existingField) && canCreate)
 		{
-			cmzn_field *node_group_field = cmzn_fieldmodule_create_field_node_group(fieldmodule, master_nodeset);
-			cmzn_field_set_name(node_group_field, name);
+			cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(subregion);
+			cmzn_field *node_group_field = cmzn_fieldmodule_create_field_node_group(fieldmodule, nodeset);
+			cmzn_field_set_name(node_group_field, subobjectFieldName.c_str());
 			node_group = cmzn_field_cast_node_group(node_group_field);
 			cmzn_field_destroy(&node_group_field);
+			cmzn_fieldmodule_destroy(&fieldmodule);
 		}
 		if (node_group)
 		{
@@ -748,10 +760,6 @@ cmzn_field_node_group* Computed_field_group::getOrCreateFieldNodeGroup(cmzn_node
 			group_core->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_ADD);
 			group_core->field->setChanged();
 		}
-		cmzn_field_destroy(&existing_field);
-		cmzn_fieldmodule_destroy(&fieldmodule);
-		DEALLOCATE(name);
-		cmzn_nodeset_destroy(&master_nodeset);
 	}
 
 	if (subregion_group)
@@ -769,17 +777,6 @@ cmzn_field_node_group* Computed_field_group::getOrCreateFieldNodeGroup(cmzn_node
 	return node_group;
 }
 
-char *Computed_field_group::get_standard_mesh_group_name(cmzn_mesh_id master_mesh)
-{
-	char *name = cmzn_field_get_name(this->getField());
-	int error = 0;
-	append_string(&name, ".", &error);
-	char *mesh_name = cmzn_mesh_get_name(master_mesh);
-	append_string(&name, mesh_name, &error);
-	DEALLOCATE(mesh_name);
-	return name;
-}
-
 cmzn_field_element_group* Computed_field_group::getOrCreateFieldElementGroup(cmzn_mesh* mesh, bool canGet, bool canCreate)
 {
 	if (this->contains_all || (!mesh) || !(canGet || canCreate))
@@ -792,7 +789,9 @@ cmzn_field_element_group* Computed_field_group::getOrCreateFieldElementGroup(cmz
 	if (subregion != this->region)
 	{
 		this->region->beginHierarchicalChange();
-		subregion_group = this->getOrCreateSubregionFieldGroup(subregion, canGet || canCreate, canCreate);
+		subregion_group = this->getOrCreateSubregionFieldGroup(subregion,
+			canGet || canCreate,
+			canCreate || subregion->findFieldByName(getStandardMeshGroupName(this->field->name, mesh).c_str()));
 		if (!subregion_group)
 		{
 			this->region->endHierarchicalChange();
@@ -808,51 +807,52 @@ cmzn_field_element_group* Computed_field_group::getOrCreateFieldElementGroup(cmz
 
 	cmzn_field_element_group* element_group = nullptr;
 	const int dimension = cmzn_mesh_get_dimension(mesh);
-	if (this->local_element_group[dimension - 1])
+	cmzn_field* localSubobjectField = group_core->local_element_group[dimension - 1];
+	if (localSubobjectField)
 	{
 		if (canGet)
 		{
-			element_group = cmzn_field_cast_element_group(this->local_element_group[dimension - 1]);
+			element_group = cmzn_field_cast_element_group(localSubobjectField);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "FieldGroup.createFieldElementGroup.  Found existing element group field in group %s", this->field->name);
+			display_message(ERROR_MESSAGE, "FieldGroup.createFieldElementGroup.  Found existing element group field %s", localSubobjectField->name);
 		}
 	}
 	else
 	{
 		// find by name & check it is for same FE_mesh
-		cmzn_mesh* master_mesh = cmzn_mesh_get_master_mesh(mesh);
-		char* name = group_core->get_standard_mesh_group_name(master_mesh);
-		cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(subregion);
-		cmzn_field* existing_field = cmzn_fieldmodule_find_field_by_name(fieldmodule, name);
-		if (existing_field)
+		std::string subobjectFieldName = getStandardMeshGroupName(group_core->field->name, mesh);
+		cmzn_field* existingField = subregion->findFieldByName(subobjectFieldName.c_str()); // not accessed
+		if (existingField)
 		{
-			element_group = cmzn_field_cast_element_group(existing_field);
+			element_group = cmzn_field_cast_element_group(existingField);
 			if (element_group)
 			{
 				if (Computed_field_element_group_core_cast(element_group)->getFeMesh() != cmzn_mesh_get_FE_mesh_internal(mesh))
 				{
-					display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldElementGroup.  Found existing element group field of name %s for wrong mesh", name);
+					display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldElementGroup.  Found existing element group field of name %s for wrong mesh", subobjectFieldName.c_str());
 					cmzn_field_element_group_destroy(&element_group);
 				}
 				else if (!canGet)
 				{
-					display_message(ERROR_MESSAGE, "FieldGroup.createFieldElementGroup.  Found existing element group field of name %s", name);
+					display_message(ERROR_MESSAGE, "FieldGroup.createFieldElementGroup.  Found existing element group field of name %s", subobjectFieldName.c_str());
 					cmzn_field_element_group_destroy(&element_group);
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldElementGroup.  Found existing non-group field of name %s", name);
+				display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldElementGroup.  Found existing non-group field of name %s", subobjectFieldName.c_str());
 			}
 		}
-		if ((!existing_field) && canCreate)
+		if ((!existingField) && canCreate)
 		{
-			cmzn_field* element_group_field = cmzn_fieldmodule_create_field_element_group(fieldmodule, master_mesh);
-			cmzn_field_set_name(element_group_field, name);
+			cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(subregion);
+			cmzn_field* element_group_field = cmzn_fieldmodule_create_field_element_group(fieldmodule, mesh);
+			cmzn_field_set_name(element_group_field, subobjectFieldName.c_str());
 			element_group = cmzn_field_cast_element_group(element_group_field);
 			cmzn_field_destroy(&element_group_field);
+			cmzn_fieldmodule_destroy(&fieldmodule);
 		}
 		if (element_group)
 		{
@@ -860,10 +860,6 @@ cmzn_field_element_group* Computed_field_group::getOrCreateFieldElementGroup(cmz
 			group_core->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_ADD);
 			group_core->field->setChanged();
 		}
-		cmzn_field_destroy(&existing_field);
-		cmzn_fieldmodule_destroy(&fieldmodule);
-		DEALLOCATE(name);
-		cmzn_mesh_destroy(&master_mesh);
 	}
 
 	if (subregion_group)
