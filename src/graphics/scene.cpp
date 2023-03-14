@@ -847,12 +847,13 @@ void cmzn_scene::notifySelectionevent(cmzn_selectionevent_id selectionevent)
 void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 {
 	bool local_selection_changed = false;
-	if (this->selection_group)
+	cmzn_field_group* localSelectionGroup = this->getLocalSelectionGroupForHighlighting();
+	if (localSelectionGroup)
 	{
 		struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
 		const cmzn_field_change_detail *base_change_detail = 0;
 		int change_flags = Computed_field_manager_message_get_object_change_and_detail(
-			managerMessage, cmzn_field_group_base_cast(this->selection_group), &base_change_detail);
+			managerMessage, cmzn_field_group_base_cast(localSelectionGroup), &base_change_detail);
 		if (change_flags & (MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field)))
 		{
 			if (base_change_detail)
@@ -861,7 +862,9 @@ void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 					dynamic_cast<const cmzn_field_hierarchical_group_change_detail *>(base_change_detail);
 				int group_local_change = group_change_detail->getLocalChangeSummary();
 				if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
+				{
 					local_selection_changed = true;
+				}
 				int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
 				if (this->selectionnotifier_list)
 				{

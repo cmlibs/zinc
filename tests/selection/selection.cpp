@@ -406,3 +406,49 @@ TEST(ZincSelectionnotifier, reentrancy)
 	}
 
 }
+
+// Test selection notification for child region's inherited selection group
+TEST(ZincSelectionnotifier, inheritSelectionGroup)
+{
+	ZincTestSetupCpp zinc;
+
+	Region childRegion = zinc.root_region.createChild("child");
+	Fieldmodule childFm = childRegion.getFieldmodule();
+	EXPECT_TRUE(childFm.isValid());
+	addSomeNodes(childFm.getId());
+	Scene childScene = childRegion.getScene();
+	EXPECT_TRUE(childScene.isValid());
+
+	Nodeset childNodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Node childNode1 = childNodes.findNodeByIdentifier(1);
+	EXPECT_TRUE(childNode1.isValid());
+	Node childNode2 = childNodes.findNodeByIdentifier(2);
+	EXPECT_TRUE(childNode2.isValid());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	FieldNodeGroup fieldNodeGroup = group.createFieldNodeGroup(childNodes);
+	EXPECT_TRUE(fieldNodeGroup.isValid());
+	NodesetGroup nodesetGroup = fieldNodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(group));
+
+	GraphicsPoints childPoints = childScene.createGraphicsPoints();
+	EXPECT_TRUE(childPoints.isValid());
+	Field cmissNumber = childFm.findFieldByName("cmiss_number");
+	EXPECT_TRUE(cmissNumber.isValid());
+	EXPECT_EQ(RESULT_OK, childPoints.setCoordinateField(cmissNumber));
+	EXPECT_EQ(RESULT_OK, childPoints.setSelectMode(Graphics::SELECT_MODE_DRAW_SELECTED));
+
+	Selectionnotifier selectionnotifier = childScene.createSelectionnotifier();
+	EXPECT_TRUE(selectionnotifier.isValid());
+	SelectioncallbackRecordChange callback;
+	EXPECT_EQ(RESULT_OK, selectionnotifier.setCallback(callback));
+	EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(childNode1));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, callback.getChangeSummary());
+	EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(childNode2));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, callback.getChangeSummary());
+
+	EXPECT_EQ(RESULT_OK, nodesetGroup.removeNode(childNode1));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, callback.getChangeSummary());
+}

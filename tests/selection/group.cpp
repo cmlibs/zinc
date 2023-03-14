@@ -946,6 +946,7 @@ TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
 	zinc.root_region.beginHierarchicalChange();
 	EXPECT_EQ(OK, result = childGroup.clearLocal());
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
+	childGroup = FieldGroup();
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
 	zinc.root_region.endHierarchicalChange();
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
