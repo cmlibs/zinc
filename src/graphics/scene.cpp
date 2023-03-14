@@ -10,9 +10,9 @@ FILE : scene.cpp
 
 #include <algorithm>
 #include <list>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 #include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/glyph.h"
@@ -175,6 +175,7 @@ cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmodu
 	top_region_change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))()),
 	picking_name(GET_UNIQUE_SCENE_NAME()),
 	selection_group(0),
+	hadLocalSelectionGroup(false),
 	selectionChanged(false),
 	selectionnotifier_list(0),
 	editorCopy(false),
@@ -759,11 +760,49 @@ int cmzn_scene_set_default_coordinate_field(cmzn_scene *scene,
 	return 0;
 }
 
+void cmzn_scene::refreshSceneTreeSelectionGroups(const bool wasEmpty)
+{
+	if (this->selection_group)
+	{
+		return;  // subtree looks after itself
+	}
+	// cache region and scene changes as propagation down region tree may modify selection group
+	this->beginChange();
+	this->region->beginChange();
+	cmzn_region* childRegion = this->region->getFirstChild();
+	while (childRegion)
+	{
+		childRegion->getScene()->refreshSceneTreeSelectionGroups(wasEmpty);
+		childRegion = childRegion->getNextSibling();
+	}
+	cmzn_field_group* localSelectionGroup = this->getLocalSelectionGroupForHighlighting();
+	const bool isEmpty = (!localSelectionGroup) || cmzn_field_group_is_empty(localSelectionGroup);
+	if (!(wasEmpty && isEmpty))
+	{
+		if (this->selectionnotifier_list)
+		{
+			cmzn_selectionevent* selectionevent = new cmzn_selectionevent();
+			if (!wasEmpty)
+				selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
+			if (!isEmpty)
+				selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
+			this->notifySelectionevent(selectionevent);
+			cmzn_selectionevent::deaccess(selectionevent);
+		}
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+			cmzn_graphics_update_selected, nullptr, this->list_of_graphics);
+	}
+	this->region->endChange();
+	this->endChange();
+}
+
 int cmzn_scene::setSelectionGroup(cmzn_field_group* selectionGroupIn)
 {
-	if (this->selection_group != selectionGroupIn)
+	if (selection_group != selectionGroupIn)
 	{
+		// cache region and scene changes as propagation down region tree may modify selection group
 		this->beginChange();
+		this->region->beginChange();
 		bool isEmpty = true;
 		if (selectionGroupIn)
 		{
@@ -779,6 +818,13 @@ int cmzn_scene::setSelectionGroup(cmzn_field_group* selectionGroupIn)
 			cmzn_field_group_destroy(&this->selection_group);
 		}
 		this->selection_group = selectionGroupIn;
+		// refresh selection group throughout scene tree
+		cmzn_region* childRegion = this->region->getFirstChild();
+		while (childRegion)
+		{
+			childRegion->getScene()->refreshSceneTreeSelectionGroups(wasEmpty);
+			childRegion = childRegion->getNextSibling();
+		}
 		if (!(wasEmpty && isEmpty))
 		{
 			if (this->selectionnotifier_list)
@@ -795,6 +841,7 @@ int cmzn_scene::setSelectionGroup(cmzn_field_group* selectionGroupIn)
 				cmzn_graphics_update_selected, nullptr, this->list_of_graphics);
 		}
 		this->setChanged();
+		this->region->endChange();
 		this->endChange();
 	}
 	return CMZN_OK;
@@ -815,6 +862,7 @@ cmzn_field_group* cmzn_scene::getLocalSelectionGroupForHighlighting()
 			cmzn_field_group* subregion_group = cmzn_field_group_get_subregion_field_group(parentScene->selection_group, this->region);
 			if (subregion_group)
 			{
+				this->hadLocalSelectionGroup = true;
 				// remove access before returning
 				cmzn_field_group* tmp_group = subregion_group;
 				cmzn_field_group_destroy(&tmp_group);
@@ -822,6 +870,11 @@ cmzn_field_group* cmzn_scene::getLocalSelectionGroupForHighlighting()
 			}
 			break;
 		}
+	}
+	if (this->hadLocalSelectionGroup)
+	{
+		this->selectionChanged = true;
+		this->hadLocalSelectionGroup = false;
 	}
 	return nullptr;
 }

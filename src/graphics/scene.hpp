@@ -66,6 +66,7 @@ struct cmzn_scene
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
 	unsigned int picking_name;
 	cmzn_field_group_id selection_group;
+	bool hadLocalSelectionGroup; // used to flag loss of inherited selection group to ensure graphics update
 	bool selectionChanged;
 	cmzn_selectionnotifier_list *selectionnotifier_list;
 	bool editorCopy; // is this a temporary scene for Cmgui Scene editor?
@@ -80,6 +81,10 @@ private:
 	cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
 
 	~cmzn_scene();
+
+	/** Propagate change of inherited selection group down scene tree.
+	 * @param wasEmpty  Set if ancestor selection group was empty before change. */
+	void refreshSceneTreeSelectionGroups(const bool wasEmpty);
 
 	void transformationChange();
 

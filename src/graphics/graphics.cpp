@@ -13,9 +13,9 @@
 
 #include "opencmiss/zinc/zincconfigure.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/font.h"
@@ -3524,7 +3524,9 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 	cmzn_graphics_field_change_data *change_data =
 		static_cast<cmzn_graphics_field_change_data *>(change_data_void);
 	if (change_data->selection_changed && (CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
-		cmzn_graphics_update_selected(graphics, (void *)NULL);
+	{
+		cmzn_graphics_update_selected(graphics, (void*)NULL);
+	}
 	if (0 == graphics->graphics_object)
 	{
 		graphics->setChange(CMZN_GRAPHICS_CHANGE_REDRAW);

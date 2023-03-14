@@ -433,12 +433,18 @@ TEST(ZincSelectionnotifier, inheritSelectionGroup)
 	EXPECT_TRUE(nodesetGroup.isValid());
 	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(group));
 
-	GraphicsPoints childPoints = childScene.createGraphicsPoints();
-	EXPECT_TRUE(childPoints.isValid());
 	Field cmissNumber = childFm.findFieldByName("cmiss_number");
 	EXPECT_TRUE(cmissNumber.isValid());
+
+	GraphicsPoints childPoints = childScene.createGraphicsPoints();
+	EXPECT_TRUE(childPoints.isValid());
 	EXPECT_EQ(RESULT_OK, childPoints.setCoordinateField(cmissNumber));
 	EXPECT_EQ(RESULT_OK, childPoints.setSelectMode(Graphics::SELECT_MODE_DRAW_SELECTED));
+
+	GraphicsPoints childPoints2 = childScene.createGraphicsPoints();
+	EXPECT_TRUE(childPoints2.isValid());
+	EXPECT_EQ(RESULT_OK, childPoints2.setCoordinateField(cmissNumber));
+	EXPECT_EQ(RESULT_OK, childPoints2.setSelectMode(Graphics::SELECT_MODE_DRAW_UNSELECTED));
 
 	Selectionnotifier selectionnotifier = childScene.createSelectionnotifier();
 	EXPECT_TRUE(selectionnotifier.isValid());
@@ -446,9 +452,19 @@ TEST(ZincSelectionnotifier, inheritSelectionGroup)
 	EXPECT_EQ(RESULT_OK, selectionnotifier.setCallback(callback));
 	EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(childNode1));
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, callback.getChangeSummary());
+	callback.clear();
 	EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(childNode2));
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, callback.getChangeSummary());
+	callback.clear();
 
 	EXPECT_EQ(RESULT_OK, nodesetGroup.removeNode(childNode1));
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, callback.getChangeSummary());
+	callback.clear();
+
+	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(Field()));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, callback.getChangeSummary());
+	callback.clear();
+
+	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(group));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, callback.getChangeSummary());
 }
