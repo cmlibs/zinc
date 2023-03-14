@@ -807,7 +807,7 @@ cmzn_field_group* cmzn_scene::getLocalSelectionGroupForHighlighting()
 		return this->selection_group;
 	}
 	cmzn_region* parentRegion = this->region;
-	while (parentRegion = parentRegion->getParent())
+	while ((parentRegion = parentRegion->getParent()))
 	{
 		cmzn_scene* parentScene = parentRegion->getScene();
 		if (parentScene->selection_group)
