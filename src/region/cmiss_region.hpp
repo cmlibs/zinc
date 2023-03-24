@@ -408,6 +408,7 @@ public:
 	 */
 	void clearFieldValueCaches(cmzn_field *field);
 
+	/** @return  Non-accessed field of name, or nullptr if not found */
 	cmzn_field *findFieldByName(const char *fieldName) const
 	{
 		if (!fieldName)

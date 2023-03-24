@@ -190,6 +190,7 @@ TEST(ZincFieldGroup, add_remove_nodes)
 	EXPECT_FALSE(nodesetGroup.containsNode(node));
 
 	// test for empty groups
+	childGroup = FieldGroup();  // so not rediscovered by name
 	EXPECT_FALSE((nonEmptyGroup = group.getFirstNonEmptySubregionFieldGroup()).isValid());
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_FALSE((childGroup = group.getSubregionFieldGroup(childRegion)).isValid());
@@ -311,6 +312,7 @@ TEST(ZincFieldGroup, add_remove_elements)
 	EXPECT_FALSE(meshGroup.containsElement(element));
 
 	// test for empty groups
+	childGroup = FieldGroup();  // so not rediscovered by name
 	EXPECT_FALSE((nonEmptyGroup = group.getFirstNonEmptySubregionFieldGroup()).isValid());
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_FALSE((childGroup = group.getSubregionFieldGroup(childRegion)).isValid());
@@ -515,11 +517,9 @@ TEST(ZincFieldGroup, subelementHandlingMode)
 	EXPECT_EQ(OK, result = group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL, mode = group.getSubelementHandlingMode());
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_NONE, mode = childGroup.getSubelementHandlingMode());
-	// rediscovery of subregion and subobject groups are inconsistent
-	// former works on create, latter on find. Create makes more sense.
+
+	// subregion group can now be rediscovered by name using getSubregionFieldGroup()
 	FieldGroup tempGroup = group.getSubregionFieldGroup(childRegion);
-	EXPECT_FALSE(tempGroup.isValid());
-	tempGroup = group.createSubregionFieldGroup(childRegion);
 	EXPECT_TRUE(tempGroup.isValid());
 	EXPECT_EQ(childGroup, tempGroup);
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_NONE, mode = childGroup.getSubelementHandlingMode());
@@ -926,6 +926,7 @@ TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
 	// caching changes correctly propagates to the parent group
 	callback.clear();
 	zinc.fm.beginChange();
+	childGroup = FieldGroup();  // so not rediscovered by name
 	EXPECT_EQ(OK, result = group.removeRegion(childRegion));
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
@@ -945,6 +946,7 @@ TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
 	zinc.root_region.beginHierarchicalChange();
 	EXPECT_EQ(OK, result = childGroup.clearLocal());
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
+	childGroup = FieldGroup();
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
 	zinc.root_region.endHierarchicalChange();
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
@@ -1246,4 +1248,252 @@ TEST(ZincFieldGroup, fieldCleanupOrder)
 
 	FieldElementGroup elementGroup = group.createFieldElementGroup(mesh2d);
 	EXPECT_TRUE(elementGroup.isValid());
+}
+
+// Test bug where main group with subelement groups falls to zero access count
+// while change cache is in effect. The subelement groups remain linked to their owner
+// group and vice-versa. If another group is created and the subelement groups
+// rediscovered, their owner pointers are cleared when the original owner group is
+// later destroyed.
+TEST(ZincFieldGroup, orphaned_subelement_groups)
+{
+	ZincTestSetupCpp zinc;
+	char* name;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_EQ(RESULT_OK, group.setName("bob"));
+	EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	FieldElementGroup elementGroup2d = group.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(elementGroup2d.isValid());
+	name = elementGroup2d.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+	EXPECT_TRUE(meshGroup2d.isValid());
+	for (int nid = 2; nid <= 4; ++nid)
+	{
+		EXPECT_EQ(RESULT_OK, meshGroup2d.addElement(mesh2d.findElementByIdentifier(nid)));
+	}
+	EXPECT_EQ(3, meshGroup2d.getSize());
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	FieldElementGroup elementGroup1d = group.getFieldElementGroup(mesh1d);
+	EXPECT_TRUE(elementGroup1d.isValid());
+	name = elementGroup1d.getName();
+	EXPECT_STREQ("bob.mesh1d", name);
+	cmzn_deallocate(name);
+	MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+	EXPECT_TRUE(meshGroup1d.isValid());
+	EXPECT_EQ(10, meshGroup1d.getSize());
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldNodeGroup nodeGroup = group.getFieldNodeGroup(nodes);
+	EXPECT_TRUE(nodeGroup.isValid());
+	name = nodeGroup.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+	EXPECT_EQ(8, nodesetGroup.getSize());
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.beginChange());
+	// clear group to orphan its subelement groups
+	group = FieldGroup();
+	Field tmpField = zinc.fm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh2d");
+	EXPECT_EQ(elementGroup2d, tmpField);
+	tmpField = zinc.fm.findFieldByName("bob.mesh1d");
+	EXPECT_EQ(elementGroup1d, tmpField);
+	tmpField = zinc.fm.findFieldByName("bob.nodes");
+	EXPECT_EQ(nodeGroup, tmpField);
+	// now create another group of the same name and find the subelement groups
+	// which aren't cleared because this test still holds a handle to them
+	group = zinc.fm.createFieldGroup();
+	EXPECT_EQ(RESULT_OK, group.setName("bob"));
+	EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+	tmpField = group.getFieldElementGroup(mesh2d);
+	EXPECT_EQ(elementGroup2d, tmpField);
+	EXPECT_EQ(3, meshGroup2d.getSize());
+	tmpField = group.getFieldElementGroup(mesh1d);
+	EXPECT_EQ(elementGroup1d, tmpField);
+	EXPECT_EQ(10, meshGroup1d.getSize());
+	tmpField = group.getFieldNodeGroup(nodes);
+	EXPECT_EQ(nodeGroup, tmpField);
+	EXPECT_EQ(8, nodesetGroup.getSize());
+	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
+
+	// get meshGroup3d
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	FieldElementGroup elementGroup3d = group.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(elementGroup3d.isValid());
+	name = elementGroup3d.getName();
+	EXPECT_STREQ("bob.mesh3d", name);
+	cmzn_deallocate(name);
+	MeshGroup meshGroup3d = elementGroup3d.getMeshGroup();
+	EXPECT_TRUE(meshGroup3d.isValid());
+	EXPECT_EQ(0, meshGroup3d.getSize());
+
+	// following formerly crashed due to nullptr to owner group in subelement groups
+	EXPECT_EQ(RESULT_OK, meshGroup3d.addElement(mesh3d.findElementByIdentifier(1)));
+	EXPECT_EQ(1, meshGroup3d.getSize());
+	EXPECT_EQ(6, meshGroup2d.getSize());
+	EXPECT_EQ(12, meshGroup1d.getSize());
+	EXPECT_EQ(8, nodesetGroup.getSize());
+
+	// now test what happens if we don't hold handles to the subelement groups and mesh groups
+	elementGroup3d = FieldElementGroup();
+	meshGroup3d = MeshGroup();
+	elementGroup2d = FieldElementGroup();
+	meshGroup2d = MeshGroup();
+	elementGroup1d = FieldElementGroup();
+	meshGroup1d = MeshGroup();
+	nodeGroup = FieldNodeGroup();
+	nodesetGroup = NodesetGroup();
+	tmpField = Field();
+	EXPECT_EQ(RESULT_OK, zinc.fm.beginChange());
+	// clear group to orphan its subelement groups
+	group = FieldGroup();
+	tmpField = zinc.fm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh3d");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh2d");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.mesh1d");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = zinc.fm.findFieldByName("bob.nodes");
+	EXPECT_FALSE(tmpField.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
+}
+
+// Test get/create subobject groups in subregions.
+TEST(ZincFieldGroup, getCreateSubregionSubobjectGroups)
+{
+	ZincTestSetupCpp zinc;
+	char* name;
+	Field tmpField;
+
+	Region child = zinc.root_region.createChild("child");
+	EXPECT_TRUE(child.isValid());
+
+	FieldGroup bob = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	FieldElementGroup bobMesh2d = bob.getFieldElementGroup(mesh2d);
+	EXPECT_FALSE(bobMesh2d.isValid());
+	bobMesh2d = bob.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(bobMesh2d.isValid());
+	name = bobMesh2d.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldNodeGroup bobNodes = bob.getFieldNodeGroup(nodes);
+	EXPECT_FALSE(bobNodes.isValid());
+	bobNodes = bob.createFieldNodeGroup(nodes);
+	EXPECT_TRUE(bobNodes.isValid());
+	name = bobNodes.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+
+	FieldGroup childBob = bob.getSubregionFieldGroup(child);
+	EXPECT_FALSE(childBob.isValid());
+	childBob = bob.createSubregionFieldGroup(child);
+	EXPECT_TRUE(childBob.isValid());
+	name = childBob.getName();
+	EXPECT_STREQ("bob", name);
+	cmzn_deallocate(name);
+	Fieldmodule childFm = child.getFieldmodule();
+	Mesh childMesh2d = childFm.findMeshByDimension(2);
+	FieldElementGroup childBobMesh2d = bob.getFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childBobMesh2d.isValid());
+	childBobMesh2d = bob.createFieldElementGroup(childMesh2d);
+	EXPECT_TRUE(childBobMesh2d.isValid());
+	name = childBobMesh2d.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	Nodeset childNodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldNodeGroup childBobNodes = bob.getFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childBobNodes.isValid());
+	childBobNodes = bob.createFieldNodeGroup(childNodes);
+	EXPECT_TRUE(childBobNodes.isValid());
+	name = childBobNodes.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+
+	// orphan subobject groups in child region and try to get them back by name
+	childBob = FieldGroup();
+	bob.clear();
+	bob.removeEmptySubgroups();
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.mesh2d");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.nodes");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+	FieldElementGroup childBobMesh2dGet = bob.getFieldElementGroup(childMesh2d);
+	EXPECT_TRUE(childBobMesh2dGet.isValid());
+	EXPECT_EQ(childBobMesh2d, childBobMesh2dGet);
+	name = childBobMesh2dGet.getName();
+	EXPECT_STREQ("bob.mesh2d", name);
+	cmzn_deallocate(name);
+	FieldNodeGroup childBobNodesTmp = bob.getFieldNodeGroup(childNodes);
+	EXPECT_TRUE(childBobNodesTmp.isValid());
+	EXPECT_EQ(childBobNodes, childBobNodesTmp);
+	name = childBobNodesTmp.getName();
+	EXPECT_STREQ("bob.nodes", name);
+	cmzn_deallocate(name);
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+
+	// orphan subobject groups in child region and test can't create them
+	childBob = FieldGroup();
+	bob.clear();
+	bob.removeEmptySubgroups();
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_FALSE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.mesh2d");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = childFm.findFieldByName("bob.nodes");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+	FieldElementGroup childBobMesh2dCreate = bob.createFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childBobMesh2dCreate.isValid());
+	FieldNodeGroup childBobNodesCreate = bob.createFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childBobNodesCreate.isValid());
+	// as a side effect, the subregion group is created:
+	tmpField = childFm.findFieldByName("bob");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
+
+	// test can't get a subregion subobject group if existing field of wrong type is using expected name
+	FieldGroup fred = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(fred.isValid());
+	EXPECT_EQ(RESULT_OK, fred.setName("fred"));
+	const double one = 1.0;
+	FieldConstant childFredMesh2dConstant = childFm.createFieldConstant(1, &one);
+	EXPECT_TRUE(childFredMesh2dConstant.isValid());
+	EXPECT_EQ(RESULT_OK, childFredMesh2dConstant.setName("fred.mesh2d"));
+	FieldElementGroup childFredMesh2dErr = fred.getFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childFredMesh2dErr.isValid());
+	childFredMesh2dErr = fred.createFieldElementGroup(childMesh2d);
+	EXPECT_FALSE(childFredMesh2dErr.isValid());
+	FieldConstant childFredNodesConstant = childFm.createFieldConstant(1, &one);
+	EXPECT_TRUE(childFredNodesConstant.isValid());
+	EXPECT_EQ(RESULT_OK, childFredNodesConstant.setName("fred.nodes"));
+	FieldNodeGroup childFredNodesErr = fred.getFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childFredNodesErr.isValid());
+	childFredNodesErr = fred.createFieldNodeGroup(childNodes);
+	EXPECT_FALSE(childFredNodesErr.isValid());
+	// as a side effect, the subregion group is created:
+	tmpField = childFm.findFieldByName("fred");
+	EXPECT_TRUE(tmpField.isValid());
+	tmpField = Field();
 }

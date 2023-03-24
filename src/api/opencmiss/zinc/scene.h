@@ -379,7 +379,9 @@ ZINC_API cmzn_timekeepermodule_id cmzn_scene_get_timekeepermodule(
 	cmzn_scene_id scene);
 
 /**
- * Get the selection field for the scene, if any.
+ * Get the selection field for the scene, if set.
+ * If not set, the scene inherits subregion group from parent selection group,
+ * if any.
  *
  * @param scene  The scene to query.
  * @return  Handle to selection field, or NULL/invalid handle if none or failed.
@@ -388,14 +390,14 @@ ZINC_API cmzn_field_id cmzn_scene_get_selection_field(cmzn_scene_id scene);
 
 /**
  * Set the field giving selection and highlighting in the scene.
- * Currently restricted to 'field_group' type fields.
- * This function will also set the selection field for all of its subregion
- * scenes if the a corresponding subregion field_group exists, otherwise the
- * selection group of the child scene will be set to NULL.
+ * Currently restricted to a group-type field.
+ * If cleared, the scene will use the subregion group for the parent scene's
+ * selection group, if any.
  *
  * @param scene  The scene to modify.
- * @param selection_field  Group field to be used as the selection.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param selection_field  Group field to be used as the selection, or null/
+ * invalid handle to clear so potentially inherited from parent scene.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 	cmzn_field_id selection_field);
