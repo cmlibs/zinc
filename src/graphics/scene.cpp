@@ -10,9 +10,9 @@ FILE : scene.cpp
 
 #include <algorithm>
 #include <list>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 #include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/glyph.h"
@@ -175,6 +175,7 @@ cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmodu
 	top_region_change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))()),
 	picking_name(GET_UNIQUE_SCENE_NAME()),
 	selection_group(0),
+	hadLocalSelectionGroup(false),
 	selectionChanged(false),
 	selectionnotifier_list(0),
 	editorCopy(false),
@@ -759,6 +760,125 @@ int cmzn_scene_set_default_coordinate_field(cmzn_scene *scene,
 	return 0;
 }
 
+void cmzn_scene::refreshSceneTreeSelectionGroups(const bool wasEmpty)
+{
+	if (this->selection_group)
+	{
+		return;  // subtree looks after itself
+	}
+	// cache region and scene changes as propagation down region tree may modify selection group
+	this->beginChange();
+	this->region->beginChange();
+	cmzn_region* childRegion = this->region->getFirstChild();
+	while (childRegion)
+	{
+		childRegion->getScene()->refreshSceneTreeSelectionGroups(wasEmpty);
+		childRegion = childRegion->getNextSibling();
+	}
+	cmzn_field_group* localSelectionGroup = this->getLocalSelectionGroupForHighlighting();
+	const bool isEmpty = (!localSelectionGroup) || cmzn_field_group_is_empty(localSelectionGroup);
+	if (!(wasEmpty && isEmpty))
+	{
+		if (this->selectionnotifier_list)
+		{
+			cmzn_selectionevent* selectionevent = new cmzn_selectionevent();
+			if (!wasEmpty)
+				selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
+			if (!isEmpty)
+				selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
+			this->notifySelectionevent(selectionevent);
+			cmzn_selectionevent::deaccess(selectionevent);
+		}
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+			cmzn_graphics_update_selected, nullptr, this->list_of_graphics);
+	}
+	this->region->endChange();
+	this->endChange();
+}
+
+int cmzn_scene::setSelectionGroup(cmzn_field_group* selectionGroupIn)
+{
+	if (selection_group != selectionGroupIn)
+	{
+		// cache region and scene changes as propagation down region tree may modify selection group
+		this->beginChange();
+		this->region->beginChange();
+		bool isEmpty = true;
+		if (selectionGroupIn)
+		{
+			isEmpty = cmzn_field_group_is_empty(selectionGroupIn);
+			cmzn_field_group_base_cast(selectionGroupIn)->access();
+		}
+		this->selectionChanged = true;
+		bool wasEmpty = true;
+		if (this->selection_group)
+		{
+			wasEmpty = cmzn_field_group_is_empty(this->selection_group) &&
+				(!cmzn_field_group_was_modified(this->selection_group));
+			cmzn_field_group_destroy(&this->selection_group);
+		}
+		this->selection_group = selectionGroupIn;
+		// refresh selection group throughout scene tree
+		cmzn_region* childRegion = this->region->getFirstChild();
+		while (childRegion)
+		{
+			childRegion->getScene()->refreshSceneTreeSelectionGroups(wasEmpty);
+			childRegion = childRegion->getNextSibling();
+		}
+		if (!(wasEmpty && isEmpty))
+		{
+			if (this->selectionnotifier_list)
+			{
+				cmzn_selectionevent* selectionevent = new cmzn_selectionevent();
+				if (!wasEmpty)
+					selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
+				if (!isEmpty)
+					selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
+				this->notifySelectionevent(selectionevent);
+				cmzn_selectionevent::deaccess(selectionevent);
+			}
+			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+				cmzn_graphics_update_selected, nullptr, this->list_of_graphics);
+		}
+		this->setChanged();
+		this->region->endChange();
+		this->endChange();
+	}
+	return CMZN_OK;
+}
+
+cmzn_field_group* cmzn_scene::getLocalSelectionGroupForHighlighting()
+{
+	if (this->selection_group)
+	{
+		return this->selection_group;
+	}
+	cmzn_region* parentRegion = this->region;
+	while ((parentRegion = parentRegion->getParent()))
+	{
+		cmzn_scene* parentScene = parentRegion->getScene();
+		if (parentScene->selection_group)
+		{
+			cmzn_field_group* subregion_group = cmzn_field_group_get_subregion_field_group(parentScene->selection_group, this->region);
+			if (subregion_group)
+			{
+				this->hadLocalSelectionGroup = true;
+				// remove access before returning
+				cmzn_field_group* tmp_group = subregion_group;
+				cmzn_field_group_destroy(&tmp_group);
+				return subregion_group;
+			}
+			break;
+		}
+	}
+	if (this->hadLocalSelectionGroup)
+	{
+		this->selectionChanged = true;
+		this->hadLocalSelectionGroup = false;
+	}
+	return nullptr;
+}
+
 void cmzn_scene::notifySelectionevent(cmzn_selectionevent_id selectionevent)
 {
 	if (this->selectionnotifier_list && (this->selectionnotifier_list->size() > 0))
@@ -780,12 +900,13 @@ void cmzn_scene::notifySelectionevent(cmzn_selectionevent_id selectionevent)
 void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 {
 	bool local_selection_changed = false;
-	if (this->selection_group)
+	cmzn_field_group* localSelectionGroup = this->getLocalSelectionGroupForHighlighting();
+	if (localSelectionGroup)
 	{
 		struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
 		const cmzn_field_change_detail *base_change_detail = 0;
 		int change_flags = Computed_field_manager_message_get_object_change_and_detail(
-			managerMessage, cmzn_field_group_base_cast(this->selection_group), &base_change_detail);
+			managerMessage, cmzn_field_group_base_cast(localSelectionGroup), &base_change_detail);
 		if (change_flags & (MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field)))
 		{
 			if (base_change_detail)
@@ -794,7 +915,9 @@ void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 					dynamic_cast<const cmzn_field_hierarchical_group_change_detail *>(base_change_detail);
 				int group_local_change = group_change_detail->getLocalChangeSummary();
 				if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
+				{
 					local_selection_changed = true;
+				}
 				int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
 				if (this->selectionnotifier_list)
 				{
@@ -804,23 +927,6 @@ void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 					this->notifySelectionevent(selectionevent);
 					cmzn_selectionevent_destroy(&selectionevent);
 				}
-			}
-			// ensure child scene selection_group matches the appropriate subgroup or none if none
-			cmzn_region_id child_region = cmzn_region_get_first_child(this->region);
-			while ((NULL != child_region))
-			{
-				cmzn_scene_id child_scene = child_region->getScene();
-				if (child_scene)
-				{
-					cmzn_field_group_id child_group =
-						cmzn_field_group_get_subregion_field_group(this->selection_group, child_region);
-					cmzn_scene_set_selection_field(child_scene, cmzn_field_group_base_cast(child_group));
-					if (child_group)
-					{
-						cmzn_field_group_destroy(&child_group);
-					}
-				}
-				cmzn_region_reaccess_next_sibling(&child_region);
 			}
 		}
 	}
@@ -1014,7 +1120,7 @@ static int cmzn_scene_build_graphics_objects(
 			graphics_to_object_data.scenefilter = renderer->getScenefilter();
 			graphics_to_object_data.time = renderer->time;
 			graphics_to_object_data.incrementalBuild = renderer->getIncrementalBuild();
-			graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(scene);
+			graphics_to_object_data.selectionGroup = scene->getLocalSelectionGroupForHighlighting();
 			graphics_to_object_data.iso_surface_specification = 0;
 			for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
 			{
@@ -1023,10 +1129,6 @@ static int cmzn_scene_build_graphics_objects(
 			return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 				cmzn_graphics_to_graphics_object, (void *) &graphics_to_object_data,
 				scene->list_of_graphics);
-			if (graphics_to_object_data.selection_group_field)
-			{
-				cmzn_field_destroy(&graphics_to_object_data.selection_group_field);
-			}
 			cmzn_fieldcache_destroy(&graphics_to_object_data.field_cache);
 			cmzn_fieldmodule_end_change(graphics_to_object_data.field_module);
 			cmzn_fieldmodule_destroy(&graphics_to_object_data.field_module);
@@ -2193,69 +2295,15 @@ int cmzn_scene_set_transformation_matrix(cmzn_scene_id scene,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_scene_set_selection_field(cmzn_scene_id scene,
-	cmzn_field_id selection_field)
+int cmzn_scene_set_selection_field(cmzn_scene_id scene, cmzn_field_id selection_field)
 {
-	int return_code = CMZN_ERROR_ARGUMENT;
-	cmzn_field_group_id selection_group = cmzn_field_cast_group(selection_field);
-	if (scene && ((0 == selection_field) || selection_group))
+	cmzn_field_group* selection_group = cmzn_field_cast_group(selection_field);
+	if ((!scene) || ((selection_field) && (!selection_group)))
 	{
-		if (selection_group != scene->selection_group)
-		{
-			cmzn_scene_begin_change(scene);
-			bool isEmpty = true;
-			if (selection_group)
-			{
-				isEmpty = cmzn_field_group_is_empty(selection_group);
-				cmzn_field_access(cmzn_field_group_base_cast(selection_group));
-			}
-			scene->selectionChanged = true;
-			bool wasEmpty = true;
-			if (scene->selection_group)
-			{
-				wasEmpty = cmzn_field_group_is_empty(scene->selection_group) &&
-					(!cmzn_field_group_was_modified(scene->selection_group));
-				cmzn_field_group_destroy(&scene->selection_group);
-			}
-			scene->selection_group = selection_group;
-			// ensure child scene selection_group matches the appropriate subgroup or none if none
-			cmzn_field_group_id child_group = 0;
-			cmzn_region_id child_region = cmzn_region_get_first_child(scene->region);
-			while ((NULL != child_region))
-			{
-				cmzn_scene_id child_scene = child_region->getScene();
-				if (child_scene)
-				{
-					child_group = selection_group ? cmzn_field_group_get_subregion_field_group(selection_group, child_region) : 0;
-					if (child_group != child_scene->selection_group)
-						cmzn_scene_set_selection_field(child_scene, cmzn_field_group_base_cast(child_group));
-					if (child_group)
-						cmzn_field_group_destroy(&child_group);
-				}
-				cmzn_region_reaccess_next_sibling(&child_region);
-			}
-			if (!(wasEmpty && isEmpty))
-			{
-				if (scene->selectionnotifier_list)
-				{
-					cmzn_selectionevent *selectionevent = new cmzn_selectionevent();
-					if (!wasEmpty)
-						selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
-					if (!isEmpty)
-						selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
-					scene->notifySelectionevent(selectionevent);
-					cmzn_selectionevent_destroy(&selectionevent);
-				}
-				FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-					cmzn_graphics_update_selected, NULL, scene->list_of_graphics);
-			}
-			scene->setChanged();
-			cmzn_scene_end_change(scene);
-		}
-		return_code = CMZN_OK;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	if (selection_group)
-		cmzn_field_group_destroy(&selection_group);
+	const int return_code = scene->setSelectionGroup(selection_group);
+	cmzn_field_group_destroy(&selection_group);
 	return return_code;
 }
 
@@ -2331,16 +2379,11 @@ cmzn_timekeepermodule_id cmzn_scene_get_timekeepermodule(cmzn_scene_id scene)
 
 cmzn_field_id cmzn_scene_get_selection_field(cmzn_scene_id scene)
 {
-	if (scene && (scene->selection_group))
-		return cmzn_field_access(cmzn_field_group_base_cast(scene->selection_group));
-	return 0;
-}
-
-cmzn_field_id cmzn_scene_get_selection_group_private_for_highlighting(cmzn_scene_id scene)
-{
-	if (scene && scene->selection_group)
-		return cmzn_field_group_base_cast(scene->selection_group);
-	return 0;
+	if (scene && (scene->getSelectionGroup()))
+	{
+		return cmzn_field_group_base_cast(scene->getSelectionGroup())->access();
+	}
+	return nullptr;
 }
 
 void cmzn_scene_flush_tree_selections(cmzn_scene_id scene)
