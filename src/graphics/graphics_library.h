@@ -6,7 +6,7 @@ LAST MODIFIED : 17 July 2006
 DESCRIPTION :
 Functions and structures for interfacing with the graphics library.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

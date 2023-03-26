@@ -6,7 +6,7 @@ LAST MODIFIED : 24 August 1999
 DESCRIPTION :
 This provides an object which interfaces between a child_process and Cmgui
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

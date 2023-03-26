@@ -4,7 +4,7 @@
  * Implements fields for applying the function of other fields, including from
  * other regions, with argument binding.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -13,7 +13,7 @@
  * - axes should therefore be centred at (0,0,0) and extend to 1 in each axis
  * direction. Axis titles "x", "y" and "z" may be outside the unit cube.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

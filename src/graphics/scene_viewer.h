@@ -14,7 +14,7 @@ information in a view-independent format.
 SCENE_VIEWER_TRANSFORM allows the view of the scene to be changed by tumbling,
 translating and zooming with mouse button press and motion events.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

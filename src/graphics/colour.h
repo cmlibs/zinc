@@ -7,7 +7,7 @@ DESCRIPTION :
 Colour structures and support code.
 ???DB.  I'm not sure that colour needs to be abstracted/formalized.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -13,7 +13,7 @@ should be included in the module that declares the manager for a particular
 object type.  This allows changes to the internal structure to be made without
 affecting other parts of the program.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

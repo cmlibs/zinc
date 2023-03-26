@@ -8,7 +8,7 @@ This object defines a relationship between a bunch of time objects, keeps them
 in sync and allows control such as play, rewind and fast forward.
 This is intended to be multithreaded......
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

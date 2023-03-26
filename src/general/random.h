@@ -6,7 +6,7 @@ LAST MODIFIED : 26 June 2002
 DESCRIPTION :
 Standard macros for returning random numbers.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

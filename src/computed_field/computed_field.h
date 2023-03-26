@@ -28,7 +28,7 @@ possibly depending on each other to get the maximum benefit out of values that
 have already been calculated, without requiring complex logic for determining
 if a value is already known.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

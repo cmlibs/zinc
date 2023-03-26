@@ -8,7 +8,7 @@ Macros for forward declaring standard list types and prototyping standard list
 functions.  Full declarations are not given, so as to hide the internal workings
 and allow them to be changed without affecting other parts of the program.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

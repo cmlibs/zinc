@@ -3,7 +3,7 @@
  *
  * Public interface to image field which stores images / structured grid data.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

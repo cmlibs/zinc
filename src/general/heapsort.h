@@ -6,7 +6,7 @@ LAST MODIFIED : 4 July 1992
 DESCRIPTION :
 Created because qsort didn't seem to be working properly in TurboC.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

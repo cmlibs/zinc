@@ -20,7 +20,7 @@ easier, compile_Graphical_material is a list/manager iterator function.
 execute function can take over compiling as well. Furthermore, it is easy to
 return to direct rendering, as described with these routines.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

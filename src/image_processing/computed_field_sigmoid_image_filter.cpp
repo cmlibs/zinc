@@ -6,7 +6,7 @@ LAST MODIFIED : 9 September 2006
 DESCRIPTION :
 Wraps itk::SigmoidImageFilter
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

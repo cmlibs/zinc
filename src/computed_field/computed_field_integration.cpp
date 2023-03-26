@@ -8,7 +8,7 @@ Implements a computed field which integrates along elements, including
 travelling between adjacent elements, using the faces for 2D and 3D elements
 and the nodes for 1D elements.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

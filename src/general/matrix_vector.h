@@ -23,7 +23,7 @@ Bit by bit all bits of vector and matrix code should be put in here - and not
 be scattered around the source code as it is now. Routines known to contain
 vector or matrix routines that should be in here are listed in matrix_vector.c.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

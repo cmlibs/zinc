@@ -9,7 +9,7 @@ Implements a computed_field that uses evaluates one field, does a
 values and then evaluates a third field at that location.
 Essentially it is used to embed one mesh in the elements of another.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

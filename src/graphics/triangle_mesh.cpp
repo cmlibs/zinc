@@ -4,7 +4,7 @@
  * Class for representing a simple linear triangular mesh with facilities for
  * merging vertices whose coordinates are within a tolerance.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

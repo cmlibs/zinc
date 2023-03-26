@@ -11,7 +11,7 @@ gtObject/gtWindow management routines.
 	replaced by the graphical FE_node). See below.
 ???RC.  Changed above nodes to integer names for	OpenGL picking.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -7,7 +7,7 @@ DESCRIPTION :
 Private interfaces to finite element objects to be included only by privileged
 modules such as finite_element_region.c.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

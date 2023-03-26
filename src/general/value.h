@@ -8,7 +8,7 @@ A value type that knows what its type is.  So that can have a single function
 for setting values and a single function for getting values and still have type
 checking.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

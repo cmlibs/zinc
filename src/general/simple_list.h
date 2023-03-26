@@ -9,7 +9,7 @@ contain pointers to things that need to be destroyed individually.
 This file contains the types, prototypes and definitions required to use
 simple_list's.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

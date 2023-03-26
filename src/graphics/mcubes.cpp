@@ -16,7 +16,7 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 	and initializers for mctbl, ipntbl and idatbl .  Replaced load_mc_tables with
 	these declarations.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

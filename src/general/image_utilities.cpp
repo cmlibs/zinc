@@ -6,7 +6,7 @@ LAST MODIFIED : 20 December 2004
 DESCRIPTION :
 Utilities for handling images.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

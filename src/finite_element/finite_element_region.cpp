@@ -7,7 +7,7 @@ DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
 finite element fields defined on or interpolated over them.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

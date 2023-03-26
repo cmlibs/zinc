@@ -7,7 +7,7 @@ DESCRIPTION :
 Functions for making a snake of 1-D cubic Hermite elements from a chain of
 data points.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

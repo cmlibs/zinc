@@ -14,7 +14,7 @@ affecting other parts of the program.
 Also see indexed_list_private.h .
 ???DB.  What if want to use different internal structures within same module ?
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

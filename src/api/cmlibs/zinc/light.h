@@ -4,7 +4,7 @@
  * Public interface to light objects. These describe vertices will be lit in
  * scene_viewer.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

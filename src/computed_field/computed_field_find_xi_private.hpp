@@ -6,7 +6,7 @@ LAST MODIFIED : 13 June 2008
 DESCRIPTION :
 Data structures and prototype functions needed for all find xi implementations.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

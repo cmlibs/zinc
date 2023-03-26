@@ -35,7 +35,7 @@ Used to be gtypes.h
    SAB Spilt GT_object out into graphics_object_private.h so that we control
    which files can see the guts.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

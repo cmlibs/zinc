@@ -4,7 +4,7 @@
  * Public interface to tessellation objects. These describe how elements or
  * other continuous field domains are subdivided into graphics.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

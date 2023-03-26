@@ -8,7 +8,7 @@ Functions for finding elements adjacent to other ones.  These functions have
 been separated out from finite_element.c due to their dependence on 
 indexed_multi_range.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
