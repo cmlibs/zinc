@@ -17,7 +17,7 @@
  *
  * This is the OpenCMISS namespace.
  */
-namespace OpenCMISS
+namespace CMLibs
 {
 /**
  * \brief The CMLibs::Zinc namespace
@@ -84,6 +84,6 @@ public:
 };
 
 }  // namespace Zinc
-}  // namespace OpenCMISS
+}  // namespace CMLibs
 
 #endif /* CMZN_CHANGEMANAGER_HPP__ */

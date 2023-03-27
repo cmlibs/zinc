@@ -14,7 +14,7 @@
 #include "cmlibs/zinc/node.hpp"
 #include "cmlibs/zinc/timesequence.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

@@ -12,7 +12,7 @@
 
 #include "cmlibs/zinc/elementbasis.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

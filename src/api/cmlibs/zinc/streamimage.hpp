@@ -13,7 +13,7 @@
 #include "cmlibs/zinc/fieldimage.hpp"
 #include "cmlibs/zinc/stream.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

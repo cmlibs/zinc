@@ -15,7 +15,7 @@
 
 #include "cmlibs/zinc/status.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

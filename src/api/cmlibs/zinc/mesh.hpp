@@ -17,7 +17,7 @@
 #include "cmlibs/zinc/elementtemplate.hpp"
 #include "cmlibs/zinc/differentialoperator.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

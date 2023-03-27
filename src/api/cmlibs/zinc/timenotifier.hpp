@@ -12,7 +12,7 @@
 #include "cmlibs/zinc/timenotifier.h"
 #include "cmlibs/zinc/timekeeper.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

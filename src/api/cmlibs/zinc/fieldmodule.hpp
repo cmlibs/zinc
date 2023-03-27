@@ -18,7 +18,7 @@
 #include "cmlibs/zinc/timesequence.hpp"
 #include "cmlibs/zinc/types/scenecoordinatesystem.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

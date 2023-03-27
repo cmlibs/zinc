@@ -19,7 +19,7 @@
 #include "cmlibs/zinc/spectrum.hpp"
 #include "cmlibs/zinc/tessellation.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

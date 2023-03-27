@@ -12,7 +12,7 @@
 #include "cmlibs/zinc/logger.h"
 #include "cmlibs/zinc/context.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

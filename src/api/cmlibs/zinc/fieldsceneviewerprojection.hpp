@@ -15,7 +15,7 @@
 #include "cmlibs/zinc/sceneviewer.hpp"
 #include "cmlibs/zinc/types/scenecoordinatesystem.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

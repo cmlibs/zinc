@@ -14,7 +14,7 @@
 #include "cmlibs/zinc/field.hpp"
 #include "cmlibs/zinc/fieldmodule.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {
@@ -92,6 +92,6 @@ inline int Field::smooth(const Fieldsmoothing& fieldsmoothing)
 }
 
 } // namespace Zinc
-} // namespace OpenCMISS
+} // namespace CMLibs
 
 #endif /* CMZN_Fieldsmoothing_HPP__ */

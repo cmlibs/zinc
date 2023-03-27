@@ -12,7 +12,7 @@
 
 #include "cmlibs/zinc/stream.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

@@ -12,7 +12,7 @@
 #include "cmlibs/zinc/sceneviewerinput.h"
 #include "cmlibs/zinc/sceneviewer.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

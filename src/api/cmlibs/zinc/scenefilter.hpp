@@ -14,7 +14,7 @@
 #include "cmlibs/zinc/graphics.hpp"
 #include "cmlibs/zinc/region.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

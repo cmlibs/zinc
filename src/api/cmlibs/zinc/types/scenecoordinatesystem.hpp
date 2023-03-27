@@ -14,7 +14,7 @@
 
 #include "scenecoordinatesystem.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

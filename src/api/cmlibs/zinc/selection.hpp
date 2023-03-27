@@ -11,7 +11,7 @@
 
 #include "cmlibs/zinc/selection.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

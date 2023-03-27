@@ -17,7 +17,7 @@
 #include "cmlibs/zinc/element.hpp"
 #include "cmlibs/zinc/region.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

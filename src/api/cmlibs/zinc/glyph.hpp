@@ -14,7 +14,7 @@
 #include "cmlibs/zinc/material.hpp"
 #include "cmlibs/zinc/spectrum.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

@@ -15,7 +15,7 @@
 
 #include "cmlibs/zinc/result.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

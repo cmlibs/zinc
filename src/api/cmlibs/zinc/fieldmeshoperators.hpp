@@ -14,7 +14,7 @@
 #include "cmlibs/zinc/fieldmodule.hpp"
 #include "cmlibs/zinc/element.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

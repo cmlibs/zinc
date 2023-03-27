@@ -12,7 +12,7 @@
 #include "cmlibs/zinc/light.h"
 #include "cmlibs/zinc/context.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

@@ -15,7 +15,7 @@
 #include "cmlibs/zinc/scene.hpp"
 #include "cmlibs/zinc/scenefilter.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

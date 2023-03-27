@@ -12,7 +12,7 @@
 
 #include "cmlibs/zinc/field.h"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

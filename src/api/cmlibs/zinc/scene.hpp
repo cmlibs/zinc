@@ -21,7 +21,7 @@
 #include "cmlibs/zinc/spectrum.hpp"
 #include "cmlibs/zinc/timekeeper.hpp"
 
-namespace OpenCMISS
+namespace CMLibs
 {
 namespace Zinc
 {

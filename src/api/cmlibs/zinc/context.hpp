@@ -17,7 +17,7 @@
  *
  * This is the OpenCMISS namespace
  */
-namespace OpenCMISS
+namespace CMLibs
 {
 /**
  * \brief The CMLibs::Zinc namespace
