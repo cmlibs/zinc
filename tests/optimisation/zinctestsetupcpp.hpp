@@ -17,7 +17,7 @@
 #include <cmlibs/zinc/result.hpp>
 #include <cmlibs/zinc/status.hpp>
 
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 class ZincTestSetupCpp
 {

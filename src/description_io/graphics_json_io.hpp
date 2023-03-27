@@ -38,13 +38,13 @@ public:
 		graphics(cmzn_graphics_access(graphics_in)), mode(mode_in)
 	{  }
 
-	GraphicsJsonIO(const OpenCMISS::Zinc::Graphics &graphics_in, IOMode mode_in) :
+	GraphicsJsonIO(const CMLibs::Zinc::Graphics &graphics_in, IOMode mode_in) :
 		graphics(graphics_in), mode(mode_in)
 	{	}
 
 protected:
 
-	OpenCMISS::Zinc::Graphics graphics;
+	CMLibs::Zinc::Graphics graphics;
 	int order;
 	IOMode mode;
 

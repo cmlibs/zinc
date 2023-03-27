@@ -19,9 +19,9 @@
 #include "description_io/graphics_json_export.hpp"
 #include <string.h>
 
-OpenCMISS::Zinc::Field getFieldByName(OpenCMISS::Zinc::Graphics &graphics, const char *name)
+CMLibs::Zinc::Field getFieldByName(CMLibs::Zinc::Graphics &graphics, const char *name)
 {
-	OpenCMISS::Zinc::Fieldmodule fm = graphics.getScene().getRegion().getFieldmodule();
+	CMLibs::Zinc::Fieldmodule fm = graphics.getScene().getRegion().getFieldmodule();
 	return fm.findFieldByName(name);
 }
 
@@ -29,7 +29,7 @@ void GraphicsJsonIO::ioGeneralFieldEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::Field field = graphics.getCoordinateField();
+		CMLibs::Zinc::Field field = graphics.getCoordinateField();
 		char *fieldName = 0;
 		if (field.isValid())
 		{
@@ -115,7 +115,7 @@ void GraphicsJsonIO::ioGeneralObjectEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::Material material = graphics.getMaterial();
+		CMLibs::Zinc::Material material = graphics.getMaterial();
 		char *name = 0;
 		if (material.isValid())
 		{
@@ -130,14 +130,14 @@ void GraphicsJsonIO::ioGeneralObjectEntries(Json::Value &graphicsSettings)
 			graphicsSettings["SelectedMaterial"] = name;
 			DEALLOCATE(name);
 		}
-		OpenCMISS::Zinc::Spectrum spectrum = graphics.getSpectrum();
+		CMLibs::Zinc::Spectrum spectrum = graphics.getSpectrum();
 		if (spectrum.isValid())
 		{
 			name = spectrum.getName();
 			graphicsSettings["Spectrum"] = name;
 			DEALLOCATE(name);
 		}
-		OpenCMISS::Zinc::Tessellation tessellation = graphics.getTessellation();
+		CMLibs::Zinc::Tessellation tessellation = graphics.getTessellation();
 		if (tessellation.isValid())
 		{
 			name = tessellation.getName();
@@ -149,25 +149,25 @@ void GraphicsJsonIO::ioGeneralObjectEntries(Json::Value &graphicsSettings)
 	{
 		if (graphicsSettings["Material"].isString())
 		{
-			OpenCMISS::Zinc::Material material = graphics.getScene().getMaterialmodule().findMaterialByName(
+			CMLibs::Zinc::Material material = graphics.getScene().getMaterialmodule().findMaterialByName(
 				graphicsSettings["Material"].asCString());
 			graphics.setMaterial(material);
 		}
 		if (graphicsSettings["SelectedMaterial"].isString())
 		{
-			OpenCMISS::Zinc::Material material = graphics.getScene().getMaterialmodule().findMaterialByName(
+			CMLibs::Zinc::Material material = graphics.getScene().getMaterialmodule().findMaterialByName(
 				graphicsSettings["SelectedMaterial"].asCString());
 			graphics.setSelectedMaterial(material);
 		}
 		if (graphicsSettings["Spectrum"].isString())
 		{
-			OpenCMISS::Zinc::Spectrum spectrum = graphics.getScene().getSpectrummodule().findSpectrumByName(
+			CMLibs::Zinc::Spectrum spectrum = graphics.getScene().getSpectrummodule().findSpectrumByName(
 				graphicsSettings["Spectrum"].asCString());
 			graphics.setSpectrum(spectrum);
 		}
 		if (graphicsSettings["Tessellation"].isString())
 		{
-			OpenCMISS::Zinc::Tessellation tessellation = graphics.getScene().getTessellationmodule().findTessellationByName(
+			CMLibs::Zinc::Tessellation tessellation = graphics.getScene().getTessellationmodule().findTessellationByName(
 				graphicsSettings["Tessellation"].asCString());
 			graphics.setTessellation(tessellation);
 		}
@@ -214,14 +214,14 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 			DEALLOCATE(enumString);
 		}
 
-		enumString = OpenCMISS::Zinc::ScenecoordinatesystemEnumToString(graphics.getScenecoordinatesystem());
+		enumString = CMLibs::Zinc::ScenecoordinatesystemEnumToString(graphics.getScenecoordinatesystem());
 		if (enumString)
 		{
 			graphicsSettings["Scenecoordinatesystem"] = enumString;
 			DEALLOCATE(enumString);
 		}
 
-		enumString = OpenCMISS::Zinc::Field::DomainTypeEnumToString(graphics.getFieldDomainType());
+		enumString = CMLibs::Zinc::Field::DomainTypeEnumToString(graphics.getFieldDomainType());
 		if (enumString)
 		{
 			graphicsSettings["FieldDomainType"] = enumString;
@@ -235,7 +235,7 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 			DEALLOCATE(enumString);
 		}
 
-		enumString = OpenCMISS::Zinc::Element::FaceTypeEnumToString(graphics.getElementFaceType());
+		enumString = CMLibs::Zinc::Element::FaceTypeEnumToString(graphics.getElementFaceType());
 		if (enumString)
 		{
 			graphicsSettings["ElementFaceType"] = enumString;
@@ -248,13 +248,13 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 		{
 			const char *renderPolygonModeName = graphicsSettings["RenderPolygonMode"].asCString();
 			// migrate legacy non-standard RenderPolygonMode names to enums
-			OpenCMISS::Zinc::Graphics::RenderPolygonMode renderPolygonMode;
+			CMLibs::Zinc::Graphics::RenderPolygonMode renderPolygonMode;
 			if (0 == strcmp("RENDER_POLYGON_SHADED", renderPolygonModeName))
-				renderPolygonMode = OpenCMISS::Zinc::Graphics::RENDER_POLYGON_MODE_SHADED;
+				renderPolygonMode = CMLibs::Zinc::Graphics::RENDER_POLYGON_MODE_SHADED;
 			else if (0 == strcmp("RENDER_POLYGON_WIREFRAME", renderPolygonModeName))
-				renderPolygonMode = OpenCMISS::Zinc::Graphics::RENDER_POLYGON_MODE_WIREFRAME;
+				renderPolygonMode = CMLibs::Zinc::Graphics::RENDER_POLYGON_MODE_WIREFRAME;
 			else
-				renderPolygonMode = OpenCMISS::Zinc::Graphics::RenderPolygonModeEnumFromString(renderPolygonModeName);
+				renderPolygonMode = CMLibs::Zinc::Graphics::RenderPolygonModeEnumFromString(renderPolygonModeName);
 			graphics.setRenderPolygonMode(renderPolygonMode);
 		}
 
@@ -263,11 +263,11 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 				graphicsSettings["SelectMode"].asCString()));
 
 		if (graphicsSettings["Scenecoordinatesystem"].isString())
-			graphics.setScenecoordinatesystem(OpenCMISS::Zinc::ScenecoordinatesystemEnumFromString(
+			graphics.setScenecoordinatesystem(CMLibs::Zinc::ScenecoordinatesystemEnumFromString(
 				graphicsSettings["Scenecoordinatesystem"].asCString()));
 
 		if (graphicsSettings["FieldDomainType"].isString())
-			graphics.setFieldDomainType(OpenCMISS::Zinc::Field::DomainTypeEnumFromString(
+			graphics.setFieldDomainType(CMLibs::Zinc::Field::DomainTypeEnumFromString(
 					graphicsSettings["FieldDomainType"].asCString()));
 
 		if (graphicsSettings["BoundaryMode"].isString())
@@ -275,7 +275,7 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 				graphicsSettings["BoundaryMode"].asCString()));
 
 		if (graphicsSettings["ElementFaceType"].isString())
-			graphics.setElementFaceType(OpenCMISS::Zinc::Element::FaceTypeEnumFromString(
+			graphics.setElementFaceType(CMLibs::Zinc::Element::FaceTypeEnumFromString(
 				graphicsSettings["ElementFaceType"].asCString()));
 	}
 }
@@ -291,7 +291,7 @@ void GraphicsJsonIO::ioGeneralEntries(Json::Value &graphicsSettings)
 
 void GraphicsJsonIO::ioLineAttributesEntries(Json::Value &graphicsSettings)
 {
-	OpenCMISS::Zinc::Graphicslineattributes lineAttributes = graphics.getGraphicslineattributes();
+	CMLibs::Zinc::Graphicslineattributes lineAttributes = graphics.getGraphicslineattributes();
 	if (lineAttributes.isValid())
 	{
 		if (mode == IO_MODE_EXPORT)
@@ -302,7 +302,7 @@ void GraphicsJsonIO::ioLineAttributesEntries(Json::Value &graphicsSettings)
 			attributesSettings["BaseSize"].append(values[0]);
 			attributesSettings["BaseSize"].append(values[1]);
 			char *name = 0;
-			OpenCMISS::Zinc::Field field = lineAttributes.getOrientationScaleField();
+			CMLibs::Zinc::Field field = lineAttributes.getOrientationScaleField();
 			if (field.isValid())
 			{
 				name = field.getName();
@@ -352,7 +352,7 @@ void GraphicsJsonIO::ioLineAttributesEntries(Json::Value &graphicsSettings)
 
 void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 {
-	OpenCMISS::Zinc::Graphicspointattributes pointAttributes = graphics.getGraphicspointattributes();
+	CMLibs::Zinc::Graphicspointattributes pointAttributes = graphics.getGraphicspointattributes();
 	if (pointAttributes.isValid())
 	{
 		if (mode == IO_MODE_EXPORT)
@@ -364,14 +364,14 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 			attributesSettings["BaseSize"].append(values[1]);
 			attributesSettings["BaseSize"].append(values[2]);
 			char *name = 0;
-			OpenCMISS::Zinc::Font font = pointAttributes.getFont();
+			CMLibs::Zinc::Font font = pointAttributes.getFont();
 			if (font.isValid())
 			{
 				name = font.getName();
 				attributesSettings["Font"] = name;
 				DEALLOCATE(name);
 			}
-			OpenCMISS::Zinc::Glyph glyph = pointAttributes.getGlyph();
+			CMLibs::Zinc::Glyph glyph = pointAttributes.getGlyph();
 			if (glyph.isValid())
 			{
 				name = glyph.getName();
@@ -382,13 +382,13 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 			attributesSettings["GlyphOffset"].append(values[0]);
 			attributesSettings["GlyphOffset"].append(values[1]);
 			attributesSettings["GlyphOffset"].append(values[2]);
-			char *enumString = OpenCMISS::Zinc::Glyph::RepeatModeEnumToString(pointAttributes.getGlyphRepeatMode());
+			char *enumString = CMLibs::Zinc::Glyph::RepeatModeEnumToString(pointAttributes.getGlyphRepeatMode());
 			if (enumString)
 			{
 				attributesSettings["GlyphRepeatMode"] = enumString;
 				DEALLOCATE(enumString);
 			}
-			OpenCMISS::Zinc::Field field = pointAttributes.getLabelField();
+			CMLibs::Zinc::Field field = pointAttributes.getLabelField();
 			if (field.isValid())
 			{
 				name = field.getName();
@@ -446,13 +446,13 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 			}
 			if (attributesSettings["Font"].isString())
 			{
-				OpenCMISS::Zinc::Font font = graphics.getScene().getFontmodule().findFontByName(
+				CMLibs::Zinc::Font font = graphics.getScene().getFontmodule().findFontByName(
 					attributesSettings["Font"].asCString());
 				pointAttributes.setFont(font);
 			}
 			if (attributesSettings["Glyph"].isString())
 			{
-				OpenCMISS::Zinc::Glyph glyph = graphics.getScene().getGlyphmodule().findGlyphByName(
+				CMLibs::Zinc::Glyph glyph = graphics.getScene().getGlyphmodule().findGlyphByName(
 					attributesSettings["Glyph"].asCString());
 				pointAttributes.setGlyph(glyph);
 			}
@@ -466,7 +466,7 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 				pointAttributes.setGlyphOffset(3, &(values[0]));
 			}
 			if (attributesSettings["GlyphRepeatMode"].isString())
-				pointAttributes.setGlyphRepeatMode(OpenCMISS::Zinc::Glyph::RepeatModeEnumFromString(
+				pointAttributes.setGlyphRepeatMode(CMLibs::Zinc::Glyph::RepeatModeEnumFromString(
 					attributesSettings["GlyphRepeatMode"].asCString()));
 			if (attributesSettings["LabelField"].isString())
 				pointAttributes.setLabelField(getFieldByName(graphics,
@@ -516,13 +516,13 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 
 void GraphicsJsonIO::ioSamplingAttributesEntries(Json::Value &graphicsSettings)
 {
-	OpenCMISS::Zinc::Graphicssamplingattributes samplingAttributes = graphics.getGraphicssamplingattributes();
+	CMLibs::Zinc::Graphicssamplingattributes samplingAttributes = graphics.getGraphicssamplingattributes();
 	if (samplingAttributes.isValid())
 	{
 		if (mode == IO_MODE_EXPORT)
 		{
 			Json::Value attributesSettings;
-			OpenCMISS::Zinc::Field field = samplingAttributes.getDensityField();
+			CMLibs::Zinc::Field field = samplingAttributes.getDensityField();
 			char *name = 0;
 			if (field.isValid())
 			{
@@ -535,7 +535,7 @@ void GraphicsJsonIO::ioSamplingAttributesEntries(Json::Value &graphicsSettings)
 			attributesSettings["Location"].append(values[0]);
 			attributesSettings["Location"].append(values[1]);
 			attributesSettings["Location"].append(values[2]);
-			char *enumString = OpenCMISS::Zinc::Element::PointSamplingModeEnumToString(
+			char *enumString = CMLibs::Zinc::Element::PointSamplingModeEnumToString(
 				samplingAttributes.getElementPointSamplingMode());
 			if (enumString)
 			{
@@ -561,7 +561,7 @@ void GraphicsJsonIO::ioSamplingAttributesEntries(Json::Value &graphicsSettings)
 			}
 			if (attributesSettings["ElementPointSamplingMode"].isString())
 				samplingAttributes.setElementPointSamplingMode(
-					OpenCMISS::Zinc::Element::PointSamplingModeEnumFromString(
+					CMLibs::Zinc::Element::PointSamplingModeEnumFromString(
 						attributesSettings["ElementPointSamplingMode"].asCString()));
 		}
 	}
@@ -576,13 +576,13 @@ void GraphicsJsonIO::ioAttributesEntries(Json::Value &graphicsSettings)
 
 void GraphicsJsonIO::ioContoursEntries(Json::Value &graphicsSettings)
 {
-	OpenCMISS::Zinc::GraphicsContours contours = graphics.castContours();
+	CMLibs::Zinc::GraphicsContours contours = graphics.castContours();
 	if (contours.isValid())
 	{
 		if (mode == IO_MODE_EXPORT)
 		{
 			Json::Value attributesSettings;
-			OpenCMISS::Zinc::Field field = contours.getIsoscalarField();
+			CMLibs::Zinc::Field field = contours.getIsoscalarField();
 			char *name = 0;
 			if (field.isValid())
 			{
@@ -649,7 +649,7 @@ void GraphicsJsonIO::ioLinesEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::GraphicsLines lines = graphics.castLines();
+		CMLibs::Zinc::GraphicsLines lines = graphics.castLines();
 		if (lines.isValid())
 		{
 			graphicsSettings["Lines"] = Json::Value(Json::objectValue);
@@ -661,7 +661,7 @@ void GraphicsJsonIO::ioPointsEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::GraphicsPoints points = graphics.castPoints();
+		CMLibs::Zinc::GraphicsPoints points = graphics.castPoints();
 		if (points.isValid())
 		{
 			graphicsSettings["Points"] = Json::Value(Json::objectValue);
@@ -671,13 +671,13 @@ void GraphicsJsonIO::ioPointsEntries(Json::Value &graphicsSettings)
 
 void GraphicsJsonIO::ioStreamlinesEntries(Json::Value &graphicsSettings)
 {
-	OpenCMISS::Zinc::GraphicsStreamlines streamlines = graphics.castStreamlines();
+	CMLibs::Zinc::GraphicsStreamlines streamlines = graphics.castStreamlines();
 	if (streamlines.isValid())
 	{
 		if (mode == IO_MODE_EXPORT)
 		{
 			Json::Value attributesSettings;
-			OpenCMISS::Zinc::Field field = streamlines.getStreamVectorField();
+			CMLibs::Zinc::Field field = streamlines.getStreamVectorField();
 			char *name = 0;
 			if (field.isValid())
 			{
@@ -723,7 +723,7 @@ void GraphicsJsonIO::ioSurfacesEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::GraphicsSurfaces surfaces = graphics.castSurfaces();
+		CMLibs::Zinc::GraphicsSurfaces surfaces = graphics.castSurfaces();
 		if (surfaces.isValid())
 		{
 			graphicsSettings["Surfaces"] = Json::Value(Json::objectValue);

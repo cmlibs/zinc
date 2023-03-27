@@ -30,7 +30,7 @@ public:
 		GraphicsJsonIO(graphics_in, GraphicsJsonIO::IO_MODE_EXPORT), order(order_in)
 	{  }
 
-	GraphicsJsonExport(const OpenCMISS::Zinc::Graphics &graphics_in, int order_in):
+	GraphicsJsonExport(const CMLibs::Zinc::Graphics &graphics_in, int order_in):
 		GraphicsJsonIO(graphics_in, GraphicsJsonIO::IO_MODE_EXPORT), order(order_in)
 	{	}
 

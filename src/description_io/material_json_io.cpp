@@ -21,7 +21,7 @@
 #include "cmlibs/zinc/result.hpp"
 #include <string>
 
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 namespace {
 
@@ -227,7 +227,7 @@ int readMaterialFromJson(Material& material, const Json::Value& materialSettings
 std::string MaterialmoduleJsonExport::getExportString()
 {
 	Json::Value root;
-	OpenCMISS::Zinc::Region rootRegion;
+	CMLibs::Zinc::Region rootRegion;
 
 	Materialiterator materialiterator = this->materialmodule.createMaterialiterator();
 	Material material;

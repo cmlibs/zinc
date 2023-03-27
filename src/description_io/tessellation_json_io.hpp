@@ -36,14 +36,14 @@ public:
 		tessellation(cmzn_tessellation_access(tessellation_in)), mode(mode_in)
 	{  }
 
-	TessellationJsonIO(const OpenCMISS::Zinc::Tessellation tessellation_in, IOMode mode_in) :
+	TessellationJsonIO(const CMLibs::Zinc::Tessellation tessellation_in, IOMode mode_in) :
 		tessellation(tessellation_in), mode(mode_in)
 	{	}
 
 	void ioEntries(Json::Value &tessellationSettings);
 
 private:
-	OpenCMISS::Zinc::Tessellation tessellation;
+	CMLibs::Zinc::Tessellation tessellation;
 	IOMode mode;
 
 };
@@ -55,7 +55,7 @@ class TessellationmoduleJsonImport
 {
 
 private:
-	OpenCMISS::Zinc::Tessellationmodule tessellationmodule;
+	CMLibs::Zinc::Tessellationmodule tessellationmodule;
 
 public:
 
@@ -74,7 +74,7 @@ public:
 class TessellationmoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Tessellationmodule tessellationmodule;
+	CMLibs::Zinc::Tessellationmodule tessellationmodule;
 
 public:
 

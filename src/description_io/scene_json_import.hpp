@@ -33,7 +33,7 @@ public:
 	void importGraphics(Json::Value &graphicsJson);
 
 private:
-	OpenCMISS::Zinc::Scene scene;
+	CMLibs::Zinc::Scene scene;
 	Json::Value root;
 	int overwrite;
 };

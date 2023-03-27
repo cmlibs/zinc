@@ -21,8 +21,8 @@
 #include "jsoncpp/json.h"
 #include <string>
 
-OpenCMISS::Zinc::Field importTypeSpecificField(
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings,
+CMLibs::Zinc::Field importTypeSpecificField(
+	CMLibs::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings,
 	FieldmoduleJsonImport *jsonImport);
 
 class FieldJsonIO
@@ -46,8 +46,8 @@ public:
 		mode(mode_in)
 	{  }
 
-	FieldJsonIO(const OpenCMISS::Zinc::Field &field_in,
-		const OpenCMISS::Zinc::Fieldmodule &fieldmodule_in, IOMode mode_in) :
+	FieldJsonIO(const CMLibs::Zinc::Field &field_in,
+		const CMLibs::Zinc::Fieldmodule &fieldmodule_in, IOMode mode_in) :
 		field(field_in), fieldmodule(fieldmodule_in), mode(mode_in)
 	{	}
 
@@ -63,8 +63,8 @@ public:
 
 protected:
 
-	OpenCMISS::Zinc::Field field;
-	OpenCMISS::Zinc::Fieldmodule fieldmodule;
+	CMLibs::Zinc::Field field;
+	CMLibs::Zinc::Fieldmodule fieldmodule;
 	IOMode mode;
 
 };

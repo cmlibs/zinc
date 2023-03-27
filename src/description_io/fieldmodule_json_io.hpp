@@ -26,7 +26,7 @@ class FieldmoduleJsonImport
 {
 
 private:
-	OpenCMISS::Zinc::Fieldmodule fieldmodule;
+	CMLibs::Zinc::Fieldmodule fieldmodule;
 	Json::Value fieldsList;
 
 public:
@@ -40,16 +40,16 @@ public:
 	/* Get field by name from fieldmodule if available, otherwise create it
 	 * based on the json definition
 	 */
-	OpenCMISS::Zinc::Field getFieldByName(const char *field_name);
+	CMLibs::Zinc::Field getFieldByName(const char *field_name);
 
 	/** Get the region currently being read or written */
-	OpenCMISS::Zinc::Region getRegion() const
+	CMLibs::Zinc::Region getRegion() const
 	{
 		return this->fieldmodule.getRegion();
 	}
 
 	/* deserialise field definition into the fieldmodule */
-	OpenCMISS::Zinc::Field importField(const Json::Value &fieldSettings);
+	CMLibs::Zinc::Field importField(const Json::Value &fieldSettings);
 
 	void setManaged(const Json::Value &fieldSettings);
 
@@ -61,7 +61,7 @@ public:
 class FieldmoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Fieldmodule fieldmodule;
+	CMLibs::Zinc::Fieldmodule fieldmodule;
 
 public:
 

@@ -80,8 +80,8 @@ int SceneJsonImport::import(const std::string &jsonString)
 void SceneJsonImport::importGraphics(Json::Value &graphicsJson)
 {
 	std::string typeString = graphicsJson["Type"].asString();
-	enum OpenCMISS::Zinc::Graphics::Type graphicsType =  static_cast<OpenCMISS::Zinc::Graphics::Type>(
+	enum CMLibs::Zinc::Graphics::Type graphicsType =  static_cast<CMLibs::Zinc::Graphics::Type>(
 		cmzn_graphics_type_enum_from_string(typeString.c_str()));
-	OpenCMISS::Zinc::Graphics graphics = scene.createGraphics(graphicsType);
+	CMLibs::Zinc::Graphics graphics = scene.createGraphics(graphicsType);
 	GraphicsJsonImport(graphics, graphicsJson).import();
 }

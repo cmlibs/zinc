@@ -20,9 +20,9 @@
 namespace OpenCMISS
 {
 /**
- * \brief The OpenCMISS::Zinc namespace
+ * \brief The CMLibs::Zinc namespace
  *
- * This is the OpenCMISS::Zinc namespace, all libZinc cpp APIs are in this namespace.
+ * This is the CMLibs::Zinc namespace, all libZinc cpp APIs are in this namespace.
  */
 namespace Zinc
 {
@@ -33,7 +33,7 @@ namespace Zinc
  * For safely making multiple changes to objects in a manager object when
  * exceptions may occur.
  * Usage example for Fieldmodule fieldmodule:
- * OpenCMISS::Zinc::ChangeManager<Fieldmodule> changeFieldmodule(fieldmodule);
+ * CMLibs::Zinc::ChangeManager<Fieldmodule> changeFieldmodule(fieldmodule);
  * // make multiple changes
  * fieldmodule.endChange() is called when leaving scope or on exception.
  * Enclose in { } to force scope to end earlier.
@@ -61,7 +61,7 @@ public:
  * For safely making multiple changes to objects in a manager object when
  * exceptions may occur.
  * Usage example for Region region:
- * OpenCMISS::Zinc::HierarchicalChangeManager<Region> changeRegion(region);
+ * CMLibs::Zinc::HierarchicalChangeManager<Region> changeRegion(region);
  * // make multiple changes
  * region.endHierarchicalChange() is called when leaving scope or on exception.
  * Enclose in { } to force scope to end earlier.

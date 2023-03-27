@@ -35,13 +35,13 @@ public:
 		sceneviewer(cmzn_sceneviewer_access(sceneviewer_in)), mode(mode_in)
 	{  }
 
-	SceneviewerJsonIO(const OpenCMISS::Zinc::Sceneviewer sceneviewer_in, IOMode mode_in) :
+	SceneviewerJsonIO(const CMLibs::Zinc::Sceneviewer sceneviewer_in, IOMode mode_in) :
 		sceneviewer(sceneviewer_in), mode(mode_in)
 	{	}
 
 protected:
 
-	OpenCMISS::Zinc::Sceneviewer sceneviewer;
+	CMLibs::Zinc::Sceneviewer sceneviewer;
 	IOMode mode;
 
 	void ioEntries(Json::Value &sceneviewerSettings);

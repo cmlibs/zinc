@@ -29,7 +29,7 @@ public:
 	std::string getExportString();
 
 private:
-	OpenCMISS::Zinc::Scene scene;
+	CMLibs::Zinc::Scene scene;
 	Json::Value root;
 };
 

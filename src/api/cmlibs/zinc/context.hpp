@@ -20,9 +20,9 @@
 namespace OpenCMISS
 {
 /**
- * \brief The OpenCMISS::Zinc namespace
+ * \brief The CMLibs::Zinc namespace
  *
- * This is the OpenCMISS::Zinc namespace, all libZinc cpp APIs are in this namespace.
+ * This is the CMLibs::Zinc namespace, all libZinc cpp APIs are in this namespace.
  */
 namespace Zinc
 {

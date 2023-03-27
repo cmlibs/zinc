@@ -62,7 +62,7 @@ int TimekeepermoduleJsonImport::import(const std::string &jsonString)
 
 void TimekeepermoduleJsonImport::importTimekeeper(Json::Value &timekeeperSettings)
 {
-	OpenCMISS::Zinc::Timekeeper timekeeper = timekeepermodule.getDefaultTimekeeper();
+	CMLibs::Zinc::Timekeeper timekeeper = timekeepermodule.getDefaultTimekeeper();
 	TimekeeperJsonIO(timekeeper, IO_MODE_IMPORT).ioEntries(timekeeperSettings);
 }
 
@@ -70,7 +70,7 @@ std::string TimekeepermoduleJsonExport::getExportString()
 {
 	Json::Value root;
 
-	OpenCMISS::Zinc::Timekeeper timekeeper = timekeepermodule.getDefaultTimekeeper();
+	CMLibs::Zinc::Timekeeper timekeeper = timekeepermodule.getDefaultTimekeeper();
 	if (timekeeper.isValid())
 	{
 		Json::Value timekeeperSettings;

@@ -19,7 +19,7 @@
 #include <cmlibs/zinc/scene.hpp>
 #include <cmlibs/zinc/result.hpp>
 
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 class ZincTestSetupCpp
 {

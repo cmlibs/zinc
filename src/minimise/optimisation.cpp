@@ -69,7 +69,7 @@ using namespace std;
 
 using NEWMAT::ColumnVector;
 using namespace ::OPTPP;
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 // global variable needed to pass minimisation object to Opt++ init functions.
 static void* GlobalVariableMinimisation = NULL;

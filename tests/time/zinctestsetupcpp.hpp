@@ -16,7 +16,7 @@
 #include <cmlibs/zinc/region.hpp>
 #include <cmlibs/zinc/fieldmodule.hpp>
 
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 class ZincTestSetupCpp
 {

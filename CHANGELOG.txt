@@ -116,7 +116,7 @@ API Changes:
 v3.0.0
 
 API Changes:
-3079 As part of branding as OpenCMISS-Zinc Library and eliminate name clashes, change C++ API namespace from zinc:: to OpenCMISS::Zinc::, and C API prefix from Cmiss_ to cmzn_.
+3079 As part of branding as OpenCMISS-Zinc Library and eliminate name clashes, change C++ API namespace from zinc:: to CMLibs::Zinc::, and C API prefix from Cmiss_ to cmzn_.
 3260 Move all enums into types/*id files. Removed interactive tool from external APIs. Removed all legacy Cmgui 'execute command' APIs. Replaced with direct APIs.
 3360 Added isValid APIs for all C++ classes.
 3361 Renamed iso_surfaces to contours.

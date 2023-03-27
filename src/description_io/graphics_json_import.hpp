@@ -31,7 +31,7 @@ public:
 		GraphicsJsonIO(graphics_in, GraphicsJsonIO::IO_MODE_IMPORT), graphicsJson(graphicsJsonIn)
 	{  }
 
-	GraphicsJsonImport(const OpenCMISS::Zinc::Graphics &graphics_in, Json::Value &graphicsJsonIn) :
+	GraphicsJsonImport(const CMLibs::Zinc::Graphics &graphics_in, Json::Value &graphicsJsonIn) :
 		GraphicsJsonIO(graphics_in, GraphicsJsonIO::IO_MODE_IMPORT), graphicsJson(graphicsJsonIn)
 	{	}
 

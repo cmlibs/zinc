@@ -23,7 +23,7 @@
 class MaterialmoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Materialmodule materialmodule;
+	CMLibs::Zinc::Materialmodule materialmodule;
 
 public:
 
@@ -40,7 +40,7 @@ public:
 class MaterialmoduleJsonImport
 {
 private:
-	OpenCMISS::Zinc::Materialmodule materialmodule;
+	CMLibs::Zinc::Materialmodule materialmodule;
 
 public:
 

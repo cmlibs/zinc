@@ -36,7 +36,7 @@ public:
 		spectrumcomponent(cmzn_spectrumcomponent_access(spectrumcomponent_in)), mode(mode_in)
 	{  }
 
-	SpectrumcomponentJsonIO(const OpenCMISS::Zinc::Spectrumcomponent spectrumcomponent_in, IOMode mode_in) :
+	SpectrumcomponentJsonIO(const CMLibs::Zinc::Spectrumcomponent spectrumcomponent_in, IOMode mode_in) :
 		spectrumcomponent(spectrumcomponent_in), mode(mode_in)
 	{	}
 
@@ -44,7 +44,7 @@ public:
 
 protected:
 
-	OpenCMISS::Zinc::Spectrumcomponent spectrumcomponent;
+	CMLibs::Zinc::Spectrumcomponent spectrumcomponent;
 	IOMode mode;
 
 	void ioBoolEntries(Json::Value &componentSettings);
@@ -67,14 +67,14 @@ public:
 		spectrum(cmzn_spectrum_access(spectrum_in)), mode(mode_in)
 	{  }
 
-	SpectrumJsonIO(const OpenCMISS::Zinc::Spectrum spectrum_in, IOMode mode_in) :
+	SpectrumJsonIO(const CMLibs::Zinc::Spectrum spectrum_in, IOMode mode_in) :
 		spectrum(spectrum_in), mode(mode_in)
 	{	}
 
 	void ioEntries(Json::Value &spectrumSettings);
 
 private:
-	OpenCMISS::Zinc::Spectrum spectrum;
+	CMLibs::Zinc::Spectrum spectrum;
 	IOMode mode;
 
 };
@@ -86,7 +86,7 @@ class SpectrummoduleJsonImport
 {
 
 private:
-	OpenCMISS::Zinc::Spectrummodule spectrummodule;
+	CMLibs::Zinc::Spectrummodule spectrummodule;
 
 public:
 
@@ -105,7 +105,7 @@ public:
 class SpectrummoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Spectrummodule spectrummodule;
+	CMLibs::Zinc::Spectrummodule spectrummodule;
 
 public:
 

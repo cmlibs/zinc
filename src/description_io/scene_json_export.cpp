@@ -24,7 +24,7 @@ std::string SceneJsonExport::getExportString()
 	bool visibility = scene.getVisibilityFlag();
 	root["VisibilityFlag"] = visibility;
 	Json::Value graphics_settings;
-	OpenCMISS::Zinc::Graphics graphics = scene.getFirstGraphics();
+	CMLibs::Zinc::Graphics graphics = scene.getFirstGraphics();
 	while (graphics.isValid())
 	{
 		GraphicsJsonExport graphicsJsonExport = GraphicsJsonExport(graphics, -1);
@@ -35,7 +35,7 @@ std::string SceneJsonExport::getExportString()
 	root["Graphics"] = graphics_settings;
 	if (this->scene.hasTransformation())
 	{
-		OpenCMISS::Zinc::Field field = this->scene.getTransformationField();
+		CMLibs::Zinc::Field field = this->scene.getTransformationField();
 		if (field.isValid())
 		{
 			char *fieldName = field.getName();

@@ -110,7 +110,7 @@ int TessellationmoduleJsonImport::import(const std::string &jsonString)
 void TessellationmoduleJsonImport::importTessellation(Json::Value &tessellationSettings)
 {
 	const char *tessellationName = tessellationSettings["Name"].asCString();
-	OpenCMISS::Zinc::Tessellation tessellation = tessellationmodule.findTessellationByName(tessellationName);
+	CMLibs::Zinc::Tessellation tessellation = tessellationmodule.findTessellationByName(tessellationName);
 	if (!tessellation.isValid())
 	{
 		tessellation = tessellationmodule.createTessellation();
@@ -123,9 +123,9 @@ std::string TessellationmoduleJsonExport::getExportString()
 {
 	Json::Value root;
 
-	OpenCMISS::Zinc::Tessellationiterator tessellationiterator =
+	CMLibs::Zinc::Tessellationiterator tessellationiterator =
 		tessellationmodule.createTessellationiterator();
-	OpenCMISS::Zinc::Tessellation tessellation = tessellationiterator.next();
+	CMLibs::Zinc::Tessellation tessellation = tessellationiterator.next();
 	while (tessellation.isValid())
 	{
 		Json::Value tessellationSettings;

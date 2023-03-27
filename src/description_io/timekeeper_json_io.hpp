@@ -36,14 +36,14 @@ public:
 		timekeeper(cmzn_timekeeper_access(timekeeper_in)), mode(mode_in)
 	{  }
 
-	TimekeeperJsonIO(const OpenCMISS::Zinc::Timekeeper timekeeper_in, IOMode mode_in) :
+	TimekeeperJsonIO(const CMLibs::Zinc::Timekeeper timekeeper_in, IOMode mode_in) :
 		timekeeper(timekeeper_in), mode(mode_in)
 	{	}
 
 	void ioEntries(Json::Value &timekeeperSettings);
 
 private:
-	OpenCMISS::Zinc::Timekeeper timekeeper;
+	CMLibs::Zinc::Timekeeper timekeeper;
 	IOMode mode;
 };
 
@@ -54,7 +54,7 @@ class TimekeepermoduleJsonImport
 {
 
 private:
-	OpenCMISS::Zinc::Timekeepermodule timekeepermodule;
+	CMLibs::Zinc::Timekeepermodule timekeepermodule;
 
 public:
 
@@ -73,7 +73,7 @@ public:
 class TimekeepermoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Timekeepermodule timekeepermodule;
+	CMLibs::Zinc::Timekeepermodule timekeepermodule;
 
 public:
 

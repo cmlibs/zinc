@@ -18,7 +18,7 @@
 #include <cmlibs/zinc/glyph.hpp>
 #include <cmlibs/zinc/scene.hpp>
 
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 class ZincTestSetupCpp
 {
