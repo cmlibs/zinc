@@ -368,7 +368,7 @@ Returns a non-zero if the <object> is managed by the <manager>. \
 
 #define PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION( object_type ) \
 int MANAGED_OBJECT_NOT_IN_USE(object_type)(struct object_type *object, \
-	struct MANAGER(object_type) *manager) \
+	struct MANAGER(object_type) *manager, int extraAccesses) \
 /***************************************************************************** \
 LAST MODIFIED : 18 January 2002 \
 \

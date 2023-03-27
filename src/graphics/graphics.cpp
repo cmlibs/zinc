@@ -13,9 +13,9 @@
 
 #include "opencmiss/zinc/zincconfigure.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/font.h"
@@ -620,11 +620,15 @@ static int cmzn_element_to_graphics_object(cmzn_element *element,
 		if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode) ||
 			(CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == graphics->select_mode))
 		{
-			if (graphics_to_object_data->selection_group_field)
-				name_selected = cmzn_field_evaluate_boolean(graphics_to_object_data->selection_group_field, graphics_to_object_data->field_cache);
+			if (graphics_to_object_data->selectionGroup)
+			{
+				name_selected = cmzn_field_evaluate_boolean(cmzn_field_group_base_cast(graphics_to_object_data->selectionGroup), graphics_to_object_data->field_cache);
+			}
 			if (!((name_selected && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode)) ||
-					((!name_selected) && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics->select_mode))))
+				((!name_selected) && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics->select_mode))))
+			{
 				return 1;
+			}
 		}
 		/* determine discretization of element for graphics */
 		// copy top_level_number_in_xi since scaled by native_discretization in
@@ -2506,20 +2510,19 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_cad_primitive(
 #endif /* defined (USE_OPENCASCADE) */
 
 SubObjectGroupHighlightFunctor *create_highlight_functor_element(
-	struct Computed_field *group_field, cmzn_mesh_id mesh)
+	cmzn_field_group* field_group, cmzn_mesh_id mesh)
 {
-	SubObjectGroupHighlightFunctor *highlight_functor = NULL;
-	if (group_field)
+	SubObjectGroupHighlightFunctor *highlight_functor = nullptr;
+	if (field_group)
 	{
-		cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
-		if (cmzn_field_group_contains_local_region(sub_group))
+		if (cmzn_field_group_contains_local_region(field_group))
 		{
-			highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
+			highlight_functor =	new SubObjectGroupHighlightFunctor(nullptr, nullptr);
 			highlight_functor->setContainsAll(1);
 		}
 		else
 		{
-			cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(sub_group, mesh);
+			cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(field_group, mesh);
 			if (element_group)
 			{
 				Computed_field_element_group *group_core =
@@ -2530,43 +2533,34 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_element(
 				cmzn_field_element_group_destroy(&element_group);
 			}
 		}
-	if (sub_group)
-		cmzn_field_group_destroy(&sub_group);
 	}
-
 	return (highlight_functor);
 }
 
 SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
-	struct Computed_field *group_field, cmzn_nodeset_id nodeset)
+	cmzn_field_group* field_group, cmzn_nodeset_id nodeset)
 {
-  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
-	if (group_field)
+	SubObjectGroupHighlightFunctor* highlight_functor = nullptr;
+	if (field_group)
 	{
-	  cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
-	  if (cmzn_field_group_contains_local_region(sub_group))
-	  {
-		highlight_functor = new SubObjectGroupHighlightFunctor(NULL, NULL);
-		highlight_functor->setContainsAll(1);
-	  }
-	  else
-	  {
-		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(sub_group, nodeset);
-		if (node_group)
+		if (cmzn_field_group_contains_local_region(field_group))
 		{
-			Computed_field_node_group *group_core =
-				Computed_field_node_group_core_cast(node_group);
-			highlight_functor =	new SubObjectGroupHighlightFunctor(group_core,
-				&Computed_field_subobject_group::isIdentifierInList);
-			cmzn_field_node_group_destroy(&node_group);
+			highlight_functor = new SubObjectGroupHighlightFunctor(nullptr, nullptr);
+			highlight_functor->setContainsAll(1);
 		}
-	  }
-	if (sub_group)
+		else
 		{
-		cmzn_field_group_destroy(&sub_group);
+			cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(field_group, nodeset);
+			if (node_group)
+			{
+				Computed_field_node_group* group_core =
+					Computed_field_node_group_core_cast(node_group);
+				highlight_functor = new SubObjectGroupHighlightFunctor(group_core,
+					&Computed_field_subobject_group::isIdentifierInList);
+				cmzn_field_node_group_destroy(&node_group);
+			}
 		}
 	}
-
 	return (highlight_functor);
 }
 
@@ -2590,11 +2584,10 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 	Render_graphics *renderer = 0;
 	if (graphics && (NULL != (renderer = (Render_graphics *)renderer_void)) && graphics->scene)
 	{
-		cmzn_field_id group_field =
-			cmzn_scene_get_selection_group_private_for_highlighting(graphics->scene);
+		cmzn_field_group* field_group = graphics->scene->getLocalSelectionGroupForHighlighting();
 		cmzn_fieldmodule_id field_module = NULL;
-		if (group_field &&
-			(NULL != (field_module = cmzn_field_get_fieldmodule(group_field))))
+		if (field_group &&
+			(NULL != (field_module = cmzn_field_get_fieldmodule(cmzn_field_group_base_cast(field_group)))))
 		{
 			if ((CMZN_GRAPHICS_SELECT_MODE_ON == graphics->select_mode) ||
 				(CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode))
@@ -2611,7 +2604,7 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 				{
 					cmzn_nodeset_id nodeset =
 						cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, graphics->domain_type);
-					functor = create_highlight_functor_nodeset(group_field, nodeset);
+					functor = create_highlight_functor_nodeset(field_group, nodeset);
 					cmzn_nodeset_destroy(&nodeset);
 				} break;
 				case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
@@ -2649,7 +2642,7 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 						{
 							int dimension = cmzn_graphics_get_domain_dimension(graphics);
 							cmzn_mesh_id temp_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
-							functor = create_highlight_functor_element(group_field, temp_mesh);
+							functor = create_highlight_functor_element(field_group, temp_mesh);
 							cmzn_mesh_destroy(&temp_mesh);
 						}
 #if defined(USE_OPENCASCADE)
@@ -2991,8 +2984,8 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 										graphics->signed_scale_field,
 										graphics->label_field,
 										graphics->label_density_field,
-										(iteration_nodeset == master_nodeset) ? graphics->subgroup_field : 0,
-										graphics_to_object_data->selection_group_field,
+										(iteration_nodeset == master_nodeset) ? graphics->subgroup_field : nullptr,
+										cmzn_field_group_base_cast(graphics_to_object_data->selectionGroup),
 										graphics_to_object_data->glyph_gt_object,
 										graphics->point_base_size, graphics->point_offset, graphics->point_scale_factors,
 										graphics->font,  graphics->label_offset,
@@ -3531,7 +3524,9 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 	cmzn_graphics_field_change_data *change_data =
 		static_cast<cmzn_graphics_field_change_data *>(change_data_void);
 	if (change_data->selection_changed && (CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
-		cmzn_graphics_update_selected(graphics, (void *)NULL);
+	{
+		cmzn_graphics_update_selected(graphics, (void*)NULL);
+	}
 	if (0 == graphics->graphics_object)
 	{
 		graphics->setChange(CMZN_GRAPHICS_CHANGE_REDRAW);
@@ -6723,8 +6718,7 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 				graphics_to_object_data.scenefilter = 0;
 				graphics_to_object_data.time = 0;
 				graphics_to_object_data.incrementalBuild = 0;
-				graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(
-					graphics->scene);
+				graphics_to_object_data.selectionGroup = graphics->scene->getLocalSelectionGroupForHighlighting();
 				graphics_to_object_data.iso_surface_specification = 0;
 				for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
 				{
@@ -6737,10 +6731,6 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 					&graphics_to_object_data);
 				copy_graphics->scene = tmpScene;
 				return_object = ACCESS(GT_object)(copy_graphics->graphics_object);
-				if (graphics_to_object_data.selection_group_field)
-				{
-					cmzn_field_destroy(&graphics_to_object_data.selection_group_field);
-				}
 				cmzn_fieldcache_destroy(&graphics_to_object_data.field_cache);
 				cmzn_fieldmodule_end_change(graphics_to_object_data.field_module);
 				cmzn_fieldmodule_destroy(&graphics_to_object_data.field_module);

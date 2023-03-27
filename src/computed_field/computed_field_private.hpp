@@ -425,7 +425,7 @@ public:
 		return this;
 	}
 
-	static void deaccess(cmzn_field*& field);
+	static void deaccess(cmzn_field*& field_ref);
 
 	static void reaccess(cmzn_field*& field, cmzn_field *newField)
 	{
@@ -470,6 +470,7 @@ public:
 	 * Note this copies the definition only; finite element fields defined on nodes
 	 * and elements are not affected.
 	 * Does not copy name of field.
+	 * Assumes one access held externally for this field.
 	 *
 	 * @source  Field to copy functional definition from.
 	 * @return  Result OK on success, ERROR_ARGUMENT if fails because source

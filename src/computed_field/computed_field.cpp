@@ -238,10 +238,12 @@ cmzn_field *cmzn_field::create(const char *nameIn)
 	return field;
 }
 
-void cmzn_field::deaccess(cmzn_field*& field)
+void cmzn_field::deaccess(cmzn_field*& field_ref)
 {
-	if (field)
+	if (field_ref)
 	{
+		cmzn_field* field = field_ref;
+		field_ref = nullptr; // clear client's pointer ASAP in case manager message sent below
 		--(field->access_count);
 		if (field->access_count <= 0)
 		{
@@ -253,9 +255,12 @@ void cmzn_field::deaccess(cmzn_field*& field)
 				(MANAGER_CHANGE_NONE(cmzn_field) != field->manager_change_status))) &&
 			field->core->not_in_use())
 		{
+			// removing a field from manager can release other fields it has reference to so cache changes:
+			MANAGER(cmzn_field)* manager = field->manager;
+			MANAGER_BEGIN_CACHE(cmzn_field)(manager);
 			REMOVE_OBJECT_FROM_MANAGER(cmzn_field)(field, field->manager);
+			MANAGER_END_CACHE(cmzn_field)(manager);
 		}
-		field = nullptr;
 	}
 }
 
@@ -406,9 +411,9 @@ Note: assumes caller is accessing field once!
 	{
 		if (manager == object->manager)
 		{
-			if ((2 >= object->access_count) ||
+			if (((1 + extraAccesses) == object->access_count) ||
 				((MANAGER_CHANGE_NONE(cmzn_field) != object->manager_change_status) &&
-				 (3 == object->access_count)))
+				 ((2 + extraAccesses) == object->access_count)))
 			{
 				return_code = object->core ? object->core->not_in_use() : 1;
 			}
@@ -701,7 +706,7 @@ int cmzn_field::copyDefinition(const cmzn_field& source)
 	}
 	if (((source.number_of_components != this->number_of_components) ||
 		(source.getValueType() != this->getValueType())) &&
-		(!MANAGED_OBJECT_NOT_IN_USE(cmzn_field)(this, manager)))
+		(!MANAGED_OBJECT_NOT_IN_USE(cmzn_field)(this, manager, 1)))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field::copyDefinition.  "
 			"Cannot change number of components or value type while field is in use");

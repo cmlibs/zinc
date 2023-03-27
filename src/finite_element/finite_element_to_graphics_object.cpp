@@ -63,7 +63,7 @@ Used with iterators for building glyph sets from nodes.
 	GLfloat *data;
 	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
-	struct Computed_field *coordinate_field, *data_field, *label_field,
+	cmzn_field* coordinate_field, *data_field, *label_field,
 		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
 		*subgroup_field, *group_field;
 	Triple *label_density, *point, *axis1, *axis2, *axis3, *scale;
@@ -115,7 +115,7 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 	{
 		FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
 			variable_scale[3], *vector;
-		struct Computed_field *coordinate_field, *data_field,
+		cmzn_field *coordinate_field, *data_field,
 			*label_field, *label_density_field, *orientation_scale_field, *variable_scale_field;
 		int dimension, i, j, k, values;
 		Triple *axis1, *axis2, *axis3, *point, *scale;
@@ -619,14 +619,14 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 	cmzn_nodeset_id nodeset, cmzn_fieldcache_id field_cache,
 	struct GT_object *graphics_object,
 	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,
-	struct Computed_field *orientation_scale_field,
-	struct Computed_field *variable_scale_field,
-	struct Computed_field *label_field,
-	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field,
-	struct Computed_field *group_field,
+	cmzn_field* coordinate_field,
+	cmzn_field* data_field,
+	cmzn_field* orientation_scale_field,
+	cmzn_field* variable_scale_field,
+	cmzn_field* label_field,
+	cmzn_field* label_density_field,
+	cmzn_field* subgroup_field,
+	cmzn_field* selection_group_field,
 	struct GT_object *glyph,
 	const FE_value *base_size, const FE_value *offset, const FE_value *scale_factors,
 	struct cmzn_font *font,	FE_value *label_offset, char *static_label_text[3],
@@ -653,7 +653,7 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 
 		/* label_field is not a required field (if undefined, label is empty) EXCEPT
 		 * where glyph bases its glyph_labels_function bounds on it */
-		struct Computed_field *label_bounds_field = NULL;
+		cmzn_field* label_bounds_field = NULL;
 		if (glyph && Graphics_object_get_glyph_labels_function(glyph))
 		{
 			if (label_field)
@@ -680,7 +680,7 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 				label_bounds_field = coordinate_field;
 			}
 		}
-		if (return_code && ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED!=select_mode) || group_field))
+		if (return_code && ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED!=select_mode) || selection_group_field))
 		{
 			// allocate for all nodes, trim arrays for fields not defined
 			int number_of_points = cmzn_nodeset_get_size(nodeset);
@@ -789,7 +789,7 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 					glyph_set_data.label_bounds_values = label_bounds_values;
 					glyph_set_data.label_bounds_vector = label_bounds_vector;
 					glyph_set_data.label_bounds = label_bounds;
-					glyph_set_data.group_field = group_field;
+					glyph_set_data.group_field = selection_group_field;
 					glyph_set_data.select_mode = select_mode;
 
 					cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
@@ -889,9 +889,9 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *array,
-	Computed_field *coordinate_field,
-	int number_of_data_values, Computed_field *data_field,
-	Computed_field *texture_coordinate_field,
+	cmzn_field* coordinate_field,
+	int number_of_data_values, cmzn_field* data_field,
+	cmzn_field* texture_coordinate_field,
 	unsigned int number_of_segments, FE_element *top_level_element)
 {
 	FE_value distance, xi;
@@ -1070,13 +1070,13 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 	cmzn_fieldcache_id field_cache,
 	struct Graphics_vertex_array *array, cmzn_mesh_id line_mesh,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *data_field,
+	cmzn_field* coordinate_field,
+	cmzn_field* data_field,
 	const FE_value *base_size,
 	const FE_value *scale_factors,
 	cmzn_field_id orientation_scale_field,
 	int number_of_segments_along, int number_of_segments_around,
-	struct Computed_field *texture_coordinate_field,
+	cmzn_field* texture_coordinate_field,
 	struct FE_element *top_level_element)
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
@@ -1799,9 +1799,9 @@ int get_surface_element_segmentation(struct FE_element *element,
 int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 	cmzn_fieldcache_id field_cache, cmzn_mesh_id surface_mesh,
 	struct Graphics_vertex_array *array,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *texture_coordinate_field,
-	struct Computed_field *data_field,
+	cmzn_field* coordinate_field,
+	cmzn_field* texture_coordinate_field,
+	cmzn_field* data_field,
 	unsigned int number_of_segments_in_xi1_requested,
 	unsigned int number_of_segments_in_xi2_requested,
 	char reverse_normals, struct FE_element *top_level_element)
@@ -2546,12 +2546,12 @@ int add_glyphset_vertex_from_FE_element(
 	struct GT_object *graphics_object,
 	cmzn_fieldcache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
-	struct Computed_field *coordinate_field,
+	cmzn_field* coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
-	struct Computed_field *orientation_scale_field,
-	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field,
-	struct Computed_field *label_field,
+	cmzn_field* orientation_scale_field,
+	cmzn_field* variable_scale_field,
+	cmzn_field* data_field,
+	cmzn_field* label_field,
 	enum cmzn_graphics_select_mode select_mode, bool element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers)
 {
@@ -2801,7 +2801,7 @@ int add_glyphset_vertex_from_FE_element(
 }
 
 int Cmiss_graphic_point_graphics_to_vertex_buffer(
-	cmzn_fieldcache_id field_cache, FE_value time, struct Computed_field *label_field,
+	cmzn_fieldcache_id field_cache, FE_value time, cmzn_field* label_field,
 	const FE_value *base_size, const FE_value *offset, const FE_value *scale_factors,
 	struct Graphics_vertex_array *array)
 {

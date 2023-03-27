@@ -16,6 +16,7 @@
 #include <opencmiss/zinc/status.h>
 
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
@@ -28,15 +29,23 @@
 struct RecordChange
 {
 	cmzn_fieldmoduleevent_id lastEvent;
+	int eventCount;
 
 	RecordChange() :
-		lastEvent(0)
+		lastEvent(nullptr),
+		eventCount(0)
 	{
 	}
 
 	~RecordChange()
 	{
-		cmzn_fieldmoduleevent_destroy(&lastEvent);
+		this->clear();
+	}
+
+	void clear()
+	{
+		cmzn_fieldmoduleevent_destroy(&this->lastEvent);
+		eventCount = 0;
 	}
 };
 
@@ -45,8 +54,11 @@ void fieldmoduleCallback(cmzn_fieldmoduleevent_id event,
 {
 	RecordChange *recordChange = reinterpret_cast<RecordChange*>(recordChangeVoid);
 	if (recordChange->lastEvent)
+	{
 		cmzn_fieldmoduleevent_destroy(&recordChange->lastEvent);
+	}
 	recordChange->lastEvent = cmzn_fieldmoduleevent_access(event);
+	++(recordChange->eventCount);
 }
 
 TEST(cmzn_fieldmodulenotifier, change_callback)
@@ -85,6 +97,7 @@ TEST(cmzn_fieldmodulenotifier, change_callback)
 	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, fred));
 	EXPECT_EQ(Field::CHANGE_FLAG_NONE, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, joe));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_name(fred, "fred"));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(joe, cache, 1, &value1));
 	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT,
@@ -94,9 +107,20 @@ TEST(cmzn_fieldmodulenotifier, change_callback)
 	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_FULL_RESULT, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, fred));
 
 	EXPECT_EQ(CMZN_OK, cmzn_field_set_managed(joe, false));
+	// keeping Fieldmoduleevent around is bad behaviour. Calling clear will give a single remove event
+	// which is tested elsewhere, but this is a more severe test where the first notification clears
+	// the last Fieldmoduleevent which releases field joe to send the second notification.
+	//recordChange.clear();
+	recordChange.eventCount = 0;
 	cmzn_field_destroy(&joe);
 	cmzn_field_destroy(&fred);
 	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_REMOVE, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(2, recordChange.eventCount);
+
+	joe = cmzn_fieldmodule_find_field_by_name(zinc.fm, "joe");
+	EXPECT_EQ(nullptr, joe);
+	fred = cmzn_fieldmodule_find_field_by_name(zinc.fm, "fred");
+	EXPECT_EQ(nullptr, fred);
 
 	cmzn_fieldcache_destroy(&cache);
 	EXPECT_EQ(CMZN_OK, result = cmzn_fieldmodulenotifier_clear_callback(notifier));
@@ -147,13 +171,22 @@ class FieldmodulecallbackRecordChange : public Fieldmodulecallback
 {
 public:
 	Fieldmoduleevent lastEvent;
+	int eventCount;
 
-	FieldmodulecallbackRecordChange()
+	FieldmodulecallbackRecordChange() :
+		eventCount(0)
 	{ }
 
 	virtual void operator()(const Fieldmoduleevent &event)
 	{
 		this->lastEvent = event;
+		++eventCount;
+	}
+
+	void clear()
+	{
+		lastEvent = Fieldmoduleevent();
+		eventCount = 0;
 	}
 };
 
@@ -199,9 +232,19 @@ TEST(ZincFieldmodulenotifier, changeCallback)
 	EXPECT_EQ(Field::CHANGE_FLAG_FULL_RESULT, result = recordChange.lastEvent.getFieldChangeFlags(fred));
 
 	EXPECT_EQ(CMZN_OK, result = joe.setManaged(false));
+	// keeping Fieldmoduleevent around is bad behaviour. Calling clear will give a single remove event
+	// which is tested elsewhere, but this is a more severe test where the first notification clears
+	// the last Fieldmoduleevent which releases field joe to send the second notification.
+	//recordChange.clear();
+	recordChange.eventCount = 0;
 	joe = Field();
 	fred = Field();
 	EXPECT_EQ(Field::CHANGE_FLAG_REMOVE, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(2, recordChange.eventCount);
+	joe = zinc.fm.findFieldByName("joe");
+	EXPECT_FALSE(joe.isValid());
+	fred = zinc.fm.findFieldByName("fred");
+	EXPECT_FALSE(joe.isValid());
 
 	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());
 }
@@ -509,4 +552,69 @@ TEST(ZincFieldmodulenotifier, defineFaces)
 			EXPECT_EQ(Element::CHANGE_FLAG_NONE, result);
 		}
 	}
+}
+
+// Test destroying a field with source fields only referenced by it
+// so a chain of fields should be removed with one notification.
+TEST(ZincFieldmodulenotifier, destroyFieldChain)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(RESULT_OK, result = notifier.setCallback(recordChange));
+
+	recordChange.clear();
+	zinc.fm.beginChange();
+	const double value1 = 2.0;
+	Field joe = zinc.fm.createFieldConstant(1, &value1);
+	EXPECT_TRUE(joe.isValid());
+	EXPECT_EQ(RESULT_OK, joe.setName("joe"));
+	zinc.fm.endChange();
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(1, recordChange.eventCount);
+	recordChange.clear();
+
+	recordChange.clear();
+	zinc.fm.beginChange();
+	const double value2 = 3.0;
+	Field bob = zinc.fm.createFieldConstant(1, &value2);
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	zinc.fm.endChange();
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(1, recordChange.eventCount);
+	recordChange.clear();
+
+	recordChange.clear();
+	zinc.fm.beginChange();
+	Field alf = joe + bob;
+	EXPECT_TRUE(alf.isValid());
+	EXPECT_EQ(RESULT_OK, alf.setName("alf"));
+	zinc.fm.endChange();
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(1, recordChange.eventCount);
+	recordChange.clear();
+
+	recordChange.clear();
+	zinc.fm.beginChange();
+	Field fred = zinc.fm.createFieldSqrt(alf);
+	EXPECT_TRUE(fred.isValid());
+	EXPECT_EQ(RESULT_OK, fred.setName("fred"));
+	zinc.fm.endChange();
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(1, recordChange.eventCount);
+	recordChange.clear();
+
+	joe = Field();
+	bob = Field();
+	alf = Field();
+	// this should destroy all fields in chain and produce 1 remove event:
+	fred = Field();
+	EXPECT_EQ(Field::CHANGE_FLAG_REMOVE, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(1, recordChange.eventCount);
+	recordChange.clear();
 }

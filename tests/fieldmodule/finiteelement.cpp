@@ -2468,17 +2468,26 @@ TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
 	EXPECT_FALSE(eft.validate());
 }
 
-class FieldmodulecallbackRecordChange : public Fieldmodulecallback
+class FieldmodulecallbackRecordChangeFe : public Fieldmodulecallback
 {
 public:
 	Fieldmoduleevent lastEvent;
+	int eventCount;
 
-	FieldmodulecallbackRecordChange()
+	FieldmodulecallbackRecordChangeFe() :
+		eventCount(0)
 	{ }
 
-	virtual void operator()(const Fieldmoduleevent &event)
+	virtual void operator()(const Fieldmoduleevent& event)
 	{
 		this->lastEvent = event;
+		++eventCount;
+	}
+
+	void clear()
+	{
+		lastEvent = Fieldmoduleevent();
+		eventCount = 0;
 	}
 };
 
@@ -2493,7 +2502,7 @@ TEST(ZincMesh, destroyElement)
 
 	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
 	EXPECT_TRUE(notifier.isValid());
-	FieldmodulecallbackRecordChange recordChange;
+	FieldmodulecallbackRecordChangeFe recordChange;
 	EXPECT_EQ(RESULT_OK, result = notifier.setCallback(recordChange));
 	EXPECT_FALSE(recordChange.lastEvent.isValid());
 

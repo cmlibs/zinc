@@ -195,10 +195,11 @@ DECLARE_MANAGER_TYPE(object_type) \
 	/* the list of callbacks invoked when manager has changed */ \
 	struct MANAGER_CALLBACK_ITEM(object_type) *callback_list; \
 	int locked; \
-	/* lists of objects added/changed OR removed since the last update message; \
-	 * separate so can add new object with same identifier as one removed. */ \
+	/* lists of objects added/changed since the last update message; \
+	 * removed objects are destroyed immediately - clients cannot query them */ \
 	struct LIST(object_type) *changed_object_list; \
-	struct LIST(object_type) *removed_object_list; \
+	/* removed objects are only counted to ensure message sent */ \
+	int number_of_removed_objects; \
 	/* pointer to owning object which exists for lifetime of this manager, if any */ \
 	owner_type *owner; \
 	bool external_change; \
@@ -259,7 +260,7 @@ inline void MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(void **change_detail_addr
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 /** \
  * Send a manager message to registered clients about changes to objects in \
- * the manager's changed_object_list and removed_object_list, if any. \
+ * the manager's changed_object_list, if any. \
  * Change information is copied out of the manager and objects before the \
  * message is sent. \
  */ \
@@ -267,8 +268,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 	if (manager) \
 	{ \
 		int number_of_changed_objects = NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
-		int number_of_removed_objects = NUMBER_IN_LIST(object_type)(manager->removed_object_list); \
-		if (number_of_changed_objects || number_of_removed_objects || manager->external_change) \
+		if (number_of_changed_objects || manager->number_of_removed_objects || manager->external_change) \
 		{ \
 			MANAGER_UPDATE_DEPENDENCIES(object_type)(manager); \
 			manager->external_change = false; \
@@ -285,29 +285,27 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 					object->manager_change_status = MANAGER_CHANGE_NONE(object_type); \
 					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->changed_object_list); \
 				} \
-				for (int i = 0; i < number_of_removed_objects; i++) \
+				if (manager->number_of_removed_objects) \
 				{ \
-					struct object_type *object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-						(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, manager->removed_object_list); \
-					message->addObjectChange(object); \
-					message->change_summary |= object->manager_change_status; \
-					object->manager_change_status = MANAGER_CHANGE_NONE(object_type); \
-					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->removed_object_list); \
+					message->change_summary |= MANAGER_CHANGE_REMOVE(object_type); \
+					manager->number_of_removed_objects = 0; \
 				} \
-				/* send message to clients */ \
+				/* send message to clients, but cache changes to avoid (their) reentrancy */ \
+				MANAGER_BEGIN_CACHE(object_type)(manager); \
 				struct MANAGER_CALLBACK_ITEM(object_type) *item = manager->callback_list; \
 				while (item) \
 				{ \
 					(item->callback)(message, item->user_data); \
 					item = item->next; \
 				} \
+				message->deaccess(message); \
+				MANAGER_END_CACHE(object_type)(manager); \
 			} \
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
 					"MANAGER_UPDATE(" #object_type ").  Could not build message"); \
 			} \
-			message->deaccess(message); \
 		} \
 	} \
 	else \
@@ -382,7 +380,7 @@ List conditional version of MANAGED_OBJECT_NOT_IN_USE function. \
 \
 	ENTER(MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type)); \
 	return_code = MANAGED_OBJECT_NOT_IN_USE(object_type)(object, \
-		(struct MANAGER(object_type) *)manager_void); \
+		(struct MANAGER(object_type) *)manager_void, 0); \
 	LEAVE; \
 \
 	return (return_code); \
@@ -435,9 +433,9 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	{ \
 		manager->object_list = CREATE_LIST(object_type)(); \
 		manager->changed_object_list = CREATE_RELATED_LIST(object_type)(manager->object_list); \
-		manager->removed_object_list = CREATE_RELATED_LIST(object_type)(manager->object_list); \
-		if (manager->object_list && manager->changed_object_list && manager->removed_object_list) \
+		if (manager->object_list && manager->changed_object_list) \
 		{ \
+			manager->number_of_removed_objects = 0; \
 			manager->callback_list = \
 				(struct MANAGER_CALLBACK_ITEM(object_type) *)NULL; \
 			manager->locked = 0; \
@@ -448,7 +446,6 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"MANAGER_CREATE(" #object_type ").  Could not create object lists"); \
-			DESTROY(LIST(object_type))(&(manager->removed_object_list)); \
 			DESTROY(LIST(object_type))(&(manager->changed_object_list)); \
 			DESTROY(LIST(object_type))(&(manager->object_list)); \
 			DEALLOCATE(manager); \
@@ -486,9 +483,8 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 		/* remove the manager pointer from each object */ \
 		FOR_EACH_OBJECT_IN_LIST(object_type)(OBJECT_CLEAR_MANAGER(object_type), \
 			(void *)NULL, manager->object_list); \
-		/* destroy the changed and removed object lists */ \
+		/* destroy the changed object list */ \
 		DESTROY_LIST(object_type)(&(manager->changed_object_list)); \
-		DESTROY_LIST(object_type)(&(manager->removed_object_list)); \
 		/* destroy the list of objects in the manager */ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
 		/* destroy the callback list after the list of objects \ 
@@ -620,32 +616,24 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 		{ \
 			if (!(manager->locked)) \
 			{ \
-				if (MANAGED_OBJECT_NOT_IN_USE(object_type)(object, manager)) \
+				/* clear manager pointer first so list DEACCESS doesn't remove from manager again */ \
+				object->object_manager = (struct MANAGER(object_type) *)NULL; \
+				if (object->manager_change_status != MANAGER_CHANGE_NONE(object_type)) \
 				{ \
-					/* clear manager pointer first so list DEACCESS doesn't remove from manager again */ \
-					object->object_manager = (struct MANAGER(object_type) *)NULL; \
-					if (object->manager_change_status != MANAGER_CHANGE_NONE(object_type)) \
-					{ \
-						REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->changed_object_list); \
-					} \
-					/* do not inform clients about objects added and removed during caching */ \
-					if (object->manager_change_status != MANAGER_CHANGE_ADD(object_type)) \
-					{ \
-						/* removed_object_list ACCESSes removed objects until message sent */ \
-						ADD_OBJECT_TO_LIST(object_type)(object, manager->removed_object_list); \
-					} \
-					object->manager_change_status = MANAGER_CHANGE_REMOVE(object_type); \
-					return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
-					if (!manager->cache) \
-					{ \
-						MANAGER_UPDATE(object_type)(manager); \
-					} \
+					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->changed_object_list); \
 				} \
-				else \
+				/* do not inform clients about objects added then removed while caching */ \
+				if (object->manager_change_status != MANAGER_CHANGE_ADD(object_type)) \
 				{ \
-					display_message(ERROR_MESSAGE, \
-						"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Object is in use"); \
-					return_code = 0; \
+					++manager->number_of_removed_objects; \
+				} \
+				/* following is never used by clients but may help debugging */ \
+				object->manager_change_status = MANAGER_CHANGE_REMOVE(object_type); \
+				/* this should immediately destroy object */ \
+				return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
+				if (!manager->cache) \
+				{ \
+					MANAGER_UPDATE(object_type)(manager); \
 				} \
 			} \
 			else \
@@ -1107,16 +1095,12 @@ PROTOTYPE_IS_MANAGED_FUNCTION(object_type) \
 #define DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION( object_type , object_manager ) \
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2002 \
-\
-DESCRIPTION : \
-Returns true if <object> is only accessed by the manager or other managed \
-objects. In general, a true result is sufficient to indicate the object may be \
-removed from the manager or modified. \
-This default version may be used for any object that cannot be accessed by \
-other objects in the manager. It only checks the object is accessed just by \
-the manager's object_list and changed_object_list or removed_object_list. \
-FE_element type requires a special version due to face/parent accessing. \
+Returns true if <object> is only accessed by the manager and therefore able to \
+be removed. \
+This default version checks the object is accessed by the manager's \
+object_list and possibly changed_object_list. \
+Some types may need to override if other resources held prevent it being \
+'not in use'. \
 ============================================================================*/ \
 { \
 	int return_code; \
@@ -1127,9 +1111,9 @@ FE_element type requires a special version due to face/parent accessing. \
 	{ \
 		if (manager == object->object_manager) \
 		{ \
-			if ((1 == object->access_count) || \
+			if (((1 + extraAccesses) == object->access_count) || \
 				((MANAGER_CHANGE_NONE(object_type) != object->manager_change_status) && \
-				 (2 == object->access_count))) \
+				 ((2 + extraAccesses) == object->access_count))) \
 			{ \
 				return_code = 1; \
 			} \

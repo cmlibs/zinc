@@ -39,6 +39,7 @@
 #endif /* defined (USE_OPENCASCADE) */
 #include <cstdlib>
 #include <list>
+#include <string>
 
 char computed_field_group_type_string[] = "group";
 
@@ -49,7 +50,7 @@ Computed_field_group::Computed_field_group(cmzn_region *region)
 	, subelementHandlingMode(CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE)
 	, local_node_group(0)
 	, local_data_group(0)
-	, subregion_group_map()
+	, child_region_group_map()
 {
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 		this->local_element_group[i] = 0;
@@ -57,12 +58,14 @@ Computed_field_group::Computed_field_group(cmzn_region *region)
 
 Computed_field_group::~Computed_field_group()
 {
-	clearLocalNodeGroup(/*isData*/false);
-	clearLocalNodeGroup(/*isData*/true);
+	clearRemoveLocalNodeGroup(/*isData*/false, /*clear*/false, /*remove*/true);
+	clearRemoveLocalNodeGroup(/*isData*/true, /*clear*/false, /*remove*/true);
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-		clearLocalElementGroup(i);
-	for (Region_field_map_iterator iter = subregion_group_map.begin();
-		iter != subregion_group_map.end(); ++iter)
+	{
+		clearRemoveLocalElementGroup(i, /*clear*/false, /*remove*/true);
+	}
+	for (Region_field_map_iterator iter = child_region_group_map.begin();
+		iter != child_region_group_map.end(); ++iter)
 	{
 		cmzn_field_group_id subregion_group_field = iter->second;
 		cmzn_field_group_destroy(&subregion_group_field);
@@ -75,51 +78,76 @@ Computed_field_group::~Computed_field_group()
 	}
 }
 
-void Computed_field_group::clearLocalElementGroup(int index)
+void Computed_field_group::clearRemoveLocalElementGroup(int index, bool clear, bool remove)
 {
-	if (this->local_element_group[index])
+	cmzn_field*& element_group_field = this->local_element_group[index];
+	if (element_group_field)
 	{
 		Computed_field_subobject_group *subobject_group =
-			static_cast<Computed_field_subobject_group *>(this->local_element_group[index]->core);
-		subobject_group->clear();
-		subobject_group->setOwnerGroup(0);
-		check_subobject_group_dependency(subobject_group);
-		cmzn_field_destroy(&this->local_element_group[index]);
+			static_cast<Computed_field_subobject_group *>(element_group_field->core);
+		if ((!subobject_group->isEmpty()) || subobject_group->is_change_remove())
+		{
+			this->change_detail.changeRemoveLocal();
+		}
+		if (clear)
+		{
+			subobject_group->clear();
+		}
+		if (remove)
+		{
+			subobject_group->setOwnerGroup(nullptr);
+			cmzn_field::deaccess(element_group_field);
+		}
 	}
 }
 
 void Computed_field_group::setLocalElementGroup(int index, cmzn_field_element_group *element_group)
 {
-	clearLocalElementGroup(index);
-	if (element_group)
+	if (cmzn_field_element_group_base_cast(element_group) != this->local_element_group[index])
 	{
-		Computed_field_element_group_core_cast(element_group)->setOwnerGroup(this);
-		this->local_element_group[index] = cmzn_field_access(cmzn_field_element_group_base_cast(element_group));
+		clearRemoveLocalElementGroup(index, /*clear*/false, /*remove*/true);
+		if (element_group)
+		{
+			Computed_field_element_group_core_cast(element_group)->setOwnerGroup(this);
+			this->local_element_group[index] = cmzn_field_element_group_base_cast(element_group)->access();
+		}
 	}
 }
 
-void Computed_field_group::clearLocalNodeGroup(bool isData)
+void Computed_field_group::clearRemoveLocalNodeGroup(bool isData, bool clear, bool remove)
 {
-	cmzn_field_id *node_group_field_address = (isData) ? &local_data_group : &local_node_group;
-	if (*node_group_field_address)
+	cmzn_field*& node_group_field = (isData) ? local_data_group : local_node_group;
+	if (node_group_field)
 	{
 		Computed_field_subobject_group *subobject_group =
-			static_cast<Computed_field_subobject_group *>((*node_group_field_address)->core);
-		subobject_group->clear();
-		subobject_group->setOwnerGroup(0);
-		check_subobject_group_dependency(subobject_group);
-		cmzn_field_destroy(node_group_field_address);
+			static_cast<Computed_field_subobject_group *>(node_group_field->core);
+		if ((!subobject_group->isEmpty()) || subobject_group->is_change_remove())
+		{
+			this->change_detail.changeRemoveLocal();
+		}
+		if (clear)
+		{
+			subobject_group->clear();
+		}
+		if (remove)
+		{
+			subobject_group->setOwnerGroup(nullptr);
+			cmzn_field::deaccess(node_group_field);
+		}
 	}
 }
 
 void Computed_field_group::setLocalNodeGroup(bool isData, cmzn_field_node_group *node_group)
 {
-	clearLocalNodeGroup(isData);
-	if (node_group)
+	cmzn_field_id& local_node_group_field = (isData) ? this->local_data_group : this->local_node_group;
+	if (cmzn_field_node_group_base_cast(node_group) != local_node_group_field)
 	{
-		Computed_field_node_group_core_cast(node_group)->setOwnerGroup(this);
-		cmzn_field_id *node_group_field_address = (isData) ? &local_data_group : &local_node_group;
-		*node_group_field_address = cmzn_field_access(cmzn_field_node_group_base_cast(node_group));
+		clearRemoveLocalNodeGroup(isData, /*clear*/false, /*remove*/true);
+		if (node_group)
+		{
+			Computed_field_node_group_core_cast(node_group)->setOwnerGroup(this);
+			local_node_group_field = cmzn_field_node_group_base_cast(node_group)->access();
+		}
 	}
 }
 
@@ -239,8 +267,8 @@ bool Computed_field_group::isEmptyLocal() const
 
 bool Computed_field_group::isEmptyNonLocal() const
 {
-	for (Region_field_map_const_iterator iter = subregion_group_map.begin();
-		iter != subregion_group_map.end(); iter++)
+	for (Region_field_map_const_iterator iter = child_region_group_map.begin();
+		iter != child_region_group_map.end(); iter++)
 	{
 		cmzn_field_group_id subregion_group_field = iter->second;
 		if (!isSubGroupEmpty(cmzn_field_group_base_cast(subregion_group_field)->core))
@@ -258,10 +286,12 @@ int Computed_field_group::clearLocal()
 	cmzn_field_group_subelement_handling_mode oldSubelementHandlingMode = this->subelementHandlingMode;
 	this->subelementHandlingMode = CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE;
 	contains_all = false;
-	clearLocalNodeGroup(/*isData*/false); 
-	clearLocalNodeGroup(/*isData*/true);
+	clearRemoveLocalNodeGroup(/*isData*/false); 
+	clearRemoveLocalNodeGroup(/*isData*/true);
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-		clearLocalElementGroup(i);
+	{
+		clearRemoveLocalElementGroup(i);
+	}
 	change_detail.changeRemoveLocal();
 	this->subelementHandlingMode = oldSubelementHandlingMode;
 	this->field->setChanged();
@@ -273,8 +303,8 @@ int Computed_field_group::clear()
 {
 	int return_code = 0;
 	this->beginChange();
-	for (Region_field_map_iterator iter = subregion_group_map.begin();
-		iter != subregion_group_map.end(); iter++)
+	for (Region_field_map_iterator iter = child_region_group_map.begin();
+		iter != child_region_group_map.end(); iter++)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(iter->second);
 		group_core->clear();
@@ -291,11 +321,13 @@ int Computed_field_group::check_subobject_group_dependency(Computed_field_core *
 	/* check_dependency method is not sufficient to determine a subobject group has changed or not for a group */
 	if (subobject_group->check_dependency_for_group_special())
 	{
-		field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+		this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 		const cmzn_field_subobject_group_change_detail *subobject_group_change_detail =
 			dynamic_cast<const cmzn_field_subobject_group_change_detail *>(source_core->get_change_detail());
 		if (subobject_group_change_detail)
+		{
 			change_detail.changeMergeLocal(subobject_group_change_detail->getChangeSummary());
+		}
 	}
 	return 1;
 }
@@ -351,8 +383,8 @@ void Computed_field_group::propagate_hierarchical_field_changes(
 {
 	if (message)
 	{
-		for (Region_field_map_iterator iter = subregion_group_map.begin();
-			iter != subregion_group_map.end(); iter++)
+		for (Region_field_map_iterator iter = child_region_group_map.begin();
+			iter != child_region_group_map.end(); iter++)
 		{
 			cmzn_field_group_id subregion_group = iter->second;
 			// future optimisation: check subfield is from changed region
@@ -418,7 +450,7 @@ int Computed_field_group::list()
 
 int Computed_field_group::removeRegion(cmzn_region_id region)
 {
-	cmzn_field_group_id subgroup = getSubRegionGroup(region);
+	cmzn_field_group_id subgroup = this->getOrCreateSubregionFieldGroup(region, true, false);
 	if (subgroup)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(subgroup);
@@ -432,7 +464,7 @@ int Computed_field_group::removeRegion(cmzn_region_id region)
 bool Computed_field_group::containsRegion(cmzn_region_id region)
 {
 	bool result = false;
-	cmzn_field_group_id subgroup = getSubRegionGroup(region);
+	cmzn_field_group_id subgroup = this->getOrCreateSubregionFieldGroup(region, true, false);
 	if (subgroup)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(subgroup);
@@ -453,8 +485,8 @@ int Computed_field_group::setSubelementHandlingMode(
 		this->setChanged();
 	}
 	// propagate down subregion group tree
-	for (Region_field_map_iterator iter = this->subregion_group_map.begin();
-		iter != this->subregion_group_map.end(); iter++)
+	for (Region_field_map_iterator iter = this->child_region_group_map.begin();
+		iter != this->child_region_group_map.end(); iter++)
 	{
 		cmzn_field_group_id subregion_group = iter->second;
 		Computed_field_group_core_cast(subregion_group)->setSubelementHandlingMode(modeIn);
@@ -465,24 +497,30 @@ int Computed_field_group::setSubelementHandlingMode(
 Computed_field_element_group *Computed_field_group::getElementGroupPrivate(FE_mesh *fe_mesh, bool create)
 {
 	if (!fe_mesh)
-		return 0;
+	{
+		return nullptr;
+	}
 	const int dimension = fe_mesh->getDimension();
 	if (this->local_element_group[dimension - 1])
-		return static_cast<Computed_field_element_group *>(this->local_element_group[dimension - 1]->core);
+	{
+		return static_cast<Computed_field_element_group*>(this->local_element_group[dimension - 1]->core);
+	}
 	if (create)
 	{
+		Computed_field_element_group* elementGroupCore = nullptr;
 		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(this->field);
 		cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
-		cmzn_field_element_group_id element_group = this->get_element_group(mesh);
-		if (!element_group)
-			element_group = this->create_element_group(mesh);
-		Computed_field_element_group *elementGroupCore = Computed_field_element_group_core_cast(element_group);
-		cmzn_field_element_group_destroy(&element_group);
+		cmzn_field_element_group_id element_group = this->getOrCreateFieldElementGroup(mesh);
+		if (element_group)
+		{
+			elementGroupCore = Computed_field_element_group_core_cast(element_group);
+			cmzn_field_element_group_destroy(&element_group);
+		}
 		cmzn_mesh_destroy(&mesh);
 		cmzn_fieldmodule_destroy(&fieldmodule);
 		return elementGroupCore;
 	}
-	return 0;
+	return nullptr;
 }
 
 Computed_field_node_group *Computed_field_group::getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create)
@@ -491,116 +529,108 @@ Computed_field_node_group *Computed_field_group::getNodeGroupPrivate(cmzn_field_
 	{
 	case CMZN_FIELD_DOMAIN_TYPE_NODES:
 		if (this->local_node_group)
-			return static_cast<Computed_field_node_group *>(this->local_node_group->core);
+		{
+			return static_cast<Computed_field_node_group*>(this->local_node_group->core);
+		}
 		break;
 	case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
 		if (this->local_data_group)
-			return static_cast<Computed_field_node_group *>(this->local_data_group->core);
+		{
+			return static_cast<Computed_field_node_group*>(this->local_data_group->core);
+		}
 		break;
 	default:
 		display_message(ERROR_MESSAGE, "Computed_field_group::getNodeGroupPrivate.  Invalid domain_type");
-		return 0;
+		return nullptr;
 		break;
 	}
 	if (create)
 	{
+		Computed_field_node_group* nodeGroupCore = nullptr;
 		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(this->field);
 		cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, domain_type);
-		cmzn_field_node_group_id node_group = this->get_node_group(nodeset);
-		if (!node_group)
-			node_group = this->create_node_group(nodeset);
-		Computed_field_node_group *nodeGroupCore = Computed_field_node_group_core_cast(node_group);
-		cmzn_field_node_group_destroy(&node_group);
+		cmzn_field_node_group_id node_group = this->getOrCreateFieldNodeGroup(nodeset);
+		if (node_group)
+		{
+			nodeGroupCore = Computed_field_node_group_core_cast(node_group);
+			cmzn_field_node_group_destroy(&node_group);
+		}
 		cmzn_nodeset_destroy(&nodeset);
 		cmzn_fieldmodule_destroy(&fieldmodule);
 		return nodeGroupCore;
 	}
-	return 0;
+	return nullptr;
 }
 
-cmzn_field_group_id Computed_field_group::getSubRegionGroup(cmzn_region_id subregion)
+cmzn_field_group* Computed_field_group::getOrCreateSubregionFieldGroup(cmzn_region *subregion, bool canGet, bool canCreate)
 {
-	cmzn_field_group_id subregion_group = NULL;
-	if (region == subregion)
+	if (!(canGet || canCreate))
 	{
-		subregion_group = cmzn_field_cast_group(this->getField());
+		return nullptr;
 	}
-	else
+	if (this->region == subregion)
 	{
-		Region_field_map_iterator iter = subregion_group_map.find(subregion);
-		if (iter != subregion_group_map.end())
+		if (canGet)
 		{
-			subregion_group = iter->second;
-			cmzn_field_access(cmzn_field_group_base_cast(subregion_group));
+			return cmzn_field_cast_group(this->getField());
 		}
-		if (!subregion_group && !subregion_group_map.empty())
-		{
-			for (iter = subregion_group_map.begin(); iter != subregion_group_map.end(); iter++)
-			{
-				cmzn_field_group_id temp = iter->second;
-				Computed_field_group *group_core = Computed_field_group_core_cast(temp);
-				subregion_group = group_core->getSubRegionGroup(subregion);
-				if (subregion_group)
-					break;
-			}
-		}
+		return nullptr;
 	}
-	return subregion_group;
-}
-
-cmzn_field_group_id Computed_field_group::createSubRegionGroup(cmzn_region_id subregion)
-{
-	cmzn_field_group_id subregion_group = NULL;
-	if (cmzn_region_contains_subregion(region, subregion) && region != subregion)
+	Region_field_map_iterator iter = this->child_region_group_map.find(subregion);
+	if (iter != this->child_region_group_map.end())
 	{
-		cmzn_region_id parent_region = subregion->getParent();
-		if (parent_region != region)
+		if (canGet)
 		{
-			cmzn_field_group_id temp = getSubRegionGroup(subregion);
-			if (!temp)
-			{
-				/* this will construct the hierarchy tree */
-				temp = getSubRegionGroup(parent_region);
-				if (!temp)
-					temp = createSubRegionGroup(parent_region);
-				if (temp)
-				{
-					Computed_field_group *group_core = Computed_field_group_core_cast(temp);
-					subregion_group = group_core->createSubRegionGroup(subregion);
-				}
-			}
-			if (temp)
-				cmzn_field_group_destroy(&temp);
+			cmzn_field_group_base_cast(iter->second)->access();
+			return iter->second;
 		}
-		else // (parent_region == region)
+		return nullptr;
+	}
+	if (!this->region->containsSubregion(subregion))
+	{
+		display_message(ERROR_MESSAGE, "FieldGroup.get/createSubregionFieldGroup.  Subregion is not in region tree");
+		return nullptr;
+	}
+	// find existing group of same name in subregion
+	cmzn_field_group* subregion_group = nullptr;
+	cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(subregion);
+	cmzn_field *existing_field = cmzn_fieldmodule_find_field_by_name(fieldmodule, this->getField()->name);
+	if (existing_field)
+	{
+		subregion_group = cmzn_field_cast_group(existing_field);
+		if (!subregion_group)
 		{
-			Region_field_map_iterator pos = subregion_group_map.find(subregion);
-			if (pos == subregion_group_map.end())
-			{
-				cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(subregion);
-				cmzn_field_id generic_field =
-					cmzn_fieldmodule_find_field_by_name(fieldmodule, this->getField()->name);
-				if (generic_field)
-				{
-					subregion_group = cmzn_field_cast_group(generic_field);
-					// Not calling cmzn_field_set_managed(subregion_group, 0);
-					cmzn_field_destroy(&generic_field);
-				}
-				if (!subregion_group)
-				{
-					cmzn_fieldmodule_begin_change(fieldmodule);
-					subregion_group = reinterpret_cast<cmzn_field_group_id>(cmzn_fieldmodule_create_field_group(fieldmodule));
-					cmzn_field_set_name(cmzn_field_group_base_cast(subregion_group), this->getField()->name);
-					cmzn_field_group_set_subelement_handling_mode(subregion_group, this->subelementHandlingMode);
-					cmzn_fieldmodule_end_change(fieldmodule);
-				}
-				cmzn_fieldmodule_destroy(&fieldmodule);
-				cmzn_field_access(cmzn_field_group_base_cast(subregion_group));
-				subregion_group_map.insert(std::make_pair(subregion, subregion_group));
-			}
-			// else already exists: fail
+			display_message(ERROR_MESSAGE, "FieldGroup.get/createSubregionFieldGroup.  Found existing non-group field of name %s", this->getField()->name);
 		}
 	}
+	if ((canGet && (subregion_group)) || (canCreate && (!existing_field)))
+	{
+		this->region->beginHierarchicalChange();
+		if (!subregion_group)
+		{
+			subregion_group = reinterpret_cast<cmzn_field_group*>(cmzn_fieldmodule_create_field_group(fieldmodule));
+			cmzn_field_set_name(cmzn_field_group_base_cast(subregion_group), this->getField()->name);
+			cmzn_field_group_set_subelement_handling_mode(subregion_group, this->subelementHandlingMode);
+		}
+		cmzn_region* parent_region = subregion->getParent();
+		Computed_field_group* parent_group_core = this;
+		if (parent_region != this->region)
+		{
+			// get/create and link intermediate groups
+			cmzn_field_group* parent_group = this->getOrCreateSubregionFieldGroup(parent_region);
+			parent_group_core = Computed_field_group_core_cast(parent_group);
+		}
+		if (parent_group_core)
+		{
+			cmzn_field_group_base_cast(subregion_group)->access();  // access while in child_region_group_map
+			parent_group_core->child_region_group_map.insert(std::make_pair(subregion, subregion_group));
+			parent_group_core->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_ADD);
+			parent_group_core->field->setChanged();
+		}
+		this->region->endHierarchicalChange();
+	}
+	cmzn_field_destroy(&existing_field);
+	cmzn_fieldmodule_destroy(&fieldmodule);
 	return subregion_group;
 }
 
@@ -610,12 +640,12 @@ cmzn_field_group_id Computed_field_group::getFirstNonEmptyGroup()
 	{
 		return cmzn_field_cast_group(this->getField());
 	}
-	if (!subregion_group_map.empty())
+	if (!child_region_group_map.empty())
 	{
 		cmzn_field_group_id subregion_group = 0;
 		Region_field_map_iterator iter;
-		for (Region_field_map_iterator iter = subregion_group_map.begin();
-			iter != subregion_group_map.end(); iter++)
+		for (Region_field_map_iterator iter = child_region_group_map.begin();
+			iter != child_region_group_map.end(); iter++)
 		{
 			cmzn_field_group_id temp = iter->second;
 			Computed_field_group *group_core = Computed_field_group_core_cast(temp);
@@ -627,197 +657,224 @@ cmzn_field_group_id Computed_field_group::getFirstNonEmptyGroup()
 	return 0;
 }
 
-char *Computed_field_group::get_standard_node_group_name(cmzn_nodeset_id master_nodeset)
+namespace {
+
+std::string getStandardMeshGroupName(const char* groupFieldName, cmzn_mesh* mesh)
 {
-	char *name = cmzn_field_get_name(this->getField());
-	int error = 0;
-	append_string(&name, ".", &error);
-	char *nodeset_name = cmzn_nodeset_get_name(master_nodeset);
-	append_string(&name, nodeset_name, &error);
-	DEALLOCATE(nodeset_name);
-	return name;
+	std::string meshGroupName(groupFieldName);
+	meshGroupName.append(".");
+	meshGroupName.append(cmzn_mesh_get_FE_mesh_internal(mesh)->getName());
+	return meshGroupName;
 }
 
-cmzn_field_node_group_id Computed_field_group::create_node_group(cmzn_nodeset_id nodeset)
+std::string getStandardNodesetGroupName(const char* groupFieldName, cmzn_nodeset* nodeset)
 {
-	if (contains_all || (!nodeset))
-		return 0;
-	cmzn_field_node_group_id node_group = this->get_node_group(nodeset);
-	if (node_group)
-		cmzn_field_node_group_destroy(&node_group); // can't create if already exists
-	else if (cmzn_nodeset_get_region_internal(nodeset) != this->region)
+	std::string nodesetGroupName(groupFieldName);
+	nodesetGroupName.append(".");
+	nodesetGroupName.append(cmzn_nodeset_get_FE_nodeset_internal(nodeset)->getName());
+	return nodesetGroupName;
+}
+
+}
+
+cmzn_field_node_group* Computed_field_group::getOrCreateFieldNodeGroup(cmzn_nodeset* nodeset, bool canGet, bool canCreate)
+{
+	if (this->contains_all || (!nodeset) || !(canGet || canCreate))
 	{
-		cmzn_field_group *subregionGroup = this->getSubRegionGroup(cmzn_nodeset_get_region_internal(nodeset));
-		if (!subregionGroup)
-			subregionGroup = this->createSubRegionGroup(cmzn_nodeset_get_region_internal(nodeset));
-		if (subregionGroup)
+		return nullptr;
+	}
+	cmzn_region* subregion = cmzn_nodeset_get_region_internal(nodeset);
+	cmzn_field_group* subregion_group = nullptr;
+	Computed_field_group* group_core = nullptr;
+	if (subregion != this->region)
+	{
+		this->region->beginHierarchicalChange();
+		subregion_group = this->getOrCreateSubregionFieldGroup(subregion,
+			canGet || canCreate,
+			canCreate || subregion->findFieldByName(getStandardNodesetGroupName(this->field->name, nodeset).c_str()));
+		if (!subregion_group)
 		{
-			node_group = Computed_field_group_core_cast(subregionGroup)->create_node_group(nodeset);
-			cmzn_field_group_destroy(&subregionGroup);
+			this->region->endHierarchicalChange();
+			return nullptr;
 		}
+		group_core = Computed_field_group_core_cast(subregion_group);
 	}
 	else
 	{
-		cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldmodule_begin_change(field_module);
-		cmzn_field_id node_group_field = cmzn_fieldmodule_create_field_node_group(field_module, master_nodeset);
-		if (node_group_field)
-		{
-			node_group = cmzn_field_cast_node_group(node_group_field);
-			char *name = get_standard_node_group_name(master_nodeset);
-			cmzn_field_set_name(node_group_field, name);
-			DEALLOCATE(name);
-			setLocalNodeGroup(cmzn_nodeset_is_data_internal(master_nodeset), node_group);
-			cmzn_field_destroy(&node_group_field);
-		}
-		cmzn_fieldmodule_end_change(field_module);
-		cmzn_fieldmodule_destroy(&field_module);
-		cmzn_nodeset_destroy(&master_nodeset);
+		this->beginChange();
+		group_core = this;
 	}
-	return (node_group);
-}
 
-cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id nodeset)
-{
-	if (contains_all || (!nodeset))
-		return 0;
-	cmzn_field_node_group_id node_group = 0;
-	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
-	cmzn_region *nodeset_region = FE_region_get_cmzn_region(fe_nodeset->get_FE_region());
-	if (nodeset_region != this->region)
+	cmzn_field_node_group* node_group = nullptr;
+	const bool use_data = cmzn_nodeset_is_data_internal(nodeset);
+	cmzn_field* localSubobjectField = (use_data) ? group_core->local_data_group : group_core->local_node_group;
+	if (localSubobjectField)
 	{
-		cmzn_field_group *subregionGroup = this->getSubRegionGroup(nodeset_region);
-		if (subregionGroup)
+		if (canGet)
 		{
-			node_group = Computed_field_group_core_cast(subregionGroup)->get_node_group(nodeset);
-			cmzn_field_group_destroy(&subregionGroup);
+			node_group = cmzn_field_cast_node_group(localSubobjectField);
 		}
-	}
-	else
-	{
-		bool use_data = cmzn_nodeset_is_data_internal(nodeset);
-		if (use_data)
-		{
-			if (this->local_data_group)
-				node_group = cmzn_field_cast_node_group(this->local_data_group);
-		}
-		else if (this->local_node_group)
-			node_group = cmzn_field_cast_node_group(this->local_node_group);
-		if (!node_group)
-		{
-			// find by name & check it is for same FE_nodeset
-			cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
-			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-			char *name = get_standard_node_group_name(master_nodeset);
-			cmzn_field_id node_group_field = cmzn_fieldmodule_find_field_by_name(field_module, name);
-			DEALLOCATE(name);
-			node_group = cmzn_field_cast_node_group(node_group_field);
-			if (node_group)
-			{
-				if (Computed_field_node_group_core_cast(node_group)->getFeNodeset() == fe_nodeset)
-					setLocalNodeGroup(use_data, node_group);
-				else // wrong nodeset
-					cmzn_field_node_group_destroy(&node_group);
-			}
-			cmzn_field_destroy(&node_group_field);
-			cmzn_fieldmodule_destroy(&field_module);
-			cmzn_nodeset_destroy(&master_nodeset);
-		}
-	}
-	return (node_group);
-}
-
-char *Computed_field_group::get_standard_element_group_name(cmzn_mesh_id master_mesh)
-{
-	char *name = cmzn_field_get_name(this->getField());
-	int error = 0;
-	append_string(&name, ".", &error);
-	char *mesh_name = cmzn_mesh_get_name(master_mesh);
-	append_string(&name, mesh_name, &error);
-	DEALLOCATE(mesh_name);
-	return name;
-}
-
-cmzn_field_element_group_id Computed_field_group::create_element_group(cmzn_mesh_id mesh)
-{
-	if (contains_all || (!mesh))
-		return 0;
-	cmzn_field_element_group_id element_group = get_element_group(mesh);
-	if (element_group)
-		cmzn_field_element_group_destroy(&element_group); // can't create if already exists
-	else if (cmzn_mesh_get_region_internal(mesh) != this->region)
-	{
-		cmzn_field_group *subregionGroup = this->getSubRegionGroup(cmzn_mesh_get_region_internal(mesh));
-		if (!subregionGroup)
-			subregionGroup = this->createSubRegionGroup(cmzn_mesh_get_region_internal(mesh));
-		if (subregionGroup)
-		{
-			element_group = Computed_field_group_core_cast(subregionGroup)->create_element_group(mesh);
-			cmzn_field_group_destroy(&subregionGroup);
-		}
-	}
-	else
-	{
-		cmzn_mesh_id master_mesh = cmzn_mesh_get_master_mesh(mesh);
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldmodule_begin_change(field_module);
-		cmzn_field_id element_group_field = cmzn_fieldmodule_create_field_element_group(field_module, master_mesh);
-		element_group = cmzn_field_cast_element_group(element_group_field);
-		char *name = get_standard_element_group_name(master_mesh);
-		cmzn_field_set_name(element_group_field, name);
-		DEALLOCATE(name);
-		this->setLocalElementGroup(cmzn_mesh_get_dimension(mesh) - 1, element_group);
-		cmzn_field_destroy(&element_group_field);
-		cmzn_fieldmodule_end_change(field_module);
-		cmzn_fieldmodule_destroy(&field_module);
-		cmzn_mesh_destroy(&master_mesh);
-	}
-	return (element_group);
-}
-
-cmzn_field_element_group_id Computed_field_group::get_element_group(cmzn_mesh_id mesh)
-{
-	if (contains_all || (!mesh))
-		return 0;
-	cmzn_field_element_group_id element_group = 0;
-	if (cmzn_mesh_get_region_internal(mesh) != this->region)
-	{
-		cmzn_field_group *subregionGroup = this->getSubRegionGroup(cmzn_mesh_get_region_internal(mesh));
-		if (subregionGroup)
-		{
-			element_group = Computed_field_group_core_cast(subregionGroup)->get_element_group(mesh);
-			cmzn_field_group_destroy(&subregionGroup);
-		}
-	}
-	else
-	{
-		int dimension = cmzn_mesh_get_dimension(mesh);
-		if (this->local_element_group[dimension - 1])
-			element_group = cmzn_field_cast_element_group(this->local_element_group[dimension - 1]);
 		else
 		{
-			// find by name & check it is for same master mesh
-			cmzn_mesh_id master_mesh = cmzn_mesh_get_master_mesh(mesh);
-			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-			char *name = get_standard_element_group_name(master_mesh);
-			cmzn_field_id element_group_field = cmzn_fieldmodule_find_field_by_name(field_module, name);
-			DEALLOCATE(name);
-			element_group = cmzn_field_cast_element_group(element_group_field);
-			if (element_group)
-			{
-				if (cmzn_mesh_get_FE_mesh_internal(master_mesh) == 
-						Computed_field_element_group_core_cast(element_group)->getFeMesh())
-					this->setLocalElementGroup(dimension - 1, element_group);
-				else // wrong mesh
-					cmzn_field_element_group_destroy(&element_group);
-			}
-			cmzn_field_destroy(&element_group_field);
-			cmzn_fieldmodule_destroy(&field_module);
-			cmzn_mesh_destroy(&master_mesh);
+			display_message(ERROR_MESSAGE, "FieldGroup.createFieldNodeGroup.  Found existing node group field %s", localSubobjectField->name);
 		}
 	}
-	return (element_group);
+	else
+	{
+		// find by name & check it is for same FE_nodeset
+		std::string subobjectFieldName = getStandardNodesetGroupName(group_core->field->name, nodeset);
+		cmzn_field* existingField = subregion->findFieldByName(subobjectFieldName.c_str()); // not accessed
+		if (existingField)
+		{
+			node_group = cmzn_field_cast_node_group(existingField);
+			if (node_group)
+			{
+				if (Computed_field_node_group_core_cast(node_group)->getFeNodeset() != cmzn_nodeset_get_FE_nodeset_internal(nodeset))
+				{
+					display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldNodeGroup.  Found existing node group field of name %s for wrong nodeset", subobjectFieldName.c_str());
+					cmzn_field_node_group_destroy(&node_group);
+				}
+				else if (!canGet)
+				{
+					display_message(ERROR_MESSAGE, "FieldGroup.createFieldNodeGroup.  Found existing node group field of name %s", subobjectFieldName.c_str());
+					cmzn_field_node_group_destroy(&node_group);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldNodeGroup.  Found existing non-group field of name %s", subobjectFieldName.c_str());
+			}
+		}
+		if ((!existingField) && canCreate)
+		{
+			cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(subregion);
+			cmzn_field *node_group_field = cmzn_fieldmodule_create_field_node_group(fieldmodule, nodeset);
+			cmzn_field_set_name(node_group_field, subobjectFieldName.c_str());
+			node_group = cmzn_field_cast_node_group(node_group_field);
+			cmzn_field_destroy(&node_group_field);
+			cmzn_fieldmodule_destroy(&fieldmodule);
+		}
+		if (node_group)
+		{
+			group_core->setLocalNodeGroup(use_data, node_group);
+			group_core->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_ADD);
+			group_core->field->setChanged();
+		}
+	}
+
+	if (subregion_group)
+	{
+		cmzn_field_group_destroy(&subregion_group);
+	}
+	if (subregion != this->region)
+	{
+		this->region->endHierarchicalChange();
+	}
+	else
+	{
+		this->endChange();
+	}
+	return node_group;
+}
+
+cmzn_field_element_group* Computed_field_group::getOrCreateFieldElementGroup(cmzn_mesh* mesh, bool canGet, bool canCreate)
+{
+	if (this->contains_all || (!mesh) || !(canGet || canCreate))
+	{
+		return nullptr;
+	}
+	cmzn_region* subregion = cmzn_mesh_get_region_internal(mesh);
+	cmzn_field_group* subregion_group = nullptr;
+	Computed_field_group* group_core = nullptr;
+	if (subregion != this->region)
+	{
+		this->region->beginHierarchicalChange();
+		subregion_group = this->getOrCreateSubregionFieldGroup(subregion,
+			canGet || canCreate,
+			canCreate || subregion->findFieldByName(getStandardMeshGroupName(this->field->name, mesh).c_str()));
+		if (!subregion_group)
+		{
+			this->region->endHierarchicalChange();
+			return nullptr;
+		}
+		group_core = Computed_field_group_core_cast(subregion_group);
+	}
+	else
+	{
+		this->beginChange();
+		group_core = this;
+	}
+
+	cmzn_field_element_group* element_group = nullptr;
+	const int dimension = cmzn_mesh_get_dimension(mesh);
+	cmzn_field* localSubobjectField = group_core->local_element_group[dimension - 1];
+	if (localSubobjectField)
+	{
+		if (canGet)
+		{
+			element_group = cmzn_field_cast_element_group(localSubobjectField);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FieldGroup.createFieldElementGroup.  Found existing element group field %s", localSubobjectField->name);
+		}
+	}
+	else
+	{
+		// find by name & check it is for same FE_mesh
+		std::string subobjectFieldName = getStandardMeshGroupName(group_core->field->name, mesh);
+		cmzn_field* existingField = subregion->findFieldByName(subobjectFieldName.c_str()); // not accessed
+		if (existingField)
+		{
+			element_group = cmzn_field_cast_element_group(existingField);
+			if (element_group)
+			{
+				if (Computed_field_element_group_core_cast(element_group)->getFeMesh() != cmzn_mesh_get_FE_mesh_internal(mesh))
+				{
+					display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldElementGroup.  Found existing element group field of name %s for wrong mesh", subobjectFieldName.c_str());
+					cmzn_field_element_group_destroy(&element_group);
+				}
+				else if (!canGet)
+				{
+					display_message(ERROR_MESSAGE, "FieldGroup.createFieldElementGroup.  Found existing element group field of name %s", subobjectFieldName.c_str());
+					cmzn_field_element_group_destroy(&element_group);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "FieldGroup.get/createFieldElementGroup.  Found existing non-group field of name %s", subobjectFieldName.c_str());
+			}
+		}
+		if ((!existingField) && canCreate)
+		{
+			cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(subregion);
+			cmzn_field* element_group_field = cmzn_fieldmodule_create_field_element_group(fieldmodule, mesh);
+			cmzn_field_set_name(element_group_field, subobjectFieldName.c_str());
+			element_group = cmzn_field_cast_element_group(element_group_field);
+			cmzn_field_destroy(&element_group_field);
+			cmzn_fieldmodule_destroy(&fieldmodule);
+		}
+		if (element_group)
+		{
+			group_core->setLocalElementGroup(dimension - 1, element_group);
+			group_core->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_ADD);
+			group_core->field->setChanged();
+		}
+	}
+
+	if (subregion_group)
+	{
+		cmzn_field_group_destroy(&subregion_group);
+	}
+	if (subregion != this->region)
+	{
+		this->region->endHierarchicalChange();
+	}
+	else
+	{
+		this->endChange();
+	}
+	return element_group;
 }
 
 cmzn_field_id Computed_field_group::get_subobject_group_for_domain(cmzn_field_id domain)
@@ -828,7 +885,7 @@ cmzn_field_id Computed_field_group::get_subobject_group_for_domain(cmzn_field_id
 	if (it != domain_selection_group.end())
 	{
 		field = it->second;
-		cmzn_field_access(field);
+		field->access();
 	}
 
 	return field;
@@ -858,7 +915,7 @@ cmzn_field_id Computed_field_group::create_cad_primitive_group(cmzn_field_cad_to
 		domain_selection_group.insert(std::pair<Computed_field *, Computed_field *>(cad_topology_key, field));
 
 		cmzn_fieldmodule_destroy(&field_module);
-		cmzn_field_access(field);
+		field->access();
 		DEALLOCATE(field_name);
 	}
 	else
@@ -886,9 +943,9 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 		cmzn_field_destroy(&it->second);
 		domain_selection_group.erase(it++);
 	}
-	if (!subregion_group_map.empty())
+	if (!child_region_group_map.empty())
 	{
-		for (pos = subregion_group_map.begin(); pos != subregion_group_map.end(); pos++)
+		for (pos = child_region_group_map.begin(); pos != child_region_group_map.end(); pos++)
 		{
 			group_field = pos->second;
 			cmzn_field_group_clear_region_tree_cad_primitive(group_field);
@@ -906,9 +963,7 @@ int Computed_field_group::addRegion(struct cmzn_region *child_region)
 	if (cmzn_region_contains_subregion(region, child_region))
 	{
 		cmzn_region_begin_hierarchical_change(region);
-		cmzn_field_group_id subregion_group = getSubRegionGroup(child_region);
-		if (!subregion_group)
-			subregion_group = createSubRegionGroup(child_region);
+		cmzn_field_group_id subregion_group = this->getOrCreateSubregionFieldGroup(child_region);
 		Computed_field_group *group_core = Computed_field_group_core_cast(subregion_group);
 		group_core->addLocalRegion();
 		cmzn_field_group_destroy(&subregion_group);
@@ -931,13 +986,13 @@ const char* Computed_field_group::get_type_string()
 
 void Computed_field_group::remove_child_group(struct cmzn_region *child_region)
 {
-	Region_field_map_iterator iter = this->subregion_group_map.find(child_region);
-	if (iter != this->subregion_group_map.end())
+	Region_field_map_iterator iter = this->child_region_group_map.find(child_region);
+	if (iter != this->child_region_group_map.end())
 	{
 		cmzn_field_group_id subregion_group_field = iter->second;
 		Computed_field_group *group_core = Computed_field_group_core_cast(subregion_group_field);
 		const bool nonEmptySubregionRemoved = !group_core->isEmpty();
-		subregion_group_map.erase(iter);
+		child_region_group_map.erase(iter);
 		cmzn_field_group_destroy(&subregion_group_field);
 		if (nonEmptySubregionRemoved)
 		{
@@ -954,13 +1009,17 @@ int Computed_field_group::remove_empty_subgroups()
 	{
 		Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_node_group->core);
 		if (group_base->isEmpty())
-			this->clearLocalNodeGroup(/*isData*/false);
+		{
+			this->clearRemoveLocalNodeGroup(/*isData*/false, /*clear*/false, /*remove*/true);
+		}
 	}
 	if (local_data_group)
 	{
 		Computed_field_group_base *group_base = static_cast<Computed_field_group_base *>(local_data_group->core);
 		if (group_base->isEmpty())
-			this->clearLocalNodeGroup(/*isData*/true);
+		{
+			this->clearRemoveLocalNodeGroup(/*isData*/true, /*clear*/false, /*remove*/true);
+		}
 	}
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 	{
@@ -969,12 +1028,14 @@ int Computed_field_group::remove_empty_subgroups()
 			Computed_field_subobject_group *subobject_group = static_cast<Computed_field_subobject_group *>(
 				this->local_element_group[i]->core);
 			if (subobject_group->isEmpty())
-				this->clearLocalElementGroup(i);
+			{
+				this->clearRemoveLocalElementGroup(i, /*clear*/false, /*remove*/true);
+			}
 		}
 	}
 	/* remove empty subregion group */
-	for (Region_field_map_iterator iter = subregion_group_map.begin();
-		iter != subregion_group_map.end();)
+	for (Region_field_map_iterator iter = child_region_group_map.begin();
+		iter != child_region_group_map.end();)
 	{
 		cmzn_field_group_id subregion_group_field = iter->second;
 		Computed_field_group *group_core = Computed_field_group_core_cast(subregion_group_field);
@@ -984,8 +1045,10 @@ int Computed_field_group::remove_empty_subgroups()
 			// must transfer non-local changes now
 			const int subregion_group_change = group_core->change_detail.getChangeSummary();
 			this->change_detail.changeMergeNonlocal(subregion_group_change);
-			subregion_group_map.erase(iter++);
+			child_region_group_map.erase(iter);
 			cmzn_field_group_destroy(&subregion_group_field);
+			// reset iterator as probably invalid
+			iter = child_region_group_map.begin();
 		}
 		else
 		{
@@ -1024,9 +1087,9 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 		this->field->setChanged();
 		cmzn_field_node_group_destroy(&data_group);
 	}
-	if (!subregion_group_map.empty())
+	if (!child_region_group_map.empty())
 	{
-		for (pos = subregion_group_map.begin(); pos != subregion_group_map.end(); pos++)
+		for (pos = child_region_group_map.begin(); pos != child_region_group_map.end(); pos++)
 		{
 			group_field = pos->second;
 			if (!use_data)
@@ -1084,9 +1147,9 @@ int Computed_field_group::clear_region_tree_element()
 			cmzn_field_element_group_destroy(&element_group);
 		}
 	}
-	if (!subregion_group_map.empty())
+	if (!child_region_group_map.empty())
 	{
-		for (pos = subregion_group_map.begin(); pos != subregion_group_map.end(); pos++)
+		for (pos = child_region_group_map.begin(); pos != child_region_group_map.end(); pos++)
 		{
 			cmzn_field_group_clear_region_tree_element(pos->second);
 		}
@@ -1102,13 +1165,13 @@ int Computed_field_group::for_each_group_hiearchical(
 	if (field)
 	{
 		// ensure group is accessed while user function is called so not destroyed
-		cmzn_field_id access_field = cmzn_field_access(field);
+		cmzn_field_id access_field = field->access();
 		return_code = function(reinterpret_cast<cmzn_field_group_id>(field), user_data);
 		cmzn_field_destroy(&access_field);
 		if (return_code)
 		{
-			for (Region_field_map_iterator child_group_iter = subregion_group_map.begin();
-				child_group_iter !=subregion_group_map.end(); ++child_group_iter)
+			for (Region_field_map_iterator child_group_iter = child_region_group_map.begin();
+				child_group_iter !=child_region_group_map.end(); ++child_group_iter)
 			{
 				Computed_field_group *child_group_core = Computed_field_group_core_cast(child_group_iter->second);
 				if ((!child_group_core) ||
@@ -1126,15 +1189,11 @@ int Computed_field_group::for_each_group_hiearchical(
 cmzn_field_group *cmzn_field_cast_group(cmzn_field_id field)
 {
 
-	if (field && dynamic_cast<Computed_field_group*>(field->core))
+	if ((field) && (dynamic_cast<Computed_field_group*>(field->core)))
 	{
-		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_group_id>(field));
+		return reinterpret_cast<cmzn_field_group_id>(field->access());
 	}
-	else
-	{
-		return (NULL);
-	}
+	return nullptr;
 }
 
 cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
@@ -1144,9 +1203,11 @@ cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
-			return group_core->create_node_group(nodeset);
+		{
+			return group_core->getOrCreateFieldNodeGroup(nodeset, false, true);
+		}
 	}
-	return 0;
+	return nullptr;
 }
 
 cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
@@ -1156,9 +1217,11 @@ cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
-			return group_core->get_node_group(nodeset);
+		{
+			return group_core->getOrCreateFieldNodeGroup(nodeset, true, false);
+		}
 	}
-	return 0;
+	return nullptr;
 }
 
 cmzn_field_element_group_id cmzn_field_group_create_field_element_group(
@@ -1168,9 +1231,11 @@ cmzn_field_element_group_id cmzn_field_group_create_field_element_group(
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
-			return group_core->create_element_group(mesh);
+		{
+			return group_core->getOrCreateFieldElementGroup(mesh, false, true);
+		}
 	}
-	return 0;
+	return nullptr;
 }
 
 cmzn_field_element_group_id cmzn_field_group_get_field_element_group(
@@ -1180,9 +1245,9 @@ cmzn_field_element_group_id cmzn_field_group_get_field_element_group(
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
-			return group_core->get_element_group(mesh);
+			return group_core->getOrCreateFieldElementGroup(mesh, true, false);
 	}
-	return 0;
+	return nullptr;
 }
 
 #if defined (USE_OPENCASCADE)
@@ -1253,9 +1318,11 @@ cmzn_field_group_id cmzn_field_group_get_subregion_field_group(
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
-			return group_core->getSubRegionGroup(subregion);
+		{
+			return group_core->getOrCreateSubregionFieldGroup(subregion, true, false);
+		}
 	}
-	return 0;
+	return nullptr;
 }
 
 cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
@@ -1265,9 +1332,11 @@ cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
-			return group_core->createSubRegionGroup(subregion);
+		{
+			return group_core->getOrCreateSubregionFieldGroup(subregion, false, true);
+		}
 	}
-	return 0;
+	return nullptr;
 }
 
 #ifdef OLD_CODE

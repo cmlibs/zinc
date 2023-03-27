@@ -389,13 +389,6 @@ void cmzn_region::deltaTreeChange(int delta_change_level)
 
 void cmzn_region::beginChangeFields()
 {
-	// reset field value caches so always re-evaluated. See cmzn_field::evaluate()
-	for (std::list<cmzn_fieldcache_id>::iterator iter = this->field_caches.begin();
-		iter != this->field_caches.end(); ++iter)
-	{
-		cmzn_fieldcache_id cache = *iter;
-		cache->resetValueCacheEvaluationCounters();
-	}
 	MANAGER_BEGIN_CACHE(Computed_field)(this->field_manager);
 	FE_region_begin_change(this->fe_region);
 }

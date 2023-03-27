@@ -345,8 +345,7 @@ struct cmzn_graphics_to_graphics_object_data
 	const char *name_prefix;
 	/* default_rc_coordinate_field to use if NULL in any settings */
 	struct Computed_field *rc_coordinate_field,
-		*wrapper_orientation_scale_field,*wrapper_stream_vector_field,
-		*selection_group_field;
+		*wrapper_orientation_scale_field,*wrapper_stream_vector_field;
 	GT_object *glyph_gt_object;
 	struct cmzn_region *region;
 	cmzn_fieldmodule_id field_module;
@@ -357,6 +356,7 @@ struct cmzn_graphics_to_graphics_object_data
 	cmzn_mesh_id iteration_mesh;
 	FE_value time;
 	GraphicsIncrementalBuild *incrementalBuild;
+	cmzn_field_group* selectionGroup;
 	/* flag indicating that graphics_objects be built for all visible settings
 		 currently without them */
 	int build_graphics;
