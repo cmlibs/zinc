@@ -19,7 +19,7 @@ Nodes with literal field values stored for them do not just support element inte
 General Syntax
 --------------
 
-Cmgui EX files are human-readable text files which are usually created by export from cm or OpenCMISS. They can also be created by scripts or by hand. Due to their complexity, particularly in defining element interpolation, editing an existing file is usually the easiest way to create new data files by hand.
+Cmgui EX files are human-readable text files which are usually created by export from cm or Zinc. They can also be created by scripts or by hand. Due to their complexity, particularly in defining element interpolation, editing an existing file is usually the easiest way to create new data files by hand.
 
 The format has been around for many years and has several exacting rules which can catch the unwary:
 
