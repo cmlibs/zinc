@@ -1,4 +1,7 @@
-CHANGE LOG: OpenCMISS-Zinc Library
+CHANGE LOG: Zinc Library
+
+v4.0.0
+Rebrand as Zinc, using namespace 'cmlibs'.
 
 v3.10.1
 Fix serialisation of field types identity and if.

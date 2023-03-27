@@ -7,7 +7,7 @@ DESCRIPTION :
 Program to replace spaces/tabs at the beginning of lines by tabs and remove
 spaces/tabs from the end of lines.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

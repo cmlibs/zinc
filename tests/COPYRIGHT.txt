@@ -1,4 +1,4 @@
-OpenCMISS-Zinc Library Unit Tests
+Zinc Library Unit Tests
 
 The Initial Developer is:
 Auckland UniServices Ltd, Auckland, New Zealand.

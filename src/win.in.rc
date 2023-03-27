@@ -19,7 +19,7 @@ VS_VERSION_INFO VERSIONINFO
     BEGIN
       BLOCK "04090000"
       BEGIN
-        VALUE "FileDescription", "OpenCMISS-Zinc visualisation library"
+        VALUE "FileDescription", "Zinc visualisation library"
         VALUE "FileVersion", "@ZINC_VERSION@"
         VALUE "InternalName", "zinc"
         VALUE "LegalCopyright", "Licensed under a license"
