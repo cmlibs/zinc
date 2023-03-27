@@ -11,7 +11,7 @@
 #if !defined (FINITE_ELEMENT_FIELD_EVALUATION_HPP)
 #define FINITE_ELEMENT_FIELD_EVALUATION_HPP
 
-#include <opencmiss/zinc/zincconfigure.h>
+#include <cmlibs/zinc/zincconfigure.h>
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_constants.hpp"
 #include "general/value.h"

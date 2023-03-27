@@ -15,8 +15,8 @@ modules such as finite_element_region.c.
 #if !defined (FINITE_ELEMENT_PRIVATE_H)
 #define FINITE_ELEMENT_PRIVATE_H
 
-#include "opencmiss/zinc/types/nodeid.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/nodeid.h"
+#include "cmlibs/zinc/status.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/node_field_template.hpp"
 #include "general/indexed_list_private.h"

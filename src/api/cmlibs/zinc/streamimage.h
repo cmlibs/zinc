@@ -14,7 +14,7 @@
 #include "types/fieldimageid.h"
 #include "types/streamid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -16,7 +16,7 @@ Renders gtObjects to VRML file
 #include <string.h>
 #include <math.h>
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"

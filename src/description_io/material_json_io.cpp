@@ -12,13 +12,13 @@
 
 #include "description_io/material_json_io.hpp"
 #include "general/message.h"
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/changemanager.hpp"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/material.hpp"
-#include "opencmiss/zinc/region.hpp"
-#include "opencmiss/zinc/result.hpp"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/changemanager.hpp"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/material.hpp"
+#include "cmlibs/zinc/region.hpp"
+#include "cmlibs/zinc/result.hpp"
 #include <string>
 
 using namespace OpenCMISS::Zinc;

@@ -12,7 +12,7 @@
 #define GLYPH_HPP
 
 #include <list>
-#include "opencmiss/zinc/glyph.h"
+#include "cmlibs/zinc/glyph.h"
 #include "general/cmiss_set.hpp"
 #include "general/enumerator.h"
 #include "general/indexed_list_stl_private.hpp"

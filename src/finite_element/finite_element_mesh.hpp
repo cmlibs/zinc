@@ -11,9 +11,9 @@
 #if !defined (FINITE_ELEMENT_MESH_HPP)
 #define FINITE_ELEMENT_MESH_HPP
 
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"

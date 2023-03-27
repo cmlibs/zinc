@@ -7,7 +7,7 @@
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "analyze_object_map.hpp"
-#include "opencmiss/zinc/types/streamid.h"
+#include "cmlibs/zinc/types/streamid.h"
 #include "general/image_utilities.h"
 #include "general/mystring.h"
 #include "general/debug.h"

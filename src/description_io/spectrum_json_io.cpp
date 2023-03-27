@@ -12,8 +12,8 @@
 
 #include "description_io/spectrum_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/spectrum.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/spectrum.hpp"
+#include "cmlibs/zinc/status.h"
 
 void SpectrumcomponentJsonIO::ioEntries(Json::Value &componentSettings)
 {

@@ -15,8 +15,8 @@ endif()
 
 set(FILES_FOR_CLEANING)
 
-set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/opencmiss/zinc/zincconfigure.h )
-set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/opencmiss/zinc/zincsharedobject.h )
+set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/cmlibs/zinc/zincconfigure.h )
+set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/cmlibs/zinc/zincsharedobject.h )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/configure/zincconfigure.h.cmake
     ${ZINC_CONFIGURE_HDR} )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/configure/zincsharedobject.h.cmake
@@ -205,11 +205,11 @@ install(FILES
     ${ZINC_CONFIGURE_HDR}
     ${API_HDRS}
     ${APIPP_HDRS}
-    DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc
+    DESTINATION ${ZINC_INSTALL_INC_DIR}/cmlibs/zinc
     COMPONENT Development
 )
 
 install(FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
-    DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc/types
+    DESTINATION ${ZINC_INSTALL_INC_DIR}/cmlibs/zinc/types
     COMPONENT Development
 )

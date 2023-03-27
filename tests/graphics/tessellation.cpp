@@ -8,11 +8,11 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/tessellation.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/tessellation.h>
 
-#include "opencmiss/zinc/tessellation.hpp"
+#include "cmlibs/zinc/tessellation.hpp"
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

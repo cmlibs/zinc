@@ -10,19 +10,19 @@
 #include <cmath>
 #include <vector>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldcoordinatetransformation.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
-#include <opencmiss/zinc/fieldgroup.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldmeshoperators.hpp>
-#include <opencmiss/zinc/fieldmodule.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/region.hpp>
-#include <opencmiss/zinc/streamregion.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldcoordinatetransformation.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldmeshoperators.hpp>
+#include <cmlibs/zinc/fieldmodule.hpp>
+#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
+#include <cmlibs/zinc/region.hpp>
+#include <cmlibs/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
 

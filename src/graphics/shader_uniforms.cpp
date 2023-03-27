@@ -9,9 +9,9 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/types/shaderid.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/types/shaderid.h"
 #include "general/debug.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"

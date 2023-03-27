@@ -10,21 +10,21 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/result.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/result.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconditional.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldcoordinatetransformation.hpp>
-#include <opencmiss/zinc/fieldderivatives.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldmatrixoperators.hpp>
-#include <opencmiss/zinc/fieldtrigonometry.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconditional.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldcoordinatetransformation.hpp>
+#include <cmlibs/zinc/fieldderivatives.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldmatrixoperators.hpp>
+#include <cmlibs/zinc/fieldtrigonometry.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
 
 #include "zinctestsetupcpp.hpp"
 

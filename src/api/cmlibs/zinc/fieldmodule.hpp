@@ -9,14 +9,14 @@
 #ifndef CMZN_FIELDMODULE_HPP__
 #define CMZN_FIELDMODULE_HPP__
 
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/mesh.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/nodeset.hpp"
-#include "opencmiss/zinc/region.hpp"
-#include "opencmiss/zinc/timesequence.hpp"
-#include "opencmiss/zinc/types/scenecoordinatesystem.hpp"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/mesh.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/nodeset.hpp"
+#include "cmlibs/zinc/region.hpp"
+#include "cmlibs/zinc/timesequence.hpp"
+#include "cmlibs/zinc/types/scenecoordinatesystem.hpp"
 
 namespace OpenCMISS
 {

@@ -10,9 +10,9 @@
 #ifndef CMZN_FIELDALIAS_HPP__
 #define CMZN_FIELDALIAS_HPP__
 
-#include "opencmiss/zinc/fieldalias.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldalias.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

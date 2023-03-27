@@ -18,7 +18,7 @@
 #include "types/nodetemplateid.h"
 #include "types/timesequenceid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Global functions

@@ -12,10 +12,10 @@
 #if !defined (__FIELD_RANGE_HPP__)
 #define __FIELD_RANGE_HPP__
 
-#include "opencmiss/zinc/types/fieldrangeid.h"
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldrange.h"
+#include "cmlibs/zinc/types/fieldrangeid.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldrange.h"
 #include "computed_field/field_location.hpp"
 
 struct cmzn_fieldrange

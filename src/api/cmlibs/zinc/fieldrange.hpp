@@ -10,10 +10,10 @@
 #ifndef CMZN_FIELDRANGE_HPP__
 #define CMZN_FIELDRANGE_HPP__
 
-#include "opencmiss/zinc/fieldrange.h"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldcache.hpp"
+#include "cmlibs/zinc/fieldrange.h"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldcache.hpp"
 
 namespace OpenCMISS
 {

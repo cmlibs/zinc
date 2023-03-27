@@ -11,13 +11,13 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/region.hpp"
 #include "description_io/graphics_json_import.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "graphics/scene.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 int SceneJsonImport::import(const std::string &jsonString)
 {

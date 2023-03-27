@@ -15,7 +15,7 @@ value over 2-D elements.
 
 #include <math.h>
 
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"

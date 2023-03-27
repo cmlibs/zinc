@@ -9,8 +9,8 @@
 #ifndef CMZN_FONT_HPP__
 #define CMZN_FONT_HPP__
 
-#include "opencmiss/zinc/font.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/font.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

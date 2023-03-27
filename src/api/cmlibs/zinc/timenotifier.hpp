@@ -9,8 +9,8 @@
 #ifndef CMZN_TIMENOTIFIER_HPP__
 #define CMZN_TIMENOTIFIER_HPP__
 
-#include "opencmiss/zinc/timenotifier.h"
-#include "opencmiss/zinc/timekeeper.hpp"
+#include "cmlibs/zinc/timenotifier.h"
+#include "cmlibs/zinc/timekeeper.hpp"
 
 namespace OpenCMISS
 {

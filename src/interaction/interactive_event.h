@@ -19,7 +19,7 @@ Structure describing an interactive event containing:
 #if !defined (INTERACTIVE_EVENT_H)
 #define INTERACTIVE_EVENT_H
 
-#include "opencmiss/zinc/types/sceneid.h"
+#include "cmlibs/zinc/types/sceneid.h"
 #include "general/object.h"
 #include "interaction/interaction_volume.h"
 

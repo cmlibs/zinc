@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldrange.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldrange.hpp>
 
 #include "zinctestsetupcpp.hpp"
 

@@ -9,10 +9,10 @@
 #ifndef CMZN_STREAMREGION_HPP__
 #define CMZN_STREAMREGION_HPP__
 
-#include "opencmiss/zinc/streamregion.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/region.hpp"
-#include "opencmiss/zinc/stream.hpp"
+#include "cmlibs/zinc/streamregion.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/region.hpp"
+#include "cmlibs/zinc/stream.hpp"
 
 namespace OpenCMISS
 {

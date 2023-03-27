@@ -9,8 +9,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/result.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/result.h"
 #include "finite_element/finite_element_field.hpp"
 #include "finite_element/finite_element_field_parameters.hpp"
 #include "finite_element/finite_element_nodeset.hpp"

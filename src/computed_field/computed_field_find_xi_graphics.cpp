@@ -15,8 +15,8 @@ lookup of the element.
 #include <stdio.h>
 #include <math.h>
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/element.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"

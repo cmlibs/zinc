@@ -15,7 +15,7 @@
 #include "types/streamid.h"
 #include "types/regionid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Global functions

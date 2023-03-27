@@ -23,7 +23,7 @@
 #include "types/regionid.h"
 #include "types/fieldsubobjectgroupid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

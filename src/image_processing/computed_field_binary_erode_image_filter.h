@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARYERODEFILTER_H)
 #define COMPUTED_FIELD_BINARYERODEFILTER_H
 
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/field.h"
 
 int cmzn_field_get_type_binary_erode_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,

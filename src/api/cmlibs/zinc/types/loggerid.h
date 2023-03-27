@@ -11,7 +11,7 @@
 #ifndef CMZN_LOGGERID_H__
 #define CMZN_LOGGERID_H__
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /**
  * Enumeration of available logger message types.

@@ -11,12 +11,12 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/changemanager.hpp>
-#include <opencmiss/zinc/context.hpp>
-#include <opencmiss/zinc/region.hpp>
-#include <opencmiss/zinc/fieldmodule.hpp>
-#include <opencmiss/zinc/result.hpp>
-#include <opencmiss/zinc/scene.hpp>
+#include <cmlibs/zinc/changemanager.hpp>
+#include <cmlibs/zinc/context.hpp>
+#include <cmlibs/zinc/region.hpp>
+#include <cmlibs/zinc/fieldmodule.hpp>
+#include <cmlibs/zinc/result.hpp>
+#include <cmlibs/zinc/scene.hpp>
 
 using namespace OpenCMISS::Zinc;
 

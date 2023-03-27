@@ -9,8 +9,8 @@
 #ifndef CMZN_TIMEKEEPER_HPP__
 #define CMZN_TIMEKEEPER_HPP__
 
-#include "opencmiss/zinc/timekeeper.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/timekeeper.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

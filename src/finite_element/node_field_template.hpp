@@ -12,7 +12,7 @@
 #if !defined (CMZN_NODE_FIELD_TEMPLATE_HPP)
 #define CMZN_NODE_FIELD_TEMPLATE_HPP
 
-#include "opencmiss/zinc/types/nodeid.h"
+#include "cmlibs/zinc/types/nodeid.h"
 #include "general/value.h"
 #include <vector>
 

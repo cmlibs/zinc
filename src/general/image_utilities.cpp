@@ -18,7 +18,7 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include "general/debug.h"
 #include "general/image_utilities.h"

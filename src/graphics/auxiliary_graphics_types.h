@@ -18,8 +18,8 @@ represent curves in three xi-directions;
 #if !defined (AUXILIARY_GRAPHICS_TYPES_H)
 #define AUXILIARY_GRAPHICS_TYPES_H
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/types/graphicsid.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/graphicsid.h"
 
 #include "general/enumerator.h"
 //#if defined (WIN32_SYSTEM)

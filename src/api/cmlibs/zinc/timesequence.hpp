@@ -9,7 +9,7 @@
 #ifndef CMZN_TIMESEQUENCE_HPP__
 #define CMZN_TIMESEQUENCE_HPP__
 
-#include "opencmiss/zinc/timesequence.h"
+#include "cmlibs/zinc/timesequence.h"
 
 namespace OpenCMISS
 {

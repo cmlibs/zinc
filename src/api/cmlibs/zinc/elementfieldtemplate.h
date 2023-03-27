@@ -15,7 +15,7 @@
 #include "types/elementfieldtemplateid.h"
 #include "types/nodeid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Global types

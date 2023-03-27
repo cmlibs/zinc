@@ -10,12 +10,12 @@
 #ifndef CMZN_FIELDCACHE_HPP__
 #define CMZN_FIELDCACHE_HPP__
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/differentialoperator.hpp"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/node.hpp"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/differentialoperator.hpp"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/node.hpp"
 
 namespace OpenCMISS
 {

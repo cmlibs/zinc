@@ -10,13 +10,13 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/elementbasis.h"
-#include "opencmiss/zinc/elementtemplate.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementtemplate.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/status.h"
 #include "element/element_operations.h"
 #include "general/debug.h"
 #include "general/mystring.h"

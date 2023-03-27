@@ -10,12 +10,12 @@
 #ifndef CMZN_MESH_HPP__
 #define CMZN_MESH_HPP__
 
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/elementfieldtemplate.hpp"
-#include "opencmiss/zinc/elementtemplate.hpp"
-#include "opencmiss/zinc/differentialoperator.hpp"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/elementfieldtemplate.hpp"
+#include "cmlibs/zinc/elementtemplate.hpp"
+#include "cmlibs/zinc/differentialoperator.hpp"
 
 namespace OpenCMISS
 {

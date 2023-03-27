@@ -8,32 +8,32 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/element.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldcache.h>
-#include <opencmiss/zinc/fieldcomposite.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/fieldfiniteelement.h>
-#include <opencmiss/zinc/fieldgroup.h>
-#include <opencmiss/zinc/fieldlogicaloperators.h>
-#include <opencmiss/zinc/fieldmeshoperators.hpp>
-#include <opencmiss/zinc/fieldnodesetoperators.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/region.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/element.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldcache.h>
+#include <cmlibs/zinc/fieldcomposite.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/fieldfiniteelement.h>
+#include <cmlibs/zinc/fieldgroup.h>
+#include <cmlibs/zinc/fieldlogicaloperators.h>
+#include <cmlibs/zinc/fieldmeshoperators.hpp>
+#include <cmlibs/zinc/fieldnodesetoperators.hpp>
+#include <cmlibs/zinc/fieldsubobjectgroup.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/region.h>
 
-#include <opencmiss/zinc/element.hpp>
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
-#include <opencmiss/zinc/fieldgroup.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/node.hpp>
-#include <opencmiss/zinc/region.hpp>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
+#include <cmlibs/zinc/node.hpp>
+#include <cmlibs/zinc/region.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

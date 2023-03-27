@@ -13,11 +13,11 @@
 #define MATERIAL_HPP
 
 #include <list>
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldimage.h"
-#include "opencmiss/zinc/material.h"
-#include "opencmiss/zinc/shader.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldimage.h"
+#include "cmlibs/zinc/material.h"
+#include "cmlibs/zinc/shader.h"
 #include "general/callback_class.hpp"
 #include "general/list.h"
 #include "general/manager.h"

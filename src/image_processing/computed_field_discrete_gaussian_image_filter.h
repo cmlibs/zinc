@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldimageprocessing.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldimageprocessing.h"
 
 #endif /* !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H) */

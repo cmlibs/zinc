@@ -15,7 +15,7 @@
 #include "types/timenotifierid.h"
 #include "types/timekeeperid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

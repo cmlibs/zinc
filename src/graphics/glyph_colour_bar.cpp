@@ -11,7 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <cmath>
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/glyph_colour_bar.hpp"

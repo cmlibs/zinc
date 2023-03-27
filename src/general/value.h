@@ -16,7 +16,7 @@ checking.
 #if !defined (VALUE_H)
 #define VALUE_H
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #if defined (UNIX)
 #  if defined (CYGWIN)

@@ -12,8 +12,8 @@
 #ifndef TIME_KEEPER_HPP
 #define TIME_KEEPER_HPP
 
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/timekeeper.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/timekeeper.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/debug.h"

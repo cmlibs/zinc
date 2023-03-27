@@ -15,14 +15,14 @@ data points.
 #include <math.h>
 #include <stdio.h>
 
-#include "opencmiss/zinc/elementbasis.h"
-#include "opencmiss/zinc/elementtemplate.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/nodetemplate.h"
+#include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementtemplate.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/nodetemplate.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"

@@ -9,8 +9,8 @@
 #ifndef CMZN_SPECTRUM_HPP__
 #define CMZN_SPECTRUM_HPP__
 
-#include "opencmiss/zinc/spectrum.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/spectrum.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

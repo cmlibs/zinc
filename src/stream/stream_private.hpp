@@ -16,8 +16,8 @@
 #include <list>
 #include <stdio.h>
 #include <string.h>
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/stream.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 

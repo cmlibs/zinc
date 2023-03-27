@@ -9,10 +9,10 @@
 #ifndef CMZN_GLYPH_HPP__
 #define CMZN_GLYPH_HPP__
 
-#include "opencmiss/zinc/glyph.h"
-#include "opencmiss/zinc/context.hpp"
-#include "opencmiss/zinc/material.hpp"
-#include "opencmiss/zinc/spectrum.hpp"
+#include "cmlibs/zinc/glyph.h"
+#include "cmlibs/zinc/context.hpp"
+#include "cmlibs/zinc/material.hpp"
+#include "cmlibs/zinc/spectrum.hpp"
 
 namespace OpenCMISS
 {

@@ -12,8 +12,8 @@
 #if !defined (CMZN_FIELDML_COMMON_HPP)
 #define CMZN_FIELDML_COMMON_HPP
 
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/elementbasisid.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/elementbasisid.h"
 #include "fieldml_api.h"
 #include "datastore/labels.hpp"
 #include "datastore/map.hpp"

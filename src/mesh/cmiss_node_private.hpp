@@ -12,8 +12,8 @@
 #if !defined (CMZN_NODE_PRIVATE_HPP)
 #define CMZN_NODE_PRIVATE_HPP
 
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element.h"
 #include "datastore/labelschangelog.hpp"
 

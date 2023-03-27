@@ -12,8 +12,8 @@
 #if !defined (DIFFERENTIAL_OPERATOR_HPP)
 #define DIFFERENTIAL_OPERATOR_HPP
 
-#include "opencmiss/zinc/differentialoperator.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/differentialoperator.h"
+#include "cmlibs/zinc/status.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/field_derivative.hpp"
 

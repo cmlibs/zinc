@@ -13,8 +13,8 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_cache.hpp"

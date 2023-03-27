@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDLOGICALOPERATORS_HPP__
 #define CMZN_FIELDLOGICALOPERATORS_HPP__
 
-#include "opencmiss/zinc/fieldlogicaloperators.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldlogicaloperators.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

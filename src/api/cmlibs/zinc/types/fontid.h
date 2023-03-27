@@ -11,7 +11,7 @@
 #ifndef CMZN_FONTID_H__
 #define CMZN_FONTID_H__
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /**
  * Enumeration of available font typefaces.

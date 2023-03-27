@@ -9,10 +9,10 @@
 #ifndef CMZN_NODETEMPLATE_HPP__
 #define CMZN_NODETEMPLATE_HPP__
 
-#include "opencmiss/zinc/nodetemplate.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/timesequence.hpp"
+#include "cmlibs/zinc/nodetemplate.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/timesequence.hpp"
 
 namespace OpenCMISS
 {

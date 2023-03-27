@@ -6,10 +6,10 @@
 
 #include <algorithm>
 
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/scenefilter.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/scenefilter.h"
+#include "cmlibs/zinc/status.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"

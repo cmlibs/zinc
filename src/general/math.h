@@ -14,7 +14,7 @@ Defines the finite function for UNIX and WIN32_SYSTEM
 #if !defined (MATH_H)
 #define MATH_H
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #if defined (SGI)
 /* For finite so that we can check for Nans which some compilers seem

@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDMATRIXOPERATORS_HPP__
 #define CMZN_FIELDMATRIXOPERATORS_HPP__
 
-#include "opencmiss/zinc/fieldmatrixoperators.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldmatrixoperators.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

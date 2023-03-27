@@ -9,7 +9,7 @@
 #ifndef CMZN_SELECTION_HPP__
 #define CMZN_SELECTION_HPP__
 
-#include "opencmiss/zinc/selection.h"
+#include "cmlibs/zinc/selection.h"
 
 namespace OpenCMISS
 {

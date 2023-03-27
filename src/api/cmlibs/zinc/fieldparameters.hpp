@@ -10,10 +10,10 @@
 #ifndef CMZN_FIELDPARAMETERS_HPP__
 #define CMZN_FIELDPARAMETERS_HPP__
 
-#include "opencmiss/zinc/differentialoperator.hpp"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/fieldparameters.h"
-#include "opencmiss/zinc/field.hpp"
+#include "cmlibs/zinc/differentialoperator.hpp"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/fieldparameters.h"
+#include "cmlibs/zinc/field.hpp"
 
 namespace OpenCMISS
 {

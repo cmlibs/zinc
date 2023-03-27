@@ -10,7 +10,7 @@
 #ifndef SCENE_COORDINATE_SYSTEM_HPP
 #define SCENE_COORDINATE_SYSTEM_HPP
 
-#include "opencmiss/zinc/types/scenecoordinatesystem.h"
+#include "cmlibs/zinc/types/scenecoordinatesystem.h"
 #include "general/enumerator.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scenecoordinatesystem);

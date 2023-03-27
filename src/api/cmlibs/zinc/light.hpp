@@ -9,8 +9,8 @@
 #ifndef CMZN_LIGHT_HPP__
 #define CMZN_LIGHT_HPP__
 
-#include "opencmiss/zinc/light.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/light.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

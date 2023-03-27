@@ -9,8 +9,8 @@
 #ifndef CMZN_SHADER_HPP__
 #define CMZN_SHADER_HPP__
 
-#include "opencmiss/zinc/shader.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/shader.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

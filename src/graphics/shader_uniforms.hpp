@@ -13,7 +13,7 @@
 #if !defined (SHADER_UNIFORMS_HPP)
 #define SHADER_UNIFORMS_HPP
 
-#include "opencmiss/zinc/shader.h"
+#include "cmlibs/zinc/shader.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

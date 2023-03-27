@@ -9,11 +9,11 @@
 #ifndef CMZN_FIELDSUBOBJECTGROUP_HPP__
 #define CMZN_FIELDSUBOBJECTGROUP_HPP__
 
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/element.hpp"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/element.hpp"
 
 namespace OpenCMISS
 {

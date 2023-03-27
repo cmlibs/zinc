@@ -11,7 +11,7 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include "opencmiss/zinc/fieldgroup.h"
+#include "cmlibs/zinc/fieldgroup.h"
 #include "configure/version.h"
 #include "context/context.hpp"
 #include "general/debug.h"
@@ -21,7 +21,7 @@
 #include "graphics/graphics_module.hpp"
 #include "graphics/scene.hpp"
 #include "region/cmiss_region.hpp"
-#include "opencmiss/zinc/timekeeper.h"
+#include "cmlibs/zinc/timekeeper.h"
 
 cmzn_context::cmzn_context(const char *nameIn) :
 	name(duplicate_string(nameIn)),

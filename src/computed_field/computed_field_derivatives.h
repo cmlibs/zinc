@@ -12,6 +12,6 @@
 #if !defined (COMPUTED_FIELD_DERIVATIVES_H)
 #define COMPUTED_FIELD_DERIVATIVES_H
 
-#include "opencmiss/zinc/fieldderivatives.h"
+#include "cmlibs/zinc/fieldderivatives.h"
 
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVES_H) */

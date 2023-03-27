@@ -9,18 +9,18 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/element.hpp>
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldmeshoperators.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/fieldtime.hpp>
-#include <opencmiss/zinc/fieldtrigonometry.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldmeshoperators.hpp>
+#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
+#include <cmlibs/zinc/fieldtime.hpp>
+#include <cmlibs/zinc/fieldtrigonometry.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
 #include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"

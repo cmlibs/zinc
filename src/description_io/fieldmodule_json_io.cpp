@@ -16,10 +16,10 @@
 #include "description_io/field_json_io.hpp"
 #include "description_io/fieldmodule_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/changemanager.hpp"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldconstant.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/changemanager.hpp"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/status.h"
 #include <cstring>
 
 OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fieldSettings)

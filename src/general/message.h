@@ -14,7 +14,7 @@ Global types and function prototypes for displaying messages.
 #if !defined (MESSAGE_H)
 #define MESSAGE_H
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Global types

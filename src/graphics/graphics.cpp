@@ -11,22 +11,22 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <string>
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
 
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/font.h"
-#include "opencmiss/zinc/glyph.h"
-#include "opencmiss/zinc/graphics.h"
-#include "opencmiss/zinc/material.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/scenefilter.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/font.h"
+#include "cmlibs/zinc/glyph.h"
+#include "cmlibs/zinc/graphics.h"
+#include "cmlibs/zinc/material.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/scenefilter.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/indexed_list_stl_private.hpp"

@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDCOORDINATETRANSFORMATION_HPP__
 #define CMZN_FIELDCOORDINATETRANSFORMATION_HPP__
 
-#include "opencmiss/zinc/fieldcoordinatetransformation.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldcoordinatetransformation.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

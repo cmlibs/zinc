@@ -9,10 +9,10 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldmatrixoperators.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldmatrixoperators.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
 
 #include "zinctestsetupcpp.hpp"
 

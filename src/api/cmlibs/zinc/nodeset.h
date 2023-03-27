@@ -19,7 +19,7 @@
 #include "types/nodesetid.h"
 #include "types/nodetemplateid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Global functions

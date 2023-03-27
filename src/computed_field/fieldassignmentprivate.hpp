@@ -12,10 +12,10 @@
 #if !defined (CMZN_FIELDASSIGNMENTPRIVATE_HPP)
 #define CMZN_FIELDASSIGNMENTPRIVATE_HPP
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldassignment.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/result.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldassignment.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/result.h"
 
 struct cmzn_fieldassignment
 {

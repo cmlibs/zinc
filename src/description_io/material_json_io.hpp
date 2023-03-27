@@ -13,7 +13,7 @@
 #if !defined (MATERIAL_JSON_IO_HPP)
 #define MATERIAL_JSON_IO_HPP
 
-#include "opencmiss/zinc/material.hpp"
+#include "cmlibs/zinc/material.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 

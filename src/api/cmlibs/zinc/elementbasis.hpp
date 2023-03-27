@@ -10,7 +10,7 @@
 #ifndef CMZN_ELEMENTBASIS_HPP__
 #define CMZN_ELEMENTBASIS_HPP__
 
-#include "opencmiss/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementbasis.h"
 
 namespace OpenCMISS
 {

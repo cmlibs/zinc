@@ -13,7 +13,7 @@
 #ifndef CMZN_STATUS_HPP
 #define CMZN_STATUS_HPP
 
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 namespace OpenCMISS
 {

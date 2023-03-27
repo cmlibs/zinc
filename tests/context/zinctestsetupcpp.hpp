@@ -11,8 +11,8 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/result.hpp>
-#include <opencmiss/zinc/context.hpp>
+#include <cmlibs/zinc/result.hpp>
+#include <cmlibs/zinc/context.hpp>
 
 using namespace OpenCMISS::Zinc;
 

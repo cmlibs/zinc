@@ -9,8 +9,8 @@
 #ifndef CMZN_SCENEVIEWERINPUT_HPP__
 #define CMZN_SCENEVIEWERINPUT_HPP__
 
-#include "opencmiss/zinc/sceneviewerinput.h"
-#include "opencmiss/zinc/sceneviewer.hpp"
+#include "cmlibs/zinc/sceneviewerinput.h"
+#include "cmlibs/zinc/sceneviewer.hpp"
 
 namespace OpenCMISS
 {

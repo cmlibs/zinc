@@ -10,9 +10,9 @@
 #ifndef CMZN_FIELDASSIGNMENT_HPP__
 #define CMZN_FIELDASSIGNMENT_HPP__
 
-#include "opencmiss/zinc/fieldassignment.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/nodeset.hpp"
+#include "cmlibs/zinc/fieldassignment.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/nodeset.hpp"
 
 namespace OpenCMISS
 {

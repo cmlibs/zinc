@@ -14,7 +14,7 @@
 #include "types/fieldconstantid.h"
 #include "types/fieldmoduleid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

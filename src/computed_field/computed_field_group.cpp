@@ -11,11 +11,11 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/scene.h"
+#include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_group_base.hpp"
@@ -24,7 +24,7 @@
 #include "computed_field/field_module.hpp"
 #if defined (USE_OPENCASCADE)
 #include "graphics/scene.hpp"
-#include "opencmiss/zinc/fieldcad.h"
+#include "cmlibs/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"

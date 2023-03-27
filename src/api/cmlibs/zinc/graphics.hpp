@@ -9,15 +9,15 @@
 #ifndef CMZN_GRAPHICS_HPP__
 #define CMZN_GRAPHICS_HPP__
 
-#include "opencmiss/zinc/types/scenecoordinatesystem.hpp"
-#include "opencmiss/zinc/graphics.h"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/glyph.hpp"
-#include "opencmiss/zinc/font.hpp"
-#include "opencmiss/zinc/material.hpp"
-#include "opencmiss/zinc/spectrum.hpp"
-#include "opencmiss/zinc/tessellation.hpp"
+#include "cmlibs/zinc/types/scenecoordinatesystem.hpp"
+#include "cmlibs/zinc/graphics.h"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/glyph.hpp"
+#include "cmlibs/zinc/font.hpp"
+#include "cmlibs/zinc/material.hpp"
+#include "cmlibs/zinc/spectrum.hpp"
+#include "cmlibs/zinc/tessellation.hpp"
 
 namespace OpenCMISS
 {

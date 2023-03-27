@@ -9,11 +9,11 @@
 #ifndef CMZN_FIELDSCENEVIEWERPROJECTION_HPP__
 #define CMZN_FIELDSCENEVIEWERPROJECTION_HPP__
 
-#include "opencmiss/zinc/fieldsceneviewerprojection.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/sceneviewer.hpp"
-#include "opencmiss/zinc/types/scenecoordinatesystem.hpp"
+#include "cmlibs/zinc/fieldsceneviewerprojection.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/sceneviewer.hpp"
+#include "cmlibs/zinc/types/scenecoordinatesystem.hpp"
 
 namespace OpenCMISS
 {

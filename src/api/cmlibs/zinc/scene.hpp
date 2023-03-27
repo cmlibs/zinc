@@ -9,17 +9,17 @@
 #ifndef CMZN_SCENE_HPP__
 #define CMZN_SCENE_HPP__
 
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/light.hpp"
-#include "opencmiss/zinc/nodeset.hpp"
-#include "opencmiss/zinc/region.hpp"
-#include "opencmiss/zinc/scenefilter.hpp"
-#include "opencmiss/zinc/selection.hpp"
-#include "opencmiss/zinc/shader.hpp"
-#include "opencmiss/zinc/spectrum.hpp"
-#include "opencmiss/zinc/timekeeper.hpp"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/light.hpp"
+#include "cmlibs/zinc/nodeset.hpp"
+#include "cmlibs/zinc/region.hpp"
+#include "cmlibs/zinc/scenefilter.hpp"
+#include "cmlibs/zinc/selection.hpp"
+#include "cmlibs/zinc/shader.hpp"
+#include "cmlibs/zinc/spectrum.hpp"
+#include "cmlibs/zinc/timekeeper.hpp"
 
 namespace OpenCMISS
 {

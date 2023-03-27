@@ -14,7 +14,7 @@
 #define CMZN_SET_HPP
 
 #include <set>
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 /*
 Local types

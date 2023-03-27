@@ -9,7 +9,7 @@
 #ifndef CMZN_DIFFFERENTIALOPERATOR_HPP__
 #define CMZN_DIFFFERENTIALOPERATOR_HPP__
 
-#include "opencmiss/zinc/differentialoperator.h"
+#include "cmlibs/zinc/differentialoperator.h"
 
 namespace OpenCMISS
 {

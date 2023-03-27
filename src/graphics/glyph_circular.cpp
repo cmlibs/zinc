@@ -10,8 +10,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <cmath>
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/tessellation.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/tessellation.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "graphics/glyph_circular.hpp"

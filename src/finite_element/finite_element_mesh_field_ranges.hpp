@@ -11,10 +11,10 @@
 #if !defined (FINITE_ELEMENT_MESH_FIELD_RANGES_HPP)
 #define FINITE_ELEMENT_MESH_FIELD_RANGES_HPP
 
-#include "opencmiss/zinc/types/fieldcacheid.h"
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/types/fieldsubobjectgroupid.h"
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/fieldcacheid.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/types/fieldsubobjectgroupid.h"
+#include "cmlibs/zinc/zincconfigure.h"
 #include "datastore/labels.hpp"
 #include "finite_element/finite_element_domain.hpp"
 #include "general/block_array.hpp"

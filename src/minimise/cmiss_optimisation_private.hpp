@@ -18,9 +18,9 @@
 
 #include <list>
 #include <sstream>
-#include "opencmiss/zinc/types/fieldassignmentid.h"
-#include "opencmiss/zinc/optimisation.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/fieldassignmentid.h"
+#include "cmlibs/zinc/optimisation.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/field_module.hpp"
 
 struct DependentAndConditionalFields

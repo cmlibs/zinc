@@ -11,13 +11,13 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdarg.h>
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/nodetemplate.h"
-#include "opencmiss/zinc/timesequence.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/nodetemplate.h"
+#include "cmlibs/zinc/timesequence.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_subobject_group.hpp"

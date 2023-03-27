@@ -11,7 +11,7 @@
 
 #include <list>
 #include <cstdlib>
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"

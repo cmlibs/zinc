@@ -13,8 +13,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <cstdio>
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/region.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/region.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/fieldassignmentprivate.hpp"
 #include "computed_field/computed_field_composite.h"

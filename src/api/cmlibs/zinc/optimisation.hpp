@@ -9,9 +9,9 @@
 #ifndef CMZN_OPTIMISATION_HPP__
 #define CMZN_OPTIMISATION_HPP__
 
-#include "opencmiss/zinc/optimisation.h"
-#include "opencmiss/zinc/fieldassignment.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/optimisation.h"
+#include "cmlibs/zinc/fieldassignment.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

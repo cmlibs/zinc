@@ -10,7 +10,7 @@
 #ifndef CMZN_STREAM_HPP__
 #define CMZN_STREAM_HPP__
 
-#include "opencmiss/zinc/stream.h"
+#include "cmlibs/zinc/stream.h"
 
 namespace OpenCMISS
 {

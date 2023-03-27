@@ -13,7 +13,7 @@
 #if !defined (TESSELLATION_JSON_IO_HPP)
 #define TESSELLATION_JSON_IO_HPP
 
-#include "opencmiss/zinc/tessellation.hpp"
+#include "cmlibs/zinc/tessellation.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 

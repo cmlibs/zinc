@@ -14,7 +14,7 @@ Renders gtObjects to VRML file
 #if !defined (RENDER_TO_FINITE_ELEMENTS_H)
 #define RENDER_TO_FINITE_ELEMENTS_H
 
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/node.h"
 #include "general/enumerator.h"
 
 struct cmzn_scenefilter;

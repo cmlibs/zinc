@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (computed_field_curvature_anisotropic_diffusion_image_filter_H)
 #define computed_field_curvature_anisotropic_diffusion_image_filter_H
 
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/field.h"
 
 int cmzn_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations);

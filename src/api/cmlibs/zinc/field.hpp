@@ -10,7 +10,7 @@
 #ifndef CMZN_FIELD_HPP__
 #define CMZN_FIELD_HPP__
 
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/field.h"
 
 namespace OpenCMISS
 {

@@ -9,10 +9,10 @@
 #ifndef CMZN_FIELDNODESETOPERATORS_HPP__
 #define CMZN_FIELDNODESETOPERATORS_HPP__
 
-#include "opencmiss/zinc/fieldnodesetoperators.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/node.hpp"
+#include "cmlibs/zinc/fieldnodesetoperators.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/node.hpp"
 
 namespace OpenCMISS
 {

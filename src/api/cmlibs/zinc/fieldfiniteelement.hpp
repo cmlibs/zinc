@@ -9,12 +9,12 @@
 #ifndef CMZN_FIELDTYPESFINITEELEMENT_HPP__
 #define CMZN_FIELDTYPESFINITEELEMENT_HPP__
 
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldcache.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/node.hpp"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldcache.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/node.hpp"
 
 namespace OpenCMISS
 {

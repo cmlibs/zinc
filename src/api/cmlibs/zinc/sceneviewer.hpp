@@ -9,11 +9,11 @@
 #ifndef CMZN_SCENEVIEWER_HPP__
 #define CMZN_SCENEVIEWER_HPP__
 
-#include "opencmiss/zinc/sceneviewer.h"
-#include "opencmiss/zinc/context.hpp"
-#include "opencmiss/zinc/light.hpp"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/scenefilter.hpp"
+#include "cmlibs/zinc/sceneviewer.h"
+#include "cmlibs/zinc/context.hpp"
+#include "cmlibs/zinc/light.hpp"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/scenefilter.hpp"
 
 namespace OpenCMISS
 {

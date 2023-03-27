@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/font.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/font.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/font.hpp"
+#include "cmlibs/zinc/font.hpp"
 
 TEST(cmzn_fontmodule_api, valid_args)
 {

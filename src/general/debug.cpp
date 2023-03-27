@@ -16,8 +16,8 @@ Function definitions for debugging.
 #include <stdlib.h>
 #include <string.h>
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/core.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/core.h"
 
 #include "general/message.h"
 #include "general/debug.h"

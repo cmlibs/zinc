@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDTIME_HPP__
 #define CMZN_FIELDTIME_HPP__
 
-#include "opencmiss/zinc/fieldtime.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/timekeeper.hpp"
+#include "cmlibs/zinc/fieldtime.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/timekeeper.hpp"
 
 namespace OpenCMISS
 {

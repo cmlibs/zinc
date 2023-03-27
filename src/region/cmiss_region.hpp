@@ -12,8 +12,8 @@
 #if !defined (CMZN_REGION_H)
 #define CMZN_REGION_H
 
-#include "opencmiss/zinc/types/contextid.h"
-#include "opencmiss/zinc/types/regionid.h"
+#include "cmlibs/zinc/types/contextid.h"
+#include "cmlibs/zinc/types/regionid.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_derivative.hpp"
 #include <list>

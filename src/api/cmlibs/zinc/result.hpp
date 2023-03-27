@@ -13,7 +13,7 @@
 #ifndef CMZN_RESULT_HPP
 #define CMZN_RESULT_HPP
 
-#include "opencmiss/zinc/result.h"
+#include "cmlibs/zinc/result.h"
 
 namespace OpenCMISS
 {

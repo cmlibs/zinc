@@ -14,7 +14,7 @@ Data structures and prototype functions needed for all find xi implementations.
 #if !defined (COMPUTED_FIELD_FIND_XI_PRIVATE_HPP)
 #define COMPUTED_FIELD_FIND_XI_PRIVATE_HPP
 
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/mesh.h"
 
 class Computed_field_find_element_xi_cache
 {

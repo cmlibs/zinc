@@ -13,8 +13,8 @@
 #if !defined (CMZN_REGION_STREAM_HPP)
 #define CMZN_REGION_STREAM_HPP
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldimage.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldimage.h"
 #include "general/image_utilities.h"
 #include "stream/stream_private.hpp"
 

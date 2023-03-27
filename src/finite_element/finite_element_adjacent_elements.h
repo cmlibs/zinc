@@ -16,7 +16,7 @@ indexed_multi_range.
 #if !defined (FINITE_ELEMENT_ADJACENT_ELEMENTS_H)
 #define FINITE_ELEMENT_ADJACENT_ELEMENTS_H
 
-#include "opencmiss/zinc/element.h"
+#include "cmlibs/zinc/element.h"
 #include "general/indexed_multi_range.h"
 
 class FE_mesh_field_template;

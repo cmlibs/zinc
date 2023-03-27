@@ -44,7 +44,7 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_PRIVATE_H
 
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include "general/cmiss_set.hpp"
 #include "general/geometry.h"

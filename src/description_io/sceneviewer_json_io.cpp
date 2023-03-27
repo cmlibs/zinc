@@ -12,11 +12,11 @@
 
 #include "description_io/sceneviewer_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/sceneviewer.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/sceneviewer.hpp"
+#include "cmlibs/zinc/region.hpp"
 #include "region/cmiss_region.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 namespace
 {

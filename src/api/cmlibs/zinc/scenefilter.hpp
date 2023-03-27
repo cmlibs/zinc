@@ -9,10 +9,10 @@
 #ifndef CMZN_SCENEFILTER_HPP__
 #define CMZN_SCENEFILTER_HPP__
 
-#include "opencmiss/zinc/scenefilter.h"
-#include "opencmiss/zinc/context.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/scenefilter.h"
+#include "cmlibs/zinc/context.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/region.hpp"
 
 namespace OpenCMISS
 {

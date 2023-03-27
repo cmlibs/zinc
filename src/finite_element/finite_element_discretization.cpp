@@ -15,9 +15,9 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include <math.h>
 #include <stdlib.h>
 
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/field_cache.hpp"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"

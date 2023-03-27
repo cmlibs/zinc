@@ -13,7 +13,7 @@
 #define CMZN_SCENECOORDINATESYSTEM_H__
 
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /**
  * Enumerated type for identifying scene and window coordinate systems.

@@ -10,9 +10,9 @@
 #define CMZN_FIELDCOMPOSITE_HPP__
 
 
-#include "opencmiss/zinc/fieldcomposite.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldcomposite.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

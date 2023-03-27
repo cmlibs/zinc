@@ -8,7 +8,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/scene.h"
+#include "cmlibs/zinc/scene.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/scene.hpp"

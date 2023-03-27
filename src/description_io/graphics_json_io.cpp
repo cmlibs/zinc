@@ -12,9 +12,9 @@
 
 #include "graphics/glyph.hpp"
 #include "graphics/graphics.hpp"
-#include "opencmiss/zinc/spectrum.hpp"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/spectrum.hpp"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 #include "general/debug.h"
 #include "description_io/graphics_json_export.hpp"
 #include <string.h>

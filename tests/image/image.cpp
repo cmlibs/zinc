@@ -9,29 +9,29 @@
 #include <gtest/gtest.h>
 
 #include "zinctestsetup.hpp"
-#include <opencmiss/zinc/zincconfigure.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldconditional.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/fieldimage.h>
-#include <opencmiss/zinc/stream.h>
-#include <opencmiss/zinc/streamimage.h>
+#include <cmlibs/zinc/zincconfigure.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldconditional.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/fieldimage.h>
+#include <cmlibs/zinc/stream.h>
+#include <cmlibs/zinc/streamimage.h>
 
 #include "zinctestsetupcpp.hpp"
-#include <opencmiss/zinc/element.hpp>
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconditional.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldimage.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
-#include <opencmiss/zinc/result.hpp>
-#include <opencmiss/zinc/stream.hpp>
-#include <opencmiss/zinc/streamimage.hpp>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconditional.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldimage.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/result.hpp>
+#include <cmlibs/zinc/stream.hpp>
+#include <cmlibs/zinc/streamimage.hpp>
 
 #include "test_resources.h"
 

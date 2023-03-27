@@ -17,7 +17,7 @@
 #include "types/fieldmeshoperatorsid.h"
 #include "types/meshid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

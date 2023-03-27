@@ -11,8 +11,8 @@
 #if !defined (FINITE_ELEMENT_BASIS_HPP)
 #define FINITE_ELEMENT_BASIS_HPP
 
-#include "opencmiss/zinc/types/elementbasisid.h"
-#include "opencmiss/zinc/types/nodeid.h"
+#include "cmlibs/zinc/types/elementbasisid.h"
+#include "cmlibs/zinc/types/nodeid.h"
 #include "finite_element/finite_element_constants.hpp"
 #include "general/list.h"
 #include "general/manager.h"

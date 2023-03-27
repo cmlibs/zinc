@@ -8,23 +8,23 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/changemanager.hpp>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/graphics.h>
-#include <opencmiss/zinc/spectrum.h>
+#include <cmlibs/zinc/changemanager.hpp>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/graphics.h>
+#include <cmlibs/zinc/spectrum.h>
 
-#include "opencmiss/zinc/fieldconstant.hpp"
-#include "opencmiss/zinc/fieldgroup.hpp"
-#include "opencmiss/zinc/fieldfiniteelement.hpp"
-#include "opencmiss/zinc/font.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/result.hpp"
+#include "cmlibs/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/fieldgroup.hpp"
+#include "cmlibs/zinc/fieldfiniteelement.hpp"
+#include "cmlibs/zinc/font.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/result.hpp"
 
 #include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"

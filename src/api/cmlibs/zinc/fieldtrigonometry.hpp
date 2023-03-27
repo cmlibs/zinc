@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDTRIGONOMETRY_HPP__
 #define CMZN_FIELDTRIGONOMETRY_HPP__
 
-#include "opencmiss/zinc/fieldtrigonometry.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldtrigonometry.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

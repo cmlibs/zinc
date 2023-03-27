@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDVECTOROPERATORS_HPP__
 #define CMZN_FIELDVECTOROPERATORS_HPP__
 
-#include "opencmiss/zinc/fieldvectoroperators.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldvectoroperators.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

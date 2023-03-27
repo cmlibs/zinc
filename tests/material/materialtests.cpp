@@ -8,15 +8,15 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/material.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/material.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/changemanager.hpp"
-#include "opencmiss/zinc/fieldimage.hpp"
-#include "opencmiss/zinc/material.hpp"
+#include "cmlibs/zinc/changemanager.hpp"
+#include "cmlibs/zinc/fieldimage.hpp"
+#include "cmlibs/zinc/material.hpp"
 
 #include "test_resources.h"
 

@@ -8,21 +8,21 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/element.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldcache.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/fieldfiniteelement.h>
-#include <opencmiss/zinc/fieldnodesetoperators.h>
-#include <opencmiss/zinc/mesh.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/nodeset.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/stream.h>
-#include <opencmiss/zinc/streamregion.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/element.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldcache.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/fieldfiniteelement.h>
+#include <cmlibs/zinc/fieldnodesetoperators.h>
+#include <cmlibs/zinc/mesh.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/nodeset.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/stream.h>
+#include <cmlibs/zinc/streamregion.h>
 
 #include "zinctestsetup.hpp"
 

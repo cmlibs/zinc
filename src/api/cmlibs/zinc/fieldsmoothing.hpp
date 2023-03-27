@@ -10,9 +10,9 @@
 #ifndef CMZN_FIELDSMOOTHING_HPP__
 #define CMZN_FIELDSMOOTHING_HPP__
 
-#include "opencmiss/zinc/fieldsmoothing.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldsmoothing.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

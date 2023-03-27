@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDFIBRES_HPP__
 #define CMZN_FIELDFIBRES_HPP__
 
-#include "opencmiss/zinc/fieldfibres.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldfibres.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

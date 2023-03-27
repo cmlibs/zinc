@@ -13,9 +13,9 @@
 #if !defined (FIELDMODULE_JSON_IO_HPP)
 #define FIELDMODULE_JSON_IO_HPP
 
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/region.hpp"
 #include "jsoncpp/json.h"
 #include <string>
 

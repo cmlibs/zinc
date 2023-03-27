@@ -11,7 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <string>
 #include <vector>
-#include "opencmiss/zinc/streamscene.h"
+#include "cmlibs/zinc/streamscene.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"

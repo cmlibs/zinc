@@ -10,7 +10,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "graphics/threejs_export.hpp"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"

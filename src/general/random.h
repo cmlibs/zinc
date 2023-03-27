@@ -15,7 +15,7 @@ Standard macros for returning random numbers.
 #define RANDOM_H
 
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */

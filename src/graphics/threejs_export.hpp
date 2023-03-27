@@ -14,7 +14,7 @@
 #include "graphics/render_gl.h"
 #include <string>
 #include "jsoncpp/json.h"
-#include "opencmiss/zinc/types/graphicsid.h"
+#include "cmlibs/zinc/types/graphicsid.h"
 
 
 struct GT_object;

@@ -15,7 +15,7 @@
 #if !defined (__FIELD_DERIVATIVE_HPP__)
 #define __FIELD_DERIVATIVE_HPP__
 
-#include "opencmiss/zinc/types/regionid.h"
+#include "cmlibs/zinc/types/regionid.h"
 
 class FE_mesh;
 struct cmzn_fieldparameters;

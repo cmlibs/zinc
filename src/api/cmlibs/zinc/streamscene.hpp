@@ -9,10 +9,10 @@
 #ifndef CMZN_STREAMSCENE_HPP__
 #define CMZN_STREAMSCENE_HPP__
 
-#include "opencmiss/zinc/streamscene.h"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/stream.hpp"
-#include "opencmiss/zinc/scenefilter.hpp"
+#include "cmlibs/zinc/streamscene.h"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/stream.hpp"
+#include "cmlibs/zinc/scenefilter.hpp"
 
 namespace OpenCMISS
 {

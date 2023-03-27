@@ -16,7 +16,7 @@
 #include "types/fieldparametersid.h"
 #include "types/fieldid.h"
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

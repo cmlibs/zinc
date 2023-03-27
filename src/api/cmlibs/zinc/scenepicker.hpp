@@ -9,14 +9,14 @@
 #ifndef CMZN_SCENEPICKER_HPP__
 #define CMZN_SCENEPICKER_HPP__
 
-#include "opencmiss/zinc/scenepicker.h"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/fieldgroup.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/scenefilter.hpp"
-#include "opencmiss/zinc/sceneviewer.hpp"
+#include "cmlibs/zinc/scenepicker.h"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/fieldgroup.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/scenefilter.hpp"
+#include "cmlibs/zinc/sceneviewer.hpp"
 
 namespace OpenCMISS
 {

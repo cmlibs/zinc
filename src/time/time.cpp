@@ -14,7 +14,7 @@ This provides an object which supplies a concept of time to Cmgui
 #include <math.h>
 #include <stdio.h>
 
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/message.h"

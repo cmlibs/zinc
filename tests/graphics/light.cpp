@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/light.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/light.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/light.hpp"
+#include "cmlibs/zinc/light.hpp"
 
 TEST(cmzn_lightmodule_api, valid_args)
 {

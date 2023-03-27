@@ -9,8 +9,8 @@
 #ifndef CMZN_REGION_HPP__
 #define CMZN_REGION_HPP__
 
-#include "opencmiss/zinc/region.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/region.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

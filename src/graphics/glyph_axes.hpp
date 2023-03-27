@@ -12,7 +12,7 @@
 #ifndef GLYPH_AXES_HPP
 #define GLYPH_AXES_HPP
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "graphics/glyph.hpp"
 
 struct cmzn_glyph_axes : public cmzn_glyph

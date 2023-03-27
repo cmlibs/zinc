@@ -9,7 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/region.h"
+#include "cmlibs/zinc/region.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_range.hpp"
 #include "computed_field/computed_field_subobject_group.hpp"

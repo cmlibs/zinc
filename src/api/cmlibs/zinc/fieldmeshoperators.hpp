@@ -9,10 +9,10 @@
 #ifndef CMZN_FIELDMESHOPERATORS_HPP__
 #define CMZN_FIELDMESHOPERATORS_HPP__
 
-#include "opencmiss/zinc/fieldmeshoperators.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/element.hpp"
+#include "cmlibs/zinc/fieldmeshoperators.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/element.hpp"
 
 namespace OpenCMISS
 {

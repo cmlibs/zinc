@@ -8,8 +8,8 @@
 
 #include <gtest/gtest.h>
 
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/fieldconstant.hpp"
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

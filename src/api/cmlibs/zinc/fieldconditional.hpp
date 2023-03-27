@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDCONDITIONAL_HPP__
 #define CMZN_FIELDCONDITIONAL_HPP__
 
-#include "opencmiss/zinc/fieldconditional.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldconditional.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

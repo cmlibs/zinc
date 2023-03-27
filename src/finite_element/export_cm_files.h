@@ -12,9 +12,9 @@
 #define EXPORT_CM_FILES_H
 
 #include <stdio.h>
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/types/fieldgroupid.h"
-#include "opencmiss/zinc/types/regionid.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/types/fieldgroupid.h"
+#include "cmlibs/zinc/types/regionid.h"
 
 /*
 Global/Public functions

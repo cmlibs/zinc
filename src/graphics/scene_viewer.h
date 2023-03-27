@@ -22,8 +22,8 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
-#include "opencmiss/zinc/types/scenecoordinatesystem.h"
-#include "opencmiss/zinc/sceneviewer.h"
+#include "cmlibs/zinc/types/scenecoordinatesystem.h"
+#include "cmlibs/zinc/sceneviewer.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
 #include "general/image_utilities.h"
@@ -146,7 +146,7 @@ Global types
 ------------
 */
 
-#include "opencmiss/zinc/sceneviewerinput.h"
+#include "cmlibs/zinc/sceneviewerinput.h"
 
 #define MAX_CLIP_PLANES (6)
 #define SCENE_VIEWER_PICK_SIZE 7.0

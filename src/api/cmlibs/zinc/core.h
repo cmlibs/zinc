@@ -11,7 +11,7 @@
 #ifndef CMZN_CORE_H__
 #define CMZN_CORE_H__
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #ifdef __cplusplus
 extern "C" {

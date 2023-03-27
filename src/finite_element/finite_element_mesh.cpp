@@ -9,7 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/element.h"
+#include "cmlibs/zinc/element.h"
 #include "computed_field/field_derivative.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/fieldparametersprivate.hpp"

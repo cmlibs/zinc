@@ -9,7 +9,7 @@
 #ifndef CMZN_NODE_HPP__
 #define CMZN_NODE_HPP__
 
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/node.h"
 
 namespace OpenCMISS
 {

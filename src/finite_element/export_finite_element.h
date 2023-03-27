@@ -12,11 +12,11 @@
 #define EXPORT_FINITE_ELEMENT_H
 
 #include <stdio.h>
-#include "opencmiss/zinc/fieldgroup.h"
+#include "cmlibs/zinc/fieldgroup.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"
 #include "region/cmiss_region.hpp"
-#include "opencmiss/zinc/types/regionid.h"
+#include "cmlibs/zinc/types/regionid.h"
 
 /*
 Global/Public types

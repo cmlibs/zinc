@@ -10,10 +10,10 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <list>
 #include <map>
-#include "opencmiss/zinc/differentialoperator.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/differentialoperator.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_cache.hpp"

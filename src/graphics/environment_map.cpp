@@ -14,7 +14,7 @@ The functions for manipulating environment maps.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/io_stream.h"

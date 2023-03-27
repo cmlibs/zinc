@@ -19,9 +19,9 @@ Spectrum functions and support code.
 #include <list>
 #include <vector>
 #include <math.h>
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/spectrum.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/spectrum.h"
+#include "cmlibs/zinc/status.h"
 #include "description_io/spectrum_json_io.hpp"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"

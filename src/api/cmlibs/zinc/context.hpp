@@ -10,7 +10,7 @@
 #ifndef CMZN_CONTEXT_HPP__
 #define CMZN_CONTEXT_HPP__
 
-#include "opencmiss/zinc/context.h"
+#include "cmlibs/zinc/context.h"
 
 /**
  * \brief The OpenCMISS namespace

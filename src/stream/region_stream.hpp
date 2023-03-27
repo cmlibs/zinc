@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/region.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/region.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "stream/stream_private.hpp"
 

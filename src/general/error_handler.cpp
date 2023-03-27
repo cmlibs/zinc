@@ -20,7 +20,7 @@ longjmp .
 #include <setjmp.h>
 
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include "general/error_handler.h"
 

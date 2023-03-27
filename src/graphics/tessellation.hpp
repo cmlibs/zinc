@@ -13,7 +13,7 @@
 #if !defined (TESSELLATION_HPP)
 #define TESSELLATION_HPP
 
-#include "opencmiss/zinc/tessellation.h"
+#include "cmlibs/zinc/tessellation.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

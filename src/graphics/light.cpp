@@ -15,8 +15,8 @@ The functions for manipulating lights.
 #include <stdlib.h>
 #include <string.h>
 
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include "general/debug.h"
 #include "general/list_private.h"

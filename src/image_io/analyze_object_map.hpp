@@ -10,8 +10,8 @@
 #define ANALYZE_OBJECT_MAP_HPP_
 
 #include <istream>
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/types/streamid.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/streamid.h"
 #include "analyze_header.h"
 #include "analyze.h"
 

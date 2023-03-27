@@ -7,8 +7,8 @@
 #if !defined (SELECTION_HPP)
 #define SELECTION_HPP
 
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/selection.h"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/selection.h"
 
 /**
  * @param group_change_type  Logical OR of cmzn_field_group_change_type enums.

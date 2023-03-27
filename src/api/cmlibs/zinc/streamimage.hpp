@@ -9,9 +9,9 @@
 #ifndef CMZN_STREAMIMAGE_HPP__
 #define CMZN_STREAMIMAGE_HPP__
 
-#include "opencmiss/zinc/streamimage.h"
-#include "opencmiss/zinc/fieldimage.hpp"
-#include "opencmiss/zinc/stream.hpp"
+#include "cmlibs/zinc/streamimage.h"
+#include "cmlibs/zinc/fieldimage.hpp"
+#include "cmlibs/zinc/stream.hpp"
 
 namespace OpenCMISS
 {

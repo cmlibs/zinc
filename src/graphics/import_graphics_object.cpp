@@ -18,7 +18,7 @@ Functions for reading graphics object data from a file.
 #include <stdlib.h>
 #include <string.h>
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"

@@ -9,9 +9,9 @@
 #ifndef CMZN_FIELDIMAGE_HPP__
 #define CMZN_FIELDIMAGE_HPP__
 
-#include "opencmiss/zinc/fieldimage.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldimage.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {

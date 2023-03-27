@@ -9,8 +9,8 @@
 #ifndef CMZN_TESSELLATION_HPP__
 #define CMZN_TESSELLATION_HPP__
 
-#include "opencmiss/zinc/tessellation.h"
-#include "opencmiss/zinc/context.hpp"
+#include "cmlibs/zinc/tessellation.h"
+#include "cmlibs/zinc/context.hpp"
 
 namespace OpenCMISS
 {

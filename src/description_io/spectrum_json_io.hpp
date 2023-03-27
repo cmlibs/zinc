@@ -13,7 +13,7 @@
 #if !defined (SPECTRUM_JSON_IO_HPP)
 #define SPECTRUM_JSON_IO_HPP
 
-#include "opencmiss/zinc/spectrum.hpp"
+#include "cmlibs/zinc/spectrum.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 

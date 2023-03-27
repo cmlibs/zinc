@@ -10,8 +10,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/node.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_derivatives.h"

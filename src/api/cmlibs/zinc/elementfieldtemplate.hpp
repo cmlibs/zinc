@@ -10,9 +10,9 @@
 #ifndef CMZN_ELEMENTFIELDTEMPLATE_HPP__
 #define CMZN_ELEMENTFIELDTEMPLATE_HPP__
 
-#include "opencmiss/zinc/elementfieldtemplate.h"
-#include "opencmiss/zinc/elementbasis.hpp"
-#include "opencmiss/zinc/node.hpp"
+#include "cmlibs/zinc/elementfieldtemplate.h"
+#include "cmlibs/zinc/elementbasis.hpp"
+#include "cmlibs/zinc/node.hpp"
 
 namespace OpenCMISS
 {
