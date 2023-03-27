@@ -13,9 +13,9 @@
 #include "cmlibs/zinc/context.h"
 
 /**
- * \brief The OpenCMISS namespace
+ * \brief The CMLibs namespace
  *
- * This is the OpenCMISS namespace
+ * This is the CMLibs namespace
  */
 namespace CMLibs
 {

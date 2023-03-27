@@ -13,9 +13,9 @@
 #define CMZN_CHANGEMANAGER_HPP__
 
 /**
- * \brief The OpenCMISS namespace
+ * \brief The Zinc namespace
  *
- * This is the OpenCMISS namespace.
+ * This is the Zinc namespace.
  */
 namespace CMLibs
 {
