@@ -2,7 +2,7 @@
 FILE : graphics_module.h
 
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,9 +11,9 @@ FILE : graphics_module.h
 #if !defined (GRAPHICS_MODULE_H)
 #define GRAPHICS_MODULE_H
 
-#include "opencmiss/zinc/font.h"
-#include "opencmiss/zinc/scenefilter.h"
-#include "opencmiss/zinc/shader.h"
+#include "cmlibs/zinc/font.h"
+#include "cmlibs/zinc/scenefilter.h"
+#include "cmlibs/zinc/shader.h"
 #include "general/object.h"
 #include "context/context.hpp"
 #include "graphics/font.h"

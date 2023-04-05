@@ -7,7 +7,7 @@ DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
 lookup of the element.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,8 @@ lookup of the element.
 #include <stdio.h>
 #include <math.h>
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/element.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/element.h"
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"

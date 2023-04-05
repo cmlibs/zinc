@@ -9,7 +9,7 @@ Function definitions for some general purpose string functions.
 ???DB.  Needs some more tidying up and rationalization.
 ???DB.  Need to tidy up writing error messages.
 =============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

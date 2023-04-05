@@ -4,7 +4,7 @@
  * The interface to timekeeper_json_io.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
 #if !defined (TIMEKEPER_JSON_IO_HPP)
 #define TIMEKEPER_JSON_IO_HPP
 
-#include "opencmiss/zinc/timekeeper.hpp"
+#include "cmlibs/zinc/timekeeper.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 
@@ -36,14 +36,14 @@ public:
 		timekeeper(cmzn_timekeeper_access(timekeeper_in)), mode(mode_in)
 	{  }
 
-	TimekeeperJsonIO(const OpenCMISS::Zinc::Timekeeper timekeeper_in, IOMode mode_in) :
+	TimekeeperJsonIO(const CMLibs::Zinc::Timekeeper timekeeper_in, IOMode mode_in) :
 		timekeeper(timekeeper_in), mode(mode_in)
 	{	}
 
 	void ioEntries(Json::Value &timekeeperSettings);
 
 private:
-	OpenCMISS::Zinc::Timekeeper timekeeper;
+	CMLibs::Zinc::Timekeeper timekeeper;
 	IOMode mode;
 };
 
@@ -54,7 +54,7 @@ class TimekeepermoduleJsonImport
 {
 
 private:
-	OpenCMISS::Zinc::Timekeepermodule timekeepermodule;
+	CMLibs::Zinc::Timekeepermodule timekeepermodule;
 
 public:
 
@@ -73,7 +73,7 @@ public:
 class TimekeepermoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Timekeepermodule timekeepermodule;
+	CMLibs::Zinc::Timekeepermodule timekeepermodule;
 
 public:
 

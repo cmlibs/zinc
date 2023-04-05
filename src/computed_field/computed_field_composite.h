@@ -7,7 +7,7 @@ DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
 and real values in any order into a single vector field.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,9 @@ and real values in any order into a single vector field.
 #if !defined (COMPUTED_FIELD_COMPOSITE_H)
 #define COMPUTED_FIELD_COMPOSITE_H
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldconstant.h"
-#include "opencmiss/zinc/fieldcomposite.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldconstant.h"
+#include "cmlibs/zinc/fieldcomposite.h"
 
 struct Computed_field_composite_source_data
 /*******************************************************************************

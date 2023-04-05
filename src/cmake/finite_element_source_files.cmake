@@ -3,7 +3,7 @@
 # FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS
 # (group definition which includes the previous three)
 
-# OpenCMISS-Zinc Library
+# Zinc Library
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this

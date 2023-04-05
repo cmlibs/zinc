@@ -4,7 +4,7 @@
  * Derived glyph type which creates 2 or 3 dimensional axes with optional
  * per axis labels and materials.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
 #ifndef GLYPH_AXES_HPP
 #define GLYPH_AXES_HPP
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "graphics/glyph.hpp"
 
 struct cmzn_glyph_axes : public cmzn_glyph

@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,20 +8,20 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/changemanager.hpp>
-#include <opencmiss/zinc/element.hpp>
-#include <opencmiss/zinc/elementbasis.hpp>
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldalias.hpp>
-#include <opencmiss/zinc/fieldapply.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldassignment.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
-#include <opencmiss/zinc/fieldtime.hpp>
-#include <opencmiss/zinc/node.hpp>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/changemanager.hpp>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/elementbasis.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldalias.hpp>
+#include <cmlibs/zinc/fieldapply.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldassignment.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldtime.hpp>
+#include <cmlibs/zinc/node.hpp>
 
 #include "zinctestsetupcpp.hpp"
 

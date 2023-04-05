@@ -6,7 +6,7 @@ LAST MODIFIED : 17 July 2006
 DESCRIPTION :
 Functions and structures for interfacing with the graphics library.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,8 @@ Functions and structures for interfacing with the graphics library.
 #if !defined (GRAPHICS_LIBRARY_H)
 #define GRAPHICS_LIBRARY_H
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES

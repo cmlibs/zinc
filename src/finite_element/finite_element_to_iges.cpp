@@ -7,7 +7,7 @@ DESCRIPTION :
 Functions for building IGES information from finite elements and exporting
 to file.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,11 +19,11 @@ to file.
 #include <cstring>
 #include <ctime>
 
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"

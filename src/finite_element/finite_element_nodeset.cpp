@@ -3,7 +3,7 @@
  *
  * Class defining a domain consisting of a set of nodes.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/node.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"

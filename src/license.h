@@ -1,4 +1,4 @@
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,7 +7,7 @@
 #if !defined CMZN_LICENSE_STRING
 #include <string>
 const char *CMZN_LICENSE_STRING ={
-"OpenCMISS-Zinc Library\n"
+"Zinc Library\n"
 "\n"
 "This Source Code Form is subject to the terms of the Mozilla Public\n"
 "License, v. 2.0. If a copy of the MPL was not distributed with this\n"

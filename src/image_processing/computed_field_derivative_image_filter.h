@@ -5,7 +5,7 @@ LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (computed_field_derivative_image_filter_H)
 #define computed_field_derivative_image_filter_H
 
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK derivative image filter on scalar source field

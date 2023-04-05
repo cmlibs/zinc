@@ -6,7 +6,7 @@ LAST MODIFIED : 1 March 2002
 DESCRIPTION :
 Program to replace tabs at the beginning of lines by spaces.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -6,7 +6,7 @@ LAST MODIFIED : 18 February 1997
 DESCRIPTION :
 Definitions of machine specific stuff.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ Definitions of machine specific stuff.
 #if !defined (MACHINE_H)
 #define MACHINE_H
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 #include "general/object.h"
 

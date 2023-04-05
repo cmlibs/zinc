@@ -3,7 +3,7 @@
  *
  * Implements logical operations on computed fields.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 #if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldlogicaloperators.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldlogicaloperators.h"
 
 #endif /* !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H) */

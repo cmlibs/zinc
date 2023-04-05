@@ -6,7 +6,7 @@ LAST MODIFIED : 23 August 2000
 DESCRIPTION :
 Global store of selected any_objects for group actions and highlighting.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -3,13 +3,13 @@
  *
  * Implements a number of basic vector operations on computed fields.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
-#include "opencmiss/zinc/fieldvectoroperators.h"
+#include "cmlibs/zinc/fieldvectoroperators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"

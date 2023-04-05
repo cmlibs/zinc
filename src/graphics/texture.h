@@ -6,7 +6,7 @@ LAST MODIFIED : 28 March 2008
 DESCRIPTION :
 The data structures used for representing textures.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@ The data structures used for representing textures.
 
 #include <stdio.h>
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include "general/enumerator.h"
 #include "general/object.h"

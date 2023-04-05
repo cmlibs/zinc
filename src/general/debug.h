@@ -7,7 +7,7 @@ DESCRIPTION :
 Function definitions for debugging.
 
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,8 +17,8 @@ Function definitions for debugging.
 
 #include <cstdarg>
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Macros

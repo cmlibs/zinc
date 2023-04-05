@@ -6,7 +6,7 @@ LAST MODIFIED : 6 December 2004
 DESCRIPTION :
 The functions for manipulating environment maps.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ The functions for manipulating environment maps.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/io_stream.h"

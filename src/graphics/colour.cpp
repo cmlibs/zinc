@@ -8,7 +8,7 @@ Colour structures and support code.
 ???DB.  I'm not sure that this needs to be abstracted/formalized.
 ???DB.  Should convert to CREATE and DESTROY
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

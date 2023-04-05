@@ -3,7 +3,7 @@
  *
  * Records field parameter indexing.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,9 +11,9 @@
 #if !defined (FINITE_ELEMENT_FIELD_PARAMETERS_HPP)
 #define FINITE_ELEMENT_FIELD_PARAMETERS_HPP
 
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/nodeid.h"
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/nodeid.h"
+#include "cmlibs/zinc/zincconfigure.h"
 #include "datastore/labels.hpp"
 #include "general/block_array.hpp"
 

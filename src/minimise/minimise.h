@@ -3,7 +3,7 @@
  *
  * Optimisation/minimisation routines.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 #if !defined (CMZN_MINIMISE_INTERNAL_H)
 #define CMZN_MINIMISE_INTERNAL_H
 
-#include "opencmiss/zinc/optimisation.h"
+#include "cmlibs/zinc/optimisation.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_optimisation_method);
 

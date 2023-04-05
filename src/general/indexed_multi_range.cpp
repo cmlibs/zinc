@@ -9,7 +9,7 @@ can then be created for a group of these objects allowing rapid lookup.
 This code was originally mirage/tracking_editor_data.c and refered explicitly
 to index_multi_range for pending/placed frames etc.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

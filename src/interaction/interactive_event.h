@@ -11,7 +11,7 @@ Structure describing an interactive event containing:
 - Interaction_volume
 - Scene
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@ Structure describing an interactive event containing:
 #if !defined (INTERACTIVE_EVENT_H)
 #define INTERACTIVE_EVENT_H
 
-#include "opencmiss/zinc/types/sceneid.h"
+#include "cmlibs/zinc/types/sceneid.h"
 #include "general/object.h"
 #include "interaction/interaction_volume.h"
 

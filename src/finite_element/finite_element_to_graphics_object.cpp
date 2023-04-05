@@ -4,7 +4,7 @@ FILE : finite_element_to_graphics_object.cpp
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,10 +12,10 @@ The functions for creating graphical objects from finite elements.
 #include <limits.h>
 #include <cmath>
 #include <cstdlib>
-#include "opencmiss/zinc/differentialoperator.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/nodeset.h"
+#include "cmlibs/zinc/differentialoperator.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/nodeset.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"

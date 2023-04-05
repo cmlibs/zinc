@@ -7,7 +7,7 @@ DESCRIPTION :
 FE_node functions that utilise non finite element data structures and therefore
 cannot reside in finite element modules.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

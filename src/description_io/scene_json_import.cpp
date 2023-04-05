@@ -4,20 +4,20 @@
  * The definition to scene_json_import.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/region.hpp"
 #include "description_io/graphics_json_import.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "graphics/scene.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 int SceneJsonImport::import(const std::string &jsonString)
 {
@@ -80,8 +80,8 @@ int SceneJsonImport::import(const std::string &jsonString)
 void SceneJsonImport::importGraphics(Json::Value &graphicsJson)
 {
 	std::string typeString = graphicsJson["Type"].asString();
-	enum OpenCMISS::Zinc::Graphics::Type graphicsType =  static_cast<OpenCMISS::Zinc::Graphics::Type>(
+	enum CMLibs::Zinc::Graphics::Type graphicsType =  static_cast<CMLibs::Zinc::Graphics::Type>(
 		cmzn_graphics_type_enum_from_string(typeString.c_str()));
-	OpenCMISS::Zinc::Graphics graphics = scene.createGraphics(graphicsType);
+	CMLibs::Zinc::Graphics graphics = scene.createGraphics(graphicsType);
 	GraphicsJsonImport(graphics, graphicsJson).import();
 }

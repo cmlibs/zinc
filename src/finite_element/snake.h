@@ -7,7 +7,7 @@ DESCRIPTION :
 Functions for making a snake of 1-D cubic Hermite elements from a chain of
 data points.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,8 @@ data points.
 #if !defined (SNAKE_H)
 #define SNAKE_H
 
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/node.h"
 
 int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,

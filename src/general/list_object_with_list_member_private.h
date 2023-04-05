@@ -21,7 +21,7 @@ type. More standard list functions should be added as required. Note also that
 only functions adding and removing objects from the list need to changed from
 those in list_private.h -- which is included by this header.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

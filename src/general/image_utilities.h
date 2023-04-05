@@ -6,7 +6,7 @@ LAST MODIFIED : 11 March 2002
 DESCRIPTION :
 Utilities for handling images.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ Utilities for handling images.
 #if !defined (IMAGE_UTILITIES_H)
 #define IMAGE_UTILITIES_H
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 #include "general/enumerator.h"
 #include "general/object.h"
 

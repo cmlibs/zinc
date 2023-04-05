@@ -3,19 +3,19 @@
  *
  * Implements region sub object groups, e.g. node group, element group.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdlib.h>
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
 #if defined (USE_OPENCASCADE)
-#include "opencmiss/zinc/fieldcad.h"
+#include "cmlibs/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 #include "computed_field/computed_field_subobject_group.hpp"

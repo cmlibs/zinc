@@ -14,7 +14,7 @@ information in a view-independent format.
 SCENE_VIEWER_TRANSFORM allows the view of the scene to be changed by tumbling,
 translating and zooming with mouse button press and motion events.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,8 +22,8 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
-#include "opencmiss/zinc/types/scenecoordinatesystem.h"
-#include "opencmiss/zinc/sceneviewer.h"
+#include "cmlibs/zinc/types/scenecoordinatesystem.h"
+#include "cmlibs/zinc/sceneviewer.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
 #include "general/image_utilities.h"
@@ -146,7 +146,7 @@ Global types
 ------------
 */
 
-#include "opencmiss/zinc/sceneviewerinput.h"
+#include "cmlibs/zinc/sceneviewerinput.h"
 
 #define MAX_CLIP_PLANES (6)
 #define SCENE_VIEWER_PICK_SIZE 7.0

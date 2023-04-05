@@ -4,7 +4,7 @@
  * The interface to scene_json_export.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,8 @@
 #if !defined (SCENE_JSON_IMPORT_HPP)
 #define SCENE_JSON_IMPORT_HPP
 
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/scene.hpp"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/scene.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 
@@ -33,7 +33,7 @@ public:
 	void importGraphics(Json::Value &graphicsJson);
 
 private:
-	OpenCMISS::Zinc::Scene scene;
+	CMLibs::Zinc::Scene scene;
 	Json::Value root;
 	int overwrite;
 };

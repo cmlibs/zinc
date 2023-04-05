@@ -3,7 +3,7 @@
  *
  * Field operators that act on a mesh: integration etc.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,8 @@
 #include "computed_field/computed_field_mesh_operators.hpp"
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_element_private.hpp"
-#include "opencmiss/zinc/fieldmeshoperators.h"
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/fieldmeshoperators.h"
+#include "cmlibs/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "element/element_operations.h"

@@ -4,7 +4,7 @@
  * Objects for describing how elements / continuous field domains are
  * tessellated or sampled into graphics.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@
 #include <iterator>
 #include <list>
 #include <cstdlib>
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "description_io/tessellation_json_io.hpp"
 #include "general/debug.h"
 #include "general/manager_private.h"

@@ -3,7 +3,7 @@
  *
  * Evaluates stored/interpolated finite element fields.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,10 +12,10 @@
 #include <cassert>
 #include <cmath>
 #include <map>
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"

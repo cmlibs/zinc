@@ -3,7 +3,7 @@
  *
  * Class defining a domain consisting of a set of nodes.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,9 +11,9 @@
 #if !defined (FINITE_ELEMENT_NODESET_HPP)
 #define FINITE_ELEMENT_NODESET_HPP
 
-#include "opencmiss/zinc/types/fieldid.h"  // for cmzn_field_domain_type
-#include "opencmiss/zinc/types/nodeid.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/fieldid.h"  // for cmzn_field_domain_type
+#include "cmlibs/zinc/types/nodeid.h"
+#include "cmlibs/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"

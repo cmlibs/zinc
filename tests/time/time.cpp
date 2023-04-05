@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/timekeeper.h>
-#include <opencmiss/zinc/timenotifier.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/timekeeper.h>
+#include <cmlibs/zinc/timenotifier.h>
 
-#include "opencmiss/zinc/fieldfiniteelement.hpp"
-#include <opencmiss/zinc/timekeeper.hpp>
-#include <opencmiss/zinc/timenotifier.hpp>
+#include "cmlibs/zinc/fieldfiniteelement.hpp"
+#include <cmlibs/zinc/timekeeper.hpp>
+#include <cmlibs/zinc/timenotifier.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

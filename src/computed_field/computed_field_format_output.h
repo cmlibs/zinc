@@ -6,7 +6,7 @@ LAST MODIFIED : 14 December 2010
 DESCRIPTION :
 Implements computed fields that control the format_output behaviour.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

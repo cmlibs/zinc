@@ -4,14 +4,14 @@
  * The definition to graphics_json_export.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "opencmiss/zinc/graphics.hpp"
+#include "cmlibs/zinc/graphics.hpp"
 #include "description_io/graphics_json_export.hpp"
 #include "description_io/scene_json_export.hpp"
 #include "graphics/scene.hpp"
@@ -24,7 +24,7 @@ std::string SceneJsonExport::getExportString()
 	bool visibility = scene.getVisibilityFlag();
 	root["VisibilityFlag"] = visibility;
 	Json::Value graphics_settings;
-	OpenCMISS::Zinc::Graphics graphics = scene.getFirstGraphics();
+	CMLibs::Zinc::Graphics graphics = scene.getFirstGraphics();
 	while (graphics.isValid())
 	{
 		GraphicsJsonExport graphicsJsonExport = GraphicsJsonExport(graphics, -1);
@@ -35,7 +35,7 @@ std::string SceneJsonExport::getExportString()
 	root["Graphics"] = graphics_settings;
 	if (this->scene.hasTransformation())
 	{
-		OpenCMISS::Zinc::Field field = this->scene.getTransformationField();
+		CMLibs::Zinc::Field field = this->scene.getTransformationField();
 		if (field.isValid())
 		{
 			char *fieldName = field.getName();

@@ -1,5 +1,5 @@
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/shader_program.hpp"

@@ -7,7 +7,7 @@ DESCRIPTION :
 FE_element functions that utilise non finite element data structures and
 therefore cannot reside in finite element modules.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,9 @@ therefore cannot reside in finite element modules.
 #if !defined (ELEMENT_OPERATIONS_H)
 #define ELEMENT_OPERATIONS_H
 
-#include "opencmiss/zinc/types/fieldfiniteelementid.h"
-#include "opencmiss/zinc/types/fieldsubobjectgroupid.h"
-#include "opencmiss/zinc/types/nodesetid.h"
+#include "cmlibs/zinc/types/fieldfiniteelementid.h"
+#include "cmlibs/zinc/types/fieldsubobjectgroupid.h"
+#include "cmlibs/zinc/types/nodesetid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"

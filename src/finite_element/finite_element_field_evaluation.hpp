@@ -3,7 +3,7 @@
  *
  * Class for caching values and evaluating fields over elements.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 #if !defined (FINITE_ELEMENT_FIELD_EVALUATION_HPP)
 #define FINITE_ELEMENT_FIELD_EVALUATION_HPP
 
-#include <opencmiss/zinc/zincconfigure.h>
+#include <cmlibs/zinc/zincconfigure.h>
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_constants.hpp"
 #include "general/value.h"

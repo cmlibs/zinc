@@ -8,7 +8,7 @@ Functions for reading graphics object data from a file.
 ???DB.  7 June 1994.  Merged GTTEXT into GTPOINT and GTPOINTSET and added a
 	marker type and a marker size
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,7 @@ Functions for reading graphics object data from a file.
 #include <stdlib.h>
 #include <string.h>
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"

@@ -6,4 +6,4 @@ Python
 
 Install with::
 
-  pip install opencmiss.zinc
+  pip install cmlibs.zinc

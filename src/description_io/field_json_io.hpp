@@ -4,7 +4,7 @@
  * The interface to field_json_io.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,16 +13,16 @@
 #if !defined (FIELD_JSON_IO_HPP)
 #define FIELD_JSON_IO_HPP
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldmodule.hpp"
 #include "description_io/fieldmodule_json_io.hpp"
 #include "jsoncpp/json.h"
 #include <string>
 
-OpenCMISS::Zinc::Field importTypeSpecificField(
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings,
+CMLibs::Zinc::Field importTypeSpecificField(
+	CMLibs::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings,
 	FieldmoduleJsonImport *jsonImport);
 
 class FieldJsonIO
@@ -46,8 +46,8 @@ public:
 		mode(mode_in)
 	{  }
 
-	FieldJsonIO(const OpenCMISS::Zinc::Field &field_in,
-		const OpenCMISS::Zinc::Fieldmodule &fieldmodule_in, IOMode mode_in) :
+	FieldJsonIO(const CMLibs::Zinc::Field &field_in,
+		const CMLibs::Zinc::Fieldmodule &fieldmodule_in, IOMode mode_in) :
 		field(field_in), fieldmodule(fieldmodule_in), mode(mode_in)
 	{	}
 
@@ -63,8 +63,8 @@ public:
 
 protected:
 
-	OpenCMISS::Zinc::Field field;
-	OpenCMISS::Zinc::Fieldmodule fieldmodule;
+	CMLibs::Zinc::Field field;
+	CMLibs::Zinc::Fieldmodule fieldmodule;
 	IOMode mode;
 
 };

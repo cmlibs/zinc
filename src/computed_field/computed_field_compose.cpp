@@ -9,12 +9,12 @@ Implements a computed_field that uses evaluates one field, does a
 values and then evaluates a third field at that location.
 Essentially it is used to embed one mesh in the elements of another.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "opencmiss/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_private.hpp"

@@ -4,7 +4,7 @@ FILE : rendergl.cpp
 DESCRIPTION :
 GL rendering calls - API specific.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@ GL rendering calls - API specific.
 #include <stdio.h>
 #include <math.h>
 #include <list>
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #include "general/mystring.h"
 #include "general/debug.h"

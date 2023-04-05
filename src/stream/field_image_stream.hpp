@@ -4,7 +4,7 @@
  * The private interface to cmzn_field_image_stream.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,8 @@
 #if !defined (CMZN_REGION_STREAM_HPP)
 #define CMZN_REGION_STREAM_HPP
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldimage.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldimage.h"
 #include "general/image_utilities.h"
 #include "stream/stream_private.hpp"
 

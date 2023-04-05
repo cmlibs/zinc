@@ -4,7 +4,7 @@
  * Derived glyph type which creates a spectrum colour_bar which automatically
  * updates when the spectrum changes.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
 #ifndef GLYPH_COLOUR_BAR_HPP
 #define GLYPH_COLOUR_BAR_HPP
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "graphics/glyph.hpp"
 
 struct cmzn_spectrum;

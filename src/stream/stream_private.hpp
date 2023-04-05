@@ -4,7 +4,7 @@
  * The private interface to cmzn_stream.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@
 #include <list>
 #include <stdio.h>
 #include <string.h>
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/stream.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 

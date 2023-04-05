@@ -7,7 +7,7 @@
  FE_element functions that utilise non finite element data structures and
  therefore cannot reside in finite element modules.
  ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,17 +15,17 @@
 
 #include <cmath>
 #include <cstdlib>
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldconstant.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldlogicaloperators.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/fieldtime.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/nodetemplate.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldconstant.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldlogicaloperators.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/fieldtime.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/nodetemplate.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "element/element_operations.h"

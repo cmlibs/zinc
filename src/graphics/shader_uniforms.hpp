@@ -4,7 +4,7 @@
  * Objects for providing shaders uniforms values.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
 #if !defined (SHADER_UNIFORMS_HPP)
 #define SHADER_UNIFORMS_HPP
 
-#include "opencmiss/zinc/shader.h"
+#include "cmlibs/zinc/shader.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

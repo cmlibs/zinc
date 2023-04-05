@@ -3,7 +3,7 @@
  * 
  * Implementation of field parameters class.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,10 +12,10 @@
 #if !defined (CMZN_FIELDPARAMETERSPRIVATE_HPP)
 #define CMZN_FIELDPARAMETERSPRIVATE_HPP
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/fieldparameters.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/fieldparameters.h"
 #include "finite_element/finite_element_constants.hpp"
 
 class FE_field_parameters;

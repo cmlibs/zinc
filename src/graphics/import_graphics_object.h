@@ -6,7 +6,7 @@ LAST MODIFIED : 6 December 2004
 DESCRIPTION :
 Function prototype for reading graphics object data from a file.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

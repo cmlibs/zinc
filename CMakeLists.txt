@@ -1,5 +1,5 @@
 
-# OpenCMISS-Zinc Library
+# Zinc Library
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.10.2 LANGUAGES C CXX)
+project(Zinc VERSION 4.0.0 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
 set(Zinc_DEVELOPER_VERSION ".dev0")

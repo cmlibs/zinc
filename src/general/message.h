@@ -6,7 +6,7 @@ LAST MODIFIED : 11 June 1999
 DESCRIPTION :
 Global types and function prototypes for displaying messages.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ Global types and function prototypes for displaying messages.
 #if !defined (MESSAGE_H)
 #define MESSAGE_H
 
-#include "opencmiss/zinc/zincsharedobject.h"
+#include "cmlibs/zinc/zincsharedobject.h"
 
 /*
 Global types

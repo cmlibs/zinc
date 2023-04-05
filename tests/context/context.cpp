@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,10 +8,10 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/element.hpp>
-#include <opencmiss/zinc/fieldmodule.hpp>
-#include <opencmiss/zinc/region.hpp>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/fieldmodule.hpp>
+#include <cmlibs/zinc/region.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -24,8 +24,8 @@ TEST(cmzn_context, getVersion)
 	const char *revision;
 
 	EXPECT_EQ(CMZN_RESULT_OK, result = cmzn_context_get_version(zinc.context, &version[0]));
-	EXPECT_GE(version[0], 3);
-	EXPECT_GE(version[1], 10);
+    EXPECT_GE(version[0], 4);
+    EXPECT_GE(version[1], 0);
 	EXPECT_GE(version[2], 0);
 
 	EXPECT_EQ(cmzn_context_get_revision(0), (const char *)0);

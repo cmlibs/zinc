@@ -7,7 +7,7 @@ DESCRIPTION :
 A class to provide a consistent IO interface to files, memory, gzip and bzip
 streams.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@ streams.
 #define IO_STREAM_H
 
 #include "general/object.h"
-#include "opencmiss/zinc/types/streamid.h"
+#include "cmlibs/zinc/types/streamid.h"
 /*
 Global types
 ------------

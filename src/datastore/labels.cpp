@@ -4,13 +4,13 @@
  * Implements a set of labels identifying nodes, elements, field components.
  * Used to index a dimension of a datastore map.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "general/message.h"
 

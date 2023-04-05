@@ -4,7 +4,7 @@
  * Private header file of cmzn_element, finite element meshes.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,9 +12,9 @@
 #if !defined (CMZN_ELEMENT_PRIVATE_HPP)
 #define CMZN_ELEMENT_PRIVATE_HPP
 
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/region.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/region.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "datastore/labelschangelog.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_mesh.hpp"

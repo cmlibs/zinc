@@ -4,7 +4,7 @@
  * Implements a "group" computed_field which group regions, 
  * node and data point component.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,8 @@
 #if !defined (COMPUTED_FIELD_GROUP_HPP)
 #define COMPUTED_FIELD_GROUP_HPP
 
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldgroup.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldgroup.h"
 #include "computed_field/computed_field_group_base.hpp"
 #include <map>
 

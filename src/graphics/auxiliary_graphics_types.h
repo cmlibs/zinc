@@ -10,7 +10,7 @@ specific to any of them. Examples are:
 represent curves in three xi-directions;
 - Triple;
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,8 @@ represent curves in three xi-directions;
 #if !defined (AUXILIARY_GRAPHICS_TYPES_H)
 #define AUXILIARY_GRAPHICS_TYPES_H
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/types/graphicsid.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/graphicsid.h"
 
 #include "general/enumerator.h"
 //#if defined (WIN32_SYSTEM)

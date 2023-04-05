@@ -7,7 +7,7 @@ generate triangular surface and export the surface into netgen. After netgen ret
 the volume mesh, CMGUI will visualize them to the user.
 
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,16 +17,16 @@ the volume mesh, CMGUI will visualize them to the user.
 #include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/elementbasis.h"
-#include "opencmiss/zinc/elementtemplate.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/nodetemplate.h"
-#include "opencmiss/zinc/region.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementtemplate.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/nodetemplate.h"
+#include "cmlibs/zinc/region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/generate_mesh_netgen.h"

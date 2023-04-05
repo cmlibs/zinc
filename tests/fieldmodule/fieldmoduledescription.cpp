@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,39 +8,39 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/element.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldcache.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/fieldarithmeticoperators.h>
-#include <opencmiss/zinc/fieldcomposite.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/fieldconditional.h>
-#include <opencmiss/zinc/fieldcoordinatetransformation.h>
-#include <opencmiss/zinc/fieldderivatives.h>
-#include <opencmiss/zinc/fieldfiniteelement.h>
-#include <opencmiss/zinc/fieldgroup.h>
-#include <opencmiss/zinc/fieldlogicaloperators.h>
-#include <opencmiss/zinc/fieldmatrixoperators.h>
-#include <opencmiss/zinc/fieldmeshoperators.h>
-#include <opencmiss/zinc/fieldnodesetoperators.h>
-#include <opencmiss/zinc/fieldsubobjectgroup.h>
-#include <opencmiss/zinc/fieldtrigonometry.h>
-#include <opencmiss/zinc/fieldvectoroperators.h>
-#include <opencmiss/zinc/fieldtime.h>
-#include <opencmiss/zinc/mesh.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/nodeset.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/stream.h>
-#include <opencmiss/zinc/streamregion.h>
-#include <opencmiss/zinc/timekeeper.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/element.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldcache.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/fieldarithmeticoperators.h>
+#include <cmlibs/zinc/fieldcomposite.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/fieldconditional.h>
+#include <cmlibs/zinc/fieldcoordinatetransformation.h>
+#include <cmlibs/zinc/fieldderivatives.h>
+#include <cmlibs/zinc/fieldfiniteelement.h>
+#include <cmlibs/zinc/fieldgroup.h>
+#include <cmlibs/zinc/fieldlogicaloperators.h>
+#include <cmlibs/zinc/fieldmatrixoperators.h>
+#include <cmlibs/zinc/fieldmeshoperators.h>
+#include <cmlibs/zinc/fieldnodesetoperators.h>
+#include <cmlibs/zinc/fieldsubobjectgroup.h>
+#include <cmlibs/zinc/fieldtrigonometry.h>
+#include <cmlibs/zinc/fieldvectoroperators.h>
+#include <cmlibs/zinc/fieldtime.h>
+#include <cmlibs/zinc/mesh.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/nodeset.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/stream.h>
+#include <cmlibs/zinc/streamregion.h>
+#include <cmlibs/zinc/timekeeper.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,36 +8,36 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/fieldarithmeticoperators.h>
-#include <opencmiss/zinc/fieldcomposite.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/fieldvectoroperators.h>
-#include <opencmiss/zinc/graphics.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/scenefilter.h>
-#include <opencmiss/zinc/streamscene.h>
-#include <opencmiss/zinc/stream.h>
-#include <opencmiss/zinc/sceneviewer.h>
-#include <opencmiss/zinc/spectrum.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/fieldarithmeticoperators.h>
+#include <cmlibs/zinc/fieldcomposite.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/fieldvectoroperators.h>
+#include <cmlibs/zinc/graphics.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/scenefilter.h>
+#include <cmlibs/zinc/streamscene.h>
+#include <cmlibs/zinc/stream.h>
+#include <cmlibs/zinc/sceneviewer.h>
+#include <cmlibs/zinc/spectrum.h>
 
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldimage.hpp>
-#include <opencmiss/zinc/fieldtime.hpp>
-#include <opencmiss/zinc/streamimage.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
-#include <opencmiss/zinc/graphics.hpp>
-#include <opencmiss/zinc/material.hpp>
-#include <opencmiss/zinc/scene.hpp>
-#include <opencmiss/zinc/types/scenecoordinatesystem.hpp>
-#include <opencmiss/zinc/scenefilter.hpp>
-#include <opencmiss/zinc/sceneviewer.hpp>
-#include <opencmiss/zinc/spectrum.hpp>
-#include <opencmiss/zinc/streamscene.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldimage.hpp>
+#include <cmlibs/zinc/fieldtime.hpp>
+#include <cmlibs/zinc/streamimage.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/graphics.hpp>
+#include <cmlibs/zinc/material.hpp>
+#include <cmlibs/zinc/scene.hpp>
+#include <cmlibs/zinc/types/scenecoordinatesystem.hpp>
+#include <cmlibs/zinc/scenefilter.hpp>
+#include <cmlibs/zinc/sceneviewer.hpp>
+#include <cmlibs/zinc/spectrum.hpp>
+#include <cmlibs/zinc/streamscene.hpp>
 
 #include "test_resources.h"
 #include "utilities/testenum.hpp"

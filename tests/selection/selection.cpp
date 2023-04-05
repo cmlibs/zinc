@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,20 +8,20 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldgroup.h>
-#include <opencmiss/zinc/fieldsubobjectgroup.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/selection.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldgroup.h>
+#include <cmlibs/zinc/fieldsubobjectgroup.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/selection.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldgroup.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/node.hpp>
-#include <opencmiss/zinc/scene.hpp>
-#include <opencmiss/zinc/selection.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
+#include <cmlibs/zinc/node.hpp>
+#include <cmlibs/zinc/scene.hpp>
+#include <cmlibs/zinc/selection.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

@@ -7,7 +7,7 @@
  * evaluate derivative, including links to next lower FieldDerivative so
  * can evaluate downstream derivatives using rules.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@
 #if !defined (__FIELD_DERIVATIVE_HPP__)
 #define __FIELD_DERIVATIVE_HPP__
 
-#include "opencmiss/zinc/types/regionid.h"
+#include "cmlibs/zinc/types/regionid.h"
 
 class FE_mesh;
 struct cmzn_fieldparameters;

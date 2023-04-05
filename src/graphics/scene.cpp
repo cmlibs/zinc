@@ -2,7 +2,7 @@
 FILE : scene.cpp
 
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,17 +13,17 @@ FILE : scene.cpp
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/glyph.h"
-#include "opencmiss/zinc/graphics.h"
-#include "opencmiss/zinc/material.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/scenepicker.h"
-#include "opencmiss/zinc/streamscene.h"
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/timekeeper.h"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/fieldsubobjectgroup.h"
+#include "cmlibs/zinc/glyph.h"
+#include "cmlibs/zinc/graphics.h"
+#include "cmlibs/zinc/material.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/scenepicker.h"
+#include "cmlibs/zinc/streamscene.h"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/timekeeper.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.hpp"
