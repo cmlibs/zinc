@@ -47,6 +47,7 @@ TEST(cmzn_region, build_tree)
 	EXPECT_EQ(alf, tmp = cmzn_region_get_previous_sibling(fred));
 	cmzn_region_destroy(&tmp);
     EXPECT_EQ(fred, tmp = cmzn_region_find_subregion_at_path(zinc.root_region, "bob/freddyboy"));
+    cmzn_region_destroy(&tmp);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_remove_child(bob, fred));
     EXPECT_EQ(static_cast<cmzn_region_id>(0), tmp = cmzn_region_find_subregion_at_path(zinc.root_region, "bob/freddyboy"));
