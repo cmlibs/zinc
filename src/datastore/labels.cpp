@@ -279,7 +279,7 @@ DsLabelIndex DsLabels::getFirstIndex() const
 	return this->identifierToIndexMap.get_first_object();
 }
 
-DsLabelIterator *DsLabels::createLabelIterator(bool_array<DsLabelIndex> *condition) const
+DsLabelIterator *DsLabels::createLabelIterator(const bool_array<DsLabelIndex> *condition) const
 {
 	DsLabelIterator *iterator = new DsLabelIterator();
 	if (iterator)

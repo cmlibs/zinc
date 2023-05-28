@@ -212,6 +212,7 @@ class Standard_basis_function_evaluation
 public:
 	Standard_basis_function_evaluation() :
 		standard_basis_function(0),
+		standard_basis_function_arguments(),
 		number_of_basis_functions(0),
 		basis_function_values(0),
 		number_of_values_allocated(0),

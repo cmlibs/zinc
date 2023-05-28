@@ -157,7 +157,7 @@ public:
 
 inline bool operator==(const Mesh& a, const Mesh& b)
 {
-	return cmzn_mesh_match(a.getId(), b.getId());
+	return a.getId() == b.getId();
 }
 
 inline Mesh Element::getMesh() const

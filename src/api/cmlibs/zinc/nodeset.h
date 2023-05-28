@@ -215,15 +215,6 @@ ZINC_API char *cmzn_nodeset_get_name(cmzn_nodeset_id nodeset);
 ZINC_API int cmzn_nodeset_get_size(cmzn_nodeset_id nodeset);
 
 /**
- * Check if two nodeset handles refer to the same object.
- *
- * @param nodeset1  The first nodeset to match.
- * @param nodeset2  The second nodeset to match.
- * @return  Boolean true if the two nodesets match, false if not.
- */
-ZINC_API bool cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodeset2);
-
-/**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
  * get the nodeset group specific interface for add/remove functions.
  *

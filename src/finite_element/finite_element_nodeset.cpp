@@ -441,7 +441,7 @@ void FE_nodeset::removeNodeiterator(cmzn_nodeiterator *iterator)
 * @param labelsGroup  Optional group to iterate over.
 * @return  Handle to node iterator at position before first, or NULL if error.
 */
-cmzn_nodeiterator *FE_nodeset::createNodeiterator(DsLabelsGroup *labelsGroup)
+cmzn_nodeiterator *FE_nodeset::createNodeiterator(const DsLabelsGroup *labelsGroup)
 {
 	DsLabelIterator *labelIterator = labelsGroup ? labelsGroup->createLabelIterator() : this->labels.createLabelIterator();
 	if (!labelIterator)
@@ -841,10 +841,10 @@ int FE_nodeset::endDestroyNodes()
 		if (numberDestroyed > 0)
 		{
 			// notify groups that all nodes were destroyed
-			for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-				groupIter != this->groups.end(); ++groupIter)
+			for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+				mapperIter != this->mappers.end(); ++mapperIter)
 			{
-				(*groupIter)->destroyedAllObjects();
+				(*mapperIter)->destroyedAllObjects();
 			}
 		}
 	}
@@ -853,19 +853,19 @@ int FE_nodeset::endDestroyNodes()
 		// more efficient to notify of one index change
 		DsLabelIndex nodeIndex = -1;
 		this->destroyedLabelsGroup->incrementIndex(nodeIndex);
-		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-			groupIter != this->groups.end(); ++groupIter)
+		for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+			mapperIter != this->mappers.end(); ++mapperIter)
 		{
-			(*groupIter)->destroyedObject(nodeIndex);
+			(*mapperIter)->destroyedObject(nodeIndex);
 		}
 	}
 	else if (numberDestroyed > 0)
 	{
 		// notify groups that a group of nodes were destroyed
-		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-			groupIter != this->groups.end(); ++groupIter)
+		for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+			mapperIter != this->mappers.end(); ++mapperIter)
 		{
-			(*groupIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
+			(*mapperIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
 		}
 	}
 	cmzn::Deaccess(this->destroyedLabelsGroup);

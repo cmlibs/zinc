@@ -15,6 +15,7 @@
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region_private.h"
 #include "general/object.h"
@@ -1997,7 +1998,7 @@ void FE_mesh::removeElementiterator(cmzn_elementiterator *iterator)
  * @param labelsGroup  Optional group to iterate over.
  * @return  Handle to element_iterator at position before first, or NULL if error.
  */
-cmzn_elementiterator *FE_mesh::createElementiterator(DsLabelsGroup *labelsGroup)
+cmzn_elementiterator *FE_mesh::createElementiterator(const DsLabelsGroup *labelsGroup)
 {
 	DsLabelIterator *labelIterator = labelsGroup ? labelsGroup->createLabelIterator() : this->labels.createLabelIterator();
 	if (!labelIterator)
@@ -3198,10 +3199,10 @@ int FE_mesh::endDestroyElements()
 		if (numberDestroyed > 0)
 		{
 			// notify groups that all elements were destroyed
-			for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-				groupIter != this->groups.end(); ++groupIter)
+			for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+				mapperIter != this->mappers.end(); ++mapperIter)
 			{
-				(*groupIter)->destroyedAllObjects();
+				(*mapperIter)->destroyedAllObjects();
 			}
 		}
 	}
@@ -3210,19 +3211,19 @@ int FE_mesh::endDestroyElements()
 		// more efficient to notify of one index change
 		DsLabelIndex elementIndex = -1;
 		this->destroyedLabelsGroup->incrementIndex(elementIndex);
-		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-			groupIter != this->groups.end(); ++groupIter)
+		for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+			mapperIter != this->mappers.end(); ++mapperIter)
 		{
-			(*groupIter)->destroyedObject(elementIndex);
+			(*mapperIter)->destroyedObject(elementIndex);
 		}
 	}
 	else if (numberDestroyed > 0)
 	{
 		// notify groups that a group of elements were destroyed
-		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-			groupIter != this->groups.end(); ++groupIter)
+		for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+			mapperIter != this->mappers.end(); ++mapperIter)
 		{
-			(*groupIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
+			(*mapperIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
 		}
 	}
 	if (this->faceMesh)

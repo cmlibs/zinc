@@ -132,7 +132,7 @@ public:
 
 inline bool operator==(const Nodeset& a, const Nodeset& b)
 {
-	return cmzn_nodeset_match(a.getId(), b.getId());
+	return a.getId() == b.getId();
 }
 
 inline Nodeset Node::getNodeset() const

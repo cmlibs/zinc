@@ -285,15 +285,6 @@ ZINC_API char *cmzn_mesh_get_name(cmzn_mesh_id mesh);
 ZINC_API int cmzn_mesh_get_size(cmzn_mesh_id mesh);
 
 /**
- * Check if two mesh handles refer to the same object.
- *
- * @param mesh1  The first mesh to match.
- * @param mesh2  The second mesh to match.
- * @return  Boolean true if the two meshes match, false if not.
- */
-ZINC_API bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
-
-/**
  * If the mesh is a mesh group i.e. subset of elements from a master mesh,
  * get the mesh group specific interface for add/remove functions.
  *

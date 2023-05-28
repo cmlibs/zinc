@@ -11,6 +11,7 @@
 #if !defined (FINITE_ELEMENT_DOMAIN_HPP)
 #define FINITE_ELEMENT_DOMAIN_HPP
 
+#include "cmlibs/zinc/types/regionid.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "general/refcounted.hpp"
@@ -18,13 +19,13 @@
 
 struct FE_region;
 
-/** Abstract base class for object containing groups of labels owned by an FE_domain.
+/** Abstract base class for object mapping from labels owned by an FE_domain.
  * Interface for notifying when the objects are destroyed */
-class FE_domain_group
+class FE_domain_mapper
 {
 protected:
 
-	virtual ~FE_domain_group()
+	virtual ~FE_domain_mapper()
 	{
 	}
 
@@ -38,7 +39,7 @@ public:
 
 	/** Notify that a group of object indexes have been removed, so must ensure
 	 * indexes are not in callee group */
-	virtual void destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup) = 0;
+	virtual void destroyedObjectGroup(const DsLabelsGroup& destroyedLabelsGroup) = 0;
 };
 
 /**
@@ -57,9 +58,9 @@ protected:
 	// log of objects added, removed or otherwise changed
 	DsLabelsChangeLog *changeLog;
 
-	// list of objects containing groups of labels owned by this FE_domain
+	// list of objects mapping from labels owned by this FE_domain
 	// to notify when objects are destroyed
-	std::list<FE_domain_group *> groups;
+	std::list<FE_domain_mapper *> mappers;
 
 	// when objects are destroyed, store their indexes to notify groups
 	DsLabelsGroup *destroyedLabelsGroup;
@@ -90,6 +91,9 @@ public:
 	{
 		return this->labels;
 	}
+
+	/** @return  Non-accessed owning region, or nullptr if detached during cleanup */
+	cmzn_region* getRegion() const;
 
 	virtual void clear();
 
@@ -122,16 +126,16 @@ public:
 
 	DsLabelsGroup *createLabelsGroup();
 
-	/** Add group for notification when objects destroyed */
-	void addGroup(FE_domain_group *group)
+	/** Add domain mapper for notifying when objects destroyed */
+	void addMapper(FE_domain_mapper* mapper)
 	{
-		this->groups.push_back(group);
+		this->mappers.push_back(mapper);
 	}
 
-	/** Remove group for notification when objects destroyed */
-	void removeGroup(FE_domain_group *group)
+	/** Remove domain mapper for notifying when objects destroyed */
+	void removeMapper(FE_domain_mapper* mapper)
 	{
-		this->groups.remove(group);
+		this->mappers.remove(mapper);
 	}
 };
 

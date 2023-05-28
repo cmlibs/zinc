@@ -21,7 +21,6 @@
 #include "types/meshid.h"
 #include "types/nodesetid.h"
 #include "types/regionid.h"
-#include "types/fieldsubobjectgroupid.h"
 
 #include "cmlibs/zinc/zincsharedobject.h"
 
@@ -211,98 +210,116 @@ ZINC_API int cmzn_field_group_set_subelement_handling_mode(cmzn_field_group_id g
 	enum cmzn_field_group_subelement_handling_mode mode);
 
 /**
- * Create a group field for the specified subregion, include it in the specified
- * group and return a handle to the newly created sub-group field.
- * The specified region must be in the tree of this group's local/owning region
+ * Create a group field for the specified subregion, include it in the
+ * specified group and return a handle to the newly created sub-group field.
+ * The subregion must be in the tree of this group's local/owning region
  * and not already in the group.
  *
  * @param group  Handle to group field to modify.
  * @param subregion  Handle to region to create a subgroup for.
- * @return  Handle to new, empty subregion group field, or NULL/invalid handle on failure.
+ * @return  Handle to new, empty subregion group field, or invalid handle on
+ * failure, including if subregion field group already exists.
  */
 ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 	cmzn_field_group_id group, cmzn_region_id subregion);
 
 /**
  * Get the group field for subregion in the specified group if it exists.
- * The specified region must be in the tree of this group's local/owning region.
+ * The subregion must be in the tree of this group's local/owning region.
  *
  * @param group  Handle to group field to query.
  * @param subregion  Handle to region to get the subgroup for.
- * @return  Handle to subregion group field, or NULL/invalid handle if not found or failed.
+ * @return  Handle to subregion group field, or invalid handle if not found or
+ * failed.
  */
 ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_field_group_id group,
 	cmzn_region_id subregion);
 
 /**
- * Create and return a node group field compatible with the supplied
- * nodeset, i.e. able to contain nodes from its master nodeset.
- * The node group field is registered as a sub-object group for this group.
- * The nodeset can be from the group's own region or any subregion of it.
- * Subregion groups for any intermediate and the final nodeset-owning regions
- * are automatically created to contain the node group, if needed.
- * Fails if a compatible node group field already exists.
+ * Get or create a group field for the specified subregion, include it in the
+ * specified group and return a handle to the newly created sub-group field.
+ * The subregion must be in the tree of this group's local/owning region.
  *
- * @param group  Handle to group field to modify.
- * @param nodeset  Handle to a nodeset the node group is to be compatible with.
- * If not already a master nodeset, the master is obtained from it.
- * @return  Handle to new, empty node group field, or NULL/invalid handle on failure.
+ * @param group  Handle to group field to query or modify.
+ * @param subregion  Handle to region to create a subgroup for.
+ * @return  Handle to subregion group field, or invalid handle on failure.
  */
-ZINC_API cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
+ZINC_API cmzn_field_group_id cmzn_field_group_get_or_create_subregion_field_group(
+	cmzn_field_group_id group, cmzn_region_id subregion);
+
+/**
+ * Create a nodeset group in this group which holds nodes compatible with the
+ * supplied nodeset, if not already existing. Can create nodeset group for a
+ * subregion, along with any subregion groups for it and intermediate regions.
+ *
+ * @param group  Group field to modify.
+ * @param nodeset  A nodeset from the region or any subregion.
+ * @return  Handle to new, empty nodeset group, or invalid handle on failure,
+ * including if nodeset group already exists.
+ */
+ZINC_API cmzn_nodeset_group_id cmzn_field_group_create_nodeset_group(
 	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /**
- * Find and return handle to the sub-object node group compatible with the
- * specified nodeset, if one exists for the group. The nodeset can be from
- * the group's own region or any subregion of it.
+ * Get the nodeset group in this group which holds nodes compatible with the
+ * supplied nodeset, if it exists. Can get nodeset group from a subregion.
  *
- * @param group  Handle to group field to query.
- * @param nodeset  Handle to a nodeset the node group is to be compatible with.
- * If not already a master nodeset, the master is obtained from it.
- * @return  Handle to node group field, or NULL/invalid handle if none or failed.
+ * @param group  Group field to query.
+ * @param nodeset  A nodeset from the region or any subregion.
+ * @return  Handle to existing nodeset group field, or invalid handle if none
+ * or failed.
  */
-ZINC_API cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
+ZINC_API cmzn_nodeset_group_id cmzn_field_group_get_nodeset_group(
 	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /**
- * Create and return an element group field compatible with the
- * supplied mesh, i.e. able to contain elements from its master mesh. The
- * element group field is registered as a sub-object group for this group.
- * The mesh can be from the group's own region or any subregion of it.
- * Subregion groups for any intermediate and the final mesh-owning regions are
- * automatically created to contain the element group, if needed.
- * Fails if a compatible element group field already exists.
+ * Get or create a nodeset group in this group which holds nodes compatible
+ * with the supplied nodeset. Can get or create nodeset group for a subregion,
+ * and create any subregion groups for it and intermediate regions.
  *
- * @param group  Handle to group field to modify.
- * @param mesh  Handle to a mesh the element group is to be compatible with.
- * If not already a master mesh, the master is obtained from it.
- * @return  Handle to new, empty element group field, or NULL/invalid handle on failure.
+ * @param group  Group field to query or modify.
+ * @param nodeset  A nodeset from the region or any subregion.
+ * @return  Handle to nodeset group, or invalid handle on failure.
  */
-ZINC_API cmzn_field_element_group_id cmzn_field_group_create_field_element_group(
+ZINC_API cmzn_nodeset_group_id cmzn_field_group_get_or_create_nodeset_group(
+	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
+
+/**
+ * Create a mesh group in this group which holds elements compatible with the
+ * supplied mesh, if not already existing. Can create mesh group for a
+ * subregion, along with any subregion groups for it and intermediate regions.
+ *
+ * @param group  Group field to modify.
+ * @param mesh  A mesh from the region or any subregion.
+ * @return  Handle to new, empty mesh group, or invalid handle on failure,
+ * including if mesh group already exists.
+ */
+ZINC_API cmzn_mesh_group_id cmzn_field_group_create_mesh_group(
 	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /**
- * Find and return handle to the sub-object element group compatible with the
- * specified mesh, if one exists for the group.
- * The mesh can be from the group's own region or any subregion of it. 
+ * Get the mesh group in this group which holds nodes compatible with the
+ * supplied mesh, if it exists. Can get mesh group from a subregion.
  *
- * @param group  Handle to group field to query.
- * @param mesh  Handle to a mesh the element group is to be compatible with.
- * If not already a master mesh, the master is obtained from it.
- * @return  Handle to element group field, or NULL/invalid handle if none or failed.
+ * @param group  Group field to query.
+ * @param mesh  A mesh from the region or any subregion.
+ * @return  Handle to existing mesh group field, or invalid handle if none
+ * or failed.
  */
-ZINC_API cmzn_field_element_group_id cmzn_field_group_get_field_element_group(
+ZINC_API cmzn_mesh_group_id cmzn_field_group_get_mesh_group(
 	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /**
- * Get a subgroup of the given group for the specified domain.
+ * Get or create a mesh group in this group which holds nodes compatible
+ * with the supplied mesh. Can get or create mesh group for a subregion,
+ * and create any subregion groups for it and intermediate regions.
  *
- * @param group the group field
- * @param domain the domain field
- * @return  Handle to field representing subobject group, or NULL/invalid handle if none or failed.
+ * @param group  Group field to query or modify.
+ * @param mesh  A mesh from the region or any subregion.
+ * @return  Handle to mesh group, or invalid handle on failure.
  */
-ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_field_for_domain_field(
-	cmzn_field_group_id group, cmzn_field_id domain);
+ZINC_API cmzn_mesh_group_id cmzn_field_group_get_or_create_mesh_group(
+	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /**
  * Return the first non-empty subregion group in the group tree including itself.
