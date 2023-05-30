@@ -63,6 +63,11 @@ public:
 		return cmzn_nodeset::containsNode(node) && this->labelsGroup->hasIndex(node->getIndex());
 	}
 
+	bool containsIndex(DsLabelIndex elementIndex) const
+	{
+		return this->labelsGroup->hasIndex(elementIndex);
+	}
+
 	virtual cmzn_nodeiterator* createNodeiterator() const
 	{
 		return this->feNodeset->createNodeiterator(this->labelsGroup);
@@ -75,6 +80,11 @@ public:
 
 	/** @return  Non-accessed node, or nullptr if not found */
 	virtual cmzn_node* findNodeByIdentifier(int identifier) const;
+
+	const DsLabelsGroup* getLabelsGroup() const
+	{
+		return this->labelsGroup;
+	}
 
 	/** @return  Allocated name as GROUP_NAME.MESH_NAME, or nullptr if failed */
 	virtual char* getName() const;
@@ -89,6 +99,8 @@ public:
 	{
 		return this->group;
 	}
+	/** @return  True if nodeset group has recorded changes in membership */
+	virtual bool cmzn_nodeset_group::hasMembershipChanges() const;
 
 	/** @return  Result OK if added, ERROR_ALREADY_EXISTS if already in group,
 	 * ERROR_ARGUMENT if invalid node */

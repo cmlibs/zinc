@@ -12,7 +12,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
-#include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "mesh/nodeset.hpp"
 #include "node/nodetemplate.hpp"
 #include "region/cmiss_region.hpp"
@@ -92,9 +92,21 @@ cmzn_nodeset* cmzn_nodeset::getMasterNodeset() const
 	return region->findNodesetByFieldDomainType(this->feNodeset->getFieldDomainType());
 }
 
+bool cmzn_nodeset::hasMembershipChanges() const
+{
+	return this->feNodeset->hasMembershipChanges();
+}
+
 cmzn_region* cmzn_nodeset::getRegion() const
 {
-	return FE_region_get_cmzn_region(this->feNodeset->get_FE_region());
+	// gracefully handle FE_nodeset being orphaned at cleanup time
+	FE_region* feRegion = this->feNodeset->get_FE_region();
+	if (feRegion)
+	{
+		return feRegion->getRegion();
+	}
+	return nullptr;
+
 }
 
 /*

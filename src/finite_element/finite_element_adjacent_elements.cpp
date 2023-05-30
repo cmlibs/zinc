@@ -16,7 +16,6 @@ indexed_multi_range.
 
 #include "general/debug.h"
 #include "general/indexed_multi_range.h"
-#include "mesh/cmiss_element_private.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
@@ -24,6 +23,7 @@ indexed_multi_range.
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
+#include "mesh/mesh.hpp"
 
 
 namespace {
@@ -62,7 +62,7 @@ int FE_field_add_to_list_if_coordinate(FE_field *field, void *feFieldListVoid)
 }
 
 AdjacentElements1d::AdjacentElements1d(cmzn_mesh_id meshIn, cmzn_field_id fieldIn) :
-	mesh(cmzn_mesh_get_FE_mesh_internal(meshIn)),
+	mesh(meshIn->getFeMesh()),
 	nodeset(this->mesh ? this->mesh->getNodeset() : 0),
 	node_element_list(0)
 {
@@ -70,7 +70,7 @@ AdjacentElements1d::AdjacentElements1d(cmzn_mesh_id meshIn, cmzn_field_id fieldI
 	if (0 == NUMBER_IN_LIST(FE_field)(feFieldList))
 	{
 		// use any coordinate fields
-		FE_region_for_each_FE_field(cmzn_mesh_get_FE_region_internal(meshIn), FE_field_add_to_list_if_coordinate, (void *)feFieldList);
+		FE_region_for_each_FE_field(meshIn->getFeMesh()->get_FE_region(), FE_field_add_to_list_if_coordinate, (void *)feFieldList);
 	}
 	FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_add_unique_mft_to_vector, static_cast<void*>(this), feFieldList);
 	DESTROY(LIST(FE_field))(&feFieldList);

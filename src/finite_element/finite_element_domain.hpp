@@ -111,6 +111,16 @@ public:
 		return this->changeLog;
 	}
 
+	bool hasMembershipChanges() const
+	{
+		if (this->changeLog)
+		{
+			return this->changeLog->getChangeSummary() &
+				(DS_LABEL_CHANGE_TYPE_ADD | DS_LABEL_CHANGE_TYPE_REMOVE);
+		}
+		return false;
+	}
+
 	/** get size i.e. number of object/labels in domain */
 	int getSize() const
 	{

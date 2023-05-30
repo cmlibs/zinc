@@ -21,6 +21,7 @@
 #include "general/block_array.hpp"
 #include "general/enumerator.h"
 #include "general/list.h"
+#include "general/value.h"
 #include <list>
 
 class FE_nodeset;

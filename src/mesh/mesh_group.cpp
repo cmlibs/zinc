@@ -468,6 +468,12 @@ char* cmzn_mesh_group::getName() const
 	return name;
 }
 
+bool cmzn_mesh_group::hasMembershipChanges() const
+{
+	return MANAGER_CHANGE_NONE(Computed_field) !=
+		cmzn_field_group_base_cast(this->group)->manager_change_status;
+}
+
 int cmzn_mesh_group::addElement(cmzn_element* element)
 {
 	cmzn_region* region = this->getRegion();

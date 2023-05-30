@@ -118,11 +118,12 @@ int cmzn_elementbasis::isValid() const
 	return return_code;
 }
 
-/** @return  Accessed FE_basis, or NULL on error */
 FE_basis* cmzn_elementbasis::getFeBasis() const
 {
-	if (!isValid())
-		return 0;
+	if (!this->isValid())
+	{
+		return nullptr;
+	}
 	const int length = dimension * (dimension + 1) / 2 + 1;
 	int* int_basis_type_array;
 	if (!ALLOCATE(int_basis_type_array, int, length))

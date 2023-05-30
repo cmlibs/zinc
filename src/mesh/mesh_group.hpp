@@ -91,6 +91,11 @@ public:
 		return cmzn_mesh::containsElement(element) && this->labelsGroup->hasIndex(element->getIndex());
 	}
 
+	bool containsIndex(DsLabelIndex elementIndex) const
+	{
+		return this->labelsGroup->hasIndex(elementIndex);
+	}
+
 	virtual cmzn_elementiterator* createElementiterator() const
 	{
 		return this->feMesh->createElementiterator(this->labelsGroup);
@@ -103,6 +108,11 @@ public:
 
 	/** @return  Non-accessed element, or nullptr if not found */
 	virtual cmzn_element* findElementByIdentifier(int identifier) const;
+
+	const DsLabelsGroup* getLabelsGroup() const
+	{
+		return this->labelsGroup;
+	}
 
 	/** @return  Allocated name as GROUP_NAME.MESH_NAME, or nullptr if failed */
 	virtual char* getName() const;
@@ -117,6 +127,9 @@ public:
 	{
 		return this->group;
 	}
+
+	/** @return  True if mesh group has recorded changes in membership */
+	virtual bool hasMembershipChanges() const;
 
 	int addElement(cmzn_element* element);
 

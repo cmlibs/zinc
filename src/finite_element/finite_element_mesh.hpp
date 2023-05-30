@@ -13,6 +13,7 @@
 
 #include "cmlibs/zinc/types/elementid.h"
 #include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/types/fieldcacheid.h"
 #include "cmlibs/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"

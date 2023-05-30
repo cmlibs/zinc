@@ -13,11 +13,12 @@
 #include "cmlibs/zinc/elementtemplate.h"
 #include "cmlibs/zinc/fieldgroup.h"
 #include "cmlibs/zinc/fieldmodule.h"
-#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "cmlibs/zinc/mesh.h"
 #include "cmlibs/zinc/node.h"
 #include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/region.h"
 #include "cmlibs/zinc/timesequence.h"
+#include "element/elementtemplate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
@@ -32,7 +33,7 @@
 #include "general/io_stream.h"
 #include "general/mystring.h"
 #include "general/message.h"
-#include "mesh/cmiss_element_private.hpp"
+#include "region/cmiss_region.hpp"
 
 #include <cmath>
 #include <ctype.h>
@@ -583,7 +584,7 @@ public:
 
 	void clearRegion()
 	{
-		cmzn_region_destroy(&(this->region));
+		cmzn_region::deaccess(this->region);
 		cmzn_fieldmodule_destroy(&(this->fieldmodule));
 		this->fe_region = nullptr;
 	}
@@ -593,7 +594,7 @@ public:
 		if (!regionIn)
 			return false;
 		this->clearRegion();
-		this->region = cmzn_region_access(regionIn);
+		this->region = regionIn->access();
 		this->fieldmodule = cmzn_region_get_fieldmodule(this->region);
 		this->fe_region = this->region->get_FE_region();
 		this->clearGroup();
@@ -657,15 +658,8 @@ public:
 	{
 		if ((!this->meshGroup) && (this->fieldGroup) && (this->mesh))
 		{
-			cmzn_mesh *extMesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, this->mesh->getDimension());
-			cmzn_field_element_group_id fieldElementGroup = cmzn_field_group_get_field_element_group(this->fieldGroup, extMesh);
-			if (!fieldElementGroup)
-			{
-				fieldElementGroup = cmzn_field_group_create_field_element_group(this->fieldGroup, extMesh);
-			}
-			this->meshGroup = cmzn_field_element_group_get_mesh_group(fieldElementGroup);
-			cmzn_field_element_group_destroy(&fieldElementGroup);
-			cmzn_mesh_destroy(&extMesh);
+			cmzn_mesh *extMesh = this->region->findMeshByDimension(this->mesh->getDimension());
+			this->meshGroup = cmzn_field_group_get_mesh_group(this->fieldGroup, extMesh);
 		}
 		return this->meshGroup;
 	}
@@ -675,15 +669,8 @@ public:
 	{
 		if ((!this->nodesetGroup) && (this->fieldGroup) && (this->nodeset))
 		{
-			cmzn_nodeset *extNodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, this->nodeset->getFieldDomainType());
-			cmzn_field_node_group_id fieldNodeGroup = cmzn_field_group_get_field_node_group(this->fieldGroup, extNodeset);
-			if (!fieldNodeGroup)
-			{
-				fieldNodeGroup = cmzn_field_group_create_field_node_group(this->fieldGroup, extNodeset);
-			}
-			this->nodesetGroup = cmzn_field_node_group_get_nodeset_group(fieldNodeGroup);
-			cmzn_field_node_group_destroy(&fieldNodeGroup);
-			cmzn_nodeset_destroy(&extNodeset);
+			cmzn_nodeset *extNodeset = this->region->findNodesetByFieldDomainType(this->nodeset->getFieldDomainType());
+			this->nodesetGroup = cmzn_field_group_get_nodeset_group(this->fieldGroup, extNodeset);
 		}
 		return this->nodesetGroup;
 	}
@@ -3619,7 +3606,7 @@ bool EXReader::readElementHeaderField()
 						const int nodeIndex = atoi(nodeIndexString);
 						if ((!isIntegerString(nodeIndexString))
 							|| (nodeIndex < 0)
-							|| (nodeIndex > this->elementTemplate->elementtemplate->getNumberOfNodes())
+							|| (nodeIndex > this->elementTemplate->elementtemplate->getLegacyNumberOfNodes())
 							|| ((nodeIndex == 0) && (termCount > 0)))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Node index %s invalid or out of range.  %s", nodeIndexString, this->getFileLocation());
@@ -4258,7 +4245,7 @@ bool EXReader::readElementHeader()
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading #Nodes.  %s", this->getFileLocation());
 		return false;
 	}
-	if (CMZN_OK != this->elementTemplate->elementtemplate->setNumberOfNodes(nodeCount))
+	if (CMZN_OK != this->elementTemplate->elementtemplate->setLegacyNumberOfNodes(nodeCount))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of nodes to %d.  %s", nodeCount, this->getFileLocation());
 		return false;
@@ -4735,7 +4722,7 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Nodes: if any in element header
-	const int nodeCount = this->elementTemplate->elementtemplate->getNumberOfNodes();
+	const int nodeCount = this->elementTemplate->elementtemplate->getLegacyNumberOfNodes();
 	if (nodeCount > 0)
 	{
 		if (1 != IO_stream_scan(this->input_file, " Nodes %1[:]", test_string))
@@ -4770,7 +4757,7 @@ cmzn_element *EXReader::readElement()
 				cmzn_element::deaccess(element);
 				return 0;
 			}
-			const int resultCode = this->elementTemplate->elementtemplate->setNode(n + 1, node);
+			const int resultCode = this->elementTemplate->elementtemplate->setLegacyNode(n + 1, node);
 			cmzn_node_destroy(&node);
 			if (CMZN_OK != resultCode)
 			{

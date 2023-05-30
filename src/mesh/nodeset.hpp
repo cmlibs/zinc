@@ -120,4 +120,7 @@ public:
 		return this->feNodeset->getSize();
 	}
 
+	/** @return  True if nodeset has recorded changes in membership */
+	virtual bool hasMembershipChanges() const;
+
 };

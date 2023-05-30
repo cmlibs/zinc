@@ -35,7 +35,6 @@
 #include "mesh/mesh_group.hpp"
 #include "mesh/nodeset.hpp"
 #include "mesh/nodeset_group.hpp"
-#include "mesh/cmiss_node_private.hpp"
 #include "region/cmiss_region.hpp"
 #include <algorithm>
 #include <cstring>

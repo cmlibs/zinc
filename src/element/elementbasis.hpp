@@ -63,7 +63,7 @@ public:
 	/** @return  1 if all function types set & at least 2 chart components linked for each simplex basis */
 	int isValid() const;
 
-	/** @return  Accessed FE_basis, or NULL on error */
+	/** @return  Non-accessed FE_basis, or nullptr on error */
 	FE_basis* getFeBasis() const;
 
 	enum cmzn_elementbasis_function_type getFunctionType(int chart_component) const;

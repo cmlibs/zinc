@@ -22,12 +22,12 @@
 #include "computed_field/computed_field_find_xi_private.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
-#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
@@ -39,7 +39,8 @@
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
-#include "mesh/cmiss_element_private.hpp"
+#include "mesh/mesh.hpp"
+#include "mesh/mesh_group.hpp"
 #include "mesh/cmiss_node_private.hpp"
 
 #if defined (DEBUG_CODE)
@@ -814,7 +815,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				cmzn_element_id element = 0;
 				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 				return_code = get_FE_nodal_element_xi_value(nodeLocation->get_node(), fe_field, /*component_number*/0,
-					&element, xi) && element;
+					&element, xi) && (element);
 				if (return_code)
 				{
 					meshLocationValueCache.setMeshLocation(element, xi);
@@ -1770,7 +1771,7 @@ bool cmzn_field_finite_element_has_parameters_at_location(
 cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id mesh)
 {
-	if ((fieldmodule) && (mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+	if ((fieldmodule) && (mesh) && (mesh->getRegion() ==
 		cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		cmzn_fieldmodule_begin_change(fieldmodule);
@@ -1779,7 +1780,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 		if (field && field->core)
 		{
 			auto fieldFiniteElement = static_cast<Computed_field_finite_element*>(field->core);
-			fieldFiniteElement->fe_field->setElementXiHostMesh(cmzn_mesh_get_FE_mesh_internal(mesh));
+			fieldFiniteElement->fe_field->setElementXiHostMesh(mesh->getFeMesh());
 			fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
 		}
 		cmzn_fieldmodule_end_change(fieldmodule);
@@ -1823,13 +1824,17 @@ int cmzn_field_stored_mesh_location_destroy(
 cmzn_mesh_id cmzn_field_stored_mesh_location_get_mesh(
 	cmzn_field_stored_mesh_location_id stored_mesh_location_field)
 {
-	cmzn_mesh_id mesh = 0;
 	if (stored_mesh_location_field)
 	{
-		FE_mesh *fe_mesh = cmzn_field_stored_mesh_location_core_cast(stored_mesh_location_field)->fe_field->getElementXiHostMesh();
-		mesh = cmzn_mesh_create(fe_mesh);
+		FE_mesh *feMesh = cmzn_field_stored_mesh_location_core_cast(stored_mesh_location_field)->fe_field->getElementXiHostMesh();
+		cmzn_region* region = feMesh->get_FE_region()->getRegion();
+		cmzn_mesh* mesh = region->findMeshByDimension(feMesh->getDimension());
+		if (mesh)
+		{
+			return mesh->access();
+		}
 	}
-	return mesh;
+	return nullptr;
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
@@ -3358,8 +3363,8 @@ bool Computed_field_embedded::is_defined_at_location(cmzn_fieldcache& cache)
 
 int Computed_field_embedded::has_numerical_components()
 {
-	return (field && Computed_field_has_numerical_components(
-		field->source_fields[0],(void *)NULL));
+	return ((field) && Computed_field_has_numerical_components(
+		field->source_fields[0], (void *)NULL));
 }
 
 int Computed_field_embedded::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -3676,8 +3681,8 @@ public:
 	{
 		if (searchMeshIn != this->searchMesh)
 		{
-			FE_mesh *feMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
-			FE_mesh *feSearchMesh = cmzn_mesh_get_FE_mesh_internal(searchMeshIn);
+			FE_mesh *feMesh = mesh->getFeMesh();
+			FE_mesh *feSearchMesh = searchMeshIn->getFeMesh();
 			if ((!searchMeshIn)
 				|| (feSearchMesh->get_FE_region() != feMesh->get_FE_region())
 				|| (feSearchMesh->getDimension() > feMesh->getDimension()))
@@ -3761,35 +3766,16 @@ private:
 	virtual int check_dependency()
 	{
 		int return_code = Computed_field_core::check_dependency();
-		bool reevaluate = false;
 		// have to call check_dependency because Computed_field_core::check_dependency will not
 		// call it if any earlier field is MANAGER_CHANGE_FULL_RESULT
 		// must compare with MANAGER_CHANGE_RESULT as may be MANAGER_CHANGE_PARTIAL_RESULT
 		cmzn_field *meshField = this->getMeshField();
 		if ((meshField->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field)) ||
-			(meshField->core->check_dependency() & MANAGER_CHANGE_RESULT(Computed_field)))
+			(meshField->core->check_dependency() & MANAGER_CHANGE_RESULT(Computed_field)) ||
+			this->mesh->hasMembershipChanges() ||
+			this->searchMesh->hasMembershipChanges())
 		{
-			reevaluate = true;
-		}
-		else
-		{
-			for (int i = 0; i < 2; ++i)
-			{
-				cmzn_mesh *checkMesh = (i == 0) ? this->mesh : this->searchMesh;
-				cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(checkMesh);
-				// can simply compare with manager_change_status member
-				// since has no source field and subgroup changes directly stored in field
-				if ((elementGroupField) && (MANAGER_CHANGE_NONE(Computed_field) !=
-					cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
-				{
-					reevaluate = true;
-					break;
-				}
-			}
-		}
-		if (reevaluate)
-		{
-			this->meshFieldRangesCache->clearRanges();
+			this->meshFieldRangesCache->clearAllRanges();
 			// this implies a full change
 			this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			return_code = this->field->manager_change_status;
@@ -3801,8 +3787,8 @@ private:
 	void updateMeshFieldRanges()
 	{
 		// get new mesh field ranges cache and ranges before releasing old ones in case they are the same
-		FeMeshFieldRangesCache *newMeshFieldRangesCache = cmzn_mesh_get_FE_mesh_internal(this->searchMesh)->getFeMeshFieldRangesCache(this->getMeshField());
-		FeMeshFieldRanges *newMeshFieldRanges = newMeshFieldRangesCache->getMeshFieldRanges(cmzn_mesh_get_element_group_field_internal(this->searchMesh));
+		FeMeshFieldRangesCache *newMeshFieldRangesCache = this->searchMesh->getFeMesh()->getFeMeshFieldRangesCache(this->getMeshField());
+		FeMeshFieldRanges *newMeshFieldRanges = newMeshFieldRangesCache->getMeshFieldRanges(this->searchMesh);
 		FeMeshFieldRangesCache::deaccess(this->meshFieldRangesCache);
 		FeMeshFieldRanges::deaccess(this->meshFieldRanges);
 		this->meshFieldRangesCache = newMeshFieldRangesCache;
@@ -3869,17 +3855,16 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	{
 		return 0;
 	}
-	FE_mesh *searchFeMesh = cmzn_mesh_get_FE_mesh_internal(this->searchMesh);
-	FE_mesh *ancestorFeMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
+	FE_mesh *searchFeMesh = this->searchMesh->getFeMesh();
+	FE_mesh *ancestorFeMesh = this->mesh->getFeMesh();
 	if (searchFeMesh != ancestorFeMesh)
 	{
 		FE_value meshCoordinates[3];
 		assert(meshField->getNumberOfComponents() <= 3);
 		extraCache.setMeshLocation(element, xi);
 		cmzn_field_evaluate_real(meshField, &extraCache, 3, meshCoordinates);
-		cmzn_field_element_group *elementGroup = cmzn_mesh_get_element_group_field_internal(this->mesh);
-		const DsLabelsGroup *ancestorLabelsGroup = (elementGroup) ?
-			&(Computed_field_element_group_core_cast(elementGroup)->getLabelsGroup()) : nullptr;
+		cmzn_mesh_group* meshGroup = dynamic_cast<cmzn_mesh_group*>(this->mesh);
+		const DsLabelsGroup* ancestorLabelsGroup = (meshGroup) ? meshGroup->getLabelsGroup() : nullptr;
 		FE_value ancestorXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		DsLabelIndex ancestorElementIndex = searchFeMesh->convertLocationToAncestor(
 			element->getIndex(), xi, meshField, meshCoordinates, &extraCache,
@@ -3987,7 +3972,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
 		(source_field) && source_field->isNumerical() &&
 		(mesh_field) && mesh_field->isNumerical() &&
 		(source_field->getNumberOfComponents() == mesh_field->getNumberOfComponents()) &&
-		(mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+		(mesh) && (mesh->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)) &&
 		(mesh_field->getNumberOfComponents() >= cmzn_mesh_get_dimension(mesh)))
 	{
@@ -4997,7 +4982,7 @@ FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field *field)
 		Computed_field_find_mesh_location *fieldFindMeshLocation = dynamic_cast<Computed_field_find_mesh_location*>(field->core);
 		if (fieldFindMeshLocation)
 		{
-			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->getMesh());
+			return fieldFindMeshLocation->getMesh()->getFeMesh();
 		}
 		// for other fields, e.g. conditional field if, use first source field host mesh
 		for (int i = 0; i < field->number_of_source_fields; ++i)

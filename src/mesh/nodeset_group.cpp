@@ -100,6 +100,12 @@ char* cmzn_nodeset_group::getName() const
 	return name;
 }
 
+bool cmzn_nodeset_group::hasMembershipChanges() const
+{
+	return MANAGER_CHANGE_NONE(Computed_field) !=
+		cmzn_field_group_base_cast(this->group)->manager_change_status;
+}
+
 int cmzn_nodeset_group::addNode(const cmzn_node* node)
 {
 	if (!this->feNodeset->containsNode(node))

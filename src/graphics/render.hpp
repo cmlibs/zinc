@@ -20,7 +20,7 @@ struct GT_element_group;
 struct Texture;
 struct cmzn_material;
 struct cmzn_light;
-class SubObjectGroupHighlightFunctor;
+class GraphicsHighlightFunctor;
 
 /***************************************************************************//**
  * An interface class that defines how to implement a cmgui renderer.
@@ -189,9 +189,9 @@ public:
 	}
 
 	/** functor that determines either a primitive is highlighted or not */
-	virtual int set_highlight_functor(SubObjectGroupHighlightFunctor *)
+	virtual bool set_highlight_functor(GraphicsHighlightFunctor*)
 	{
-		return 0;
+		return false;
 	}
 
 	virtual void push_highlight_functor()

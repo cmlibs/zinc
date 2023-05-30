@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_find_xi.c
+FILE : computed_field_find_xi.cpp
 
 LAST MODIFIED : 24 August 2006
 
@@ -23,6 +23,7 @@ lookup of the element.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_private.hpp"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
 

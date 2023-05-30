@@ -20,17 +20,43 @@
 #include <vector>
 
 
+class LegacyElementFieldData;
+
+
 struct cmzn_elementtemplate
 {
 private:
 	FE_element_template *fe_element_template; // internal implementation
+	int legacyNodesCount;
+	cmzn_node** legacyNodes;
+	std::vector<LegacyElementFieldData*> legacyFieldDataList;
 	int access_count;
 
 	cmzn_elementtemplate(FE_mesh *feMeshIn);
 
 	~cmzn_elementtemplate();
 
+	inline void beginChange()
+	{
+		FE_region_begin_change(this->getFeMesh()->get_FE_region());
+	}
+
+	inline void endChange()
+	{
+		FE_region_end_change(this->getFeMesh()->get_FE_region());
+	}
+
+	void clearLegacyNodes();
+
+	void clearLegacyElementFieldData(FE_field* fe_field);
+
+	LegacyElementFieldData* getLegacyElementFieldData(FE_field* fe_field);
+
+	LegacyElementFieldData* getOrCreateLegacyElementFieldData(FE_field* fe_field);
+
 public:
+
+	int setLegacyNodesInElement(cmzn_element* element);
 
 	static cmzn_elementtemplate* create(FE_mesh* feMeshIn)
 	{
@@ -83,14 +109,33 @@ public:
 		return this->fe_element_template->getMesh();
 	}
 
-	int defineField(FE_field *field, int componentNumber, cmzn_elementfieldtemplate *eft);
+	int getLegacyNumberOfNodes() const
+	{
+		return this->legacyNodesCount;
+	}
 
-	int defineField(cmzn_field* field, int componentNumber, cmzn_elementfieldtemplate *eft);
+	int setLegacyNumberOfNodes(int legacyNodesCountIn);
+
+	int defineField(FE_field* field, int componentNumber, cmzn_elementfieldtemplate* eft);
+
+	int defineField(cmzn_field* field, int componentNumber, cmzn_elementfieldtemplate* eft);
+
+	/** Append legacy node indexes giving index in element template of node for each EFT local node.
+	  * @param componentNumber  -1 for all components, or positive for single component. */
+	int addLegacyNodeIndexes(FE_field* field, int componentNumber, int nodeIndexesCount,
+		const int* nodeIndexes);
 
 	bool validate() const
 	{
 		return this->fe_element_template->validate();
 	}
+
+	/** @param local_node_index  Index from 1 to legacy nodes count.
+	  * @return  Non-accessed node, or 0 if invalid index or no node at index. */
+	cmzn_node* getLegacyNode(int local_node_index);
+
+	/** @param local_node_index  Index from 1 to legacy nodes count. */
+	int setLegacyNode(int local_node_index, cmzn_node* node);
 
 	int removeField(cmzn_field* field);
 

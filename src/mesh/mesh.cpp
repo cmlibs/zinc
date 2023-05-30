@@ -14,7 +14,7 @@
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
 #include "element/elementtemplate.hpp"
-#include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "mesh/mesh.hpp"
 #include "region/cmiss_region.hpp"
 
@@ -89,7 +89,18 @@ cmzn_mesh* cmzn_mesh::getMasterMesh() const
 
 cmzn_region* cmzn_mesh::getRegion() const
 {
-	return FE_region_get_cmzn_region(this->feMesh->get_FE_region());
+	// gracefully handle FE_mesh being orphaned at cleanup time
+	FE_region* feRegion = this->feMesh->get_FE_region();
+	if (feRegion)
+	{
+		return feRegion->getRegion();
+	}
+	return nullptr;
+}
+
+bool cmzn_mesh::hasMembershipChanges() const
+{
+	return this->feMesh->hasMembershipChanges();
 }
 
 /*

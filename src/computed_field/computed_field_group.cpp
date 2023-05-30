@@ -26,8 +26,6 @@
 #include "general/mystring.h"
 #include "region/cmiss_region.hpp"
 #include "general/message.h"
-#include "mesh/cmiss_node_private.hpp"
-#include "mesh/cmiss_element_private.hpp"
 #include "mesh/nodeset.hpp"
 #include "region/cmiss_region.hpp"
 #include <cstdlib>

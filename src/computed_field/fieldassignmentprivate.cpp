@@ -17,7 +17,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
 #include "general/debug.h"
 
 cmzn_fieldassignment::cmzn_fieldassignment(cmzn_field *targetFieldIn, cmzn_field *sourceFieldIn) :
@@ -95,7 +95,7 @@ int cmzn_fieldassignment::setNodeset(cmzn_nodeset *nodesetIn)
 {
 	if (nodesetIn)
 	{
-		if (cmzn_nodeset_get_region_internal(nodesetIn) != Computed_field_get_region(this->targetField))
+		if (nodesetIn->getRegion() != Computed_field_get_region(this->targetField))
 		{
 			display_message(ERROR_MESSAGE, "Fieldassignment setNodeset:  Invalid or incompatible nodeset");
 			return CMZN_RESULT_ERROR_ARGUMENT;

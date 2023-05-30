@@ -111,12 +111,15 @@ public:
 	/** @return  Non-accessed master mesh */
 	cmzn_mesh* getMasterMesh() const;
 
-	/** @return Non-accessed owning region */
+	/** @return  Non-accessed owning region */
 	cmzn_region* getRegion() const;
 
 	virtual int getSize() const
 	{
 		return this->feMesh->getSize();
 	}
+
+	/** @return  True if mesh has recorded changes in membership */
+	virtual bool hasMembershipChanges() const;
 
 };

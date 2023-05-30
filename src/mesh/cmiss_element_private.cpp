@@ -10,6 +10,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "cmlibs/zinc/node.h"
 #include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_module.hpp"
@@ -20,7 +21,6 @@
 #include "general/mystring.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/mesh.hpp"
-#include "mesh/cmiss_node_private.hpp"
 
 
 /*

@@ -3347,7 +3347,7 @@ FeMeshFieldRangesCache *FE_mesh::getFeMeshFieldRangesCache(cmzn_field *field)
 
 void FE_mesh::removeMeshFieldRangesCache(FeMeshFieldRangesCache *meshFieldRangesCache)
 {
-	if (meshFieldRangesCache->getMesh() == this)
+	if (meshFieldRangesCache->getFeMesh() == this)
 	{
 		this->meshFieldRangesCaches.erase(meshFieldRangesCache->getField());
 	}
