@@ -768,7 +768,6 @@ int create_FE_element_snake_from_data_points(
 				if (return_code)
 				{
 					cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
-					const int nodeIndexes[] = { 1, 2 };
 					cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(field_module, 1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE);
 					cmzn_elementfieldtemplate_id eft = cmzn_mesh_create_elementfieldtemplate(mesh, elementbasis);
 					if ((elementtemplate) && (eft)

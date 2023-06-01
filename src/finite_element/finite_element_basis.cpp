@@ -3593,7 +3593,7 @@ Some examples of basis descriptions are:
  */
 static char *FE_basis_type_array_to_string(const int *type_array)
 {
-	char *basis_string, temp[20];
+	char *basis_string, temp[30];
 	const char *basis_type_string;
 	const int *type, *relation_type;
 	enum FE_basis_type basis_type;

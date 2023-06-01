@@ -377,7 +377,6 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(fieldmodule, 3,
 		CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
 	cmzn_elementfieldtemplate_id eft = cmzn_mesh_create_elementfieldtemplate(cmesh, elementbasis);
-	int local_node_indexes[4] = { 1, 2, 3, 4 };
 	cmzn_elementtemplate_define_field(elementtemplate, coordinate_field, /*component_number*/-1, eft);
 
 	const int number_of_elements = Ng_GetNE(mesh);

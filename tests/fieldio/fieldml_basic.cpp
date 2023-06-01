@@ -485,7 +485,6 @@ void create_mixed_template_squares(Fieldmodule& fm)
     Elementfieldtemplate biquadraticEft = mesh.createElementfieldtemplate(biquadraticBasis);
     EXPECT_TRUE(biquadraticEft.isValid());
 
-    int biquadraticLocalNodeIndexes[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     Elementtemplate elementtemplate_cpt = mesh.createElementtemplate();
     EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
     EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.defineField(coordinates, /*componentNumber*/1, biquadraticEft));

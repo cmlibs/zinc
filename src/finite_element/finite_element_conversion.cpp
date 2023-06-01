@@ -627,12 +627,6 @@ int finite_element_conversion(cmzn_region_id source_region,
 	if (result != CMZN_OK)
 		return 0;
 
-	/* Set up data */
-	const int nodeIndexesCount = data.number_of_local_nodes;
-	int nodeIndexes[MAX_NUMBER_OF_NODES];
-	for (int i = 0; i < nodeIndexesCount; ++i)
-		nodeIndexes[i] = i + 1;
-
 	cmzn_element_shape_type elementShapeType = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	switch (mode)
 	{
