@@ -113,7 +113,7 @@ public:
 		return this->group;
 	}
 	/** @return  True if nodeset group has recorded changes in membership */
-	virtual bool cmzn_nodeset_group::hasMembershipChanges() const;
+	virtual bool hasMembershipChanges() const;
 
 	/** @return  Result OK if added, ERROR_ALREADY_EXISTS if already in group,
 	 * ERROR_ARGUMENT if invalid node */
