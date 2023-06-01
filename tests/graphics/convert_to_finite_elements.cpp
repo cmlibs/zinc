@@ -26,7 +26,7 @@
 #include "cmlibs/zinc/field.hpp"
 #include "cmlibs/zinc/fieldmodule.hpp"
 #include "cmlibs/zinc/fieldfiniteelement.hpp"
-#include "cmlibs/zinc/fieldsubobjectgroup.hpp"
+#include "cmlibs/zinc/fieldgroup.hpp"
 #include "cmlibs/zinc/node.hpp"
 #include "cmlibs/zinc/region.hpp"
 
@@ -94,10 +94,10 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	// put output into a node group
 	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
-	FieldNodeGroup nodeGroupField = outputFm.createFieldNodeGroup(masterNodeset);
+	FieldGroup nodeGroupField = outputFm.createFieldGroup();
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setName("bob"));
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setManaged(true));
-	NodesetGroup nodeset = nodeGroupField.getNodesetGroup();
+	NodesetGroup nodeset = nodeGroupField.createNodesetGroup(masterNodeset);
 	EXPECT_TRUE(nodeset.isValid());
 
 	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(Scenefilter(),
@@ -270,10 +270,10 @@ TEST(cmzn_scene_convert_points_to_nodes,element_points_cpp)
 	// put output into a node group
 	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
-	FieldNodeGroup nodeGroupField = outputFm.createFieldNodeGroup(masterNodeset);
+	FieldGroup nodeGroupField = outputFm.createFieldGroup();
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setName("bob"));
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setManaged(true));
-	NodesetGroup nodeset = nodeGroupField.getNodesetGroup();
+	NodesetGroup nodeset = nodeGroupField.createNodesetGroup(masterNodeset);
 	EXPECT_TRUE(nodeset.isValid());
 
 	EXPECT_EQ(CMZN_OK, zinc.scene.convertPointsToNodes(Scenefilter(),

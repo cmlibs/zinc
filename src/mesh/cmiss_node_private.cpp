@@ -62,16 +62,20 @@ int cmzn_node_get_identifier(cmzn_node_id node)
 
 cmzn_nodeset_id cmzn_node_get_nodeset(cmzn_node_id node)
 {
-	FE_nodeset *feNodeset = node->getNodeset();
-	if (feNodeset)
+	if (node)
 	{
-		cmzn_region* region = feNodeset->getRegion();
-		if (region)
+		// handle node being orphaned during clean-up
+		FE_nodeset* feNodeset = node->getNodeset();
+		if (feNodeset)
 		{
-			cmzn_nodeset* nodeset = region->findNodesetByFieldDomainType(feNodeset->getFieldDomainType());
-			if (nodeset)
+			cmzn_region* region = feNodeset->getRegion();
+			if (region)
 			{
-				return nodeset->access();
+				cmzn_nodeset* nodeset = region->findNodesetByFieldDomainType(feNodeset->getFieldDomainType());
+				if (nodeset)
+				{
+					return nodeset->access();
+				}
 			}
 		}
 	}

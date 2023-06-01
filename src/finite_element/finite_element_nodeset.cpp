@@ -412,8 +412,7 @@ void FE_nodeset::remove_FE_node_field_info(struct FE_node_field_info *fe_node_fi
 /** Assumes called by FE_region destructor, and change notification is disabled. */
 void FE_nodeset::detach_from_FE_region()
 {
-	// clear embedded locations to avoid circular dependencies which prevent cleanup
-	FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
+	this->clear();
 	this->FE_domain::detach_from_FE_region();
 }
 
@@ -587,6 +586,11 @@ void FE_nodeset::clear()
 {
 	if (0 < this->labels.getSize())
 	{
+		if (this->fe_region)
+		{
+			// clear embedded locations to avoid circular dependencies which prevent cleanup
+			FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
+		}
 		const DsLabelIndex indexLimit = this->labels.getIndexSize();
 		cmzn_node *node;
 		for (DsLabelIndex index = 0; index < indexLimit; ++index)

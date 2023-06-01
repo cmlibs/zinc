@@ -16,11 +16,13 @@
 #include "mesh/nodeset.hpp"
 
 
+class Computed_field_group;
+
 struct cmzn_nodeset_group : public cmzn_nodeset, public FE_domain_mapper
 {
 	friend struct cmzn_field_group;
 
-	cmzn_field_group* group;
+	cmzn_field_group* group;  // not accessed, cleared if destroyed before this
 	DsLabelsGroup* labelsGroup;
 
 	cmzn_nodeset_group(FE_nodeset* feNodesetIn, cmzn_field_group* groupIn);
@@ -37,12 +39,23 @@ struct cmzn_nodeset_group : public cmzn_nodeset, public FE_domain_mapper
 	 * Only used when objects removed because destroyed in parent domain. */
 	void changeRemoveNoNotify();
 
+	/** Only called by owning group when it is destroyed to detach this */
+	void detachFromGroup();
+
+	inline void invalidateIterators()
+	{
+		this->labelsGroup->invalidateLabelIterators();
+	}
+
 	/** If the conditionalField is a group, get the nodeset group for this master nodeset.
 	 * @param  isEmptyNodesetGroup  Set to true if field is a group containing no nodes
 	 * for this master nodeset, otherwise false.
 	 * @return  Non-accessed cmzn_node_group, or nullptr if none found or not a group */
 	const cmzn_nodeset_group* getConditionalNodesetGroup(
 		const cmzn_field* conditionalField, bool& isEmptyNodesetGroup) const;
+
+	/** get group core object or nullptr if detached */
+	Computed_field_group* getGroupCore() const;
 
 	/** @return  true if element is from same region as this nodeset */
 	bool isElementCompatible(const cmzn_element* element);
@@ -94,7 +107,7 @@ public:
 		return this->labelsGroup->getSize();
 	}
 
-	/** @return  Non-accessed group owning this mesh group */
+	/** @return  Non-accessed group owning this mesh group or nullptr if detached */
 	cmzn_field_group* getFieldGroup() const
 	{
 		return this->group;

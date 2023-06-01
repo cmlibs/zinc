@@ -20,7 +20,6 @@
 #include <cmlibs/zinc/fieldlogicaloperators.hpp>
 #include <cmlibs/zinc/fieldmeshoperators.hpp>
 #include <cmlibs/zinc/fieldmodule.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 #include <cmlibs/zinc/region.hpp>
 #include <cmlibs/zinc/streamregion.hpp>
 
@@ -88,10 +87,10 @@ void check_twohermitecubes_noscalefactors_model(Fieldmodule& fm)
 
     Field isExterior = fm.createFieldIsExterior();
     EXPECT_TRUE(isExterior.isValid());
-    FieldElementGroup exteriorFacesGroup = fm.createFieldElementGroup(mesh2d);
+    FieldGroup exteriorFacesGroup = fm.createFieldGroup();
     EXPECT_TRUE(exteriorFacesGroup.isValid());
     EXPECT_EQ(OK, result = exteriorFacesGroup.setName("exterior"));
-    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.createMeshGroup(mesh2d);
     EXPECT_TRUE(exteriorFacesMeshGroup.isValid());
     EXPECT_EQ(OK, result = exteriorFacesMeshGroup.addElementsConditional(isExterior));
     EXPECT_EQ(10, exteriorFacesMeshGroup.getSize());
@@ -150,20 +149,13 @@ void check_figure8_model(Fieldmodule& fm)
     EXPECT_TRUE(exteriorGroup.isValid());
     EXPECT_EQ(OK, result = exteriorGroup.setName("exterior"));
     EXPECT_EQ(OK, result = exteriorGroup.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
-
-    FieldElementGroup exteriorFacesGroup = exteriorGroup.getFieldElementGroup(mesh2d);
-    EXPECT_FALSE(exteriorFacesGroup.isValid());
-    exteriorFacesGroup = exteriorGroup.createFieldElementGroup(mesh2d);
-    EXPECT_TRUE(exteriorFacesGroup.isValid());
     FieldIsExterior isExterior = fm.createFieldIsExterior();
     EXPECT_TRUE(isExterior.isValid());
-    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+    MeshGroup exteriorFacesMeshGroup = exteriorGroup.createMeshGroup(mesh2d);
     EXPECT_EQ(OK, result = exteriorFacesMeshGroup.addElementsConditional(isExterior));
     EXPECT_EQ(26, exteriorFacesMeshGroup.getSize());
 
-    FieldElementGroup exteriorLinesGroup = exteriorGroup.getFieldElementGroup(mesh1d);
-    EXPECT_TRUE(exteriorLinesGroup.isValid());
-    MeshGroup exteriorLinesMeshGroup = exteriorLinesGroup.getMeshGroup();
+    MeshGroup exteriorLinesMeshGroup = exteriorGroup.getMeshGroup(mesh1d);
     EXPECT_EQ(52, exteriorLinesMeshGroup.getSize());
 
     const double valueOne = 1.0;
@@ -608,9 +600,7 @@ void check_prolate_heart_model(Fieldmodule& fm)
     FieldGroup exteriorGroup = fm.createFieldGroup();
     EXPECT_TRUE(exteriorGroup.isValid());
     EXPECT_EQ(RESULT_OK, result = exteriorGroup.setName("exterior"));
-    FieldElementGroup exteriorFacesGroup = exteriorGroup.createFieldElementGroup(mesh2d);
-    EXPECT_TRUE(exteriorFacesGroup.isValid());
-    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+    MeshGroup exteriorFacesMeshGroup = exteriorGroup.createMeshGroup(mesh2d);
     EXPECT_TRUE(exteriorFacesMeshGroup.isValid());
     EXPECT_EQ(RESULT_OK, result = exteriorFacesMeshGroup.addElementsConditional(isExterior));
     EXPECT_EQ(96, exteriorFacesMeshGroup.getSize());

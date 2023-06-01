@@ -28,7 +28,6 @@
 #include <cmlibs/zinc/fieldmatrixoperators.hpp>
 #include <cmlibs/zinc/fieldmeshoperators.hpp>
 #include <cmlibs/zinc/fieldnodesetoperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 #include <cmlibs/zinc/fieldvectoroperators.hpp>
 #include <cmlibs/zinc/optimisation.hpp>
 
@@ -196,8 +195,8 @@ TEST(ZincOptimisation, tricubicFit)
 
     const int end2NodeIdentifiers[] = { 4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64 };
     const int end2NodeIdentifiersSize = sizeof(end2NodeIdentifiers)/sizeof(int);
-    FieldNodeGroup end2NodeGroup = zinc.fm.createFieldNodeGroup(nodeset);
-    NodesetGroup end2Nodeset = end2NodeGroup.getNodesetGroup();
+    FieldGroup end2Group = zinc.fm.createFieldGroup();
+    NodesetGroup end2Nodeset = end2Group.createNodesetGroup(nodeset);
     EXPECT_TRUE(end2Nodeset.isValid());
     for (int i = 0; i < end2NodeIdentifiersSize; ++i)
     {
@@ -349,9 +348,9 @@ TEST(ZincOptimisation, addFieldassignment)
     EXPECT_EQ(RESULT_OK, objective.setName("objective"));
 
     // make the set of nodes we wish to offset
-    FieldNodeGroup nodeGroupField = zinc.fm.createFieldNodeGroup(nodes);
-    EXPECT_TRUE(nodeGroupField.isValid());
-    NodesetGroup nodesetGroup = nodeGroupField.getNodesetGroup();
+    FieldGroup group = zinc.fm.createFieldGroup();
+    EXPECT_TRUE(group.isValid());
+    NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
     EXPECT_TRUE(nodesetGroup.isValid());
     const int optimiseNodeIdentifiers[] = { 6, 8 };
     const int iCount = sizeof(optimiseNodeIdentifiers)/sizeof(int);
@@ -475,9 +474,9 @@ TEST(ZincOptimisation, addFieldassignmentReset)
     EXPECT_EQ(RESULT_OK, objective.setName("objective"));
 
     // make the set of nodes we wish to offset
-    FieldNodeGroup nodeGroupField = zinc.fm.createFieldNodeGroup(nodes);
-    EXPECT_TRUE(nodeGroupField.isValid());
-    NodesetGroup nodesetGroup = nodeGroupField.getNodesetGroup();
+    FieldGroup group = zinc.fm.createFieldGroup();
+    EXPECT_TRUE(group.isValid());
+    NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
     EXPECT_TRUE(nodesetGroup.isValid());
     const int optimiseNodeIdentifiers[] = { 7, 8, 9, 10, 11, 12 };
     const int iCount = sizeof(optimiseNodeIdentifiers)/sizeof(int);
@@ -660,7 +659,7 @@ TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
     FieldGroup outside = zinc.fm.createFieldGroup();
     EXPECT_TRUE(outside.isValid());
     EXPECT_EQ(RESULT_OK, outside.setName("outside"));
-    MeshGroup outsideMeshGroup = outside.createFieldElementGroup(mesh2d).getMeshGroup();
+    MeshGroup outsideMeshGroup = outside.createMeshGroup(mesh2d);
     EXPECT_TRUE(outsideMeshGroup.isValid());
     outsideMeshGroup.addElementsConditional(zinc.fm.createFieldIsExterior());
     EXPECT_EQ(10, outsideMeshGroup.getSize());
@@ -844,16 +843,12 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
     FieldGroup one = zinc.fm.createFieldGroup();
     EXPECT_TRUE(one.isValid());
     EXPECT_EQ(RESULT_OK, one.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
-    FieldElementGroup oneElements = one.createFieldElementGroup(mesh3d);
-    EXPECT_TRUE(oneElements.isValid());
-    MeshGroup oneMesh3d = oneElements.getMeshGroup();
+    MeshGroup oneMesh3d = one.createMeshGroup(mesh3d);
     EXPECT_EQ(RESULT_OK, oneMesh3d.addElement(element1));
 
     FieldGroup left = zinc.fm.createFieldGroup();
     EXPECT_TRUE(left.isValid());
-    FieldElementGroup leftFaceGroup = left.createFieldElementGroup(mesh2d);
-    EXPECT_TRUE(leftFaceGroup.isValid());
-    MeshGroup leftFaceMeshGroup = leftFaceGroup.getMeshGroup();
+    MeshGroup leftFaceMeshGroup = left.createMeshGroup(mesh2d);
     EXPECT_EQ(RESULT_OK, leftFaceMeshGroup.addElement(face1));
 
     FieldComponent x = zinc.fm.createFieldComponent(coordinates, 1);

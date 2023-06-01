@@ -34,14 +34,14 @@ TEST(FieldIO, data_and_node_group)
     EXPECT_TRUE(group.isValid());
 
     Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
-    NodesetGroup nodeGroup = group.getFieldNodeGroup(nodes).getNodesetGroup();
+    NodesetGroup nodeGroup = group.getNodesetGroup(nodes);
     EXPECT_TRUE(nodeGroup.isValid());
     EXPECT_EQ(1, nodeGroup.getSize());
     Node node = nodeGroup.findNodeByIdentifier(1);
     EXPECT_TRUE(node.isValid());
 
     Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
-    NodesetGroup dataGroup = group.getFieldNodeGroup(datapoints).getNodesetGroup();
+    NodesetGroup dataGroup = group.getNodesetGroup(datapoints);
     EXPECT_TRUE(dataGroup.isValid());
     EXPECT_EQ(1, dataGroup.getSize());
     Node datapoint = dataGroup.findNodeByIdentifier(2);
@@ -184,11 +184,11 @@ void checkEx3NodeTimeSequence(Region& region)
     // check group "bob" was read correctly in v3 format
     FieldGroup bob = fieldmodule.findFieldByName("bob").castGroup();
     EXPECT_TRUE(bob.isValid());
-    NodesetGroup bobNodes = bob.getFieldNodeGroup(nodes).getNodesetGroup();
+    NodesetGroup bobNodes = bob.getNodesetGroup(nodes);
     EXPECT_EQ(2, bobNodes.getSize());
     EXPECT_TRUE(bobNodes.containsNode(node1));
     EXPECT_TRUE(bobNodes.containsNode(node2));
-    MeshGroup bobMesh1d = bob.getFieldElementGroup(mesh1d).getMeshGroup();
+    MeshGroup bobMesh1d = bob.getMeshGroup(mesh1d);
     EXPECT_EQ(1, bobMesh1d.getSize());
     EXPECT_TRUE(bobMesh1d.containsElement(element1));
 }
@@ -382,15 +382,15 @@ void checkEx3CompactGroups(Region& region)
 	FieldGroup part = fieldmodule.findFieldByName("part").castGroup();
 	Nodeset nodes = fieldmodule.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(30, nodes.getSize());
-	NodesetGroup allNodes = all.getFieldNodeGroup(nodes).getNodesetGroup();
+	NodesetGroup allNodes = all.getNodesetGroup(nodes);
 	EXPECT_EQ(30, allNodes.getSize());
-	NodesetGroup partNodes = part.getFieldNodeGroup(nodes).getNodesetGroup();
+	NodesetGroup partNodes = part.getNodesetGroup(nodes);
 	EXPECT_EQ(20, partNodes.getSize());
 	Mesh mesh = fieldmodule.findMeshByDimension(1);
 	EXPECT_EQ(30, mesh.getSize());
-	MeshGroup allElements = all.getFieldElementGroup(mesh).getMeshGroup();
+	MeshGroup allElements = all.getMeshGroup(mesh);
 	EXPECT_EQ(30, allElements.getSize());
-	MeshGroup partElements = part.getFieldElementGroup(mesh).getMeshGroup();
+	MeshGroup partElements = part.getMeshGroup(mesh);
 	EXPECT_EQ(20, partElements.getSize());
 	for (int i = 1; i < 30; ++i)
 	{

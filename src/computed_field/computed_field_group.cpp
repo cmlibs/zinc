@@ -48,11 +48,11 @@ Computed_field_group::~Computed_field_group()
 {
 	for (int i = 0; i < 2; ++i)
 	{
-		clearRemoveNodesetGroup(i, /*clear*/false, /*remove*/true);
+		clearRemoveNodesetGroup(i, /*clear*/false, /*remove*/true, /*detach*/true);
 	}
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 	{
-		clearRemoveMeshGroup(i, /*clear*/false, /*remove*/true);
+		clearRemoveMeshGroup(i, /*clear*/false, /*remove*/true, /*detach*/true);
 	}
 	for (Region_field_map_iterator iter = child_region_group_map.begin();
 		iter != child_region_group_map.end(); ++iter)
@@ -62,7 +62,7 @@ Computed_field_group::~Computed_field_group()
 	}
 }
 
-void Computed_field_group::clearRemoveNodesetGroup(int index, bool clear, bool remove)
+void Computed_field_group::clearRemoveNodesetGroup(int index, bool clear, bool remove, bool detach)
 {
 	if (this->nodesetGroups[index])
 	{
@@ -70,14 +70,18 @@ void Computed_field_group::clearRemoveNodesetGroup(int index, bool clear, bool r
 		{
 			this->nodesetGroups[index]->removeAllNodes();
 		}
-		if (remove && (this->nodesetGroups[index]->getAccessCount() == 1))
+		if (detach)
+		{
+			this->nodesetGroups[index]->detachFromGroup();
+		}
+		if (detach || (remove && (this->nodesetGroups[index]->getAccessCount() == 1)))
 		{
 			cmzn_nodeset_group::deaccess(this->nodesetGroups[index]);
 		}
 	}
 }
 
-void Computed_field_group::clearRemoveMeshGroup(int index, bool clear, bool remove)
+void Computed_field_group::clearRemoveMeshGroup(int index, bool clear, bool remove, bool detach)
 {
 	if (this->meshGroups[index])
 	{
@@ -85,11 +89,44 @@ void Computed_field_group::clearRemoveMeshGroup(int index, bool clear, bool remo
 		{
 			this->meshGroups[index]->removeAllElements();
 		}
-		if (remove && (this->meshGroups[index]->getAccessCount() == 1))
+		if (detach)
+		{
+			this->meshGroups[index]->detachFromGroup();
+		}
+		if (detach || (remove && (this->meshGroups[index]->getAccessCount() == 1)))
 		{
 			cmzn_mesh_group::deaccess(this->meshGroups[index]);
 		}
 	}
+}
+
+bool Computed_field_group::hasDomainGroups() const
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (this->nodesetGroups[i])
+		{
+			return true;
+		}
+	}
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+	{
+		if (this->meshGroups[i])
+		{
+			return true;
+		}
+	}
+	for (Region_field_map_const_iterator iter = this->child_region_group_map.begin();
+		iter != child_region_group_map.end();)
+	{
+		cmzn_field_group* subregionGroup = iter->second;
+		Computed_field_group* groupCore = cmzn_field_group_core_cast(subregionGroup);
+		if (groupCore->hasDomainGroups())
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -126,7 +163,8 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 			if (feNodeset)
 			{
 				const int index = FE_nodeset_to_index(feNodeset);
-				if (this->nodesetGroups[index]->containsNode(node))
+				const cmzn_nodeset_group* nodesetGroup = this->nodesetGroups[index];
+				if ((nodesetGroup) && nodesetGroup->containsNode(node))
 				{
 					valueCache.values[0] = 1.0;
 				}
@@ -139,7 +177,8 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 			if (feMesh)
 			{
 				const int index = feMesh->getDimension() - 1;
-				if (this->meshGroups[index]->containsElement(element))
+				const cmzn_mesh_group* meshGroup = this->meshGroups[index];
+				if ((meshGroup) && meshGroup->containsElement(element))
 				{
 					valueCache.values[0] = 1.0;
 				}
@@ -477,7 +516,7 @@ cmzn_nodeset_group* Computed_field_group::getOrCreateNodesetGroup(FE_nodeset* fe
 			nodesetGroup = nullptr;
 		}
 	}
-	else
+	else if (canCreate)
 	{
 		nodesetGroup = groupCore->nodesetGroups[index] = new cmzn_nodeset_group(feNodeset, groupCore->getFieldGroup());
 	}
@@ -527,7 +566,7 @@ cmzn_mesh_group* Computed_field_group::getOrCreateMeshGroup(FE_mesh* feMesh, boo
 			meshGroup = nullptr;
 		}
 	}
-	else
+	else if (canCreate)
 	{
 		meshGroup = groupCore->meshGroups[index] = new cmzn_mesh_group(feMesh, groupCore->getFieldGroup());
 	}
@@ -639,19 +678,19 @@ int Computed_field_group::remove_empty_subgroups()
 		}
 	}
 	/* remove empty subregion group */
-	for (Region_field_map_iterator iter = child_region_group_map.begin();
-		iter != child_region_group_map.end();)
+	for (Region_field_map_iterator iter = this->child_region_group_map.begin();
+		iter != this->child_region_group_map.end();)
 	{
-		cmzn_field_group_id subregion_group_field = iter->second;
-		Computed_field_group *group_core = cmzn_field_group_core_cast(subregion_group_field);
-		group_core->remove_empty_subgroups();
-		if (group_core->isEmpty())
+		cmzn_field_group* subregionGroup = iter->second;
+		Computed_field_group* groupCore = cmzn_field_group_core_cast(subregionGroup);
+		groupCore->remove_empty_subgroups();
+		if (groupCore->isEmpty() && !groupCore->hasDomainGroups())
 		{
 			// must transfer non-local changes now
-			const int subregion_group_change = group_core->change_detail.getChangeSummary();
+			const int subregion_group_change = groupCore->change_detail.getChangeSummary();
 			this->change_detail.changeMergeNonlocal(subregion_group_change);
 			child_region_group_map.erase(iter);
-			cmzn_field_group_destroy(&subregion_group_field);
+			cmzn_field_group_destroy(&subregionGroup);
 			// reset iterator as probably invalid
 			iter = child_region_group_map.begin();
 		}

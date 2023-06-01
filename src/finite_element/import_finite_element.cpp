@@ -659,7 +659,7 @@ public:
 		if ((!this->meshGroup) && (this->fieldGroup) && (this->mesh))
 		{
 			cmzn_mesh *extMesh = this->region->findMeshByDimension(this->mesh->getDimension());
-			this->meshGroup = cmzn_field_group_get_mesh_group(this->fieldGroup, extMesh);
+			this->meshGroup = cmzn_field_group_get_or_create_mesh_group(this->fieldGroup, extMesh);
 		}
 		return this->meshGroup;
 	}
@@ -670,7 +670,7 @@ public:
 		if ((!this->nodesetGroup) && (this->fieldGroup) && (this->nodeset))
 		{
 			cmzn_nodeset *extNodeset = this->region->findNodesetByFieldDomainType(this->nodeset->getFieldDomainType());
-			this->nodesetGroup = cmzn_field_group_get_nodeset_group(this->fieldGroup, extNodeset);
+			this->nodesetGroup = cmzn_field_group_get_or_create_nodeset_group(this->fieldGroup, extNodeset);
 		}
 		return this->nodesetGroup;
 	}

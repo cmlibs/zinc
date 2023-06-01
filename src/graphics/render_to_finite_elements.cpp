@@ -177,7 +177,7 @@ struct Render_to_finite_elements_data
 
 			cmzn_elementbasis_id triangle_basis = cmzn_fieldmodule_create_elementbasis(
 				field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
-			this->triangle_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_1d, triangle_basis);
+			this->triangle_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_2d, triangle_basis);
 			cmzn_elementbasis_destroy(&triangle_basis);
 			this->triangle_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
 			cmzn_elementtemplate_set_element_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE);
@@ -189,7 +189,7 @@ struct Render_to_finite_elements_data
 
 			cmzn_elementbasis_id square_basis = cmzn_fieldmodule_create_elementbasis(
 				field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
-			this->square_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_1d, square_basis);
+			this->square_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_2d, square_basis);
 			cmzn_elementbasis_destroy(&square_basis);
 			this->square_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
 			cmzn_elementtemplate_set_element_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_TYPE_SQUARE);

@@ -105,20 +105,25 @@ private:
 	 * @param index  0 (nodeset), 1 (datapoints)
 	 * @param clear  If true, clear the subelement group.
 	 * @param remove  If true, remove the subelement group. Only removed if group holds only access.
+	 * @param detach  Use when destroying group: if true, with remove, force detach nodeset group.
 	 */
-	void clearRemoveNodesetGroup(int index, bool clear = true, bool remove = true);
+	void clearRemoveNodesetGroup(int index, bool clear = true, bool remove = true, bool detach = false);
 
 	/*
 	 * @param index  0 (1-D), 1 (2-D) or 2 (3-D)
 	 * @param clear  If true, clear the subelement group.
 	 * @param remove  If true, remove the subelement group. Only removed if group holds only access.
+	 * @param detach  Use when destroying group: if true, with remove, force detach mesh group.
 	 */
-	void clearRemoveMeshGroup(int index, bool clear = true, bool remove = true);
+	void clearRemoveMeshGroup(int index, bool clear = true, bool remove = true, bool detach = false);
 
 	cmzn_field_group* getFieldGroup()
 	{
 		return reinterpret_cast<cmzn_field_group*>(this->field);
 	}
+
+	/** @return  True if nodeset or mesh groups are present in hierarchy */
+	bool hasDomainGroups() const;
 
 public:
 

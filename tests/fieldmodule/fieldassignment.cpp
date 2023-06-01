@@ -20,9 +20,9 @@
 #include <cmlibs/zinc/fieldconstant.hpp>
 #include <cmlibs/zinc/fieldderivatives.hpp>
 #include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
 #include <cmlibs/zinc/fieldlogicaloperators.hpp>
 #include <cmlibs/zinc/fieldmeshoperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 #include <cmlibs/zinc/mesh.hpp>
 #include <cmlibs/zinc/node.hpp>
 #include <cmlibs/zinc/nodeset.hpp>
@@ -107,9 +107,9 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 
     EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
-	FieldNodeGroup nodeGroup = zinc.fm.createFieldNodeGroup(nodes);
+	FieldGroup nodeGroup = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(nodeGroup.isValid());
-	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	NodesetGroup nodesetGroup = nodeGroup.createNodesetGroup(nodes);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	for (int n = 0; n < 4; ++n)
 	{

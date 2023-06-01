@@ -1843,30 +1843,25 @@ TEST(ZincGraphics, boundaryMode_range3d)
 		group3d = zinc.fm.createFieldGroup();
 		group3d.setName("subgroup3d");
 		group3d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
-		FieldElementGroup elementGroup3d = group3d.createFieldElementGroup(mesh3d);
-		MeshGroup meshGroup3d = elementGroup3d.getMeshGroup();
+		MeshGroup meshGroup3d = group3d.createMeshGroup(mesh3d);
 		const int elementIdentifiers3d[2] = { 2, 3 };
 		for (int e = 0; e < 2; ++e)
 			meshGroup3d.addElement(mesh3d.findElementByIdentifier(elementIdentifiers3d[e]));
 		EXPECT_EQ(2, meshGroup3d.getSize());
-		FieldElementGroup elementGroup2d = group3d.getFieldElementGroup(mesh2d);
-		MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+		MeshGroup meshGroup2d = group3d.getMeshGroup(mesh2d);
 		EXPECT_EQ(9, meshGroup2d.getSize());
-		FieldElementGroup elementGroup1d = group3d.getFieldElementGroup(mesh1d);
-		MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+		MeshGroup meshGroup1d = group3d.getMeshGroup(mesh1d);
 		EXPECT_EQ(14, meshGroup1d.getSize());
 
 		group2d = zinc.fm.createFieldGroup();
 		group2d.setName("subgroup2d");
 		group2d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
-		elementGroup2d = group2d.createFieldElementGroup(mesh2d);
-		meshGroup2d = elementGroup2d.getMeshGroup();
+		meshGroup2d = group2d.createMeshGroup(mesh2d);
 		const int elementIdentifiers2d[6] = { 10, 12, 13, 15, 23, 24 };
 		for (int e = 0; e < 6; ++e)
 			meshGroup2d.addElement(mesh2d.findElementByIdentifier(elementIdentifiers2d[e]));
 		EXPECT_EQ(6, meshGroup2d.getSize());
-		elementGroup1d = group2d.getFieldElementGroup(mesh1d);
-		meshGroup1d = elementGroup1d.getMeshGroup();
+		meshGroup1d = group2d.getMeshGroup(mesh1d);
 		EXPECT_EQ(12, meshGroup1d.getSize());
 	}
 
@@ -1980,14 +1975,12 @@ TEST(ZincGraphics, boundaryMode_range2d)
 		group2d = zinc.fm.createFieldGroup();
 		group2d.setName("subgroup2d");
 		group2d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
-		FieldElementGroup elementGroup2d = group2d.createFieldElementGroup(mesh2d);
-		MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+		MeshGroup meshGroup2d = group2d.createMeshGroup(mesh2d);
 		const int elementIdentifiers2d[18] = { 2, 3, 4, 7, 8, 11, 12, 14, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27 };
 		for (int e = 0; e < 18; ++e)
 			meshGroup2d.addElement(mesh2d.findElementByIdentifier(elementIdentifiers2d[e]));
 		EXPECT_EQ(18, meshGroup2d.getSize());
-		FieldElementGroup elementGroup1d = group2d.getFieldElementGroup(mesh1d);
-		MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+		MeshGroup meshGroup1d = group2d.getMeshGroup(mesh1d);
 		EXPECT_EQ(33, meshGroup1d.getSize());
 	}
 

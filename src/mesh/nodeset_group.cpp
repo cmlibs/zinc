@@ -19,29 +19,47 @@ cmzn_nodeset_group::cmzn_nodeset_group(FE_nodeset* feNodesetIn, cmzn_field_group
 	group(groupIn),
 	labelsGroup(feNodesetIn->createLabelsGroup())
 {
-	cmzn_field_group_base_cast(groupIn)->access();
 	feNodesetIn->addMapper(this);
 }
 
 cmzn_nodeset_group::~cmzn_nodeset_group()
 {
 	this->feNodeset->removeMapper(this);
-	cmzn_field_group_destroy(&(this->group));
 	cmzn::Deaccess(this->labelsGroup);
 }
 
 void cmzn_nodeset_group::changeAdd()
 {
-	cmzn_field_group_core_cast(this->group)->changeAddLocal();
+	this->invalidateIterators();
+	Computed_field_group* groupCore = this->getGroupCore();
+	if (groupCore)
+	{
+		groupCore->changeAddLocal();
+	}
 }
 
 void cmzn_nodeset_group::changeRemove()
 {
-	cmzn_field_group_core_cast(this->group)->changeRemoveLocal();
+	this->invalidateIterators();
+	Computed_field_group* groupCore = this->getGroupCore();
+	if (groupCore)
+	{
+		groupCore->changeRemoveLocal();
+	}
 }
 void cmzn_nodeset_group::changeRemoveNoNotify()
 {
-	cmzn_field_group_core_cast(this->group)->changeRemoveLocalNoNotify();
+	this->invalidateIterators();
+	Computed_field_group* groupCore = this->getGroupCore();
+	if (groupCore)
+	{
+		groupCore->changeRemoveLocalNoNotify();
+	}
+}
+
+void cmzn_nodeset_group::detachFromGroup()
+{
+	this->group = nullptr;
 }
 
 const cmzn_nodeset_group* cmzn_nodeset_group::getConditionalNodesetGroup(
@@ -56,6 +74,11 @@ const cmzn_nodeset_group* cmzn_nodeset_group::getConditionalNodesetGroup(
 	cmzn_nodeset_group* conditionalNodesetGroup = groupCore->getLocalNodesetGroup(this->feNodeset);
 	isEmptyNodesetGroup = (!conditionalNodesetGroup) || (conditionalNodesetGroup->labelsGroup->getSize() == 0);
 	return conditionalNodesetGroup;
+}
+
+Computed_field_group* cmzn_nodeset_group::getGroupCore() const
+{
+	return (this->group) ? cmzn_field_group_core_cast(this->group) : nullptr;
 }
 
 bool cmzn_nodeset_group::isElementCompatible(const cmzn_element* element)
@@ -94,7 +117,10 @@ char* cmzn_nodeset_group::getName() const
 {
 	char* name = nullptr;
 	int error = 0;
-	append_string(&name, cmzn_field_group_base_cast(this->group)->getName(), &error);
+	if (this->group)
+	{
+		append_string(&name, cmzn_field_group_base_cast(this->group)->getName(), &error);
+	}
 	append_string(&name, ".", &error);
 	append_string(&name, this->feNodeset->getName(), &error);
 	return name;
@@ -102,8 +128,8 @@ char* cmzn_nodeset_group::getName() const
 
 bool cmzn_nodeset_group::hasMembershipChanges() const
 {
-	return MANAGER_CHANGE_NONE(Computed_field) !=
-		cmzn_field_group_base_cast(this->group)->manager_change_status;
+	return (this->group) ? (MANAGER_CHANGE_NONE(cmzn_field) !=
+		cmzn_field_group_base_cast(this->group)->manager_change_status) : false;
 }
 
 int cmzn_nodeset_group::addNode(const cmzn_node* node)

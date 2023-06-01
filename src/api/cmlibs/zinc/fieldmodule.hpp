@@ -79,8 +79,6 @@ class FieldNodesetSumSquares;
 class FieldNodesetMeanSquares;
 class FieldNodesetMinimum;
 class FieldNodesetMaximum;
-class FieldElementGroup;
-class FieldNodeGroup;
 class FieldTimeLookup;
 class FieldTimeValue;
 class FieldDerivative;
@@ -374,10 +372,6 @@ public:
 	inline FieldNodesetMinimum createFieldNodesetMinimum(const Field& sourceField, const Nodeset& nodeset);
 
 	inline FieldNodesetMaximum createFieldNodesetMaximum(const Field& sourceField, const Nodeset& nodeset);
-
-	inline FieldNodeGroup createFieldNodeGroup(const Nodeset& nodeset);
-
-	inline FieldElementGroup createFieldElementGroup(const Mesh& mesh);
 
 	inline FieldTimeLookup createFieldTimeLookup(const Field& sourceField, const Field& timeField);
 

@@ -16,7 +16,6 @@
 #include <cmlibs/zinc/fieldconstant.hpp>
 #include <cmlibs/zinc/fieldfiniteelement.hpp>
 #include <cmlibs/zinc/fieldlogicaloperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 
 #include "zinctestsetupcpp.hpp"
 #include "test_resources.h"

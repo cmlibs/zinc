@@ -77,7 +77,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_NE(static_cast<cmzn_node *>(0), node1);
 
 	cmzn_nodeset_id tmpNodeset = cmzn_node_get_nodeset(node1);
-	EXPECT_TRUE(cmzn_nodeset_match(nodeset, tmpNodeset));
+	EXPECT_EQ(nodeset, tmpNodeset);
 	cmzn_nodeset_destroy(&tmpNodeset);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node1, 1)); // can always set to current identifier
@@ -95,7 +95,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_NE(static_cast<cmzn_element *>(0), element1);
 
 	cmzn_mesh_id tmpMesh = cmzn_element_get_mesh(element1);
-	EXPECT_TRUE(cmzn_mesh_match(mesh, tmpMesh));
+	EXPECT_EQ(mesh, tmpMesh);
 	cmzn_mesh_destroy(&tmpMesh);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element1, 1)); // can always set to current identifier
@@ -435,7 +435,7 @@ TEST(ZincMesh, destroyElementsGroupChangeManager_simple)
 	FieldGroup group1 = zinc.fm.createFieldGroup();
 	group1.setName("group1");
 	group1.setManaged(true);
-	MeshGroup group1mesh = group1.createFieldElementGroup(mesh).getMeshGroup();
+	MeshGroup group1mesh = group1.createMeshGroup(mesh);
 	EXPECT_TRUE(group1mesh.isValid());
 
 	for (int n = 0; n < 32; ++n)
@@ -528,21 +528,21 @@ TEST(ZincNodeset, destroyElementsGroupChangeManager_cube)
 	EXPECT_EQ(1, mesh3d.getSize());
 	Element element1 = mesh3d.findElementByIdentifier(1);
 	EXPECT_TRUE(element1.isValid());
-	MeshGroup group1mesh3d = group1.createFieldElementGroup(mesh3d).getMeshGroup();
+	MeshGroup group1mesh3d = group1.createMeshGroup(mesh3d);
 	EXPECT_TRUE(group1mesh3d.isValid());
 	EXPECT_EQ(RESULT_OK, group1mesh3d.addElement(element1));
 	EXPECT_EQ(1, group1mesh3d.getSize());
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_EQ(6, mesh2d.getSize());
-	MeshGroup group1mesh2d = group1.getFieldElementGroup(mesh2d).getMeshGroup();
+	MeshGroup group1mesh2d = group1.getMeshGroup(mesh2d);
 	EXPECT_EQ(6, group1mesh2d.getSize());
 	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
 	EXPECT_EQ(12, mesh1d.getSize());
-	MeshGroup group1mesh1d = group1.getFieldElementGroup(mesh1d).getMeshGroup();
+	MeshGroup group1mesh1d = group1.getMeshGroup(mesh1d);
 	EXPECT_EQ(12, group1mesh1d.getSize());
 	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(8, nodes.getSize());
-	NodesetGroup group1nodes = group1.getFieldNodeGroup(nodes).getNodesetGroup();
+	NodesetGroup group1nodes = group1.getNodesetGroup(nodes);
 	EXPECT_EQ(8, group1nodes.getSize());
 
 	{
@@ -617,7 +617,7 @@ TEST(ZincNodeset, destroyNodesGroupChangeManager)
 	FieldGroup group1 = zinc.fm.createFieldGroup();
 	group1.setName("group1");
 	group1.setManaged(true);
-	NodesetGroup group1nodes = group1.createFieldNodeGroup(nodes).getNodesetGroup();
+	NodesetGroup group1nodes = group1.createNodesetGroup(nodes);
 	EXPECT_TRUE(group1nodes.isValid());
 
 	for (int n = 0; n < 32; ++n)

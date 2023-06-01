@@ -1351,9 +1351,9 @@ FE_mesh::~FE_mesh()
 	}
 	// safely detach from parent/face meshes
 	if (this->parentMesh)
-		this->parentMesh->setFaceMesh(0);
+		this->parentMesh->setFaceMesh(nullptr);
 	if (this->faceMesh)
-		this->faceMesh->setParentMesh(0);
+		this->faceMesh->setParentMesh(nullptr);
 
 	// must remove change log here to avoid messages during cleanup
 	cmzn::Deaccess(this->changeLog);
@@ -1395,10 +1395,9 @@ FE_mesh::~FE_mesh()
 void FE_mesh::detach_from_FE_region()
 {
 	this->clear();
-	this->fe_region = 0;
-	this->parentMesh = 0;
-	this->faceMesh = 0;
-	this->nodeset = 0;
+	this->parentMesh = nullptr;
+	this->faceMesh = nullptr;
+	this->nodeset = nullptr;
 	this->FE_domain::detach_from_FE_region();
 }
 
@@ -1718,12 +1717,15 @@ void FE_mesh::clear()
 					delete[] *parentsArrayAddress;
 			}
 		}
-		// clear embedding of nodes in this mesh
-		for (int i = 0; i < 2; ++i)
+		if (this->fe_region)
 		{
-			// this is not very efficient
-			FE_nodeset_clear_embedded_locations(this->fe_region->nodesets[i],
-				this->fe_region->fe_field_list, /*hostMesh*/this);
+			// clear embedding of nodes in this mesh
+			for (int i = 0; i < 2; ++i)
+			{
+				// this is not very efficient
+				FE_nodeset_clear_embedded_locations(this->fe_region->nodesets[i],
+					this->fe_region->fe_field_list, /*hostMesh*/this);
+			}
 		}
 		cmzn_element *element;
 		for (DsLabelIndex index = 0; index < indexLimit; ++index)
@@ -1742,7 +1744,7 @@ void FE_mesh::clear()
 		delete this->elementShapeFacesArray[i];
 	delete[] this->elementShapeFacesArray;
 	this->elementShapeFacesCount = 0;
-	this->elementShapeFacesArray = 0;
+	this->elementShapeFacesArray = nullptr;
 	this->elementShapeMap.clear();
 	// dynamic parent arrays have been freed above
 	this->parents.clear();

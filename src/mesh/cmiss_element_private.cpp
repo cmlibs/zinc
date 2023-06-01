@@ -119,12 +119,19 @@ cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 {
 	if (element)
 	{
+		// handle element being orphaned during clean-up
 		FE_mesh* feMesh = element->getMesh();
-		cmzn_region *region = feMesh->get_FE_region()->getRegion();
-		cmzn_mesh* mesh = region->findMeshByDimension(feMesh->getDimension());
-		if (mesh)
+		if (feMesh)
 		{
-			return mesh->access();
+			cmzn_region* region = feMesh->getRegion();
+			if (region)
+			{
+				cmzn_mesh* mesh = region->findMeshByDimension(feMesh->getDimension());
+				if (mesh)
+				{
+					return mesh->access();
+				}
+			}
 		}
 	}
 	return nullptr;
