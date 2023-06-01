@@ -409,8 +409,8 @@ cmzn_node_id cmzn_scenepicker::getNearestNode()
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element index
-			 * select_buffer[6] = point number
+			 * select_buffer[5] = -
+			 * select_buffer[6] = node index
 			 */
 			select_buffer_ptr = next_select_buffer;
 			number_of_names=(int)(select_buffer_ptr[0]);
@@ -447,7 +447,8 @@ cmzn_node_id cmzn_scenepicker::getNearestNode()
 							{
 								cmzn_scene_destroy(&picked_scene);
 							}
-							cmzn_node* node = nodeset->findNodeByIdentifier((int)(select_buffer_ptr[6]));
+							const DsLabelIndex nodeIndex = select_buffer_ptr[6];
+							cmzn_node* node = nodeset->getFeNodeset()->getNode(nodeIndex);
 							if (node)
 							{
 								if (nearest_node)
