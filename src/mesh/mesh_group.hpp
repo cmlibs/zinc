@@ -15,18 +15,28 @@
 #include "datastore/labelsgroup.hpp"
 #include "mesh/mesh.hpp"
 
+
 class Computed_field_group;
 
 struct cmzn_mesh_group : public cmzn_mesh, public FE_domain_mapper
 {
 	friend cmzn_field_group;
 
-	cmzn_field_group* group;  // not accessed, cleared if destroyed before this
+	// group is accessed once per external access of this object, i.e.
+	// not for first access which is held by group itself.
+	// This ensures group always exists while external handles exist.
+	cmzn_field_group* group;
 	DsLabelsGroup* labelsGroup;
 
 	cmzn_mesh_group(FE_mesh* feMeshIn, cmzn_field_group* groupIn);
 
 	~cmzn_mesh_group();
+
+	/** Increment access count of owner group to ensure it stays around */
+	virtual void ownerAccess();
+
+	/** Decrement access count of owner group */
+	virtual void ownerDeaccess();
 
 	/* Record that group has changed by object add, with client notification */
 	void changeAdd();
@@ -37,9 +47,6 @@ struct cmzn_mesh_group : public cmzn_mesh, public FE_domain_mapper
 	/* Record that group has changed by object remove, but do not notify clients.
 	 * Only used when objects removed because destroyed in parent domain. */
 	void changeRemoveNoNotify();
-
-	/** Only called by owning group when it is destroyed to detach this */
-	void detachFromGroup();
 
 	inline void invalidateIterators()
 	{
@@ -53,7 +60,7 @@ struct cmzn_mesh_group : public cmzn_mesh, public FE_domain_mapper
 	const cmzn_mesh_group* getConditionalMeshGroup(
 		const cmzn_field* conditionalField, bool& isEmptyMeshGroup) const;
 
-	/** get group core object or nullptr if detached */
+	/** get group core object, guaranteed to exist */
 	Computed_field_group* getGroupCore() const;
 
 	/** @return  Subelement handling mode of owning group, controlling whether faces/lines/nodes
@@ -131,7 +138,7 @@ public:
 		return this->labelsGroup->getSize();
 	}
 
-	/** @return  Non-accessed group owning this mesh group, or nullptr if detached */
+	/** @return  Non-accessed group owning this mesh group, guaranteed to exist */
 	cmzn_field_group* getFieldGroup() const
 	{
 		return this->group;

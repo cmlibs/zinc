@@ -70,10 +70,6 @@ void Computed_field_group::clearRemoveNodesetGroup(int index, bool clear, bool r
 		{
 			this->nodesetGroups[index]->removeAllNodes();
 		}
-		if (detach)
-		{
-			this->nodesetGroups[index]->detachFromGroup();
-		}
 		if (detach || (remove && (this->nodesetGroups[index]->getAccessCount() == 1)))
 		{
 			cmzn_nodeset_group::deaccess(this->nodesetGroups[index]);
@@ -88,10 +84,6 @@ void Computed_field_group::clearRemoveMeshGroup(int index, bool clear, bool remo
 		if (clear)
 		{
 			this->meshGroups[index]->removeAllElements();
-		}
-		if (detach)
-		{
-			this->meshGroups[index]->detachFromGroup();
 		}
 		if (detach || (remove && (this->meshGroups[index]->getAccessCount() == 1)))
 		{

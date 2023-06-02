@@ -36,14 +36,29 @@ protected:
 		cmzn::Deaccess(this->feNodeset);
 	}
 
+	/** Increment access count of any owner object to ensure it stays around */
+	virtual void ownerAccess()
+	{
+		// not accessing region otherwise can't be freed.
+		// object already accesses FE_region
+	}
+
+	/** Decrement access count of any owner object */
+	virtual void ownerDeaccess()
+	{
+	}
+
 public:
 
+	/** Also accesses owner object */
 	cmzn_nodeset* access()
 	{
+		this->ownerAccess();
 		++access_count;
 		return this;
 	}
 
+	/** Also deaccesses owner object */
 	static void deaccess(cmzn_nodeset*& nodeset);
 
 	/** @return  Number of references held to object */

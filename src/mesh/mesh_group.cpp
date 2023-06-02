@@ -29,39 +29,34 @@ cmzn_mesh_group::~cmzn_mesh_group()
 	cmzn::Deaccess(this->labelsGroup);
 }
 
+void cmzn_mesh_group::ownerAccess()
+{
+	cmzn_field_group_base_cast(this->group)->access();
+}
+
+void cmzn_mesh_group::ownerDeaccess()
+{
+	// not clearing owner
+	cmzn_field* field = cmzn_field_group_base_cast(this->group);
+	cmzn_field::deaccess(field);
+}
+
 void cmzn_mesh_group::changeAdd()
 {
 	this->invalidateIterators();
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		groupCore->changeAddLocal();
-	}
+	this->getGroupCore()->changeAddLocal();
 }
 
 void cmzn_mesh_group::changeRemove()
 {
 	this->invalidateIterators();
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		groupCore->changeRemoveLocal();
-	}
+	this->getGroupCore()->changeRemoveLocal();
 }
 
 void cmzn_mesh_group::changeRemoveNoNotify()
 {
 	this->invalidateIterators();
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		groupCore->changeRemoveLocalNoNotify();
-	}
-}
-
-void cmzn_mesh_group::detachFromGroup()
-{
-	this->group = nullptr;
+	this->getGroupCore()->changeRemoveLocalNoNotify();
 }
 
 const cmzn_mesh_group* cmzn_mesh_group::getConditionalMeshGroup(
@@ -80,27 +75,22 @@ const cmzn_mesh_group* cmzn_mesh_group::getConditionalMeshGroup(
 
 Computed_field_group* cmzn_mesh_group::getGroupCore() const
 {
-	return (this->group) ? cmzn_field_group_core_cast(this->group) : nullptr;
+	return cmzn_field_group_core_cast(this->group);
 }
 
 cmzn_field_group_subelement_handling_mode cmzn_mesh_group::getSubelementHandlingMode() const
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		return groupCore->getSubelementHandlingMode();
-	}
-	return CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_INVALID;
+	return this->getGroupCore()->getSubelementHandlingMode();
 }
 
 int cmzn_mesh_group::addElementFacesRecursive(cmzn_mesh_group& parentMeshGroup, DsLabelIndex parentIndex)
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if ((!groupCore) || (this->feMesh->getParentMesh() != parentMeshGroup.feMesh))
+	if (this->feMesh->getParentMesh() != parentMeshGroup.feMesh)
 	{
 		return CMZN_ERROR_ARGUMENT;
 	}
 	cmzn_mesh_group* faceMeshGroup = nullptr; // for adding faces of faces
+	Computed_field_group* groupCore = this->getGroupCore();
 	FE_mesh* faceFeMesh = this->feMesh->getFaceMesh();
 	if (faceFeMesh)
 	{
@@ -161,12 +151,12 @@ int cmzn_mesh_group::addElementFacesRecursive(cmzn_mesh_group& parentMeshGroup, 
 
 int cmzn_mesh_group::removeElementFacesRecursive(cmzn_mesh_group& parentMeshGroup, DsLabelIndex parentIndex)
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if ((!groupCore) || (this->feMesh->getParentMesh() != parentMeshGroup.feMesh))
+	if (this->feMesh->getParentMesh() != parentMeshGroup.feMesh)
 	{
 		return CMZN_ERROR_ARGUMENT;
 	}
 	cmzn_mesh_group* faceMeshGroup = nullptr; // for removing faces of faces
+	Computed_field_group* groupCore = this->getGroupCore();
 	FE_mesh* faceFeMesh = this->feMesh->getFaceMesh();
 	if (faceFeMesh)
 	{
@@ -238,12 +228,8 @@ int cmzn_mesh_group::removeElementFacesRecursive(cmzn_mesh_group& parentMeshGrou
 
 int cmzn_mesh_group::addSubelements(cmzn_element* element)
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (!groupCore)
-	{
-		return CMZN_ERROR_ARGUMENT;
-	}
 	int return_code = CMZN_OK;
+	Computed_field_group* groupCore = this->getGroupCore();
 	FE_mesh* faceFeMesh = this->feMesh->getFaceMesh();
 	if (faceFeMesh)
 	{
@@ -275,12 +261,8 @@ int cmzn_mesh_group::addSubelements(cmzn_element* element)
 
 int cmzn_mesh_group::removeSubelements(cmzn_element* element)
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (!groupCore)
-	{
-		return CMZN_ERROR_ARGUMENT;
-	}
 	int return_code = CMZN_OK;
+	Computed_field_group* groupCore = this->getGroupCore();
 	const DsLabelIndex elementIndex = element->getIndex();
 	FE_mesh* faceFeMesh = this->feMesh->getFaceMesh();
 	if (faceFeMesh)
@@ -362,12 +344,8 @@ int cmzn_mesh_group::removeSubelements(cmzn_element* element)
 
 int cmzn_mesh_group::addSubelementsList(const DsLabelsGroup& addlabelsGroup)
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (!groupCore)
-	{
-		return CMZN_ERROR_ARGUMENT;
-	}
 	int return_code = CMZN_OK;
+	Computed_field_group* groupCore = this->getGroupCore();
 	cmzn_element* element;
 	FE_mesh* faceFeMesh = this->feMesh->getFaceMesh();
 	cmzn_mesh_group* faceMeshGroup = nullptr;
@@ -407,12 +385,8 @@ int cmzn_mesh_group::addSubelementsList(const DsLabelsGroup& addlabelsGroup)
 
 int cmzn_mesh_group::removeSubelementsList(const DsLabelsGroup& removedlabelsGroup)
 {
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (!groupCore)
-	{
-		return CMZN_ERROR_GENERAL;
-	}
 	int return_code = CMZN_OK;
+	Computed_field_group* groupCore = this->getGroupCore();
 	cmzn_element* element;
 	FE_mesh* faceFeMesh = this->feMesh->getFaceMesh();
 	if (faceFeMesh)

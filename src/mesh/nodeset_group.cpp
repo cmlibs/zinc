@@ -28,38 +28,33 @@ cmzn_nodeset_group::~cmzn_nodeset_group()
 	cmzn::Deaccess(this->labelsGroup);
 }
 
+void cmzn_nodeset_group::ownerAccess()
+{
+	cmzn_field_group_base_cast(this->group)->access();
+}
+
+void cmzn_nodeset_group::ownerDeaccess()
+{
+	// not clearing owner
+	cmzn_field* field = cmzn_field_group_base_cast(this->group);
+	cmzn_field::deaccess(field);
+}
+
 void cmzn_nodeset_group::changeAdd()
 {
 	this->invalidateIterators();
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		groupCore->changeAddLocal();
-	}
+	this->getGroupCore()->changeAddLocal();
 }
 
 void cmzn_nodeset_group::changeRemove()
 {
 	this->invalidateIterators();
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		groupCore->changeRemoveLocal();
-	}
+	this->getGroupCore()->changeRemoveLocal();
 }
 void cmzn_nodeset_group::changeRemoveNoNotify()
 {
 	this->invalidateIterators();
-	Computed_field_group* groupCore = this->getGroupCore();
-	if (groupCore)
-	{
-		groupCore->changeRemoveLocalNoNotify();
-	}
-}
-
-void cmzn_nodeset_group::detachFromGroup()
-{
-	this->group = nullptr;
+	this->getGroupCore()->changeRemoveLocalNoNotify();
 }
 
 const cmzn_nodeset_group* cmzn_nodeset_group::getConditionalNodesetGroup(
@@ -78,7 +73,7 @@ const cmzn_nodeset_group* cmzn_nodeset_group::getConditionalNodesetGroup(
 
 Computed_field_group* cmzn_nodeset_group::getGroupCore() const
 {
-	return (this->group) ? cmzn_field_group_core_cast(this->group) : nullptr;
+	return cmzn_field_group_core_cast(this->group);
 }
 
 bool cmzn_nodeset_group::isElementCompatible(const cmzn_element* element)

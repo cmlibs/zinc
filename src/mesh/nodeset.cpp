@@ -27,6 +27,11 @@ void cmzn_nodeset::deaccess(cmzn_nodeset*& nodeset)
 		{
 			delete nodeset;
 		}
+		else
+		{
+			// first access is by owner itself
+			nodeset->ownerDeaccess();
+		}
 		nodeset = nullptr;
 	}
 }

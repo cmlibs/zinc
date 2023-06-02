@@ -35,10 +35,23 @@ protected:
 		cmzn::Deaccess(this->feMesh);
 	}
 
+	/** Increment access count of any owner object to ensure it stays around */
+	virtual void ownerAccess()
+	{
+		// not accessing region otherwise can't be freed.
+		// object already accesses FE_region
+	}
+
+	/** Decrement access count of any owner object */
+	virtual void ownerDeaccess()
+	{
+	}
+
 public:
 
 	cmzn_mesh* access()
 	{
+		this->ownerAccess();
 		++access_count;
 		return this;
 	}

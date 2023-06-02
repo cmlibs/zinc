@@ -28,6 +28,11 @@ void cmzn_mesh::deaccess(cmzn_mesh*& mesh)
 		{
 			delete mesh;
 		}
+		else
+		{
+			// first access is by owner itself
+			mesh->ownerDeaccess();
+		}
 		mesh = nullptr;
 	}
 }
