@@ -406,6 +406,21 @@ int cmzn_nodeset_group_add_nodes_conditional(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_field_group_id cmzn_nodeset_group_get_field_group(
+	cmzn_nodeset_group_id nodeset_group)
+{
+	if (nodeset_group)
+	{
+		cmzn_field_group* fieldGroup = nodeset_group->getFieldGroup();
+		if (fieldGroup)
+		{
+			cmzn_field_group_base_cast(fieldGroup)->access();
+			return fieldGroup;
+		}
+	}
+	return nullptr;
+}
+
 int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_group)
 {
 	if (nodeset_group)

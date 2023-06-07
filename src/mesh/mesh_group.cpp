@@ -970,6 +970,21 @@ int cmzn_mesh_group_add_elements_conditional(cmzn_mesh_group_id mesh_group,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_field_group_id cmzn_mesh_group_get_field_group(
+	cmzn_mesh_group_id mesh_group)
+{
+	if (mesh_group)
+	{
+		cmzn_field_group* fieldGroup = mesh_group->getFieldGroup();
+		if (fieldGroup)
+		{
+			cmzn_field_group_base_cast(fieldGroup)->access();
+			return fieldGroup;
+		}
+	}
+	return nullptr;
+}
+
 int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group)
 {
 	if (mesh_group)

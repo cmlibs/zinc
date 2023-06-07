@@ -131,6 +131,9 @@ TEST(cmzn_fieldgroup, add_remove_nodes)
 
 	EXPECT_EQ(nodesetGroup, tmpNodesetGroup = cmzn_field_group_get_nodeset_group(childGroup, childNodes));
 	cmzn_nodeset_group_destroy(&tmpNodesetGroup);
+	cmzn_field_group_id getGroup = cmzn_nodeset_group_get_field_group(nodesetGroup);
+	EXPECT_EQ(childGroup, getGroup);
+	cmzn_field_group_destroy(&getGroup);
 	cmzn_field_group_destroy(&childGroup);
 	// test can't get nodeset group for parent region nodes
 	EXPECT_EQ(static_cast<cmzn_nodeset_group_id>(0), cmzn_field_group_get_nodeset_group(childGroup, nodes));
@@ -203,6 +206,7 @@ TEST(ZincFieldGroup, add_remove_nodes)
 	EXPECT_EQ(childGroup, nonEmptyGroup = group.getFirstNonEmptySubregionFieldGroup());
 
 	EXPECT_EQ(nodesetGroup, childGroup.getNodesetGroup(childNodes));
+	EXPECT_EQ(childGroup, nodesetGroup.getFieldGroup());
 	// test can't get nodeset group for parent region nodes
 	EXPECT_FALSE(childGroup.getNodesetGroup(nodes).isValid());
 
@@ -216,6 +220,28 @@ TEST(ZincFieldGroup, add_remove_nodes)
 	nodesetGroup = NodesetGroup();  // otherwise child group remains
 	EXPECT_EQ(OK, group.removeEmptySubgroups());
 	EXPECT_FALSE((childGroup = group.getSubregionFieldGroup(childRegion)).isValid());
+}
+
+// test that FieldGroup lives as long as any NodesetGroup made for it
+TEST(ZincFieldGroup, lifespan_nodeset_group)
+{
+	ZincTestSetupCpp zinc;
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(RESULT_OK, group.setName("group"));
+	cmzn_field_id field_id = group.getId();
+	EXPECT_NE(nullptr, field_id);
+
+	NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
+	EXPECT_TRUE(nodesetGroup.isValid());
+	// the following releases the handle but should not destroy group
+	group = FieldGroup();
+	EXPECT_EQ(nullptr, group.getId());
+
+	group = nodesetGroup.getFieldGroup();
+	EXPECT_EQ(field_id, group.getId());
 }
 
 TEST(cmzn_fieldgroup, add_remove_elements)
@@ -275,6 +301,9 @@ TEST(cmzn_fieldgroup, add_remove_elements)
 
 	EXPECT_EQ(meshGroup, tmpMeshGroup = cmzn_field_group_get_mesh_group(childGroup, childMesh3d));
 	cmzn_mesh_group_destroy(&tmpMeshGroup);
+	cmzn_field_group_id getGroup = cmzn_mesh_group_get_field_group(meshGroup);
+	EXPECT_EQ(childGroup, getGroup);
+	cmzn_field_group_destroy(&getGroup);
 	cmzn_field_group_destroy(&childGroup);
 	// test can't get mesh group for parent region mesh
 	EXPECT_EQ(static_cast<cmzn_mesh_group_id>(0), cmzn_field_group_get_mesh_group(childGroup, mesh3d));
@@ -347,6 +376,7 @@ TEST(ZincFieldGroup, add_remove_elements)
 	EXPECT_EQ(childGroup, nonEmptyGroup = group.getFirstNonEmptySubregionFieldGroup());
 
 	EXPECT_EQ(meshGroup, childGroup.getMeshGroup(childMesh3d));
+	EXPECT_EQ(childGroup, meshGroup.getFieldGroup());
 	// test can't get mesh group for parent region mesh
 	EXPECT_FALSE(childGroup.getMeshGroup(mesh3d).isValid());
 
@@ -360,6 +390,28 @@ TEST(ZincFieldGroup, add_remove_elements)
 	meshGroup = MeshGroup();  // otherwise child group remains
 	EXPECT_EQ(RESULT_OK, group.removeEmptySubgroups());
 	EXPECT_FALSE((childGroup = group.getSubregionFieldGroup(childRegion)).isValid());
+}
+
+// test that FieldGroup lives as long as any MeshGroup made for it
+TEST(ZincFieldGroup, lifespan_mesh_group)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(RESULT_OK, group.setName("group"));
+	cmzn_field_id field_id = group.getId();
+	EXPECT_NE(nullptr, field_id);
+
+	MeshGroup meshGroup = group.createMeshGroup(mesh);
+	EXPECT_TRUE(meshGroup.isValid());
+	// the following releases the handle but should not destroy group
+	group = FieldGroup();
+	EXPECT_EQ(nullptr, group.getId());
+
+	group = meshGroup.getFieldGroup();
+	EXPECT_EQ(field_id, group.getId());
 }
 
 TEST(ZincFieldElementGroup, add_remove_conditional)

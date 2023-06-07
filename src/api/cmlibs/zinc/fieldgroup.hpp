@@ -10,10 +10,12 @@
 #define CMZN_FIELDGROUP_HPP__
 
 #include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/element.hpp"
 #include "cmlibs/zinc/field.hpp"
 #include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/mesh.hpp"
 #include "cmlibs/zinc/node.hpp"
-#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/nodeset.hpp"
 #include "cmlibs/zinc/region.hpp"
 
 namespace CMLibs
@@ -184,6 +186,16 @@ inline FieldGroup Fieldmodule::createFieldGroup()
 inline FieldGroup Field::castGroup()
 {
 	return FieldGroup(cmzn_field_cast_group(id));
+}
+
+inline FieldGroup MeshGroup::getFieldGroup() const
+{
+	return FieldGroup(cmzn_mesh_group_get_field_group(this->getDerivedId()));
+}
+
+inline FieldGroup NodesetGroup::getFieldGroup() const
+{
+	return FieldGroup(cmzn_nodeset_group_get_field_group(this->getDerivedId()));
 }
 
 }  // namespace Zinc

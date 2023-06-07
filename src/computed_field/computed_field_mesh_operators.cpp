@@ -240,7 +240,7 @@ template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(Pro
 	if (element_xi_location)
 	{
 		cmzn_element *element = element_xi_location->get_element();
-		if (cmzn_mesh_contains_element(this->getMesh(), element))
+		if (this->getMesh()->containsElement(element))
 		{
 			IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
 			if (0 == shapePoints)

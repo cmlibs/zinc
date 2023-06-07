@@ -198,6 +198,8 @@ public:
 			this->getDerivedId(), conditionalField.getId());
 	}
 
+	inline FieldGroup getFieldGroup() const;
+
 	int removeAllElements()
 	{
 		return cmzn_mesh_group_remove_all_elements(this->getDerivedId());

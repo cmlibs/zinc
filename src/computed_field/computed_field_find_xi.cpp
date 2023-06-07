@@ -26,6 +26,7 @@ lookup of the element.
 #include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
+#include "mesh/mesh.hpp"
 
 #define MAX_FIND_XI_ITERATIONS 50
 
@@ -424,7 +425,7 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 				/* Now try every element */
 				if (!*element_address)
 				{
-					cmzn_elementiterator *iterator = cmzn_mesh_create_elementiterator(searchMesh);
+					cmzn_elementiterator *iterator = searchMesh->createElementiterator();
 					while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 					{
 						if (element != findElementXiCache->element)  // since already tried it

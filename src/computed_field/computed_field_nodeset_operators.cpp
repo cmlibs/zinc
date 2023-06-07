@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : computed_field_nodeset_operators.cpp
  *
  * Implementation of field operators that act on a nodeset.
@@ -215,7 +215,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 	else
 	{
 		// iterate over whole nodeset
-		cmzn_nodeiterator *iterator = cmzn_nodeset_create_nodeiterator(this->nodeset);
+		cmzn_nodeiterator *iterator = this->nodeset->createNodeiterator();
 		cmzn_node *node = 0;
 		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 		{
@@ -224,7 +224,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 			if (sourceValueCache)
 				termOperator.processTerm(sourceValueCache->values);
 		}
-		cmzn_nodeiterator_destroy(&iterator);
+		cmzn::Deaccess(iterator);
 	}
 	return 1;
 }
@@ -564,7 +564,7 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 	}
 	int number_of_terms = 0;
 	cmzn_field_id sourceField = field->source_fields[0];
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
+	cmzn_nodeiterator* iterator = nodeset->createNodeiterator();
 	cmzn_node_id node = 0;
 	cmzn_element *element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -577,7 +577,7 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 				++number_of_terms;
 		}
 	}
-	cmzn_nodeiterator_destroy(&iterator);
+	cmzn::Deaccess(iterator);
 	return number_of_terms;
 }
 

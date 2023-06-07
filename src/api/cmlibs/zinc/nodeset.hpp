@@ -172,6 +172,8 @@ public:
 			this->getDerivedId(), conditionalField.getId());
 	}
 
+	inline FieldGroup getFieldGroup() const;
+
 	int removeAllNodes()
 	{
 		return cmzn_nodeset_group_remove_all_nodes(this->getDerivedId());
