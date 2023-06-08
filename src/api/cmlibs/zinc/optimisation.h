@@ -287,34 +287,6 @@ ZINC_API int cmzn_optimisation_remove_dependent_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id field);
 
 /**
- * @deprecated  Misnamed: use dependent field function.
- * @see cmzn_optimisation_get_first_dependent_field
- */
-ZINC_API cmzn_field_id cmzn_optimisation_get_first_independent_field(
-	cmzn_optimisation_id optimisation);
-
-/**
- * @deprecated  Misnamed: use dependent field function.
- * @see cmzn_optimisation_get_next_dependent_field
- */
-ZINC_API cmzn_field_id cmzn_optimisation_get_next_independent_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id ref_field);
-
-/**
- * @deprecated  Misnamed: use dependent field function.
- * @see cmzn_optimisation_add_dependent_field
- */
-ZINC_API int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
-	cmzn_field_id field);
-
-/**
- * @deprecated  Misnamed: use dependent field function.
- * @see cmzn_optimisation_remove_dependent_field
- */
-ZINC_API int cmzn_optimisation_remove_independent_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id field);
-
-/**
  * Get the first objective field from the optimisation problem description.
  * @see cmzn_optimisation_get_next_objective_field
  *

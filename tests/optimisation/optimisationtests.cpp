@@ -143,32 +143,6 @@ TEST(ZincOptimisation, arguments)
     EXPECT_FALSE(temp.isValid());
 }
 
-TEST(ZincOptimisation, deprecatedIndependentFieldAPI)
-{
-    ZincTestSetupCpp zinc;
-
-    Optimisation optimisation = zinc.fm.createOptimisation();
-    EXPECT_TRUE(optimisation.isValid());
-    // made-up fields to test independent field APIs
-    FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
-    EXPECT_TRUE(f1.isValid());
-    FieldFiniteElement f2 = zinc.fm.createFieldFiniteElement(1);
-    EXPECT_TRUE(f2.isValid());
-    // Test Dependent and deprecated Independent field APIs do the same thing
-    EXPECT_EQ(OK, optimisation.addIndependentField(f1));
-    EXPECT_EQ(f1, optimisation.getFirstIndependentField());
-    EXPECT_EQ(f1, optimisation.getFirstDependentField());
-    EXPECT_EQ(OK, optimisation.addDependentField(f2));
-    EXPECT_EQ(f2, optimisation.getNextIndependentField(f1));
-    EXPECT_EQ(f2, optimisation.getNextDependentField(f1));
-    EXPECT_EQ(OK, optimisation.removeIndependentField(f1));
-    EXPECT_EQ(f2, optimisation.getFirstIndependentField());
-    EXPECT_EQ(f2, optimisation.getFirstDependentField());
-    EXPECT_EQ(OK, optimisation.removeDependentField(f2));
-    EXPECT_FALSE(optimisation.getFirstIndependentField().isValid());
-    EXPECT_FALSE(optimisation.getFirstDependentField().isValid());
-}
-
 // A non-linear optimisation for deformation of a tricubic Lagrange unit cube.
 // All nodes on end1 are fixed in x,y,z by being excluded as DOFs
 // All nodes on end2 are fixed to x=1.5 by a penalty

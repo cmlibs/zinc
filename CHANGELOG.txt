@@ -6,6 +6,7 @@ v4.0.0
 (Break) Remove cmzn_mesh_match, cmzn_nodeset_match as can now use pointer comparison for these classes.
 (Break) Remove deprecated elementtemplate define field simple nodal, element constant and associated API.
 (Break) Remove deprecated Alias field. Use Apply field instead.
+(Break) Remove deprecated Optimisation independent field APIs (use dependent field).
 Add API to get owning group field from nodeset or mesh.
 
 v2.10.2
