@@ -53,7 +53,8 @@ cmzn_elementtemplate* cmzn_mesh::createElementtemplate() const
 
 int cmzn_mesh::destroyElementsConditional(cmzn_field* conditional_field)
 {
-	if (!conditional_field)
+	cmzn_region* region = this->getRegion();
+	if ((!region) || (!conditional_field))
 	{
 		return CMZN_ERROR_ARGUMENT;
 	}
@@ -62,7 +63,6 @@ int cmzn_mesh::destroyElementsConditional(cmzn_field* conditional_field)
 	{
 		return CMZN_ERROR_GENERAL;
 	}
-	cmzn_region* region = FE_region_get_cmzn_region(this->feMesh->get_FE_region()); // not accessed
 	cmzn_fieldcache* fieldcache = cmzn_fieldcache::create(region);
 	cmzn_elementiterator* iterator = this->createElementiterator();
 	cmzn_element* element = nullptr;
@@ -88,8 +88,12 @@ char* cmzn_mesh::getName() const
 
 cmzn_mesh* cmzn_mesh::getMasterMesh() const
 {
-	cmzn_region* region = FE_region_get_cmzn_region(this->feMesh->get_FE_region()); // not accessed
-	return region->findMeshByDimension(this->feMesh->getDimension());
+	cmzn_region* region = this->getRegion();
+	if (region)
+	{
+		return region->findMeshByDimension(this->feMesh->getDimension());
+	}
+	return nullptr;
 }
 
 cmzn_region* cmzn_mesh::getRegion() const
@@ -144,8 +148,10 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 cmzn_mesh_id cmzn_mesh_access(cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->access();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_mesh_destroy(cmzn_mesh_id* mesh_address)
@@ -161,7 +167,9 @@ int cmzn_mesh_destroy(cmzn_mesh_id* mesh_address)
 bool cmzn_mesh_contains_element(cmzn_mesh_id mesh, cmzn_element_id element)
 {
 	if (mesh)
+	{
 		return mesh->containsElement(element);
+	}
 	return false;
 }
 
@@ -169,24 +177,30 @@ cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
 	cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->createElementtemplate();
-	return 0;
+	}
+	return nullptr;
 }
 
 cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
 	int identifier, cmzn_elementtemplate_id element_template)
 {
 	if (mesh)
+	{
 		return mesh->createElement(identifier, element_template);
-	return 0;
+	}
+	return nullptr;
 }
 
 cmzn_elementiterator_id cmzn_mesh_create_elementiterator(
 	cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->createElementiterator();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
@@ -205,22 +219,28 @@ int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
 int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->destroyAllElements();
-	return 0;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id element)
 {
 	if (mesh && element)
+	{
 		return mesh->destroyElement(element);
-	return 0;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
 	cmzn_field_id conditional_field)
 {
 	if (mesh)
+	{
 		return mesh->destroyElementsConditional(conditional_field);
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -256,7 +276,9 @@ cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->getDimension();
+	}
 	return 0;
 }
 
@@ -264,10 +286,10 @@ cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh)
 {
 	if (mesh)
 	{
-		cmzn_region* region = FE_region_get_cmzn_region(mesh->getFeMesh()->get_FE_region());
+		cmzn_region* region = mesh->getRegion();
 		return cmzn_fieldmodule_create(region);
 	}
-	return 0;
+	return nullptr;
 }
 
 cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh)
@@ -282,14 +304,18 @@ cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh)
 char* cmzn_mesh_get_name(cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->getName();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_mesh_get_size(cmzn_mesh_id mesh)
 {
 	if (mesh)
+	{
 		return mesh->getSize();
+	}
 	return 0;
 }
 

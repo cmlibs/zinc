@@ -57,17 +57,16 @@ cmzn_nodetemplate* cmzn_nodeset::createNodetemplate() const
 
 int cmzn_nodeset::destroyNodesConditional(cmzn_field* conditional_field)
 {
-	if (!conditional_field)
+	cmzn_region* region = this->getRegion();
+	if ((!region) || (!conditional_field))
 	{
 		return CMZN_ERROR_ARGUMENT;
 	}
-
 	DsLabelsGroup* tmpLabelsGroup = this->feNodeset->createLabelsGroup();
 	if (!tmpLabelsGroup)
 	{
 		return CMZN_ERROR_GENERAL;
 	}
-	cmzn_region* region = FE_region_get_cmzn_region(this->feNodeset->get_FE_region());
 	cmzn_fieldcache* fieldcache = cmzn_fieldcache::create(region);
 	cmzn_nodeiterator* iterator = this->createNodeiterator();
 	cmzn_node* node = nullptr;
@@ -93,8 +92,12 @@ char* cmzn_nodeset::getName() const
 
 cmzn_nodeset* cmzn_nodeset::getMasterNodeset() const
 {
-	cmzn_region* region = FE_region_get_cmzn_region(this->feNodeset->get_FE_region()); // not accessed
-	return region->findNodesetByFieldDomainType(this->feNodeset->getFieldDomainType());
+	cmzn_region* region = this->getRegion();
+	if (region)
+	{
+		return region->findNodesetByFieldDomainType(this->feNodeset->getFieldDomainType());
+	}
+	return nullptr;
 }
 
 bool cmzn_nodeset::hasMembershipChanges() const
