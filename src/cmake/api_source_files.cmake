@@ -16,7 +16,6 @@ SET( API_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/elementfieldtemplate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/elementtemplate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/field.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldalias.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldapply.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldarithmeticoperators.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldassignment.h

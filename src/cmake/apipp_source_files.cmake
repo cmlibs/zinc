@@ -18,7 +18,6 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldcache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/field.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldmodule.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldalias.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldapply.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldarithmeticoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldassignment.hpp

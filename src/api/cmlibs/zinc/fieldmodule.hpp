@@ -23,7 +23,6 @@ namespace CMLibs
 namespace Zinc
 {
 
-class FieldAlias;
 class FieldApply;
 class FieldArgumentReal;
 class FieldAdd;
@@ -249,8 +248,6 @@ public:
 	}
 
 	inline Optimisation createOptimisation();
-
-	inline FieldAlias createFieldAlias(const Field& sourceField);
 
 	inline FieldApply createFieldApply(const Field& sourceField);
 
