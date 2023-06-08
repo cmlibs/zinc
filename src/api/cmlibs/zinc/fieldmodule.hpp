@@ -227,7 +227,7 @@ public:
 		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}
 
-	char *writeDescription()
+	char *writeDescription() const
 	{
 		return cmzn_fieldmodule_write_description(id);
 	}

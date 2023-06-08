@@ -291,7 +291,7 @@ public:
  		return cmzn_tessellationmodule_read_description(this->id, description);
  	}
 
- 	char *writeDescription()
+ 	char *writeDescription() const
  	{
  		return cmzn_tessellationmodule_write_description(this->id);
  	}

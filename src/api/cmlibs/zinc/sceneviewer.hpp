@@ -646,7 +646,7 @@ public:
 		return cmzn_sceneviewer_read_description(this->id, description);
 	}
 
-	char *writeDescription()
+	char *writeDescription() const
 	{
 		return cmzn_sceneviewer_write_description(this->id);
 	}

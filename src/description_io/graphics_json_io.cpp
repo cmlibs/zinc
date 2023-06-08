@@ -10,19 +10,32 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "graphics/glyph.hpp"
-#include "graphics/graphics.hpp"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/region.hpp"
 #include "cmlibs/zinc/spectrum.hpp"
 #include "cmlibs/zinc/scene.hpp"
 #include "cmlibs/zinc/fieldmodule.hpp"
+#include "graphics/glyph.hpp"
+#include "graphics/graphics.hpp"
 #include "general/debug.h"
+#include "general/message.h"
 #include "description_io/graphics_json_export.hpp"
 #include <string.h>
 
-CMLibs::Zinc::Field getFieldByName(CMLibs::Zinc::Graphics &graphics, const char *name)
+CMLibs::Zinc::Field getFieldByName(const CMLibs::Zinc::Graphics &graphics, const char *fieldName)
 {
-	CMLibs::Zinc::Fieldmodule fm = graphics.getScene().getRegion().getFieldmodule();
-	return fm.findFieldByName(name);
+	CMLibs::Zinc::Region region = graphics.getScene().getRegion();
+	CMLibs::Zinc::Field field = region.getFieldmodule().findFieldByName(fieldName);
+	if (!field.isValid())
+	{
+		char* regionName = region.getName();
+		char* graphicsTypeName = CMLibs::Zinc::Graphics::TypeEnumToString(graphics.getType());
+		display_message(WARNING_MESSAGE, "Scene.readDescription: Region %s Graphics %s could not find field %s",
+			regionName ? regionName : "/", graphicsTypeName, fieldName);
+		cmzn_deallocate(graphicsTypeName);
+		cmzn_deallocate(regionName);
+	}
+	return field;
 }
 
 void GraphicsJsonIO::ioGeneralFieldEntries(Json::Value &graphicsSettings)

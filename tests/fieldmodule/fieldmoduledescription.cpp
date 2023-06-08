@@ -882,3 +882,45 @@ TEST(Fieldmodule_description, writeFieldCoordinateSystemTypeNotApplicable)
 	EXPECT_EQ(RESULT_OK, zinc.fm.readDescription(description));
 	cmzn_deallocate(description);
 }
+
+TEST(ZincFieldmodule, description_io_missing_field)
+{
+	ZincTestSetupCpp zinc;
+
+	const char* fieldmoduleDescription =
+		"{\n"
+		"    \"Fields\" : [\n"
+		"        {\n"
+		"            \"CoordinateSystemType\" : \"RECTANGULAR_CARTESIAN\",\n"
+		"            \"FieldConstant\" : {\n"
+		"                \"Values\" : [1, 4, 2]\n"
+		"            },\n"
+		"            \"IsManaged\" : true,\n"
+		"            \"Name\" : \"Constant\"\n"
+		"        },\n"
+		"        {\n"
+		"            \"FieldAbs\" : {\n"
+		"                \"SourceFields\" : [\"bob\"]\n"
+		"            },\n"
+		"            \"IsManaged\" : true,\n"
+		"            \"Name\" : \"Abs\"\n"
+		"        },\n"
+		"        {\n"
+		"            \"FieldPower\" : {\n"
+		"                \"SourceFields\" : [\"Abs\"]\n"
+		"            },\n"
+		"            \"IsManaged\" : true,\n"
+		"            \"Name\" : \"Power\"\n"
+		"        }\n"
+		"    ]\n"
+		"}\n";
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.readDescription(fieldmoduleDescription));
+
+	Field constant = zinc.fm.findFieldByName("Constant");
+	EXPECT_TRUE(constant.isValid());
+	Field abs = zinc.fm.findFieldByName("Abs");
+	EXPECT_FALSE(abs.isValid());
+	Field power = zinc.fm.findFieldByName("Power");
+	EXPECT_FALSE(power.isValid());
+}

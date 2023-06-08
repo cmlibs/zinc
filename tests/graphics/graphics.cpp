@@ -2066,6 +2066,39 @@ TEST(ZincGraphics, boundaryMode_range2d)
 	}
 }
 
+TEST(ZincGraphics, description_io_missing_field)
+{
+	ZincTestSetupCpp zinc;
+
+	const char* sceneDescription =
+		"{\n"
+		"    \"Graphics\" : [\n"
+		"    {\n"
+		"        \"DataField\" : \"data\",\n"
+		"        \"SubgroupField\" : \"bob\",\n"
+		"        \"Lines\" : {},\n"
+		"        \"Type\" : \"LINES\"\n"
+		"    }\n"
+		"    ],\n"
+		"    \"VisibilityFlag\" : true\n"
+		"}\n";
+
+	double values[] = { 1.0, 2.0, 3.0 };
+	Field dataField = zinc.fm.createFieldConstant(sizeof(values) / sizeof(double), values);
+	dataField.setName("data");
+	EXPECT_TRUE(dataField.isValid());
+
+	EXPECT_EQ(RESULT_OK, zinc.scene.readDescription(sceneDescription, true));
+	CMLibs::Zinc::GraphicsLines lines = zinc.scene.getFirstGraphics().castLines();
+	EXPECT_TRUE(lines.isValid());
+
+	EXPECT_EQ(dataField, lines.getDataField());
+	EXPECT_FALSE(lines.getSubgroupField().isValid());  // but it should have warned "bob" was not found
+
+	CMLibs::Zinc::Graphics graphics = zinc.scene.getNextGraphics(lines);
+	EXPECT_FALSE(graphics.isValid());
+}
+
 TEST(ZincGraphics, BoundaryModeEnum)
 {
 	const char *enumNames[6] = { nullptr, "ALL", "BOUNDARY", "INTERIOR", "SUBGROUP_BOUNDARY", "SUBGROUP_INTERIOR" };
