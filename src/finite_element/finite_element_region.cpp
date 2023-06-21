@@ -294,20 +294,6 @@ Global functions
 ----------------
 */
 
-/**
- * Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
- */
-static int DESTROY(FE_region)(struct FE_region **fe_region_address)
-{
-	if (fe_region_address)
-	{
-		delete *fe_region_address;
-		fe_region_address = 0;
-		return 1;
-	}
-	return 0;
-}
-
 int FE_region_begin_change(struct FE_region *fe_region)
 {
 	if (fe_region)

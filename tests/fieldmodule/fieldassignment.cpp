@@ -107,9 +107,9 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 
     EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
-	FieldGroup nodeGroup = zinc.fm.createFieldGroup();
-	EXPECT_TRUE(nodeGroup.isValid());
-	NodesetGroup nodesetGroup = nodeGroup.createNodesetGroup(nodes);
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	for (int n = 0; n < 4; ++n)
 	{
@@ -142,7 +142,7 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 	Nodeset noNodeset;
 	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(noNodeset));
 	EXPECT_FALSE(fieldassignment.getNodeset().isValid());
-	FieldNot conditionalField = zinc.fm.createFieldNot(nodeGroup);
+	FieldNot conditionalField = zinc.fm.createFieldNot(group);
 	EXPECT_EQ(RESULT_OK, fieldassignment.setConditionalField(conditionalField));
 	EXPECT_EQ(conditionalField, fieldassignment.getConditionalField());
 	EXPECT_EQ(RESULT_OK, fieldassignment.assign());

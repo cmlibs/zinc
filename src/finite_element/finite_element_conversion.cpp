@@ -480,14 +480,14 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 							else
 							{
 								node = cmzn_nodeset_create_node(this->destination_nodeset, -1, this->nodetemplate);
-								if (!node)
-								{
-									display_message(ERROR_MESSAGE, "convert elements.  Failed to create node.");
-									return 0;
-								}
 								if (node)
 								{
 									this->addNode(values, node);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "convert elements.  Failed to create node.");
+									return 0;
 								}
 							}
 							nodes[n] = node;
