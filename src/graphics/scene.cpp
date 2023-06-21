@@ -565,7 +565,7 @@ int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
 	}
 	const bool notify = (transformationFieldIn != this->transformationField)
 		|| (this->transformationActive && (!transformationFieldIn));
-	REACCESS(cmzn_field)(&(this->transformationField), transformationFieldIn);
+	cmzn_field::reaccess(this->transformationField, transformationFieldIn);
 	this->transformationActive = (0 != transformationFieldIn);
 	if (notify)
 	{

@@ -13,6 +13,7 @@
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_module.hpp"
 #include "element/elementbasis.hpp"
+#include "finite_element/finite_element_region_private.h"
 #include "finite_element/finite_element_shape.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "general/mystring.h"
@@ -20,7 +21,7 @@
 
 cmzn_elementbasis::cmzn_elementbasis(FE_region* fe_region, int mesh_dimension,
 	cmzn_elementbasis_function_type function_type) :
-	fe_region(ACCESS(FE_region)(fe_region)),
+	fe_region(fe_region->access()),
 	dimension(mesh_dimension),
 	function_types(new cmzn_elementbasis_function_type[mesh_dimension]),
 	access_count(1)
@@ -33,7 +34,7 @@ cmzn_elementbasis::cmzn_elementbasis(FE_region* fe_region, int mesh_dimension,
 
 cmzn_elementbasis::~cmzn_elementbasis()
 {
-	DEACCESS(FE_region)(&fe_region);
+	FE_region::deaccess(this->fe_region);
 	delete[] function_types;
 }
 
@@ -230,35 +231,44 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 			return cmzn_elementbasis::create(fe_region, dimension, function_type);
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
 cmzn_elementbasis_id cmzn_elementbasis_access(
 	cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
+	{
 		return element_basis->access();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_elementbasis_destroy(cmzn_elementbasis_id* element_basis_address)
 {
 	if (element_basis_address)
-		return cmzn_elementbasis::deaccess(*element_basis_address);
+	{
+		cmzn_elementbasis::deaccess(*element_basis_address);
+		return CMZN_OK;
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
 FE_basis* cmzn_elementbasis_get_FE_basis(cmzn_elementbasis_id elementbasis)
 {
 	if (elementbasis)
+	{
 		return elementbasis->getFeBasis();
-	return 0;
+	}
+	return nullptr;
 }
 
 int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
+	{
 		return element_basis->getDimension();
+	}
 	return 0;
 }
 
@@ -266,7 +276,9 @@ enum cmzn_elementbasis_function_type cmzn_elementbasis_get_function_type(
 	cmzn_elementbasis_id element_basis, int chart_component)
 {
 	if (element_basis)
+	{
 		return element_basis->getFunctionType(chart_component);
+	}
 	return CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
 }
 
@@ -274,7 +286,9 @@ int cmzn_elementbasis_set_function_type(cmzn_elementbasis_id element_basis,
 	int chart_component, enum cmzn_elementbasis_function_type function_type)
 {
 	if (element_basis)
+	{
 		return element_basis->setFunctionType(chart_component, function_type);
+	}
 	return 0;
 }
 
@@ -282,7 +296,9 @@ int cmzn_elementbasis_get_number_of_nodes(
 	cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
+	{
 		return element_basis->getNumberOfNodes();
+	}
 	return 0;
 }
 
@@ -290,7 +306,9 @@ int cmzn_elementbasis_get_number_of_functions(
 	cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
+	{
 		return element_basis->getNumberOfFunctions();
+	}
 	return 0;
 }
 
@@ -298,7 +316,9 @@ int cmzn_elementbasis_get_number_of_functions_per_node(
 	cmzn_elementbasis_id element_basis, int basis_node_index)
 {
 	if (element_basis)
+	{
 		return element_basis->getNumberOfFunctionsPerNode(basis_node_index);
+	}
 	return 0;
 }
 

@@ -25,9 +25,9 @@ class cmzn_node_field
 
 public:
 
-	cmzn_node_field(FE_field *fe_field) :
-		fe_field(ACCESS(FE_field)(fe_field)),
-		componentNodefieldtemplates(get_FE_field_number_of_components(fe_field)),
+	cmzn_node_field(FE_field *fe_field_in) :
+		fe_field(fe_field_in->access()),
+		componentNodefieldtemplates(fe_field_in->getNumberOfComponents()),
 		timesequence(NULL)
 	{
 	}
@@ -36,7 +36,7 @@ public:
 	{
 		if (timesequence)
 			DEACCESS(FE_time_sequence)(&timesequence);
-		DEACCESS(FE_field)(&fe_field);
+		FE_field::deaccess(fe_field);
 	}
 
 	/** Set up node field with a copy of node field in use in node.
@@ -161,7 +161,7 @@ cmzn_nodetemplate::~cmzn_nodetemplate()
 	}
 	for (unsigned int i = 0; i < undefine_fields.size(); i++)
 	{
-		DEACCESS(FE_field)(&(undefine_fields[i]));
+		FE_field::deaccess(undefine_fields[i]);
 	}
 	cmzn::Deaccess(this->fe_node_template);
 	cmzn::Deaccess(this->fe_nodeset);
@@ -216,7 +216,7 @@ bool cmzn_nodetemplate::removeUndefineField(FE_field* fe_field)
 	for (std::vector<FE_field*>::iterator iter = this->undefine_fields.begin(); iter != this->undefine_fields.end(); ++iter)
 		if ((*iter) == fe_field)
 		{
-			DEACCESS(FE_field)(&fe_field);
+			FE_field::deaccess(fe_field);
 			this->undefine_fields.erase(iter);
 			return true;
 		}
@@ -230,7 +230,7 @@ void cmzn_nodetemplate::setUndefineNodeField(FE_field* fe_field)
 		if (this->undefine_fields[i] == fe_field)
 			return;
 	this->removeDefineField(fe_field);
-	ACCESS(FE_field)(fe_field);
+	fe_field->access();
 	this->undefine_fields.push_back(fe_field);
 }
 

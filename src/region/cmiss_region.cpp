@@ -265,7 +265,7 @@ void cmzn_region::detachFields()
 		}
 		DESTROY(MANAGER(Computed_field))(&(this->field_manager));
 		this->field_manager = 0;
-		DEACCESS(FE_region)(&this->fe_region);
+		FE_region::deaccess(this->fe_region);
 	}
 }
 

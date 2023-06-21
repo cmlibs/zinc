@@ -122,7 +122,7 @@ private:
 public:
 
 	LegacyElementFieldData(FE_field* fe_field) :
-		fe_field(ACCESS(FE_field)(fe_field)),
+		fe_field(fe_field->access()),
 		componentCount(get_FE_field_number_of_components(fe_field)),
 		componentNodeMaps(new NodeMap* [componentCount])
 	{
@@ -132,7 +132,7 @@ public:
 
 	~LegacyElementFieldData()
 	{
-		DEACCESS(FE_field)(&fe_field);
+		FE_field::deaccess(fe_field);
 		this->clearComponentNodeMaps(/*componentNumber*/-1);
 		delete[] this->componentNodeMaps;
 	}
@@ -305,7 +305,7 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element* element)
 
 int cmzn_elementtemplate::setElementShapeType(cmzn_element_shape_type shapeTypeIn)
 {
-	FE_element_shape *elementShape = 0;
+	FE_element_shape *elementShape = nullptr;
 	if (CMZN_ELEMENT_SHAPE_TYPE_INVALID != shapeTypeIn)
 	{
 		const int shapeDimension = cmzn_element_shape_type_get_dimension(shapeTypeIn);

@@ -576,7 +576,7 @@ cmzn_field *Computed_field_create_generic(
 						field->number_of_source_fields = number_of_source_fields;
 						for (int i = 0; i < number_of_source_fields; i++)
 						{
-							field->source_fields[i] = ACCESS(cmzn_field)(source_fields[i]);
+							field->source_fields[i] = source_fields[i]->access();
 						}
 					}
 					else
@@ -2594,76 +2594,54 @@ bool Computed_field_core::is_purely_function_of_field(cmzn_field *other_field)
 	return true;
 }
 
-int Computed_field_broadcast_field_components(
-	cmzn_fieldmodule *fieldmodule,
-	cmzn_field **field_one, cmzn_field **field_two)
+bool cmzn_field::broadcastComponents(cmzn_field*& field_one, cmzn_field*& field_two)
 {
-	int return_code;
-	cmzn_field *broadcast_wrapper, ***field_to_wrap;
-
-	if (field_one && *field_one && field_two && *field_two)
+	if ((field_one) && (field_two))
 	{
-		if ((*field_one)->number_of_components ==
-			(*field_two)->number_of_components)
+		if (field_one->number_of_components ==
+			field_two->number_of_components)
 		{
-			return_code = 1;
+			return true;
 		}
 		else
 		{
-			return_code = 0;
-			int number_of_components;
-			field_to_wrap = nullptr;
-			if (1 == (*field_one)->number_of_components)
+			int number_of_components = 0;
+			cmzn_field** field_to_wrap = nullptr;
+			if (1 == field_one->number_of_components)
 			{
-				number_of_components = (*field_two)->number_of_components;
+				number_of_components = field_two->number_of_components;
 				field_to_wrap = &field_one;
 			}
-			else if (1 == (*field_two)->number_of_components)
+			else if (1 == field_two->number_of_components)
 			{
-				number_of_components = (*field_one)->number_of_components;
+				number_of_components = field_one->number_of_components;
 				field_to_wrap = &field_two;
 			}
-			else
-			{
-				/* Do nothing at the moment */
-				return_code = 1;
-			}
-
 			if (field_to_wrap)
 			{
-				int *source_component_indexes_in = new int[number_of_components];
-				for (int c = 0; c < number_of_components; ++c)
-					source_component_indexes_in[c] = 1;
-				// use temporary field module for broadcast wrapper since needs different defaults
-				cmzn_fieldmodule *temp_field_module =
-					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(fieldmodule));
+				std::vector<int> source_component_indexes(number_of_components, 1);
+				cmzn_fieldmodule* fieldmodule = cmzn_fieldmodule_create(field_one->getRegion());
 				// broadcast wrapper field has same name stem as wrapped field
-				cmzn_fieldmodule_begin_change(temp_field_module);
-				broadcast_wrapper = cmzn_fieldmodule_create_field_component_multiple(temp_field_module,
-					**field_to_wrap, number_of_components, source_component_indexes_in);
+				cmzn_fieldmodule_begin_change(fieldmodule);
+				cmzn_field* broadcast_wrapper = cmzn_fieldmodule_create_field_component_multiple(fieldmodule,
+					*field_to_wrap, number_of_components, source_component_indexes.data());
 				if (broadcast_wrapper)
 				{
-					broadcast_wrapper->setNameUnique((**field_to_wrap)->getName(), "_", 1);
+					broadcast_wrapper->setNameUnique((*field_to_wrap)->getName(), "_", 1);
 				}
-				cmzn_fieldmodule_end_change(temp_field_module);
-				cmzn_fieldmodule_destroy(&temp_field_module);
-				delete[] source_component_indexes_in;
-				DEACCESS(cmzn_field)(*field_to_wrap);
-				*(*field_to_wrap) = broadcast_wrapper;
-				return_code = 1;
+				cmzn_fieldmodule_end_change(fieldmodule);
+				cmzn_fieldmodule_destroy(&fieldmodule);
+				cmzn_field::deaccess(*field_to_wrap);
+				// assign to take over access
+				*field_to_wrap = broadcast_wrapper;
+				return true;
 			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_broadcast_field_components.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_broadcast_field_components */
+	display_message(ERROR_MESSAGE,
+		"cmzn_field::broadcastComponents.  Invalid arguments");
+	return false;
+}
 
 bool cmzn_field_is_managed(cmzn_field_id field)
 {
@@ -2783,10 +2761,10 @@ int cmzn_field_get_number_of_source_fields(cmzn_field_id field)
 
 cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int index)
 {
-	cmzn_field_id source_field = 0;
-	if (field && (0 < index) && (index <= field->number_of_source_fields))
+	cmzn_field_id source_field = nullptr;
+	if ((field) && (0 < index) && (index <= field->number_of_source_fields))
 	{
-		source_field = ACCESS(cmzn_field)(field->source_fields[index - 1]);
+		source_field = field->source_fields[index - 1]->access();
 	}
 	return source_field;
 }

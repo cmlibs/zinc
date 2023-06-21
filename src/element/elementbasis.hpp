@@ -35,21 +35,23 @@ public:
 
 	static cmzn_elementbasis* create(FE_region* feRegionIn, FE_basis* feBasis);
 
-	cmzn_elementbasis_id access()
+	cmzn_elementbasis* access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_elementbasis_id& basis)
+	static void deaccess(cmzn_elementbasis*& basis)
 	{
-		if (!basis)
-			return CMZN_ERROR_ARGUMENT;
-		--(basis->access_count);
-		if (basis->access_count <= 0)
-			delete basis;
-		basis = 0;
-		return CMZN_OK;
+		if (basis)
+		{
+			--(basis->access_count);
+			if (basis->access_count <= 0)
+			{
+				delete basis;
+			}
+			basis = nullptr;
+		}
 	}
 
 	int getDimension() const
