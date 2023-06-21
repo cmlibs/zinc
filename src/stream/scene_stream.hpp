@@ -87,8 +87,22 @@ public:
 				numberOfResources += 1;
 			return numberOfResources;
 		}
-		else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION)
+        else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION ||
+                 format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_STL)
+        {
 			return 1;
+        }
+        else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_WAVEFRONT)
+        {
+            int numberOfResources = Scene_get_number_of_exportable_glyph_resources(scene, scenefilter);
+            numberOfResources += Scene_get_number_of_graphics_with_surface_vertices_in_tree(
+                scene, scenefilter);
+            if (numberOfResources > 0)
+            {
+                numberOfResources += 1;
+            }
+            return numberOfResources;
+        }
 		else
 			return 0;
 	}

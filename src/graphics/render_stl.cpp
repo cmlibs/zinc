@@ -12,6 +12,7 @@ Renders gtObjects to STL stereolithography file.
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <sstream>
 #include <stack>
 #include <stdio.h>
 #include "general/debug.h"
@@ -21,7 +22,7 @@ Renders gtObjects to STL stereolithography file.
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/render_stl.h"
+#include "graphics/render_stl.hpp"
 #include "graphics/scene.hpp"
 
 namespace {
@@ -105,42 +106,45 @@ public:
 class Stl_context
 {
 private:
-	FILE *stl_file;
-	char *solid_name;
+    std::string stl_content;
+    std::string solid_name;
 	/* Future: add binary option */
 	std::stack<Transformation_matrix> transformation_stack;
 
 public:
-	Stl_context(const char *file_name, const char *solid_name_in) :
-		stl_file(fopen(file_name, "w"))
+    Stl_context(const char *solid_name_in) :
+        stl_content(),
+        solid_name()
 	{
 		/* ASCII STL header */
 		if (solid_name_in == 0)
-			solid_name = duplicate_string("default");
+            solid_name = "default";
 		else
-			solid_name = duplicate_string(solid_name_in);
+            solid_name = std::string(solid_name_in);
 
-		fprintf(stl_file,"solid %s\n",solid_name);
+        stl_content += "solid " + solid_name + "\n";
 	}
 
 	~Stl_context()
 	{
-		fprintf(stl_file,"endsolid %s\n",solid_name);
-		DEALLOCATE(solid_name);
-		fclose(stl_file);
 	}
 
-	/***************************************************************************//**
+    std::string get_export_string() const
+    {
+        return stl_content + "endsolid " + solid_name + "\n";
+    }
+
+    /**
 	 * Confirms STL file is correctly opened.
 	 * 
 	 * @return true if context is correctly constructed, false if not.
 	 */
 	bool is_valid() const
 	{
-		return (stl_file != (FILE *)NULL) && (solid_name != (char *)NULL);
+        return (!stl_content.empty() && (!solid_name.empty()));
 	}
 
-/***************************************************************************//**
+/**
  * Pushes another item onto the transformation stack equal to the previous top
  * item multiplied by the incoming matrix. 
  * 
@@ -193,6 +197,7 @@ public:
 	void write_triangle(
 		const Triple& v1, const Triple& v2, const Triple& v3)
 	{
+        std::ostringstream ss;
 		ZnReal tv1[3], tv2[3], tv3[3];
 		transform(v1, tv1);
 		transform(v2, tv2);
@@ -208,13 +213,14 @@ public:
 		cross_product3(tangent1, tangent2, normal);
 		if (0.0 < normalize3(normal))
 		{
-			fprintf(stl_file, "facet normal %f %f %f\n", (ZnReal)normal[0], (ZnReal)normal[1], (ZnReal)normal[2]);
-			fprintf(stl_file, " outer loop\n");		
-			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv1[0], (ZnReal)tv1[1], (ZnReal)tv1[2]);		
-			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv2[0], (ZnReal)tv2[1], (ZnReal)tv2[2]);
-			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv3[0], (ZnReal)tv3[1], (ZnReal)tv3[2]);
-			fprintf(stl_file, " endloop\n");
-		 	fprintf(stl_file, "endfacet\n");
+            ss << "facet normal " << (ZnReal)normal[0] << " " << (ZnReal)normal[1] << " " << (ZnReal)normal[2] << std::endl;
+            ss << " outer loop" << std::endl;
+            ss << "  vertex " << (ZnReal)tv1[0] << " " << (ZnReal)tv1[1] << " " << (ZnReal)tv1[2] << std::endl;
+            ss << "  vertex " << (ZnReal)tv2[0] << " " << (ZnReal)tv2[1] << " " << (ZnReal)tv2[2] << std::endl;
+            ss << "  vertex " << (ZnReal)tv3[0] << " " << (ZnReal)tv3[1] << " " << (ZnReal)tv3[2] << std::endl;
+            ss << " endloop" << std::endl;
+            ss << "endfacet" << std::endl;
+            stl_content += ss.str();
 		}
 	} /* write_triangle_stl */
 
@@ -593,7 +599,7 @@ int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	else
 	{
 		display_message(ERROR_MESSAGE,"write_scene_stl.  Missing scene");
-		return_code = 0;
+        return_code = CMZN_ERROR_GENERAL;
 	}
 	LEAVE;
 
@@ -607,32 +613,34 @@ Global functions
 ----------------
 */
 
-int export_to_stl(char *file_name, cmzn_scene_id scene, cmzn_scenefilter_id filter)
+std::string export_to_stl(cmzn_scene_id scene, cmzn_scenefilter_id filter)
 {
-	int return_code;
+    std::string content;
 
-	if (file_name && scene)
+    if (scene)
 	{
 		build_Scene(scene, filter);
 		char *solid_name = cmzn_region_get_name(cmzn_scene_get_region_internal(scene));
-		Stl_context stl_context(file_name, solid_name);
-		if (stl_context.is_valid())
+        Stl_context stl_context(solid_name);
+        DEALLOCATE(solid_name);
+        if (stl_context.is_valid())
 		{
-			return_code = write_scene_stl(stl_context, scene, filter);
+            int return_code = write_scene_stl(stl_context, scene, filter);
+            if (return_code == CMZN_OK)
+            {
+                content = stl_context.get_export_string();
+            }
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"export_to_stl.  Could not open stl file %s", file_name);
-			return_code = 0;
+                "export_to_stl.  Failed to create a valid STL context.");
 		}
-		DEALLOCATE(solid_name);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"export_to_stl.  Invalid argument(s)");
-		return_code = 0;
 	}
 
-	return( return_code);
+    return content;
 } /* export_to_stl */
