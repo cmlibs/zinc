@@ -23,6 +23,7 @@ Spectrum functions and support code.
 #include "cmlibs/zinc/spectrum.h"
 #include "cmlibs/zinc/status.h"
 #include "description_io/spectrum_json_io.hpp"
+#include "general/cmiss_set.hpp"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"

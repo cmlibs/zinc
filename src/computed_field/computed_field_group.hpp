@@ -16,6 +16,8 @@
 #include "cmlibs/zinc/fieldmodule.h"
 #include "cmlibs/zinc/fieldgroup.h"
 #include "computed_field/computed_field_group_base.hpp"
+#include "mesh/mesh_group.hpp"
+#include "mesh/nodeset_group.hpp"
 #include <map>
 
 struct cmzn_field_hierarchical_group_change_detail : public cmzn_field_group_base_change_detail
@@ -88,27 +90,40 @@ class Computed_field_group : public Computed_field_group_base
 {
 private:
 	cmzn_field_hierarchical_group_change_detail change_detail;
-	cmzn_region *region;
-	bool contains_all;
+	bool containsAllLocal;
 	cmzn_field_group_subelement_handling_mode subelementHandlingMode;
-	Computed_field *local_node_group, *local_data_group, *local_element_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	std::map<Computed_field *, Computed_field *> domain_selection_group;
+	cmzn_nodeset_group* nodesetGroups[2];  // 0 == nodes, 1 == datapoints
+	cmzn_mesh_group* meshGroups[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	Region_field_map child_region_group_map;  // map to accessed FieldGroup in child regions
+
+	inline static int FE_nodeset_to_index(const FE_nodeset* feNodeset)
+	{
+		return (feNodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_NODES) ? 0 : 1;
+	}
+
+	/*
+	 * @param index  0 (nodeset), 1 (datapoints)
+	 * @param clear  If true, clear the subelement group.
+	 * @param remove  If true, remove the subelement group. Only removed if group holds only access.
+	 * @param detach  Use when destroying group: if true, with remove, force detach nodeset group.
+	 */
+	void clearRemoveNodesetGroup(int index, bool clear = true, bool remove = true, bool detach = false);
 
 	/*
 	 * @param index  0 (1-D), 1 (2-D) or 2 (3-D)
 	 * @param clear  If true, clear the subelement group.
-	 * @param remove  If true, remove the subelement group.
+	 * @param remove  If true, remove the subelement group. Only removed if group holds only access.
+	 * @param detach  Use when destroying group: if true, with remove, force detach mesh group.
 	 */
-	void clearRemoveLocalElementGroup(int index, bool clear = true, bool remove = true);
-	void setLocalElementGroup(int index, cmzn_field_element_group *element_group);
-	/*
-	 * @param isData  True for datapoints, false for nodes.
-	 * @param clear  If true, clear the subelement group.
-	 * @param remove  If true, remove the subelement group.
-	 */
-	void clearRemoveLocalNodeGroup(bool isData, bool clear = true, bool remove = true);
-	void setLocalNodeGroup(bool isData, cmzn_field_node_group *node_group);
+	void clearRemoveMeshGroup(int index, bool clear = true, bool remove = true, bool detach = false);
+
+	cmzn_field_group* getFieldGroup()
+	{
+		return reinterpret_cast<cmzn_field_group*>(this->field);
+	}
+
+	/** @return  True if nodeset or mesh groups are present in hierarchy */
+	bool hasDomainGroups() const;
 
 public:
 
@@ -116,50 +131,73 @@ public:
 
 	virtual ~Computed_field_group();
 
-	/**
-	 * Note: with canCreate==false, only finds a field node group if it's in a field group.
+	/** For internal use and region use only.
+	 * @param feNodeset  Finite element nodeset from this region only. Not checked.
+	 * @return Non-accessed nodeset group or nullptr if none. */
+	cmzn_nodeset_group* getLocalNodesetGroup(const FE_nodeset* feNodeset) const
+	{
+		const int index = FE_nodeset_to_index(feNodeset);
+		return this->nodesetGroups[index];
+	}
+
+	/** For internal use and region use only.
+	 * @param feMesh  Finite element mesh from this region only. Not checked.
+	 * @return Non-accessed mesh group or nullptr if none. */
+	cmzn_mesh_group* getLocalMeshGroup(const FE_mesh* feMesh) const
+	{
+		const int index = feMesh->getDimension() - 1;
+		return this->meshGroups[index];
+	}
+
+	/** Able to get or create nodeset group in subregions.
+	 * @param feNodeset  Finite element nodeset containing master list to be grouped.
+	 * @param canGet  If true, can find an existing group.
+	 * @param canCreate  If true, can create a new nodeset group if not found.
+	 * @return  Non-accessed nodeset group, or nullptr if none */
+	cmzn_nodeset_group* getOrCreateNodesetGroup(FE_nodeset* feNodeset, bool canGet = true, bool canCreate = true);
+
+	/** Able to get or create mesh group in subregions.
+	 * @param feMesh  Finite element mesh containing master list to be grouped.
+	 * @param canGet  If true, can find an existing group.
+	 * @param canCreate  If true, can create a new nodeset group if not found.
+	 * @return  Non-accessed mesh group, or nullptr if none */
+	cmzn_mesh_group* getOrCreateMeshGroup(FE_mesh* mesh, bool canGet = true, bool canCreate = true);
+
+	/** Get or create group subregions, linking up intermediate regions to this group field.
 	 * @param canGet  If true, can find an existing group, including by name.
 	 * @param canCreate  If true, can create an existing group if not found.
-	 * @return  Accessed field node group, or nullptr if none */
-	cmzn_field_node_group* getOrCreateFieldNodeGroup(cmzn_nodeset* nodeset, bool canGet = true, bool canCreate = true);
-
-	/**
-	 * Note: with canCreate==false, only finds a field node group if it's in a field group.
-	 * @param canGet  If true, can find an existing group, including by name.
-	 * @param canCreate  If true, can create an existing group if not found.
-	 * @return  Accessed field node group, or nullptr if none */
-	cmzn_field_element_group* getOrCreateFieldElementGroup(cmzn_mesh* mesh, bool canGet = true, bool canCreate = true);
-
-	cmzn_field_id get_subobject_group_for_domain(cmzn_field_id domain);
-
-#if defined (USE_OPENCASCADE)
-	cmzn_field_id create_cad_primitive_group(cmzn_field_cad_topology_id cad_topology_domain);
-
-	int clear_region_tree_cad_primitive();
-#endif /*defined (USE_OPENCASCADE) */
-
-	/**
-	 * @param canGet  If true, can find an existing group, including by name.
-	 * @param canCreate  If true, can create an existing group if not found.
-	 * @return  Accessed subregion, or nullptr if none */
+	 * @return  Non-accessed subregion group, or nullptr if none */
 	cmzn_field_group* getOrCreateSubregionFieldGroup(cmzn_region *subregion, bool canGet=true, bool canCreate=true);
 
-	cmzn_field_group_id getFirstNonEmptyGroup();
-
-#ifdef OLD_CODE
-// no longer used by cmgui, but may be restored
-	int clear_region_tree_node(int use_data);
-
-	int clear_region_tree_element();
-#endif // OLD_CODE
+	cmzn_field_group* getFirstNonEmptyGroup();
 
 	int for_each_group_hiearchical(cmzn_field_group_iterator_function function, void *user_data);
 
 	int remove_empty_subgroups();
 
-	virtual cmzn_field_change_detail *extract_change_detail();
 
-	virtual int check_dependency();
+	/* Record that group has changed locally by object add, with client notification */
+	void changeAddLocal()
+	{
+		this->change_detail.changeAddLocal();
+		this->field->setChanged();
+	}
+
+	/* Record that group has changed locally by object remove, with client notification */
+	void changeRemoveLocal()
+	{
+		this->change_detail.changeRemoveLocal();
+		this->field->setChanged();
+	}
+
+	/* Record that group has changed locally by object remove, but do not notify clients.
+	 * Only used when objects removed because destroyed in parent domain. */
+	void changeRemoveLocalNoNotify()
+	{
+		this->change_detail.changeRemoveLocal();
+	}
+
+	virtual cmzn_field_change_detail *extract_change_detail();
 
 	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message);
 
@@ -190,11 +228,11 @@ public:
 
 	bool containsLocalRegion();
 
-	int addRegion(struct cmzn_region *child_region);
+	int addRegion(cmzn_region* subregion);
 
-	int removeRegion(struct cmzn_region *region);
+	bool containsRegion(cmzn_region* subregion);
 
-	bool containsRegion(struct cmzn_region *region);
+	int removeRegion(cmzn_region* subregion);
 
 	cmzn_field_group_subelement_handling_mode getSubelementHandlingMode() const
 	{
@@ -203,22 +241,12 @@ public:
 
 	int setSubelementHandlingMode(cmzn_field_group_subelement_handling_mode mode);
 
-	/** Get local element group core.
-	 * For use by subobject group only. Assumes within begin/end change if creating.
-	 * @return  Non-accessed element group core, or nullptr if none/failed to create. */
-	Computed_field_element_group *getElementGroupPrivate(FE_mesh *fe_mesh, bool create = false);
-
-	/** Get local element group core.
-	 * For use by subobject group only. Assumes within begin/end change if creating.
-	 * @return  Non-accessed node group core, or nullptr if none/failed to create. */
-	Computed_field_node_group* getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create = false);
-
 private:
 
 	Computed_field_core* copy()
 	{
-		Computed_field_group *core = new Computed_field_group(region);
-		core->contains_all = this->contains_all;
+		Computed_field_group *core = new Computed_field_group(this->field->getRegion());
+		core->containsAllLocal = this->containsAllLocal;
 		return (core);
 	};
 
@@ -238,23 +266,6 @@ private:
 
 	int list();
 
-	cmzn_field_id get_element_group_field_private(int dimension)
-	{
-		if ((dimension > 0) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
-			return this->local_element_group[dimension - 1];
-		return 0;
-	}
-
-	int getSubgroupLocal();
-
-	int add_region_tree(struct cmzn_region *region_tree);
-
-	int remove_region(struct cmzn_region *child_region);
-
-	int remove_region_tree(struct cmzn_region *child_region);
-
-	int contain_region_tree(struct cmzn_region *child_region);
-
 	inline int isSubGroupEmpty(Computed_field_core *source_core) const
 	{
 		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(source_core);
@@ -269,32 +280,25 @@ private:
 
 	bool isEmptyNonLocal() const;
 
-	int check_subobject_group_dependency(Computed_field_core *source_core);
-
 };
 
-/*****************************************************************************//**
- * A convenience function which calls the supplied function for this group and
- * each descendant group throughout the region hierarchy.
- *
- * @param group  group field.
- * @param function  Pointer to the function to be called for each group field.
- * @param user_data  Void pointer to user data to pass to each function.
- * @return 1 on success, 0 on failure.
- */
-int cmzn_field_group_for_each_group_hierarchical(cmzn_field_group_id group,
-	cmzn_field_group_iterator_function function, void *user_data);
+/** Get handle to implementation of group.
+ * @param  group  Group field. Caller must ensure this is a valid pointer.
+ * @return  Computed_field_group*. */
+inline Computed_field_group* cmzn_field_group_core_cast(cmzn_field_group* group)
+{
+	return (static_cast<Computed_field_group*>(reinterpret_cast<cmzn_field*>(group)->core));
+}
 
-#ifdef OLD_CODE
-// no longer used by cmgui, but may be restored
-int cmzn_field_group_clear_region_tree_node(cmzn_field_group_id group);
-
-int cmzn_field_group_clear_region_tree_data(cmzn_field_group_id group);
-
-int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group);
-#endif // OLD_CODE
-
-int cmzn_field_is_type_group(cmzn_field_id field, void *dummy_void);
+/** If field is a group, get its group core, otherwise nullptr */
+inline Computed_field_group* cmzn_field_get_group_core(const cmzn_field* field)
+{
+	if (field)
+	{
+		return dynamic_cast<Computed_field_group*>(field->core);
+	}
+	return nullptr;
+}
 
 bool cmzn_field_group_was_modified(cmzn_field_group_id group);
 

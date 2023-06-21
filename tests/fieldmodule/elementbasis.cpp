@@ -16,7 +16,6 @@
 #include <cmlibs/zinc/fieldfiniteelement.hpp>
 #include <cmlibs/zinc/fieldgroup.hpp>
 #include <cmlibs/zinc/fieldmeshoperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 #include <cmlibs/zinc/node.hpp>
 #include <cmlibs/zinc/stream.hpp>
 #include <cmlibs/zinc/streamregion.hpp>
@@ -112,16 +111,12 @@ TEST(ZincElementbasis, element_bases_3d)
 		//std::cerr << i << ". " << basis_name << "\n";
 		FieldGroup group = zinc.fm.findFieldByName(basis_name).castGroup();
 		EXPECT_TRUE(group.isValid());
-		FieldElementGroup elementGroup = group.getFieldElementGroup(mesh3d);
-		EXPECT_TRUE(elementGroup.isValid());
-		MeshGroup elementMeshGroup = elementGroup.getMeshGroup();
+		MeshGroup elementMeshGroup = group.getMeshGroup(mesh3d);
 		EXPECT_EQ(1, elementMeshGroup.getSize());
 		// add elements to itself to add faces, lines, nodes to group etc.
 		EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
-		EXPECT_EQ(RESULT_OK, elementMeshGroup.addElementsConditional(elementGroup));
-		FieldElementGroup faceGroup = group.getFieldElementGroup(mesh2d);
-		EXPECT_TRUE(faceGroup.isValid());
-		MeshGroup faceMeshGroup = faceGroup.getMeshGroup();
+		EXPECT_EQ(RESULT_OK, elementMeshGroup.addElementsConditional(group));
+		MeshGroup faceMeshGroup = group.getMeshGroup(mesh2d);
 		EXPECT_EQ(basis_info[i].face_count, faceMeshGroup.getSize());
 		// check faces have the expected shapes
 		Elementiterator faceIter = faceMeshGroup.createElementiterator();
@@ -130,13 +125,9 @@ TEST(ZincElementbasis, element_bases_3d)
 			Element face = faceIter.next();
 			EXPECT_EQ(basis_info[i].face_shapes[f], face.getShapeType());
 		}
-		FieldElementGroup lineGroup = group.getFieldElementGroup(mesh1d);
-		EXPECT_TRUE(lineGroup.isValid());
-		MeshGroup lineMeshGroup = lineGroup.getMeshGroup();
+		MeshGroup lineMeshGroup = group.getMeshGroup(mesh1d);
 		EXPECT_EQ(basis_info[i].line_count, lineMeshGroup.getSize());
-		FieldNodeGroup nodeGroup = group.getFieldNodeGroup(nodes);
-		EXPECT_TRUE(nodeGroup.isValid());
-		NodesetGroup nodeNodesetGroup = nodeGroup.getNodesetGroup();
+		NodesetGroup nodeNodesetGroup = group.getNodesetGroup(nodes);
 		EXPECT_EQ(basis_info[i].node_count, nodeNodesetGroup.getSize());
 		FieldMeshIntegral volume_integral = zinc.fm.createFieldMeshIntegral(one, coordinates, elementMeshGroup);
 		EXPECT_TRUE(volume_integral.isValid());

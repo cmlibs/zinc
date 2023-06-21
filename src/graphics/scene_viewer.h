@@ -255,17 +255,17 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_sceneviewermodule* &sceneviewermodule)
+	static void deaccess(cmzn_sceneviewermodule* &sceneviewermodule)
 	{
 		if (sceneviewermodule)
 		{
 			--(sceneviewermodule->access_count);
 			if (sceneviewermodule->access_count <= 0)
+			{
 				delete sceneviewermodule;
-			sceneviewermodule = 0;
-			return CMZN_OK;
+			}
+			sceneviewermodule = nullptr;
 		}
-		return CMZN_ERROR_ARGUMENT;
 	}
 
 
@@ -274,11 +274,7 @@ public:
 		return this->background_colour.alpha;
 	}
 
-	int setDefaultBackgroundColourAlpha(double alpha)
-	{
-		this->background_colour.alpha = alpha;
-		return CMZN_OK;
-	}
+	int setDefaultBackgroundColourAlpha(double alpha);
 
 	int getDefaultBackgroundColourRGB(double *valuesOut3) const;
 

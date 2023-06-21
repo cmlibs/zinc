@@ -14,6 +14,7 @@ Renders gtObjects to STL stereolithography file.
 
 #include <stack>
 #include <stdio.h>
+#include "cmlibs/zinc/region.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/message.h"

@@ -15,6 +15,7 @@ The functions for creating graphical objects from finite elements.
 #include "cmlibs/zinc/differentialoperator.h"
 #include "cmlibs/zinc/fieldcache.h"
 #include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
 #include "cmlibs/zinc/nodeset.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -41,7 +42,6 @@ The functions for creating graphical objects from finite elements.
 #include "graphics/mcubes.h"
 #include "general/message.h"
 #include "graphics/graphics_object.hpp"
-#include "mesh/cmiss_node_private.hpp"
 
 /*
 Module types
@@ -797,7 +797,7 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 					while (return_code && (0 != (node = cmzn_nodeiterator_next_non_access(iterator))))
 					{
 						cmzn_fieldcache_set_node(field_cache, node);
-						glyph_set_data.graphics_name = get_FE_node_identifier(node);
+						glyph_set_data.graphics_name = node->getIndex();
 						return_code = field_cache_location_to_glyph_point(field_cache, &glyph_set_data);
 					}
 					cmzn_nodeiterator_destroy(&iterator);

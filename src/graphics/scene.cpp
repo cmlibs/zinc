@@ -14,7 +14,6 @@ FILE : scene.cpp
 #include <cstdio>
 #include <cmath>
 #include "cmlibs/zinc/core.h"
-#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "cmlibs/zinc/glyph.h"
 #include "cmlibs/zinc/graphics.h"
 #include "cmlibs/zinc/material.h"
@@ -55,7 +54,7 @@ FILE : scene.cpp
 #include "graphics/selection.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/tessellation.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
 #include "region/cmiss_region.hpp"
 #include "time/time.h"
 #include "time/time_keeper.hpp"
@@ -566,7 +565,7 @@ int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
 	}
 	const bool notify = (transformationFieldIn != this->transformationField)
 		|| (this->transformationActive && (!transformationFieldIn));
-	REACCESS(cmzn_field)(&(this->transformationField), transformationFieldIn);
+	cmzn_field::reaccess(this->transformationField, transformationFieldIn);
 	this->transformationActive = (0 != transformationFieldIn);
 	if (notify)
 	{
@@ -2411,7 +2410,7 @@ int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	double line_density, double line_density_scale_factor,
 	double surface_density, double surface_density_scale_factor)
 {
-	cmzn_region_id destination_region = cmzn_nodeset_get_region_internal(nodeset);
+	cmzn_region* destination_region = nodeset->getRegion();
 	if (scene && nodeset && coordinate_field &&
 		(Computed_field_get_region(coordinate_field) == destination_region) &&
 		(CMZN_FIELD_VALUE_TYPE_REAL == cmzn_field_get_value_type(coordinate_field)) &&
@@ -2432,7 +2431,7 @@ int cmzn_scene_convert_points_to_nodes(cmzn_scene_id scene,
 	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
 	cmzn_field_id coordinate_field)
 {
-	cmzn_region_id destination_region = cmzn_nodeset_get_region_internal(nodeset);
+	cmzn_region* destination_region = nodeset->getRegion();
 	if (scene && nodeset && coordinate_field &&
 		(Computed_field_get_region(coordinate_field) == destination_region) &&
 		(CMZN_FIELD_VALUE_TYPE_REAL == cmzn_field_get_value_type(coordinate_field)) &&

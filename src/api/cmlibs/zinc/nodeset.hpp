@@ -132,7 +132,7 @@ public:
 
 inline bool operator==(const Nodeset& a, const Nodeset& b)
 {
-	return cmzn_nodeset_match(a.getId(), b.getId());
+	return a.getId() == b.getId();
 }
 
 inline Nodeset Node::getNodeset() const
@@ -142,6 +142,10 @@ inline Nodeset Node::getNodeset() const
 
 class NodesetGroup : public Nodeset
 {
+	inline cmzn_nodeset_group_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_nodeset_group_id>(this->id);
+	}
 
 public:
 
@@ -154,37 +158,37 @@ public:
 
 	cmzn_nodeset_group_id getId() const
 	{
-		return (cmzn_nodeset_group_id)(id);
+		return (cmzn_nodeset_group_id)(this->id);
 	}
 
 	int addNode(const Node& node)
 	{
-		return cmzn_nodeset_group_add_node(
-			reinterpret_cast<cmzn_nodeset_group_id>(id), node.getId());
+		return cmzn_nodeset_group_add_node(this->getDerivedId(), node.getId());
 	}
 
 	int addNodesConditional(const Field& conditionalField)
 	{
 		return cmzn_nodeset_group_add_nodes_conditional(
-			reinterpret_cast<cmzn_nodeset_group_id>(id), conditionalField.getId());
+			this->getDerivedId(), conditionalField.getId());
 	}
+
+	inline FieldGroup getFieldGroup() const;
 
 	int removeAllNodes()
 	{
-		return cmzn_nodeset_group_remove_all_nodes(
-			reinterpret_cast<cmzn_nodeset_group_id>(id));
+		return cmzn_nodeset_group_remove_all_nodes(this->getDerivedId());
 	}
 
 	int removeNode(const Node& node)
 	{
-		return cmzn_nodeset_group_remove_node(reinterpret_cast<cmzn_nodeset_group_id>(id),
+		return cmzn_nodeset_group_remove_node(this->getDerivedId(),
 			node.getId());
 	}
 
 	int removeNodesConditional(const Field& conditionalField)
 	{
 		return cmzn_nodeset_group_remove_nodes_conditional(
-			reinterpret_cast<cmzn_nodeset_group_id>(id), conditionalField.getId());
+			this->getDerivedId(), conditionalField.getId());
 	}
 
 };

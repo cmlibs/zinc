@@ -16,6 +16,7 @@ Functions for calculating streamlines in finite elements.
 #include <stdlib.h>
 #include <math.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_streamlines.h"

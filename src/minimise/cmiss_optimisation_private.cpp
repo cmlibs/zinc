@@ -591,42 +591,6 @@ int cmzn_optimisation_remove_dependent_field(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-/** @deprecated  Misnamed: use dependent field function. */
-cmzn_field_id cmzn_optimisation_get_first_independent_field(
-	cmzn_optimisation_id optimisation)
-{
-	if (optimisation)
-		return optimisation->getFirstDependentField();
-	return nullptr;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-cmzn_field_id cmzn_optimisation_get_next_independent_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id ref_field)
-{
-	if (optimisation && ref_field)
-		return optimisation->getNextDependentField(ref_field);
-	return nullptr;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
-	cmzn_field_id field)
-{
-	if (optimisation && field)
-		return optimisation->addDependentField(field);
-	return CMZN_ERROR_ARGUMENT;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-int cmzn_optimisation_remove_independent_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id field)
-{
-	if (optimisation && field)
-		return optimisation->removeDependentField(field);
-	return CMZN_ERROR_ARGUMENT;
-}
-
 cmzn_field_id cmzn_optimisation_get_first_objective_field(
 	cmzn_optimisation_id optimisation)
 {

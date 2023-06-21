@@ -18,7 +18,6 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldcache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/field.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldmodule.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldalias.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldapply.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldarithmeticoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldassignment.hpp
@@ -40,7 +39,6 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldrange.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldsceneviewerprojection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldsmoothing.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldsubobjectgroup.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldtime.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldtrigonometry.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldvectoroperators.hpp

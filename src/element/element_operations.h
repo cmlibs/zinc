@@ -16,7 +16,7 @@ therefore cannot reside in finite element modules.
 #define ELEMENT_OPERATIONS_H
 
 #include "cmlibs/zinc/types/fieldfiniteelementid.h"
-#include "cmlibs/zinc/types/fieldsubobjectgroupid.h"
+#include "cmlibs/zinc/types/meshid.h"
 #include "cmlibs/zinc/types/nodesetid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
@@ -137,14 +137,11 @@ Global functions
  * values.
  * Fails with no change if any other elements other than those being changed
  * have any of the new identifiers.
- * @param element_group_field  Optional element group field to change
- * identifiers for. Must be from same region.
+ * @param mesh  The mesh to change element identifiers in.
  * @return  Zinc status code CMZN_OK on success, any other value on failure.
  */
-int FE_region_change_element_identifiers(struct FE_region *fe_region,
-	int dimension, int element_offset,
-	struct Computed_field *sort_by_field, FE_value time,
-	cmzn_field_element_group_id element_group_field);
+int cmzn_mesh_change_element_identifiers(cmzn_mesh* mesh,
+	int element_offset, cmzn_field *sort_by_field, FE_value time);
 
 /**
  * @return  A conditional field returning 1 (true) for all element identifiers

@@ -21,6 +21,7 @@
 #include "general/block_array.hpp"
 #include "general/enumerator.h"
 #include "general/list.h"
+#include "general/value.h"
 #include <list>
 
 class FE_nodeset;
@@ -478,7 +479,7 @@ public:
 
 	virtual void list_btree_statistics();
 
-	bool containsNode(cmzn_node *node) const
+	bool containsNode(const cmzn_node *node) const
 	{
 		return (node) ? (node->getNodeset() == this) && (node->getIndex() >= 0) : false;
 	}
@@ -491,7 +492,7 @@ public:
 
 	void removeNodeiterator(cmzn_nodeiterator *iterator); // private, but needed by cmzn_nodeiterator
 
-	cmzn_nodeiterator *createNodeiterator(DsLabelsGroup *labelsGroup = 0);
+	cmzn_nodeiterator *createNodeiterator(const DsLabelsGroup *labelsGroup = 0);
 
 	int for_each_FE_node(LIST_ITERATOR_FUNCTION(cmzn_node) iterator_function, void *user_data_void);
 

@@ -13,6 +13,7 @@
 
 #include "cmlibs/zinc/types/elementid.h"
 #include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/types/fieldcacheid.h"
 #include "cmlibs/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
@@ -20,7 +21,6 @@
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_constants.hpp"
 #include "finite_element/finite_element_domain.hpp"
-#include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "general/block_array.hpp"
 #include "general/list.h"
@@ -39,6 +39,8 @@ class FE_mesh_field_template;
 class FE_nodeset;
 
 class FieldDerivative;
+
+class FeMeshFieldRangesCache;
 
 /**
  * Template for creating a new element in the given FE_mesh, or redefining
@@ -1136,7 +1138,7 @@ public:
 
 	void removeElementiterator(cmzn_elementiterator *iterator); // private, but needed by cmzn_elementiterator
 
-	cmzn_elementiterator *createElementiterator(DsLabelsGroup *labelsGroup = 0);
+	cmzn_elementiterator *createElementiterator(const DsLabelsGroup *labelsGroup = 0);
 
 	/** @return First element in mesh for which function returns true / non-zero.
 	 * @param conditional_function  If none, return first element, if any. */
@@ -1581,7 +1583,7 @@ public:
 				}
 				else if (!this->elementVectorDOFs.setValue(elementIndex, values))
 				{
-					delete values;
+					delete[] values;
 					return 0;
 				}
 			}

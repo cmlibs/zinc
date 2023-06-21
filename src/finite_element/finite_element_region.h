@@ -56,7 +56,7 @@ public:
 	{
 		if (fe_region)
 			return new FE_region_changes(fe_region);
-		return 0;
+		return nullptr;
 	}
 
 	FE_region_changes *access()
@@ -174,8 +174,6 @@ class FE_region_FE_object_method_class( object_type ) \
 Global functions
 ----------------
 */
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 
 /**
  * Increments the change counter in <region>. No update callbacks will occur until

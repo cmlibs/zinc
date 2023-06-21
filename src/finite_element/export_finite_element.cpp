@@ -12,7 +12,6 @@
 #include "cmlibs/zinc/field.h"
 #include "cmlibs/zinc/fieldgroup.h"
 #include "cmlibs/zinc/fieldmodule.h"
-#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "cmlibs/zinc/mesh.h"
 #include "cmlibs/zinc/node.h"
 #include "cmlibs/zinc/nodeset.h"
@@ -29,10 +28,14 @@
 #include "general/enumerator_private.hpp"
 #include "general/list.h"
 #include "general/indexed_list_private.h"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "mesh/mesh.hpp"
+#include "mesh/mesh_group.hpp"
+#include "mesh/nodeset.hpp"
+#include "mesh/nodeset_group.hpp"
 #include "region/cmiss_region_write_info.h"
-#include "general/message.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -1696,17 +1699,16 @@ bool EXWriter::writeMesh(int dimension, cmzn_field_group *group)
 	cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
 	if (group)
 	{
-		cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
+		cmzn_mesh_group* mesh_group = cmzn_field_group_get_mesh_group(group, mesh);
 		cmzn_mesh_destroy(&mesh);
-		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
-		cmzn_field_element_group_destroy(&element_group);
+		mesh = mesh_group;
 	}
-	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
+	if ((mesh) && (cmzn_mesh_get_size(mesh) > 0))
 	{
 		FE_mesh *tmpFeMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
 		this->setMesh(tmpFeMesh);
 		this->writeFeMesh(tmpFeMesh);
-		cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(mesh);
+		cmzn_elementiterator *iter = mesh->createElementiterator();
 		cmzn_element *element = nullptr;
 		while (nullptr != (element = iter->nextElement()))
 		{
@@ -1725,8 +1727,8 @@ bool EXWriter::writeMesh(int dimension, cmzn_field_group *group)
 			}
 		}
 		cmzn_elementiterator_destroy(&iter);
-		cmzn_mesh_destroy(&mesh);
 	}
+	cmzn_mesh_destroy(&mesh);
 	return result;
 }
 
@@ -1741,15 +1743,13 @@ bool EXWriter::writeElementGroup(int dimension, cmzn_field_group *group)
 		return false;
 	}
 	cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
-	cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
+	cmzn_mesh_group* mesh_group = cmzn_field_group_get_mesh_group(group, mesh);
 	cmzn_mesh_destroy(&mesh);
-	mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
-	cmzn_field_element_group_destroy(&element_group);
-	if (cmzn_mesh_get_size(mesh) > 0)
+	if ((mesh_group) && (mesh_group->getSize() > 0))
 	{
 		// get identifier ranges first in case the write criterion makes it empty which would produce an invalid EX file
 		IdentifierRanges elementIdentifiers;
-		cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(mesh);
+		cmzn_elementiterator *iter = mesh_group->createElementiterator();
 		cmzn_element *element = nullptr;
 		while (nullptr != (element = iter->nextElement()))
 		{
@@ -1767,7 +1767,7 @@ bool EXWriter::writeElementGroup(int dimension, cmzn_field_group *group)
 			elementIdentifiers.write(*this->outStream);
 		}
 	}
-	cmzn_mesh_destroy(&mesh);
+	cmzn_mesh_group_destroy(&mesh_group);
 	return true;
 }
 
@@ -2139,17 +2139,16 @@ bool EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_g
 		fieldDomainType);
 	if (group)
 	{
-		cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-        cmzn_nodeset_destroy(&nodeset);
-		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-		cmzn_field_node_group_destroy(&node_group);
+		cmzn_nodeset_group* nodeset_group = cmzn_field_group_get_nodeset_group(group, nodeset);
+		cmzn_nodeset_destroy(&nodeset);
+		nodeset = nodeset_group;
 	}
-	if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
+	if ((nodeset) && (nodeset->getSize() > 0))
 	{
 		FE_nodeset *tmpFeNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
 		this->setNodeset(tmpFeNodeset);
 		this->writeFeNodeset(tmpFeNodeset);
-		cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
+		cmzn_nodeiterator *iter = nodeset->createNodeiterator();
 		cmzn_node *node = nullptr;
 		while (0 != (node = iter->nextNode()))
 		{
@@ -2169,8 +2168,8 @@ bool EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_g
 		}
 		cmzn_nodeiterator_destroy(&iter);
 	}
-    cmzn_nodeset_destroy(&nodeset);
-    return result;
+	cmzn_nodeset_destroy(&nodeset);
+	return result;
 }
 
 /** Write group node identifiers in compact form with ranges:
@@ -2184,15 +2183,13 @@ bool EXWriter::writeNodeGroup(cmzn_field_domain_type fieldDomainType, cmzn_field
 		return false;
 	}
 	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, fieldDomainType);
-	cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+	cmzn_nodeset_group* nodeset_group = cmzn_field_group_get_nodeset_group(group, nodeset);
 	cmzn_nodeset_destroy(&nodeset);
-	nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-	cmzn_field_node_group_destroy(&node_group);
-	if (cmzn_nodeset_get_size(nodeset) > 0)
+	if ((nodeset_group) && (nodeset_group->getSize() > 0))
 	{
 		// get identifier ranges first in case the write criterion makes it empty which would produce an invalid EX file
 		IdentifierRanges nodeIdentifiers;
-		cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
+		cmzn_nodeiterator *iter = nodeset_group->createNodeiterator();
 		cmzn_node *node = nullptr;
 		while (nullptr != (node = iter->nextNode()))
 		{
@@ -2210,7 +2207,7 @@ bool EXWriter::writeNodeGroup(cmzn_field_domain_type fieldDomainType, cmzn_field
 			nodeIdentifiers.write(*this->outStream);
 		}
 	}
-	cmzn_nodeset_destroy(&nodeset);
+	cmzn_nodeset_group_destroy(&nodeset_group);
 	return true;
 }
 

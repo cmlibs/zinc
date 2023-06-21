@@ -25,7 +25,7 @@ Essentially it is used to embed one mesh in the elements of another.
 #include "general/mystring.h"
 #include "general/message.h"
 #include "computed_field/field_module.hpp"
-#include "mesh/cmiss_element_private.hpp"
+#include "mesh/mesh.hpp"
 #include "computed_field/computed_field_compose.h"
 
 Computed_field_compose::~Computed_field_compose()
@@ -46,7 +46,7 @@ int Computed_field_compose::compare(Computed_field_core *other_core)
 	ENTER(Computed_field_compose::type_specific_contents_match);
 	if (field && (0 != (other = dynamic_cast<Computed_field_compose*>(other_core))))
 	{
-		if (cmzn_mesh_match(mesh, other->mesh) &&
+		if ((this->mesh == other->mesh) &&
 			(find_nearest == other->find_nearest) &&
 			(use_point_five_when_out_of_bounds ==
 				other->use_point_five_when_out_of_bounds))
@@ -269,7 +269,7 @@ cmzn_field *cmzn_fieldmodule_create_field_compose(cmzn_fieldmodule *fieldmodule,
 		(texture_coordinate_field) && texture_coordinate_field->isNumerical() &&
 		(find_element_xi_field) && find_element_xi_field->isNumerical() &&
 		(calculate_values_field) && calculate_values_field->isNumerical() &&
-		(search_mesh) && (cmzn_mesh_get_region_internal(search_mesh) ==
+		(search_mesh) && (search_mesh->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		if (texture_coordinate_field->number_of_components ==

@@ -6,10 +6,13 @@
 
 #include <algorithm>
 
+#include "cmlibs/zinc/fieldmodule.h"
 #include "cmlibs/zinc/mesh.h"
 #include "cmlibs/zinc/nodeset.h"
 #include "cmlibs/zinc/scenefilter.h"
 #include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/region.h"
+#include "computed_field/computed_field_group.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -20,8 +23,9 @@
 #include "graphics/scene_viewer.h"
 #include "graphics/scene.hpp"
 #include "interaction/interaction_volume.h"
-#include "mesh/cmiss_element_private.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
+#include "mesh/nodeset_group.hpp"
+#include "mesh/mesh.hpp"
 #include "region/cmiss_region.hpp"
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
@@ -306,7 +310,7 @@ cmzn_element_id cmzn_scenepicker::getNearestElement()
 		double current_nearest = 0, nearest = 0;
 		cmzn_scene_id picked_scene = 0, existing_scene = 0;
 		cmzn_graphics_id graphics = 0;
-		cmzn_mesh_id mesh = 0;
+		cmzn_mesh* mesh = nullptr;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
 		{
 			/* select_buffer[0] = number_of_names
@@ -347,7 +351,9 @@ cmzn_element_id cmzn_scenepicker::getNearestElement()
 									current_element_type = element_type;
 									cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 									if (mesh)
-										cmzn_mesh_destroy(&mesh);
+									{
+										cmzn_mesh::deaccess(mesh);
+									}
 									mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, current_element_type);
 									cmzn_fieldmodule_destroy(&field_module);
 								}
@@ -355,15 +361,18 @@ cmzn_element_id cmzn_scenepicker::getNearestElement()
 								{
 									cmzn_scene_destroy(&picked_scene);
 								}
-								FE_mesh *fe_mesh = cmzn_mesh_get_FE_mesh_internal(mesh);
-								cmzn_element_id element = fe_mesh->getElement(select_buffer_ptr[5]);
-								if (element)
+								if (mesh)
 								{
-									ACCESS(FE_element)(element);
-									if (nearest_element)
-										cmzn_element_destroy(&nearest_element);
-									nearest_element = element;
-									current_nearest = nearest;
+									cmzn_element* element = mesh->getFeMesh()->getElement(select_buffer_ptr[5]);
+									if (element)
+									{
+										if (nearest_element)
+										{
+											cmzn_element::deaccess(nearest_element);
+										}
+										nearest_element = element->access();
+										current_nearest = nearest;
+									}
 								}
 							}
 						}
@@ -400,8 +409,8 @@ cmzn_node_id cmzn_scenepicker::getNearestNode()
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element index
-			 * select_buffer[6] = point number
+			 * select_buffer[5] = -
+			 * select_buffer[6] = node index
 			 */
 			select_buffer_ptr = next_select_buffer;
 			number_of_names=(int)(select_buffer_ptr[0]);
@@ -438,12 +447,15 @@ cmzn_node_id cmzn_scenepicker::getNearestNode()
 							{
 								cmzn_scene_destroy(&picked_scene);
 							}
-							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, (int)(select_buffer_ptr[6]));
+							const DsLabelIndex nodeIndex = select_buffer_ptr[6];
+							cmzn_node* node = nodeset->getFeNodeset()->getNode(nodeIndex);
 							if (node)
 							{
 								if (nearest_node)
-									cmzn_node_destroy(&nearest_node);
-								nearest_node = node;
+								{
+									cmzn_node::deaccess(nearest_node);
+								}
+								nearest_node = node->access();
 								current_nearest = nearest;
 							}
 						}
@@ -526,8 +538,8 @@ int cmzn_scenepicker::addPickedElementsToFieldGroup(cmzn_field_group_id group)
 	cmzn_region_begin_hierarchical_change(groupRegion);
 	if ((CMZN_OK == pickObjects()) && select_buffer)
 	{
-		cmzn_mesh_id mesh = 0;
-		cmzn_mesh_group_id meshGroup = 0;
+		Computed_field_group* groupCore = cmzn_field_group_core_cast(group);
+		cmzn_mesh_group* meshGroup = nullptr;
 		int lastDomainDimension = 0;
 		cmzn_scene *lastScene = 0;
 		cmzn_scene_id picked_scene = 0;
@@ -562,24 +574,15 @@ int cmzn_scenepicker::addPickedElementsToFieldGroup(cmzn_field_group_id group)
 							lastScene = picked_scene;
 							lastDomainDimension = domainDimension;
 							cmzn_region *region = cmzn_scene_get_region_internal(picked_scene);
-							cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-							cmzn_mesh_destroy(&mesh);
-							cmzn_mesh_group_destroy(&meshGroup);
-							mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, domainDimension);
-							cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-							if (!element_group)
-								element_group = cmzn_field_group_create_field_element_group(group, mesh);
-							meshGroup = cmzn_field_element_group_get_mesh_group(element_group);
-							cmzn_field_element_group_destroy(&element_group);
-							cmzn_fieldmodule_destroy(&fieldmodule);
+							cmzn_mesh *mesh = region->findMeshByDimension(domainDimension);
+							meshGroup = groupCore->getOrCreateMeshGroup(mesh->getFeMesh());
 						}
 						else
 							cmzn_scene_destroy(&picked_scene);
-						if (mesh && meshGroup)
+						if (meshGroup)
 						{
-							FE_mesh *fe_mesh = cmzn_mesh_get_FE_mesh_internal(mesh);
-							cmzn_element_id element = fe_mesh->getElement(select_buffer_ptr[5]);
-							cmzn_mesh_group_add_element(meshGroup, element);
+							cmzn_element_id element = meshGroup->getFeMesh()->getElement(select_buffer_ptr[5]);
+							meshGroup->addElement(element);
 						}
 					}
 					cmzn_graphics_destroy(&graphics);
@@ -587,8 +590,6 @@ int cmzn_scenepicker::addPickedElementsToFieldGroup(cmzn_field_group_id group)
 			}
 		}
 		cmzn_scene_destroy(&lastScene);
-		cmzn_mesh_group_destroy(&meshGroup);
-		cmzn_mesh_destroy(&mesh);
 	}
 	cmzn_region_end_hierarchical_change(groupRegion);
 	return CMZN_OK;
@@ -602,8 +603,8 @@ int cmzn_scenepicker::addPickedNodesToFieldGroup(cmzn_field_group_id group)
 	cmzn_region_begin_hierarchical_change(groupRegion);
 	if ((CMZN_OK == pickObjects()) && select_buffer)
 	{
-		cmzn_nodeset_id nodeset = 0;
-		cmzn_nodeset_group_id nodesetGroup = 0;
+		Computed_field_group* groupCore = cmzn_field_group_core_cast(group);
+		cmzn_nodeset_group* nodesetGroup = nullptr;
 		cmzn_field_domain_type lastDomainType = CMZN_FIELD_DOMAIN_TYPE_INVALID;
 		cmzn_scene *lastScene = 0;
 		cmzn_scene_id picked_scene = 0;
@@ -637,25 +638,16 @@ int cmzn_scenepicker::addPickedNodesToFieldGroup(cmzn_field_group_id group)
 								cmzn_scene_destroy(&lastScene);
 							lastScene = picked_scene;
 							lastDomainType = domainType;
-							cmzn_region *region = cmzn_scene_get_region_internal(picked_scene);
-							cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-							cmzn_nodeset_destroy(&nodeset);
-							cmzn_nodeset_group_destroy(&nodesetGroup);
-							nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, domainType);
-							cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-							if (!node_group)
-								node_group = cmzn_field_group_create_field_node_group(group, nodeset);
-							nodesetGroup = cmzn_field_node_group_get_nodeset_group(node_group);
-							cmzn_field_node_group_destroy(&node_group);
-							cmzn_fieldmodule_destroy(&fieldmodule);
+							cmzn_region* region = cmzn_scene_get_region_internal(picked_scene);
+							cmzn_nodeset* nodeset = region->findNodesetByFieldDomainType(domainType);
+							nodesetGroup = groupCore->getOrCreateNodesetGroup(nodeset->getFeNodeset());
 						}
 						else
 							cmzn_scene_destroy(&picked_scene);
-						if (nodeset && nodesetGroup)
+						if (nodesetGroup)
 						{
-							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, (int)(select_buffer_ptr[6]));
-							cmzn_nodeset_group_add_node(nodesetGroup, node);
-							cmzn_node_destroy(&node);
+							cmzn_node* node = nodesetGroup->getFeNodeset()->getNode(select_buffer_ptr[6]);
+							nodesetGroup->addNode(node);
 						}
 					}
 					cmzn_graphics_destroy(&graphics);
@@ -663,8 +655,6 @@ int cmzn_scenepicker::addPickedNodesToFieldGroup(cmzn_field_group_id group)
 			}
 		}
 		cmzn_scene_destroy(&lastScene);
-		cmzn_nodeset_group_destroy(&nodesetGroup);
-		cmzn_nodeset_destroy(&nodeset);
 	}
 	cmzn_region_end_hierarchical_change(groupRegion);
 	return CMZN_OK;

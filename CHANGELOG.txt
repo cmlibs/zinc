@@ -1,7 +1,13 @@
 CHANGE LOG: Zinc Library
 
 v4.0.0
-Rebrand as Zinc, using namespace 'cmlibs'.
+(Break) Rebrand as Zinc, using namespace 'cmlibs'.
+(Break) Remove subobject groups. Group field directly owns mesh groups and nodeset groups.
+(Break) Remove cmzn_mesh_match, cmzn_nodeset_match as can now use pointer comparison for these classes.
+(Break) Remove deprecated elementtemplate define field simple nodal, element constant and associated API.
+(Break) Remove deprecated Alias field. Use Apply field instead.
+(Break) Remove deprecated Optimisation independent field APIs (use dependent field).
+Add API to get owning group field from nodeset or mesh.
 
 v2.10.2
 Fix behaviour of get/create subregion groups, with get now able to discover subregion groups by name.

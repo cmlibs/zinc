@@ -10,11 +10,12 @@
 #define CMZN_FIELDGROUP_HPP__
 
 #include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/element.hpp"
 #include "cmlibs/zinc/field.hpp"
 #include "cmlibs/zinc/fieldmodule.hpp"
-#include "cmlibs/zinc/fieldsubobjectgroup.hpp"
+#include "cmlibs/zinc/mesh.hpp"
 #include "cmlibs/zinc/node.hpp"
-#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/nodeset.hpp"
 #include "cmlibs/zinc/region.hpp"
 
 namespace CMLibs
@@ -126,34 +127,46 @@ public:
 			getDerivedId(), region.getId()));
 	}
 
-	FieldNodeGroup createFieldNodeGroup(const Nodeset& nodeset)
+	FieldGroup getOrCreateSubregionFieldGroup(const Region& region)
 	{
-		return FieldNodeGroup(cmzn_field_group_create_field_node_group(
+		return FieldGroup(cmzn_field_group_get_or_create_subregion_field_group(
+			getDerivedId(), region.getId()));
+	}
+
+	NodesetGroup createNodesetGroup(const Nodeset& nodeset)
+	{
+		return NodesetGroup(cmzn_field_group_create_nodeset_group(
 			getDerivedId(), nodeset.getId()));
 	}
 
-	FieldNodeGroup getFieldNodeGroup(const Nodeset& nodeset) const
+	NodesetGroup getNodesetGroup(const Nodeset& nodeset) const
 	{
-		return FieldNodeGroup(cmzn_field_group_get_field_node_group(
+		return NodesetGroup(cmzn_field_group_get_nodeset_group(
 			getDerivedId(), nodeset.getId()));
 	}
 
-	FieldElementGroup createFieldElementGroup(const Mesh& mesh)
+	NodesetGroup getOrCreateNodesetGroup(const Nodeset& nodeset) const
 	{
-		return FieldElementGroup(cmzn_field_group_create_field_element_group(
+		return NodesetGroup(cmzn_field_group_get_or_create_nodeset_group(
+			getDerivedId(), nodeset.getId()));
+	}
+
+	MeshGroup createMeshGroup(const Mesh& mesh)
+	{
+		return MeshGroup(cmzn_field_group_create_mesh_group(
 			getDerivedId(), mesh.getId()));
 	}
 
-	FieldElementGroup getFieldElementGroup(const Mesh& mesh) const
+	MeshGroup getMeshGroup(const Mesh& mesh) const
 	{
-		return FieldElementGroup(cmzn_field_group_get_field_element_group(
+		return MeshGroup(cmzn_field_group_get_mesh_group(
 			getDerivedId(), mesh.getId()));
 	}
 
-	Field getSubobjectGroupFieldForDomainField(const Field& domainField) const
+	MeshGroup getOrCreateMeshGroup(const Mesh& mesh) const
 	{
-		return Field(cmzn_field_group_get_subobject_group_field_for_domain_field(
-			getDerivedId(), domainField.getId()));
+		return MeshGroup(cmzn_field_group_get_or_create_mesh_group(
+			getDerivedId(), mesh.getId()));
 	}
 
 	FieldGroup getFirstNonEmptySubregionFieldGroup() const
@@ -173,6 +186,16 @@ inline FieldGroup Fieldmodule::createFieldGroup()
 inline FieldGroup Field::castGroup()
 {
 	return FieldGroup(cmzn_field_cast_group(id));
+}
+
+inline FieldGroup MeshGroup::getFieldGroup() const
+{
+	return FieldGroup(cmzn_mesh_group_get_field_group(this->getDerivedId()));
+}
+
+inline FieldGroup NodesetGroup::getFieldGroup() const
+{
+	return FieldGroup(cmzn_nodeset_group_get_field_group(this->getDerivedId()));
 }
 
 }  // namespace Zinc

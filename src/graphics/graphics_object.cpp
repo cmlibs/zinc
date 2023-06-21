@@ -22,9 +22,9 @@ gtObject/gtWindow management routines.
 #include "cmlibs/zinc/zincconfigure.h"
 
 #include "cmlibs/zinc/field.h"
-#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "cmlibs/zinc/material.h"
 #include "cmlibs/zinc/status.h"
+#include "datastore/labelschangelog.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"

@@ -14,6 +14,7 @@
 #define CMZN_NODETEMPLATE_H__
 
 #include "types/fieldid.h"
+#include "types/nodeid.h"
 #include "types/fieldmoduleid.h"
 #include "types/nodetemplateid.h"
 #include "types/timesequenceid.h"
@@ -42,11 +43,11 @@ ZINC_API cmzn_nodetemplate_id cmzn_nodetemplate_access(
  * Destroys this handle to the node_template and sets it to NULL.
  * Internally this decrements the reference count.
  *
- * @param node_template_address  Address of handle to node_template
+ * @param nodetemplate_address  Address of handle to node_template
  * to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address);
+ZINC_API int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *nodetemplate_address);
 
 /**
  * Define the field on the node_template with just a single node value per
