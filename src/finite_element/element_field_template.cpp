@@ -12,13 +12,13 @@
 
 #include "cmlibs/zinc/elementfieldtemplate.h"
 #include "cmlibs/zinc/mesh.h"
+#include "element/elementbasis.hpp"
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/node_field_template.hpp"
 #include "general/message.h"
-#include "mesh/cmiss_element_private.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/mesh.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -1293,7 +1293,7 @@ cmzn_elementfieldtemplate_id cmzn_mesh_create_elementfieldtemplate(
 	if (mesh && elementbasis)
 	{
 		FE_basis *basis = cmzn_elementbasis_get_FE_basis(elementbasis);
-		cmzn_elementfieldtemplate_id eft = cmzn_elementfieldtemplate::create(cmzn_mesh_get_FE_mesh_internal(mesh), basis);
+		cmzn_elementfieldtemplate_id eft = cmzn_elementfieldtemplate::create(mesh->getFeMesh(), basis);
 		return eft;
 	}
 	return 0;

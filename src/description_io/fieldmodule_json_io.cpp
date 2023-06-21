@@ -10,16 +10,18 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "cmlibs/zinc/changemanager.hpp"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "description_io/field_json_io.hpp"
 #include "description_io/fieldmodule_json_io.hpp"
 #include "general/debug.h"
-#include "cmlibs/zinc/changemanager.hpp"
-#include "cmlibs/zinc/field.hpp"
-#include "cmlibs/zinc/fieldconstant.hpp"
-#include "cmlibs/zinc/status.h"
+#include "general/message.h"
 #include <cstring>
 
 CMLibs::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fieldSettings)
@@ -97,6 +99,13 @@ CMLibs::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_name
 				}
 			}
 			++index;
+		}
+		if (!field.isValid())
+		{
+			char* regionName = this->getRegion().getName();
+			display_message(WARNING_MESSAGE, "Fieldmodule.readDescription: Region %s could not find field %s",
+				regionName ? regionName : "/", field_name);
+			cmzn_deallocate(regionName);
 		}
 	}
 

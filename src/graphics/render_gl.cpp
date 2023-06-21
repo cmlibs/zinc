@@ -2328,7 +2328,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 	int draw_all, name_selected = 0, return_code = 1;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
-	SubObjectGroupHighlightFunctor *highlight_functor = renderer->highlight_functor;
+	GraphicsHighlightFunctor* highlight_functor = renderer->highlight_functor;
 
 	if (object && object->vertex_array)
 	{
@@ -2486,14 +2486,14 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 						}
 						if ((object_name >= 0) && highlight_functor)
 						{
-							name_selected=highlight_functor->call(object_name);
+							name_selected = highlight_functor->query(object_name);
 						}
 						glMatrixMode(GL_MODELVIEW);
 						for (unsigned i=0;i<index_count;i++)
 						{
 							if ((object_name < 0) && ((names) && highlight_functor))
 							{
-								name_selected = highlight_functor->call(*names);
+								name_selected = highlight_functor->query(*names);
 							}
 							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 							{
@@ -2614,7 +2614,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 						glMatrixMode(GL_MODELVIEW);
 						if ((object_name >= 0) && highlight_functor)
 						{
-							name_selected=highlight_functor->call(object_name);
+							name_selected=highlight_functor->query(object_name);
 						}
 						if (glyph)
 						{
@@ -2624,7 +2624,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 							{
 								if ((object_name < 0) && names && highlight_functor)
 								{
-									name_selected = highlight_functor->call(*names);
+									name_selected = highlight_functor->query(*names);
 								}
 								if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
 								{
@@ -2747,13 +2747,13 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 							datum = data_buffer + data_values_per_vertex * index_start;
 							if ((object_name >= 0) && highlight_functor)
 							{
-								name_selected=highlight_functor->call(object_name);
+								name_selected=highlight_functor->query(object_name);
 							}
 							for (unsigned int i = 0; i < index_count; i++)
 							{
 								if ((object_name < 0) && names && highlight_functor)
 								{
-									name_selected = highlight_functor->call(*names);
+									name_selected = highlight_functor->query(*names);
 								}
 								if ((static_labels || label) && (draw_all || ((name_selected) && draw_selected)
 									|| ((!name_selected)&&(!draw_selected))))
@@ -2993,7 +2993,7 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 					/* work out if subobjects selected */
 					if (renderer->highlight_functor)
 					{
-						name_selected=(renderer->highlight_functor)->call(object_name);
+						name_selected=(renderer->highlight_functor)->query(object_name);
 					}
 					else
 					{
@@ -3268,7 +3268,7 @@ int draw_vertexBufferLine(gtObject *object, Render_graphics_opengl *renderer,
 				int name_selected = 0;
 				if (renderer->highlight_functor)
 				{
-					name_selected=(renderer->highlight_functor)->call(object_name);
+					name_selected=(renderer->highlight_functor)->query(object_name);
 				}
 				else
 				{

@@ -20,7 +20,6 @@
 #include "general/debug.h"
 #include "cmlibs/zinc/changemanager.hpp"
 #include "cmlibs/zinc/element.hpp"
-#include "cmlibs/zinc/fieldalias.hpp"
 #include "cmlibs/zinc/fieldapply.hpp"
 #include "cmlibs/zinc/fieldarithmeticoperators.hpp"
 #include "cmlibs/zinc/fieldcomposite.hpp"
@@ -769,14 +768,16 @@ const Json::Value getDerivedFieldValue(const Json::Value &fieldSettings, enum cm
 	{
 		const char *typeName = (*it).c_str();
 		*type = cmzn_field_type_enum_from_class_name(typeName);
+		if (*type == CMZN_FIELD_TYPE_INVALID)
+		{
+			if (0 == strcmp(typeName, "FieldAlias"))
+			{
+				// replaced with FieldApply
+				*type = CMZN_FIELD_TYPE_APPLY;
+			}
+		}
 		if (*type != CMZN_FIELD_TYPE_INVALID)
 		{
-			typeSettings = fieldSettings[(*it)];
-		}
-		else if (0 == strcmp(typeName, "FieldAlias"))
-		{
-			// replaced with FieldApply
-			*type = CMZN_FIELD_TYPE_APPLY;
 			typeSettings = fieldSettings[(*it)];
 		}
 		++it;

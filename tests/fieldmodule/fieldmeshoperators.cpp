@@ -15,9 +15,9 @@
 #include <cmlibs/zinc/fieldcache.hpp>
 #include <cmlibs/zinc/fieldcomposite.hpp>
 #include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
 #include <cmlibs/zinc/fieldlogicaloperators.hpp>
 #include <cmlibs/zinc/fieldmeshoperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 #include <cmlibs/zinc/fieldtime.hpp>
 #include <cmlibs/zinc/fieldtrigonometry.hpp>
 #include <cmlibs/zinc/fieldvectoroperators.hpp>
@@ -45,9 +45,9 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	// create mesh group containing exterior faces for integrating to get surface area
 	Mesh masterMesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(masterMesh2d.isValid());
-	FieldElementGroup elementGroup = zinc.fm.createFieldElementGroup(masterMesh2d);
-	EXPECT_TRUE(elementGroup.isValid());
-	MeshGroup exteriorMesh2d = elementGroup.getMeshGroup();
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	MeshGroup exteriorMesh2d = group.createMeshGroup(masterMesh2d);
 	EXPECT_TRUE(exteriorMesh2d.isValid());
 	const int exteriorFaceIdentifiers[] = { 2,4,5,8,9,10,12,13,14,16,17,18,19,20,21,22,23,24 };
 	const int size = sizeof(exteriorFaceIdentifiers)/sizeof(int);
@@ -319,9 +319,9 @@ TEST(ZincFieldMeshIntegral, cube_setMesh)
 	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &length));
 	EXPECT_NEAR(12.0, length, TOL);
 
-	FieldElementGroup elementGroup2 = zinc.fm.createFieldElementGroup(mesh2d);
-	EXPECT_TRUE(elementGroup2.isValid());
-	MeshGroup meshGroup2 = elementGroup2.getMeshGroup();
+	FieldGroup group2 = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group2.isValid());
+	MeshGroup meshGroup2 = group2.createMeshGroup(mesh2d);
 	EXPECT_TRUE(meshGroup2.isValid());
 	EXPECT_EQ(0, meshGroup2.getSize());
 	EXPECT_EQ(RESULT_OK, meshIntegral.setMesh(meshGroup2));

@@ -30,6 +30,7 @@
 #include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "element/elementbasis.hpp"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/read_fieldml.hpp"
 #include "finite_element/element_field_template.hpp"
@@ -40,8 +41,7 @@
 #include "general/mystring.h"
 #include "general/message.h"
 #include "general/refcounted.hpp"
-#include "mesh/cmiss_element_private.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
 #include "FieldmlIoApi.h"
 
 namespace {
@@ -1908,7 +1908,7 @@ FE_basis *FieldMLReader::readBasisInterpolator(FmlObjectHandle fmlInterpolator, 
 				libraryBases[basis_index].functionType[dimension - 1]);
 		}
 	}
-	FE_basis *basis = cmzn_elementbasis_get_FE_basis(elementBasis); // not accessed
+	FE_basis *basis = elementBasis->getFeBasis();  // not accessed
 	cmzn_elementbasis_destroy(&elementBasis);
 	if (!basis)
 	{
@@ -2905,7 +2905,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 		cmzn_nodetemplate_id nodetemplate = 0;
 		HDsMapIndexing nodeParametersIndexing(nodeParameters->createIndexing());
 		DsLabelIterator *nodesLabelIterator = nodesLabels->createLabelIterator();
-		FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+		FE_nodeset *feNodeset = nodeset->getFeNodeset();
 		if (!nodesLabelIterator)
 			return_code = CMZN_ERROR_MEMORY;
 		else

@@ -305,7 +305,7 @@ public:
 		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}
 
-	char *writeDescription()
+	char *writeDescription() const
 	{
 		return cmzn_scene_write_description(id);
 	}

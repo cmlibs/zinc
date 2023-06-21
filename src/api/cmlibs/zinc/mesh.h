@@ -17,8 +17,9 @@
 #include "types/elementtemplateid.h"
 #include "types/elementfieldtemplateid.h"
 #include "types/fieldid.h"
-#include "types/meshid.h"
+#include "types/fieldgroupid.h"
 #include "types/fieldmoduleid.h"
+#include "types/meshid.h"
 
 #include "cmlibs/zinc/zincsharedobject.h"
 
@@ -285,15 +286,6 @@ ZINC_API char *cmzn_mesh_get_name(cmzn_mesh_id mesh);
 ZINC_API int cmzn_mesh_get_size(cmzn_mesh_id mesh);
 
 /**
- * Check if two mesh handles refer to the same object.
- *
- * @param mesh1  The first mesh to match.
- * @param mesh2  The second mesh to match.
- * @return  Boolean true if the two meshes match, false if not.
- */
-ZINC_API bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
-
-/**
  * If the mesh is a mesh group i.e. subset of elements from a master mesh,
  * get the mesh group specific interface for add/remove functions.
  *
@@ -353,6 +345,17 @@ ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
  */
 ZINC_API int cmzn_mesh_group_add_elements_conditional(cmzn_mesh_group_id mesh_group,
 	cmzn_field_id conditional_field);
+
+/**
+ * Get the owning group field for this mesh group. Guaranteed to exist if this
+ * is a valid mesh group handle.
+ *
+ * @param mesh_group  Handle to mesh group to query.
+ * @return  Handle to owning field group, or null/invalid handle if
+ * mesh group is invalid.
+ */
+ZINC_API cmzn_field_group_id cmzn_mesh_group_get_field_group(
+	cmzn_mesh_group_id mesh_group);
 
 /**
  * Remove all elements from mesh group.

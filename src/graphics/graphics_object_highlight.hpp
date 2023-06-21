@@ -7,48 +7,49 @@ FILE : graphics_object_highlight.hpp
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#ifndef GRAPHICS_OBJECT_HIGHLIGHT_HPP
-#define GRAPHICS_OBJECT_HIGHLIGHT_HPP
 
-#include "computed_field/computed_field_subobject_group.hpp"
+#pragma once
 
-class SubObjectGroupHighlightFunctor
+
+class GraphicsHighlightFunctor
+{
+public:
+	virtual ~GraphicsHighlightFunctor()
 	{
-	private:
-		int(Computed_field_subobject_group::*function_pointer)(int);
-		Computed_field_subobject_group *group;
-		int contains_all;
+	}
 
-	public:
+	/** Override to return true if object with index is selected for highlighting */
+	virtual bool query(int index) = 0;
 
-		SubObjectGroupHighlightFunctor(Computed_field_subobject_group* group_in,
-			int(Computed_field_subobject_group::*function_pointer_in)(int))
-		{
-			group = group_in;
-			function_pointer=function_pointer_in;
-			contains_all = 0;
-		};
+};
 
-		int call(int object_name)
-		{
-			if (contains_all)
-			{
-				return 1;
-			}
-			else
-			{
-				return (*group.*function_pointer)(object_name);
-			}
-		};
 
-		int setContainsAll(int flag)
-		{
-			return contains_all = flag;
-		}
+class AllSelectedGraphicsHighlightFunctor : public GraphicsHighlightFunctor
+{
+public:
+	inline bool query(int)
+	{
+		return true;
+	}
 
-		~SubObjectGroupHighlightFunctor()
-		{
-		};
-	};
+};
 
-#endif /* GRAPHICS_OBJECT_HIGHLIGHT_HPP */
+
+/** For nodeset group, mesh group which support bool containsIndex(int) */
+template <typename DOMAIN_GROUP>
+class DomainGroupGraphicsHighlightFunctor : public GraphicsHighlightFunctor
+{
+	DOMAIN_GROUP* domainGroup;
+
+public:
+	DomainGroupGraphicsHighlightFunctor(DOMAIN_GROUP* domainGroupIn)
+		: domainGroup(domainGroupIn)
+	{
+	}
+
+	virtual bool query(int index)
+	{
+		return domainGroup->containsIndex(index);
+	}
+
+};

@@ -20,9 +20,9 @@
 #include <cmlibs/zinc/fieldconstant.hpp>
 #include <cmlibs/zinc/fieldderivatives.hpp>
 #include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
 #include <cmlibs/zinc/fieldlogicaloperators.hpp>
 #include <cmlibs/zinc/fieldmeshoperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 #include <cmlibs/zinc/mesh.hpp>
 #include <cmlibs/zinc/node.hpp>
 #include <cmlibs/zinc/nodeset.hpp>
@@ -107,9 +107,9 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 
     EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
 
-	FieldNodeGroup nodeGroup = zinc.fm.createFieldNodeGroup(nodes);
-	EXPECT_TRUE(nodeGroup.isValid());
-	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	for (int n = 0; n < 4; ++n)
 	{
@@ -142,7 +142,7 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 	Nodeset noNodeset;
 	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(noNodeset));
 	EXPECT_FALSE(fieldassignment.getNodeset().isValid());
-	FieldNot conditionalField = zinc.fm.createFieldNot(nodeGroup);
+	FieldNot conditionalField = zinc.fm.createFieldNot(group);
 	EXPECT_EQ(RESULT_OK, fieldassignment.setConditionalField(conditionalField));
 	EXPECT_EQ(conditionalField, fieldassignment.getConditionalField());
 	EXPECT_EQ(RESULT_OK, fieldassignment.assign());

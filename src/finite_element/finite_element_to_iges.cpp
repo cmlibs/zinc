@@ -24,6 +24,7 @@ to file.
 #include "cmlibs/zinc/fieldmodule.h"
 #include "cmlibs/zinc/mesh.h"
 #include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/region.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
@@ -33,7 +34,7 @@ to file.
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
-#include "mesh/cmiss_element_private.hpp"
+#include "mesh/mesh.hpp"
 #include "general/debug.h"
 #include "general/message.h"
 
@@ -165,7 +166,7 @@ public:
 			name = 0;
 			cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(this->destination_mesh);
 			cmzn_element *element;
-			FE_mesh *feMesh = cmzn_mesh_get_FE_mesh_internal(this->destination_mesh);
+			FE_mesh *feMesh = this->destination_mesh->getFeMesh();
 			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
 				if (1 >= feMesh->getElementParentsCount(element->getIndex()))

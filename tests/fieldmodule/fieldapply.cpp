@@ -13,7 +13,6 @@
 #include <cmlibs/zinc/element.hpp>
 #include <cmlibs/zinc/elementbasis.hpp>
 #include <cmlibs/zinc/field.hpp>
-#include <cmlibs/zinc/fieldalias.hpp>
 #include <cmlibs/zinc/fieldapply.hpp>
 #include <cmlibs/zinc/fieldarithmeticoperators.hpp>
 #include <cmlibs/zinc/fieldassignment.hpp>
@@ -26,38 +25,6 @@
 #include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
-
-// Test createFieldAlias now creates a FieldApply
-TEST(ZincFieldApply, aliasMigration)
-{
-	ZincTestSetupCpp zinc;
-
-	const double valuesIn[3] = { 1.0, 2.5, -3.0 };
-	FieldConstant fieldConstant = zinc.fm.createFieldConstant(3, valuesIn);
-	EXPECT_TRUE(fieldConstant.isValid());
-	Field fieldAlias = zinc.fm.createFieldAlias(fieldConstant);
-	EXPECT_TRUE(fieldAlias.isValid());
-	// test cast to Apply field
-	FieldApply fieldApply = fieldAlias.castApply();
-	EXPECT_TRUE(fieldApply.isValid());
-	EXPECT_EQ(0, fieldApply.getNumberOfBindings());
-
-	// test evaluation of apply without arguments
-	Fieldcache fieldcache = zinc.fm.createFieldcache();
-	double valuesOut[3];
-	EXPECT_EQ(RESULT_OK, fieldApply.evaluateReal(fieldcache, 3, valuesOut));
-	for (int c = 0; c < 3; ++c)
-		EXPECT_DOUBLE_EQ(valuesIn[c], valuesOut[c]);
-
-	// test assignment - same region
-	const double newValues[3] = { 1.2, 2.2, 3.2 };
-	EXPECT_EQ(RESULT_OK, fieldApply.assignReal(fieldcache, 3, newValues));
-	// re-create fieldcache to check really there
-	fieldcache = zinc.fm.createFieldcache();
-	EXPECT_EQ(RESULT_OK, fieldApply.evaluateReal(fieldcache, 3, valuesOut));
-	for (int c = 0; c < 3; ++c)
-		EXPECT_DOUBLE_EQ(newValues[c], valuesOut[c]);
-}
 
 // Test applying a field imported from another region which maps from
 // coordinates to mesh location to another field's values.

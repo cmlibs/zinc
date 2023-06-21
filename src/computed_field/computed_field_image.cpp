@@ -231,12 +231,6 @@ private:
 	}
 };
 
-inline Computed_field *Computed_field_cast(
-	cmzn_field_image *image_field)
-{
-	return (reinterpret_cast<Computed_field*>(image_field));
-}
-
 inline Computed_field_image *Computed_field_image_core_cast(
 	cmzn_field_image *image_field)
 {

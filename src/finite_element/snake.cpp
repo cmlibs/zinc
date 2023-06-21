@@ -16,6 +16,7 @@ data points.
 #include <stdio.h>
 
 #include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementfieldtemplate.h"
 #include "cmlibs/zinc/elementtemplate.h"
 #include "cmlibs/zinc/fieldcache.h"
 #include "cmlibs/zinc/fieldfiniteelement.h"
@@ -767,17 +768,15 @@ int create_FE_element_snake_from_data_points(
 				if (return_code)
 				{
 					cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
-					const int nodeIndexes[] = { 1, 2 };
-					cmzn_elementbasis_id basis = cmzn_fieldmodule_create_elementbasis(field_module, 1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE);
-					if ((elementtemplate)
-						&& cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_LINE)
-						&& cmzn_elementtemplate_set_number_of_nodes(elementtemplate, 2))
+					cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(field_module, 1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE);
+					cmzn_elementfieldtemplate_id eft = cmzn_mesh_create_elementfieldtemplate(mesh, elementbasis);
+					if ((elementtemplate) && (eft)
+						&& cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_LINE))
 					{
 						for (int i = 0; i < number_of_fe_fields; ++i)
 						{
 							cmzn_field_id define_field = cmzn_field_finite_element_base_cast(define_field_array[i]);
-							if (CMZN_OK != cmzn_elementtemplate_define_field_simple_nodal(elementtemplate,
-								define_field, -1, basis, 2, nodeIndexes))
+							if (CMZN_OK != cmzn_elementtemplate_define_field(elementtemplate, define_field, -1, eft))
 							{
 								display_message(ERROR_MESSAGE,
 									"create_FE_element_snake_from_data_points.  Could not define field on element template");
@@ -796,27 +795,30 @@ int create_FE_element_snake_from_data_points(
 					{
 						for (j = 0; (j < number_of_elements) && return_code; j++)
 						{
-							if ((CMZN_OK != cmzn_elementtemplate_set_node(elementtemplate, 1, nodes[j]))
-								|| (CMZN_OK != cmzn_elementtemplate_set_node(elementtemplate, 2, nodes[j + 1])))
+							element = cmzn_mesh_create_element(mesh, -1, elementtemplate);
+							if (element)
 							{
-								display_message(ERROR_MESSAGE,
-									"create_FE_element_snake_from_data_points.   Failed to set element nodes");
-								return_code = 0;
-							}
-							else
-							{
-								element = cmzn_mesh_create_element(mesh, -1, elementtemplate);
-								if (!element)
+								for (int n = 0; n < 2; ++n)
 								{
-									display_message(ERROR_MESSAGE,
-										"create_FE_element_snake_from_data_points.   Failed to create element");
-									return_code = 0;
+									if (CMZN_OK != cmzn_element_set_node(element, eft, n + 1, nodes[j + n]))
+									{
+										display_message(ERROR_MESSAGE,
+											"create_FE_element_snake_from_data_points.   Failed to set element node");
+										return_code = 0;
+									}
 								}
 								cmzn_element_destroy(&element);
 							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"create_FE_element_snake_from_data_points.   Failed to create element");
+								return_code = 0;
+							}
 						}
 					}
-					cmzn_elementbasis_destroy(&basis);
+					cmzn_elementfieldtemplate_destroy(&eft);
+					cmzn_elementbasis_destroy(&elementbasis);
 					cmzn_elementtemplate_destroy(&elementtemplate);
 				}
 				for (int j = 0; j <= number_of_elements; ++j)

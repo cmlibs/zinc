@@ -11,13 +11,13 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "cmlibs/zinc/fieldgroup.h"
 #include "cmlibs/zinc/fieldmodule.h"
-#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "cmlibs/zinc/mesh.h"
 #include "cmlibs/zinc/node.h"
 #include "cmlibs/zinc/nodeset.h"
 #include "cmlibs/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_apply.hpp"
+#include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_derivative.hpp"
@@ -31,8 +31,14 @@
 #include "general/message.h"
 #include "general/mystring.h"
 #include "graphics/scene.hpp"
+#include "mesh/mesh.hpp"
+#include "mesh/mesh_group.hpp"
+#include "mesh/nodeset.hpp"
+#include "mesh/nodeset_group.hpp"
 #include "region/cmiss_region.hpp"
 #include <algorithm>
+#include <cstring>
+#include <string>
 #include <vector>
 
 /*
@@ -130,6 +136,8 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	field_manager_callback_id(MANAGER_REGISTER(Computed_field)(
 		cmzn_region::Computed_field_change, (void *)this, this->field_manager)),
 	fe_region(nullptr),
+	nodesets{},
+	meshes{},
 	field_cache_size(0),
 	scene(nullptr),
 	fieldModifyCounter(0),
@@ -143,12 +151,32 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	// get any existing region from context to share element bases and shapes with
 	cmzn_region *baseRegion = contextIn->getBaseRegion();
     this->fe_region = new FE_region(this, (baseRegion) ? baseRegion->fe_region : nullptr);
+	for (int i = 0; i < 2; ++i)
+	{
+		FE_nodeset* feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
+			(i == 0) ? CMZN_FIELD_DOMAIN_TYPE_NODES : CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
+		this->nodesets[i] = new cmzn_nodeset(feNodeset);
+	}
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+	{
+		FE_mesh* feMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, d + 1);
+		this->meshes[d] = new cmzn_mesh(feMesh);
+	}
 	// create scene last as technically builds on FE_region
     this->scene = cmzn_scene::create(this, contextIn->getGraphicsmodule());
 }
 
 cmzn_region::~cmzn_region()
 {
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+	{
+		cmzn_mesh::deaccess(this->meshes[d]);
+	}
+	for (int i = 0; i < 2; ++i)
+	{
+		cmzn_nodeset::deaccess(this->nodesets[i]);
+	}
+
 	// first notify clients as they call some region/fieldmodule APIs
 	for (cmzn_fieldmodulenotifier_list::iterator iter = this->fieldmodulenotifierList.begin();
 		iter != this->fieldmodulenotifierList.end(); ++iter)
@@ -237,7 +265,7 @@ void cmzn_region::detachFields()
 		}
 		DESTROY(MANAGER(Computed_field))(&(this->field_manager));
 		this->field_manager = 0;
-		DEACCESS(FE_region)(&this->fe_region);
+		FE_region::deaccess(this->fe_region);
 	}
 }
 
@@ -654,6 +682,109 @@ void cmzn_region::clearFieldValueCaches(cmzn_field *field)
 	}
 }
 
+cmzn_mesh* cmzn_region::findMeshByDimension(int dimension) const
+{
+	if ((1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		return this->meshes[dimension - 1];
+	}
+	return nullptr;
+}
+
+cmzn_mesh* cmzn_region::findMeshByName(const char* meshName) const
+{
+	if (!meshName)
+	{
+		return nullptr;
+	}
+	const char* groupSeparator = strrchr(meshName, '.');
+	const char* masterMeshName = (groupSeparator) ? groupSeparator + 1 : meshName;
+	cmzn_mesh* masterMesh = nullptr;
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+	{
+		if (0 == strcmp(masterMeshName, this->meshes[d]->getMasterMeshName()))
+		{
+			masterMesh = this->meshes[d];
+			break;
+		}
+	}
+	if (!masterMesh)
+	{
+		return nullptr;
+	}
+	if (!groupSeparator)
+	{
+		return masterMesh;
+	}
+	std::string groupName(meshName, groupSeparator - meshName);
+	cmzn_field* field = this->findFieldByName(groupName.c_str());
+	if (!field)
+	{
+		return nullptr;
+	}
+	Computed_field_group* groupCore = cmzn_field_get_group_core(field);
+	if (!groupCore)
+	{
+		return nullptr;
+	}
+	cmzn_mesh_group *meshGroup = groupCore->getLocalMeshGroup(masterMesh->getFeMesh());
+	return meshGroup;
+}
+
+cmzn_nodeset* cmzn_region::findNodesetByFieldDomainType(cmzn_field_domain_type nodesetDomainType) const
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (this->nodesets[i]->getFieldDomainType() == nodesetDomainType)
+		{
+			return this->nodesets[i];
+		}
+	}
+	return nullptr;
+}
+
+/** @return  Non-accessed nodeset of given name, either a master nodeset "nodes" or "datapoints"
+  * or a nodeset group of name GROUP_NAME.NODESET_NAME, otherwise nullptr */
+cmzn_nodeset* cmzn_region::findNodesetByName(const char* nodesetName) const
+{
+	if (!nodesetName)
+	{
+		return nullptr;
+	}
+	const char* groupSeparator = strrchr(nodesetName, '.');
+	const char* masterNodesetName = (groupSeparator) ? groupSeparator + 1 : nodesetName;
+	cmzn_nodeset* masterNodeset = nullptr;
+	for (int i = 0; i < 2; ++i)
+	{
+		if (0 == strcmp(masterNodesetName, this->nodesets[i]->getMasterNodesetName()))
+		{
+			masterNodeset = this->nodesets[i];
+			break;
+		}
+	}
+	if (!masterNodeset)
+	{
+		return nullptr;
+	}
+	if (!groupSeparator)
+	{
+		return masterNodeset;
+	}
+	std::string groupName(nodesetName, groupSeparator - nodesetName);
+	cmzn_field* field = this->findFieldByName(groupName.c_str());
+	if (!field)
+	{
+		return nullptr;
+	}
+	Computed_field_group* groupCore = cmzn_field_get_group_core(field);
+	if (!groupCore)
+	{
+		return nullptr;
+	}
+	cmzn_nodeset_group* nodesetGroup = groupCore->getLocalNodesetGroup(masterNodeset->getFeNodeset());
+	return nodesetGroup;
+}
+
 int cmzn_region::setName(const char *name)
 {
 	if (!name)
@@ -1039,25 +1170,24 @@ bool cmzn_region::canMerge(cmzn_region& sourceRegion)
 int cmzn_region::mergeFields(cmzn_region& sourceRegion)
 {
 	int return_code = 1;
-	cmzn_fieldmodule_id target_field_module = cmzn_region_get_fieldmodule(this);
-	cmzn_fieldmodule_id source_field_module = cmzn_region_get_fieldmodule(&sourceRegion);
-	cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(source_field_module);
-	cmzn_field_id source_field = 0;
-	while ((0 != (source_field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
+	cmzn_fieldmodule* targetFieldmodule = cmzn_region_get_fieldmodule(this);
+	cmzn_fielditerator* fielditerator = sourceRegion.createFielditerator();
+	cmzn_field* sourceField = nullptr;
+	while ((sourceField = cmzn_fielditerator_next_non_access(fielditerator)) && return_code)
 	{
-		cmzn_field_group_id source_group = cmzn_field_cast_group(source_field);
-		if (source_group)
+		Computed_field_group* sourceGroupCore = cmzn_field_get_group_core(sourceField);
+		if (sourceGroupCore)
 		{
-			char *name = cmzn_field_get_name(source_field);
-			cmzn_field_id target_field = cmzn_fieldmodule_find_field_by_name(target_field_module, name);
-			if (!target_field)
+			char *name = cmzn_field_get_name(sourceField);
+			cmzn_field* targetField = cmzn_fieldmodule_find_field_by_name(targetFieldmodule, name);
+			if (!targetField)
 			{
-				target_field = cmzn_fieldmodule_create_field_group(target_field_module);
-				cmzn_field_set_managed(target_field, true);
-				cmzn_field_set_name(target_field, name);
+				targetField = cmzn_fieldmodule_create_field_group(targetFieldmodule);
+				cmzn_field_set_managed(targetField, true);
+				cmzn_field_set_name(targetField, name);
 			}
-			cmzn_field_group_id target_group = cmzn_field_cast_group(target_field);
-			if (target_field && (!target_group))
+			Computed_field_group* targetGroupCore = cmzn_field_get_group_core(targetField);
+			if (!targetGroupCore)
 			{
 				char *source_path = sourceRegion.getPath();
 				char *target_path = this->getPath();
@@ -1066,101 +1196,66 @@ int cmzn_region::mergeFields(cmzn_region& sourceRegion)
 				DEALLOCATE(source_path);
 				DEALLOCATE(target_path);
 			}
-			else if (target_group)
-			{
-				// merge node groups
-				for (int i = 0; i < 2; i++)
-				{
-					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
-					cmzn_nodeset_id source_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(source_field_module, nodeset_domain_type);
-					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_field_node_group(source_group, source_nodeset);
-					if (source_node_group)
-					{
-						cmzn_nodeset_group_id source_nodeset_group = cmzn_field_node_group_get_nodeset_group(source_node_group);
-						cmzn_nodeset_id target_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(target_field_module, nodeset_domain_type);
-						cmzn_field_node_group_id target_node_group = cmzn_field_group_get_field_node_group(target_group, target_nodeset);
-						if (!target_node_group)
-						{
-							target_node_group = cmzn_field_group_create_field_node_group(target_group, target_nodeset);
-						}
-						cmzn_nodeset_group_id target_nodeset_group = cmzn_field_node_group_get_nodeset_group(target_node_group);
-
-						cmzn_nodeiterator_id node_iter = cmzn_nodeset_create_nodeiterator(cmzn_nodeset_group_base_cast(source_nodeset_group));
-						cmzn_node_id source_node = 0;
-						while ((source_node = cmzn_nodeiterator_next_non_access(node_iter)) && return_code)
-						{
-							const int identifier = cmzn_node_get_identifier(source_node);
-							cmzn_node_id target_node = cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_group_base_cast(target_nodeset_group), identifier);
-							if (!target_node)
-							{
-								target_node = cmzn_nodeset_find_node_by_identifier(target_nodeset, identifier);
-								return_code = cmzn_nodeset_group_add_node(target_nodeset_group, target_node);
-							}
-							cmzn_node_destroy(&target_node);
-						}
-						cmzn_nodeiterator_destroy(&node_iter);
-
-						cmzn_nodeset_group_destroy(&target_nodeset_group);
-						cmzn_field_node_group_destroy(&target_node_group);
-						cmzn_nodeset_destroy(&target_nodeset);
-						cmzn_nodeset_group_destroy(&source_nodeset_group);
-						cmzn_field_node_group_destroy(&source_node_group);
-					}
-					cmzn_nodeset_destroy(&source_nodeset);
-				}
-				// merge element groups
-				for (int dimension = 3; 0 < dimension; --dimension)
-				{
-					cmzn_mesh_id source_mesh = cmzn_fieldmodule_find_mesh_by_dimension(source_field_module, dimension);
-					cmzn_field_element_group_id source_element_group = cmzn_field_group_get_field_element_group(source_group, source_mesh);
-					if (source_element_group)
-					{
-						cmzn_mesh_group_id source_mesh_group = cmzn_field_element_group_get_mesh_group(source_element_group);
-						cmzn_mesh_id target_mesh = cmzn_fieldmodule_find_mesh_by_dimension(target_field_module, dimension);
-						cmzn_field_element_group_id target_element_group = cmzn_field_group_get_field_element_group(target_group, target_mesh);
-						if (!target_element_group)
-						{
-							target_element_group = cmzn_field_group_create_field_element_group(target_group, target_mesh);
-						}
-						cmzn_mesh_group_id target_mesh_group = cmzn_field_element_group_get_mesh_group(target_element_group);
-
-						cmzn_elementiterator_id element_iter = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(source_mesh_group));
-						cmzn_element_id source_element = 0;
-						while ((source_element = cmzn_elementiterator_next_non_access(element_iter)) && return_code)
-						{
-							const int identifier = cmzn_element_get_identifier(source_element);
-							cmzn_element_id target_element = cmzn_mesh_find_element_by_identifier(cmzn_mesh_group_base_cast(target_mesh_group), identifier);
-							if (!target_element)
-							{
-								target_element = cmzn_mesh_find_element_by_identifier(target_mesh, identifier);
-								return_code = cmzn_mesh_group_add_element(target_mesh_group, target_element);
-							}
-							cmzn_element_destroy(&target_element);
-						}
-						cmzn_elementiterator_destroy(&element_iter);
-
-						cmzn_mesh_group_destroy(&target_mesh_group);
-						cmzn_field_element_group_destroy(&target_element_group);
-						cmzn_mesh_destroy(&target_mesh);
-						cmzn_mesh_group_destroy(&source_mesh_group);
-						cmzn_field_element_group_destroy(&source_element_group);
-					}
-					cmzn_mesh_destroy(&source_mesh);
-				}
-				cmzn_field_group_destroy(&target_group);
-			}
 			else
 			{
-				return_code = 0;
+				// merge nodeset groups
+				for (int i = 0; i < 2; i++)
+				{
+					cmzn_field_domain_type nodesetDomainType = (i == 0) ? CMZN_FIELD_DOMAIN_TYPE_NODES : CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS;
+					cmzn_nodeset* sourceNodeset = sourceRegion.findNodesetByFieldDomainType(nodesetDomainType);
+					cmzn_nodeset_group* sourceNodesetGroup = sourceGroupCore->getLocalNodesetGroup(sourceNodeset->getFeNodeset());
+					if (sourceNodesetGroup)
+					{
+						cmzn_nodeset* targetNodeset = this->findNodesetByFieldDomainType(nodesetDomainType);
+						cmzn_nodeset_group* targetNodesetGroup = targetGroupCore->getOrCreateNodesetGroup(targetNodeset->getFeNodeset());
+						cmzn_nodeiterator* nodeiterator = sourceNodesetGroup->createNodeiterator();
+						cmzn_node* sourceNode = nullptr;
+						while ((sourceNode = nodeiterator->nextNode()) && return_code)
+						{
+							const int identifier = sourceNode->getIdentifier();
+							// target node is a different object with same identifier
+							cmzn_node* targetNode = targetNodeset->findNodeByIdentifier(identifier);
+							const int addResult = targetNodesetGroup->addNode(targetNode);
+							if ((addResult != CMZN_OK) && (addResult != CMZN_ERROR_ALREADY_EXISTS))
+							{
+								return_code = addResult;
+							}
+						}
+						cmzn::Deaccess(nodeiterator);
+					}
+				}
+				// merge mesh groups
+				for (int dimension = 3; 0 < dimension; --dimension)
+				{
+					cmzn_mesh* sourceMesh = sourceRegion.findMeshByDimension(dimension);
+					cmzn_mesh_group* sourceMeshGroup = sourceGroupCore->getLocalMeshGroup(sourceMesh->getFeMesh());
+					if (sourceMeshGroup)
+					{
+						cmzn_mesh* targetMesh = this->findMeshByDimension(dimension);
+						cmzn_mesh_group* targetMeshGroup = targetGroupCore->getOrCreateMeshGroup(targetMesh->getFeMesh());
+						cmzn_elementiterator* elementiterator = sourceMeshGroup->createElementiterator();
+						cmzn_element* sourceElement = nullptr;
+						while ((sourceElement = elementiterator->nextElement()) && return_code)
+						{
+							const int identifier = sourceElement->getIdentifier();
+							// target element is a different object with same identifier
+							cmzn_element* targetElement = targetMesh->findElementByIdentifier(identifier);
+							const int addResult = targetMeshGroup->addElement(targetElement);
+							if ((addResult != CMZN_OK) && (addResult != CMZN_ERROR_ALREADY_EXISTS))
+							{
+								return_code = addResult;
+							}
+						}
+						cmzn::Deaccess(elementiterator);
+					}
+				}
 			}
-			cmzn_field_destroy(&target_field);
+			cmzn_field::deaccess(targetField);
 			DEALLOCATE(name);
-			cmzn_field_group_destroy(&source_group);
 		}
 	}
-	cmzn_fielditerator_destroy(&field_iter);
-	cmzn_fieldmodule_destroy(&source_field_module);
-	cmzn_fieldmodule_destroy(&target_field_module);
+	cmzn_fielditerator::deaccess(fielditerator);
+	cmzn_fieldmodule_destroy(&targetFieldmodule);
 	return return_code;
 }
 
@@ -1350,21 +1445,6 @@ cmzn_regionnotifier_id cmzn_region_create_regionnotifier(
 int cmzn_region_clear_finite_elements(struct cmzn_region *region)
 {
 	return FE_region_clear(region->get_FE_region());
-}
-
-struct FE_region *cmzn_region_get_FE_region(struct cmzn_region *region)
-{
-	if (region)
-		return region->get_FE_region();
-	return 0;
-}
-
-struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
-	struct cmzn_region *region)
-{
-	if (region)
-		return region->getFieldManager();
-	return 0;
 }
 
 int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id fieldmodule)
@@ -1594,35 +1674,6 @@ struct cmzn_region *cmzn_region_find_subregion_at_path(
 	if (subregion)
 		subregion->access();
 	return subregion;
-}
-
-cmzn_field_id cmzn_region_find_field_by_name(cmzn_region_id region,
-	const char *field_name)
-{
-	if (!region)
-		return nullptr;
-	struct cmzn_field *field = region->findFieldByName(field_name);
-	if (field)
-		ACCESS(Computed_field)(field);
-	return (field);
-}
-
-int cmzn_region_get_region_from_path_deprecated(struct cmzn_region *region,
-	const char *path, struct cmzn_region **subregion_address)
-{
-	int return_code = 0;
-	if ((region) && (path) && (subregion_address))
-	{
-		*subregion_address = region->findSubregionAtPath(path);
-		if (*subregion_address)
-			return_code = 1;
-	}
-	return (return_code);
-}
-
-bool cmzn_region_is_root(struct cmzn_region *region)
-{
-	return (region) && (!region->getParent());
 }
 
 int cmzn_region_get_partial_region_path(cmzn_region *baseRegion,

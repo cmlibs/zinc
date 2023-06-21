@@ -157,7 +157,7 @@ public:
 
 inline bool operator==(const Mesh& a, const Mesh& b)
 {
-	return cmzn_mesh_match(a.getId(), b.getId());
+	return a.getId() == b.getId();
 }
 
 inline Mesh Element::getMesh() const
@@ -167,6 +167,10 @@ inline Mesh Element::getMesh() const
 
 class MeshGroup : public Mesh
 {
+	inline cmzn_mesh_group_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_mesh_group_id>(this->id);
+	}
 
 public:
 
@@ -184,31 +188,33 @@ public:
 
 	int addElement(const Element& element)
 	{
-		return cmzn_mesh_group_add_element(
-			reinterpret_cast<cmzn_mesh_group_id>(id), element.getId());
+		return cmzn_mesh_group_add_element(this->getDerivedId(),
+			element.getId());
 	}
 
 	int addElementsConditional(const Field& conditionalField)
 	{
 		return cmzn_mesh_group_add_elements_conditional(
-			reinterpret_cast<cmzn_mesh_group_id>(id), conditionalField.getId());
+			this->getDerivedId(), conditionalField.getId());
 	}
+
+	inline FieldGroup getFieldGroup() const;
 
 	int removeAllElements()
 	{
-		return cmzn_mesh_group_remove_all_elements(reinterpret_cast<cmzn_mesh_group_id>(id));
+		return cmzn_mesh_group_remove_all_elements(this->getDerivedId());
 	}
 
 	int removeElement(const Element& element)
 	{
-		return cmzn_mesh_group_remove_element(reinterpret_cast<cmzn_mesh_group_id>(id),
+		return cmzn_mesh_group_remove_element(this->getDerivedId(),
 			element.getId());
 	}
 
 	int removeElementsConditional(const Field& conditionalField)
 	{
-		return cmzn_mesh_group_remove_elements_conditional(
-			reinterpret_cast<cmzn_mesh_group_id>(id), conditionalField.getId());
+		return cmzn_mesh_group_remove_elements_conditional(this->getDerivedId(),
+			conditionalField.getId());
 	}
 
 };

@@ -14,6 +14,7 @@
 #define CMZN_NODESET_H__
 
 #include "types/fieldid.h"
+#include "types/fieldgroupid.h"
 #include "types/fieldmoduleid.h"
 #include "types/nodeid.h"
 #include "types/nodesetid.h"
@@ -215,15 +216,6 @@ ZINC_API char *cmzn_nodeset_get_name(cmzn_nodeset_id nodeset);
 ZINC_API int cmzn_nodeset_get_size(cmzn_nodeset_id nodeset);
 
 /**
- * Check if two nodeset handles refer to the same object.
- *
- * @param nodeset1  The first nodeset to match.
- * @param nodeset2  The second nodeset to match.
- * @return  Boolean true if the two nodesets match, false if not.
- */
-ZINC_API bool cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodeset2);
-
-/**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
  * get the nodeset group specific interface for add/remove functions.
  *
@@ -281,6 +273,17 @@ ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
  */
 ZINC_API int cmzn_nodeset_group_add_nodes_conditional(
 	cmzn_nodeset_group_id nodeset_group, cmzn_field_id conditional_field);
+
+/**
+ * Get the owning group field for this nodeset group. Guaranteed to exist if
+ * this is a valid nodeset group handle.
+ *
+ * @param nodeset_group  Handle to nodeset group to query.
+ * @return  Handle to owning field group, or null/invalid handle if
+ * nodeset group is invalid.
+ */
+ZINC_API cmzn_field_group_id cmzn_nodeset_group_get_field_group(
+	cmzn_nodeset_group_id nodeset_group);
 
 /**
  * Remove all nodes from nodeset group.

@@ -586,7 +586,7 @@ public:
 		return cmzn_spectrummodule_read_description(this->id, description);
 	}
 
-	char *writeDescription()
+	char *writeDescription() const
 	{
 		return cmzn_spectrummodule_write_description(this->id);
 	}

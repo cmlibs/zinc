@@ -23,7 +23,6 @@ namespace CMLibs
 namespace Zinc
 {
 
-class FieldAlias;
 class FieldApply;
 class FieldArgumentReal;
 class FieldAdd;
@@ -79,8 +78,6 @@ class FieldNodesetSumSquares;
 class FieldNodesetMeanSquares;
 class FieldNodesetMinimum;
 class FieldNodesetMaximum;
-class FieldElementGroup;
-class FieldNodeGroup;
 class FieldTimeLookup;
 class FieldTimeValue;
 class FieldDerivative;
@@ -229,7 +226,7 @@ public:
 		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}
 
-	char *writeDescription()
+	char *writeDescription() const
 	{
 		return cmzn_fieldmodule_write_description(id);
 	}
@@ -251,8 +248,6 @@ public:
 	}
 
 	inline Optimisation createOptimisation();
-
-	inline FieldAlias createFieldAlias(const Field& sourceField);
 
 	inline FieldApply createFieldApply(const Field& sourceField);
 
@@ -374,10 +369,6 @@ public:
 	inline FieldNodesetMinimum createFieldNodesetMinimum(const Field& sourceField, const Nodeset& nodeset);
 
 	inline FieldNodesetMaximum createFieldNodesetMaximum(const Field& sourceField, const Nodeset& nodeset);
-
-	inline FieldNodeGroup createFieldNodeGroup(const Nodeset& nodeset);
-
-	inline FieldElementGroup createFieldElementGroup(const Mesh& mesh);
 
 	inline FieldTimeLookup createFieldTimeLookup(const Field& sourceField, const Field& timeField);
 

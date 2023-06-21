@@ -412,8 +412,7 @@ void FE_nodeset::remove_FE_node_field_info(struct FE_node_field_info *fe_node_fi
 /** Assumes called by FE_region destructor, and change notification is disabled. */
 void FE_nodeset::detach_from_FE_region()
 {
-	// clear embedded locations to avoid circular dependencies which prevent cleanup
-	FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
+	this->clear();
 	this->FE_domain::detach_from_FE_region();
 }
 
@@ -441,7 +440,7 @@ void FE_nodeset::removeNodeiterator(cmzn_nodeiterator *iterator)
 * @param labelsGroup  Optional group to iterate over.
 * @return  Handle to node iterator at position before first, or NULL if error.
 */
-cmzn_nodeiterator *FE_nodeset::createNodeiterator(DsLabelsGroup *labelsGroup)
+cmzn_nodeiterator *FE_nodeset::createNodeiterator(const DsLabelsGroup *labelsGroup)
 {
 	DsLabelIterator *labelIterator = labelsGroup ? labelsGroup->createLabelIterator() : this->labels.createLabelIterator();
 	if (!labelIterator)
@@ -587,6 +586,11 @@ void FE_nodeset::clear()
 {
 	if (0 < this->labels.getSize())
 	{
+		if (this->fe_region)
+		{
+			// clear embedded locations to avoid circular dependencies which prevent cleanup
+			FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
+		}
 		const DsLabelIndex indexLimit = this->labels.getIndexSize();
 		cmzn_node *node;
 		for (DsLabelIndex index = 0; index < indexLimit; ++index)
@@ -841,10 +845,10 @@ int FE_nodeset::endDestroyNodes()
 		if (numberDestroyed > 0)
 		{
 			// notify groups that all nodes were destroyed
-			for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-				groupIter != this->groups.end(); ++groupIter)
+			for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+				mapperIter != this->mappers.end(); ++mapperIter)
 			{
-				(*groupIter)->destroyedAllObjects();
+				(*mapperIter)->destroyedAllObjects();
 			}
 		}
 	}
@@ -853,19 +857,19 @@ int FE_nodeset::endDestroyNodes()
 		// more efficient to notify of one index change
 		DsLabelIndex nodeIndex = -1;
 		this->destroyedLabelsGroup->incrementIndex(nodeIndex);
-		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-			groupIter != this->groups.end(); ++groupIter)
+		for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+			mapperIter != this->mappers.end(); ++mapperIter)
 		{
-			(*groupIter)->destroyedObject(nodeIndex);
+			(*mapperIter)->destroyedObject(nodeIndex);
 		}
 	}
 	else if (numberDestroyed > 0)
 	{
 		// notify groups that a group of nodes were destroyed
-		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
-			groupIter != this->groups.end(); ++groupIter)
+		for (std::list<FE_domain_mapper*>::iterator mapperIter = this->mappers.begin();
+			mapperIter != this->mappers.end(); ++mapperIter)
 		{
-			(*groupIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
+			(*mapperIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
 		}
 	}
 	cmzn::Deaccess(this->destroyedLabelsGroup);

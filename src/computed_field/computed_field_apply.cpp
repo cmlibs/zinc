@@ -786,12 +786,6 @@ Public API
 ----------
 */
 
-cmzn_field_id cmzn_fieldmodule_create_field_alias(cmzn_fieldmodule_id field_module,
-	cmzn_field_id original_field)
-{
-	return cmzn_fieldmodule_create_field_apply(field_module, original_field);
-}
-
 cmzn_field_id cmzn_fieldmodule_create_field_apply(
 	cmzn_fieldmodule_id fieldmodule, cmzn_field_id evaluate_field)
 {

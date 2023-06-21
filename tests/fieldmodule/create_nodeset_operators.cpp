@@ -20,8 +20,8 @@
 
 #include <cmlibs/zinc/fieldconstant.hpp>
 #include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
 #include <cmlibs/zinc/fieldnodesetoperators.hpp>
-#include <cmlibs/zinc/fieldsubobjectgroup.hpp>
 
 #include "test_resources.h"
 #include "zinctestsetup.hpp"
@@ -245,9 +245,7 @@ TEST(NodesetOperators, args)
 	EXPECT_TRUE(mesh.isValid());
 	FieldStoredMeshLocation storedMeshLocation = zinc.fm.createFieldStoredMeshLocation(mesh);
 	EXPECT_TRUE(storedMeshLocation.isValid());
-	FieldNodeGroup nodeGroup = zinc.fm.createFieldNodeGroup(nodeset);
-	EXPECT_TRUE(nodeGroup.isValid());
-	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	NodesetGroup nodesetGroup = zinc.fm.createFieldGroup().createNodesetGroup(nodeset);
 	EXPECT_TRUE(nodesetGroup.isValid());
 
 	Field noField;
@@ -301,8 +299,7 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 	// make a node group containing the odd numbered nodes
-	FieldNodeGroup nodeGroup = zinc.fm.createFieldNodeGroup(nodeset);
-	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	NodesetGroup nodesetGroup = zinc.fm.createFieldGroup().createNodesetGroup(nodeset);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	for (int i = 1; i <= 7; i += 2)
 		EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(nodeset.findNodeByIdentifier(i)));

@@ -18,15 +18,17 @@ cannot reside in finite element modules.
 #include "cmlibs/zinc/fieldcache.h"
 #include "cmlibs/zinc/fieldconstant.h"
 #include "cmlibs/zinc/fieldlogicaloperators.h"
+#include "cmlibs/zinc/fieldgroup.h"
 #include "cmlibs/zinc/fieldmodule.h"
-#include "cmlibs/zinc/fieldsubobjectgroup.h"
 #include "cmlibs/zinc/fieldtime.h"
 #include "cmlibs/zinc/nodeset.h"
-#include "computed_field/computed_field_subobject_group.hpp"
+#include "cmlibs/zinc/region.h"
+#include "computed_field/computed_field_group.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
+#include "mesh/nodeset_group.hpp"
 #include "node/node_operations.h"
 #include "general/message.h"
 
@@ -149,7 +151,7 @@ int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
 
 	if (nodeset)
 	{
-		FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+		FE_nodeset *fe_nodeset = nodeset->getFeNodeset();
 		FE_region *fe_region = fe_nodeset->get_FE_region();
 		FE_region_begin_change(fe_region);
 		return_code = 1;
@@ -341,17 +343,17 @@ cmzn_field_id cmzn_nodeset_create_conditional_field_from_identifier_ranges(
 	}
 	cmzn_fieldmodule *fieldmodule = cmzn_nodeset_get_fieldmodule(nodeset);
 	cmzn_fieldmodule_begin_change(fieldmodule);
-	cmzn_field *conditionalField = cmzn_fieldmodule_create_field_node_group(fieldmodule, nodeset);
-	cmzn_field_node_group *nodeGroupField = cmzn_field_cast_node_group(conditionalField);
-	Computed_field_node_group *nodeGroup = Computed_field_node_group_core_cast(nodeGroupField);
-	if (nodeGroup)
+	cmzn_field* conditionalField = cmzn_fieldmodule_create_field_group(fieldmodule);
+	Computed_field_group* groupCore = cmzn_field_get_group_core(conditionalField);
+	cmzn_nodeset_group* nodesetGroup = groupCore->getOrCreateNodesetGroup(nodeset->getFeNodeset());
+	if (nodesetGroup)
 	{
 		const int number_of_ranges = Multi_range_get_number_of_ranges(identifierRanges);
 		for (int i = 0; i < number_of_ranges; ++i)
 		{
 			int start, stop;
 			Multi_range_get_range(identifierRanges, i, &start, &stop);
-			if (CMZN_OK != nodeGroup->addObjectsInIdentifierRange(start, stop))
+			if (CMZN_OK != nodesetGroup->addNodesInIdentifierRange(start, stop))
 			{
 				cmzn_field_destroy(&conditionalField);
 				break;
@@ -360,7 +362,6 @@ cmzn_field_id cmzn_nodeset_create_conditional_field_from_identifier_ranges(
 	}
 	else
 		cmzn_field_destroy(&conditionalField);
-	cmzn_field_node_group_destroy(&nodeGroupField);
 	cmzn_fieldmodule_end_change(fieldmodule);
 	cmzn_fieldmodule_destroy(&fieldmodule);
 	if (!conditionalField)

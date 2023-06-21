@@ -16,7 +16,6 @@ SET( API_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/elementfieldtemplate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/elementtemplate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/field.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldalias.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldapply.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldarithmeticoperators.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldassignment.h
@@ -40,7 +39,6 @@ SET( API_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldrange.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldsceneviewerprojection.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldsmoothing.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldsubobjectgroup.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldtime.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldtrigonometry.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/fieldvectoroperators.h
@@ -99,7 +97,6 @@ SET( API_TYPES_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/fieldparametersid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/fieldrangeid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/fieldsmoothingid.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/fieldsubobjectgroupid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/fontid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/glyphid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/cmlibs/zinc/types/graphicsid.h

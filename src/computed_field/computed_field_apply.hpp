@@ -13,7 +13,6 @@
 #define COMPUTED_FIELD_APPLY_HPP
 
 #include "cmlibs/zinc/field.h"
-#include "cmlibs/zinc/fieldalias.h"
 #include "cmlibs/zinc/fieldapply.h"
 #include "computed_field/computed_field_private.hpp"
 

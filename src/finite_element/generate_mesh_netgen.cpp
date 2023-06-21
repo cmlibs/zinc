@@ -19,6 +19,7 @@ the volume mesh, CMGUI will visualize them to the user.
 #include <math.h>
 #include "cmlibs/zinc/element.h"
 #include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementfieldtemplate.h"
 #include "cmlibs/zinc/elementtemplate.h"
 #include "cmlibs/zinc/fieldcache.h"
 #include "cmlibs/zinc/fieldmodule.h"
@@ -37,8 +38,7 @@ the volume mesh, CMGUI will visualize them to the user.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "graphics/triangle_mesh.hpp"
-#include "mesh/cmiss_node_private.hpp"
-
+#include "mesh/nodeset.hpp"
 
 namespace nglib {
 #include <nglib.h>
@@ -351,7 +351,7 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_nodetemplate_define_field(nodetemplate, coordinate_field);
 	cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 
-	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+	FE_nodeset *fe_nodeset = nodeset->getFeNodeset();
 	const int number_of_nodes = Ng_GetNP(mesh);
 	double coordinates[3];
 	int initial_identifier = fe_nodeset->get_last_FE_node_identifier() + 1;
@@ -374,12 +374,10 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_mesh_id cmesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
 	cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(cmesh);
 	cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON);
-	cmzn_elementtemplate_set_number_of_nodes(elementtemplate, 4);
 	cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(fieldmodule, 3,
 		CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
-	int local_node_indexes[4] = { 1, 2, 3, 4 };
-	cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, coordinate_field, /*component_number*/-1,
-		elementbasis, 4, local_node_indexes);
+	cmzn_elementfieldtemplate_id eft = cmzn_mesh_create_elementfieldtemplate(cmesh, elementbasis);
+	cmzn_elementtemplate_define_field(elementtemplate, coordinate_field, /*component_number*/-1, eft);
 
 	const int number_of_elements = Ng_GetNE(mesh);
 	int nodal_idx[4];
@@ -388,14 +386,18 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		Ng_GetVolumeElement (mesh, i+1, nodal_idx);
 		/* netgen tet node order gives a left handed element coordinate system,
 		 * hence swap node indices 2 and 3 */
-		cmzn_elementtemplate_set_node(elementtemplate, 1, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[0] + initial_identifier - 1));
-		cmzn_elementtemplate_set_node(elementtemplate, 2, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[1] + initial_identifier - 1));
-		cmzn_elementtemplate_set_node(elementtemplate, 3, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[3] + initial_identifier - 1));
-		cmzn_elementtemplate_set_node(elementtemplate, 4, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[2] + initial_identifier - 1));
+		const int node_identifiers[4] = {
+			nodal_idx[0] + initial_identifier - 1,
+			nodal_idx[1] + initial_identifier - 1,
+			nodal_idx[3] + initial_identifier - 1,
+			nodal_idx[2] + initial_identifier - 1,
+		};
 		cmzn_element_id element = cmzn_mesh_create_element(cmesh, /*identifier*/-1, elementtemplate);
+		cmzn_element_set_nodes_by_identifier(element, eft, 4, node_identifiers);
 		fe_mesh->defineElementFaces(get_FE_element_index(element));
 		cmzn_element_destroy(&element);
 	}
+	cmzn_elementfieldtemplate_destroy(&eft);
 	cmzn_elementbasis_destroy(&elementbasis);
 	cmzn_elementtemplate_destroy(&elementtemplate);
 	cmzn_mesh_destroy(&cmesh);

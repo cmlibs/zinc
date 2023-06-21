@@ -121,13 +121,13 @@ private:
 	explicit FieldAtan2(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
+	friend FieldAtan2 Fieldmodule::createFieldAtan2(const Field& sourceField1,
+		const Field& sourceField2);
+
 public:
 
 	FieldAtan2() : Field(0)
 	{	}
-
-	friend FieldAtan2 Fieldmodule::createFieldAtan2(const Field& sourceField1,
-		const Field& sourceField2);
 
 };
 

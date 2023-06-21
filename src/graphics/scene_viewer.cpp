@@ -2695,6 +2695,12 @@ cmzn_sceneviewermodule *cmzn_sceneviewermodule::create(struct Colour *background
 	return sceneviewermodule;
 }
 
+int cmzn_sceneviewermodule::setDefaultBackgroundColourAlpha(double alpha)
+{
+	this->background_colour.alpha = alpha;
+	return CMZN_OK;
+}
+
 int cmzn_sceneviewermodule::getDefaultBackgroundColourRGB(double *valuesOut3) const
 {
 	if (valuesOut3)
@@ -2803,7 +2809,10 @@ cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_i
 int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneviewermodule_address)
 {
 	if (sceneviewermodule_address)
-		return cmzn_sceneviewermodule::deaccess(*sceneviewermodule_address);
+	{
+		cmzn_sceneviewermodule::deaccess(*sceneviewermodule_address);
+		return CMZN_OK;
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 

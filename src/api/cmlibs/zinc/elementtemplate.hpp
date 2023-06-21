@@ -81,59 +81,10 @@ public:
 			static_cast<cmzn_element_shape_type>(shapeType));
 	}
 
-	int getNumberOfNodes() const
-	{
-		return cmzn_elementtemplate_get_number_of_nodes(id);
-	}
-
-	int setNumberOfNodes(int numberOfNodes)
-	{
-		return cmzn_elementtemplate_set_number_of_nodes(id, numberOfNodes);
-	}
-
 	int defineField(const Field& field, int componentNumber, const Elementfieldtemplate& eft)
 	{
 		return cmzn_elementtemplate_define_field(this->id, field.getId(),
 			componentNumber, eft.getId());
-	}
-
-	int defineFieldElementConstant(const Field& field, int componentNumber)
-	{
-		return cmzn_elementtemplate_define_field_element_constant(
-			id, field.getId(), componentNumber);
-	}
-
-	int defineFieldSimpleNodal(const Field& field, int componentNumber,
-		const Elementbasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
-	{
-		return cmzn_elementtemplate_define_field_simple_nodal(
-			id, field.getId(), componentNumber, basis.getId(),
-			nodeIndexesCount, nodeIndexesIn);
-	}
-
-	int setMapNodeValueLabel(const Field& field, int componentNumber,
-		int basisNodeIndex, int nodeFunctionIndex, Node::ValueLabel nodeValueLabel)
-	{
-		return cmzn_elementtemplate_set_map_node_value_label(id, field.getId(),
-			componentNumber, basisNodeIndex, nodeFunctionIndex,
-			static_cast<cmzn_node_value_label>(nodeValueLabel));
-	}
-
-	int setMapNodeVersion(const Field& field, int componentNumber,
-		int basisNodeIndex, int nodeFunctionIndex, int versionNumber)
-	{
-		return cmzn_elementtemplate_set_map_node_version(id, field.getId(),
-			componentNumber, basisNodeIndex, nodeFunctionIndex, versionNumber);
-	}
-
-	Node getNode(int localNodeIndex) const
-	{
-		return Node(cmzn_elementtemplate_get_node(id, localNodeIndex));
-	}
-
-	int setNode(int localNodeIndex, const Node& node)
-	{
-		return cmzn_elementtemplate_set_node(id, localNodeIndex, node.getId());
 	}
 
 	int removeField(const Field& field)

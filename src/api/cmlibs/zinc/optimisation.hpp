@@ -163,26 +163,6 @@ public:
 		return (cmzn_optimisation_remove_dependent_field(id, field.getId()));
 	}
 
-	Field getFirstIndependentField() const
-	{
-		return Field(cmzn_optimisation_get_first_independent_field(id));
-	}
-
-	Field getNextIndependentField(const Field& refField) const
-	{
-		return Field(cmzn_optimisation_get_next_independent_field(id, refField.getId()));
-	}
-
-	int addIndependentField(const Field& field)
-	{
-		return (cmzn_optimisation_add_independent_field(id, field.getId()));
-	}
-
-	int removeIndependentField(const Field& field)
-	{
-		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
-	}
-
 	Field getFirstObjectiveField() const
 	{
 		return Field(cmzn_optimisation_get_first_objective_field(id));

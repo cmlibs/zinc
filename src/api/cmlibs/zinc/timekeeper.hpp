@@ -170,7 +170,7 @@ public:
  		return cmzn_timekeepermodule_read_description(this->id, description);
  	}
 
- 	char *writeDescription()
+ 	char *writeDescription() const
  	{
  		return cmzn_timekeepermodule_write_description(this->id);
  	}
