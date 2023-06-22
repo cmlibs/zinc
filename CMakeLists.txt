@@ -28,7 +28,7 @@ endif()
 project(Zinc VERSION 4.0.0 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
-set(Zinc_DEVELOPER_VERSION ".dev0")
+set(Zinc_DEVELOPER_VERSION ".dev1")
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
