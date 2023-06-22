@@ -8,6 +8,7 @@ v4.0.0
 (Break) Remove deprecated Alias field. Use Apply field instead.
 (Break) Remove deprecated Optimisation independent field APIs (use dependent field).
 Add API to get owning group field from nodeset or mesh.
+Add IO format ASCII STL and wavefront.
 
 v2.10.2
 Fix behaviour of get/create subregion groups, with get now able to discover subregion groups by name.
