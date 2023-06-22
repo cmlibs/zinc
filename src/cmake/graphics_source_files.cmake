@@ -96,9 +96,9 @@ SET( GRAPHICS_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/quaternion.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_alias.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_binary_wavefront.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_stl.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_stl.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_vrml.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_wavefront.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_wavefront.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_to_finite_elements.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/render_triangularisation.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/scene_coordinate_system.hpp

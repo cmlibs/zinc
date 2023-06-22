@@ -1626,3 +1626,120 @@ TEST(ZincScenecoordinatesystem, ScenecoordinatesystemEnum)
         "WINDOW_PIXEL_BOTTOM_LEFT", "WINDOW_PIXEL_TOP_LEFT" };
     testEnum(11, enumNames, ScenecoordinatesystemEnumToString, ScenecoordinatesystemEnumFromString);
 }
+
+TEST(cmzn_scene, stl_export_text)
+{
+    ZincTestSetupCpp zinc;
+
+    int result;
+
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
+
+    GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+    EXPECT_TRUE(surfaces.isValid());
+
+    Field coordinateField = zinc.fm.findFieldByName("coordinates");
+    EXPECT_TRUE(coordinateField.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+    StreaminformationScene si = zinc.scene.createStreaminformationScene();
+    EXPECT_TRUE(si.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_ASCII_STL));
+
+    EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
+
+    EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+    double double_result = 0.0;
+    EXPECT_EQ(0.0, double_result = si.getInitialTime());
+    EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIODataType(si.IO_DATA_TYPE_COLOUR));
+
+    StreamresourceMemory memory_sr = si.createStreamresourceMemory();
+
+    EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+    const char *memory_buffer = nullptr;
+    unsigned int size = 0;
+
+    result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    const char *temp_char = strstr(memory_buffer, "solid default");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "facet normal");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "  vertex ");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "endsolid default");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
+TEST(cmzn_scene, wavefront_export_text)
+{
+    ZincTestSetupCpp zinc;
+
+    int result;
+
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
+
+    GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+    EXPECT_TRUE(surfaces.isValid());
+
+    Field coordinateField = zinc.fm.findFieldByName("coordinates");
+    EXPECT_TRUE(coordinateField.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+    StreaminformationScene si = zinc.scene.createStreaminformationScene();
+    EXPECT_TRUE(si.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_WAVEFRONT));
+
+    EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
+
+    EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+    double double_result = 0.0;
+    EXPECT_EQ(0.0, double_result = si.getInitialTime());
+    EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIODataType(si.IO_DATA_TYPE_COLOUR));
+
+    StreamresourceMemory memory_sr1 = si.createStreamresourceMemory();
+    StreamresourceMemory memory_sr2 = si.createStreamresourceMemory();
+
+    EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+    const char *memory_buffer = nullptr;
+    unsigned int size = 0;
+
+    result = memory_sr1.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    printf("%s\n", memory_buffer);
+    const char *temp_char = strstr(memory_buffer, "call .1.obj");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    result = memory_sr2.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    printf("%s\n", memory_buffer);
+    temp_char = strstr(memory_buffer, "usemtl default");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, ".1.obj");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "v 1 1 1");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "f 21 22 23");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+}
