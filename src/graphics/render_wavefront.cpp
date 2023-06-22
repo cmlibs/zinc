@@ -233,14 +233,14 @@ Writes Wavefront object file that defines the material
 			}
 			else
 			{
-                wavefront_output << "usemtl " << Graphical_material_name(material) << std::endl;
+                wavefront_output << "usemtl " << material->getName() << std::endl;
 				*current_material = material;
 				return_code=1;
 			}
 		}
 		else
 		{
-            wavefront_output << "usemtl " << Graphical_material_name(material) << std::endl;
+            wavefront_output << "usemtl " << material->getName() << std::endl;
 			return_code=1;
 		}
 	}

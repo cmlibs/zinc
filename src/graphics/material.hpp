@@ -129,6 +129,11 @@ public:
 	static void deaccess(cmzn_material*& material);
 
 	int setName(const char *newName);
+
+    const char* getName() const
+    {
+        return this->name;
+    }
 };
 
 DECLARE_LIST_TYPES(cmzn_material);

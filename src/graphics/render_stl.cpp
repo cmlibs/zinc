@@ -107,7 +107,7 @@ public:
 class Stl_context
 {
 private:
-    std::string stl_content;
+    std::ostringstream stl_content;
     std::string solid_name;
 	/* Future: add binary option */
 	std::stack<Transformation_matrix> transformation_stack;
@@ -115,34 +115,37 @@ private:
 public:
     Stl_context(const char *solid_name_in) :
         stl_content(),
-        solid_name()
+        solid_name(solid_name_in == nullptr ? "default" : solid_name_in)
 	{
-		/* ASCII STL header */
-		if (solid_name_in == 0)
-            solid_name = "default";
-		else
-            solid_name = std::string(solid_name_in);
-
-        stl_content += "solid " + solid_name + "\n";
 	}
 
 	~Stl_context()
 	{
 	}
 
+    void begin()
+    {
+        stl_content << "solid " << this->solid_name << std::endl;
+    }
+
     std::string get_export_string() const
     {
-        return stl_content + "endsolid " + solid_name + "\n";
+        return stl_content.str();
+    }
+
+    void end()
+    {
+        stl_content << "endsolid " << this->solid_name << std::endl;
     }
 
     /**
-	 * Confirms STL file is correctly opened.
+     * Confirms STL content is not malformed.
 	 * 
-	 * @return true if context is correctly constructed, false if not.
+     * @return @c true if content is not malformed, @c false if not.
 	 */
 	bool is_valid() const
 	{
-        return (!stl_content.empty() && (!solid_name.empty()));
+        return !solid_name.empty();
 	}
 
 /**
@@ -189,7 +192,7 @@ public:
 	}
 
 	/***************************************************************************//**
-	 * Writes a single STL triangle to file.
+     * Writes a single STL triangle to string.
 	 * 
 	 * @param v1 coordinates of first vertex
 	 * @param v2 coordinates of second vertex
@@ -198,7 +201,6 @@ public:
 	void write_triangle(
 		const Triple& v1, const Triple& v2, const Triple& v3)
 	{
-        std::ostringstream ss;
 		ZnReal tv1[3], tv2[3], tv3[3];
 		transform(v1, tv1);
 		transform(v2, tv2);
@@ -214,14 +216,13 @@ public:
 		cross_product3(tangent1, tangent2, normal);
 		if (0.0 < normalize3(normal))
 		{
-            ss << "facet normal " << (ZnReal)normal[0] << " " << (ZnReal)normal[1] << " " << (ZnReal)normal[2] << std::endl;
-            ss << " outer loop" << std::endl;
-            ss << "  vertex " << (ZnReal)tv1[0] << " " << (ZnReal)tv1[1] << " " << (ZnReal)tv1[2] << std::endl;
-            ss << "  vertex " << (ZnReal)tv2[0] << " " << (ZnReal)tv2[1] << " " << (ZnReal)tv2[2] << std::endl;
-            ss << "  vertex " << (ZnReal)tv3[0] << " " << (ZnReal)tv3[1] << " " << (ZnReal)tv3[2] << std::endl;
-            ss << " endloop" << std::endl;
-            ss << "endfacet" << std::endl;
-            stl_content += ss.str();
+            this->stl_content << "facet normal " << (ZnReal)normal[0] << " " << (ZnReal)normal[1] << " " << (ZnReal)normal[2] << std::endl;
+            this->stl_content << " outer loop" << std::endl;
+            this->stl_content << "  vertex " << (ZnReal)tv1[0] << " " << (ZnReal)tv1[1] << " " << (ZnReal)tv1[2] << std::endl;
+            this->stl_content << "  vertex " << (ZnReal)tv2[0] << " " << (ZnReal)tv2[1] << " " << (ZnReal)tv2[2] << std::endl;
+            this->stl_content << "  vertex " << (ZnReal)tv3[0] << " " << (ZnReal)tv3[1] << " " << (ZnReal)tv3[2] << std::endl;
+            this->stl_content << " endloop" << std::endl;
+            this->stl_content << "endfacet" << std::endl;
 		}
 	} /* write_triangle_stl */
 
@@ -582,10 +583,10 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 /**
  * Renders the visible objects in a scene to STL.
  * 
- * @param stl_context output STL file and context data
+ * @param stl_context output STL context data
  * @param scene the scene to output
  * @param filter the filter to filter scenes
- * @return 1 on success, 0 on failure
+ * @return Result OK on success, ERROR_ARGUMENT if invalid scene, otherwise ERROR_GENERAL if failed.
  */
 int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	cmzn_scenefilter_id filter)
@@ -600,7 +601,7 @@ int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	else
 	{
 		display_message(ERROR_MESSAGE,"write_scene_stl.  Missing scene");
-        return_code = CMZN_ERROR_GENERAL;
+        return_code = CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
@@ -626,9 +627,11 @@ std::string export_to_stl(cmzn_scene_id scene, cmzn_scenefilter_id filter)
         DEALLOCATE(solid_name);
         if (stl_context.is_valid())
 		{
+            stl_context.begin();
             int return_code = write_scene_stl(stl_context, scene, filter);
             if (return_code == CMZN_OK)
             {
+                stl_context.end();
                 content = stl_context.get_export_string();
             }
 		}

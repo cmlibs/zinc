@@ -88,7 +88,7 @@ public:
 			return numberOfResources;
 		}
         else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION ||
-                 format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_STL)
+                 format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_ASCII_STL)
         {
 			return 1;
         }

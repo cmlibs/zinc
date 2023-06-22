@@ -1646,7 +1646,7 @@ TEST(cmzn_scene, stl_export_text)
     StreaminformationScene si = zinc.scene.createStreaminformationScene();
     EXPECT_TRUE(si.isValid());
 
-    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_STL));
+    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_ASCII_STL));
 
     EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
 

@@ -91,7 +91,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 				SceneJsonExport jsonExport(scene);
 				outputStrings.push_back(jsonExport.getExportString());
 			}
-            else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_STL)
+            else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_ASCII_STL)
             {
                 number_of_entries = 1;
                 cmzn_scenefilter_id scenefilter = streaminformation_scene->getScenefilter();
