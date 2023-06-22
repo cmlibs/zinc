@@ -595,8 +595,9 @@ int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	
 	if (scene)
 	{
-		return_code=for_each_graphics_object_in_scene_tree(scene, filter,
+        const int result = for_each_graphics_object_in_scene_tree(scene, filter,
             Graphics_object_to_stl,(void *)&stl_context);
+        return_code = (result == 1) ? CMZN_OK : CMZN_ERROR_GENERAL;
 	}
 	else
 	{
