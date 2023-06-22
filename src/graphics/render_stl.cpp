@@ -556,12 +556,12 @@ int write_graphics_object_stl(Stl_context& stl_context,
 	return (return_code);
 } /* write_graphics_object_stl */
 
-int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
+int Graphics_object_to_stl(struct GT_object *graphics_object, double time,
 	void *stl_context_void)
 {
 	int return_code;
 
-	ENTER(Graphcis_object_to_stl);
+    ENTER(Graphics_object_to_stl);
 	if (graphics_object && stl_context_void)
 	{
 		return_code = 1;
@@ -571,14 +571,14 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphcis_object_to_stl.  Invalid argument(s)");
+            "Graphics_object_to_stl.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* Graphcis_object_to_stl */
+} /* Graphics_object_to_stl */
 
 /**
  * Renders the visible objects in a scene to STL.
@@ -596,7 +596,7 @@ int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	if (scene)
 	{
 		return_code=for_each_graphics_object_in_scene_tree(scene, filter,
-			Graphcis_object_to_stl,(void *)&stl_context);
+            Graphics_object_to_stl,(void *)&stl_context);
 	}
 	else
 	{
