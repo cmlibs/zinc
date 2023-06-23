@@ -4,16 +4,16 @@
  * The definition to graphics_json_import.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "opencmiss/zinc/graphics.hpp"
+#include "cmlibs/zinc/graphics.hpp"
 #include "description_io/graphics_json_import.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 int GraphicsJsonImport::import()
 {

@@ -4,7 +4,7 @@
  * The definition to sceneviewer_json_io.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,11 +12,11 @@
 
 #include "description_io/sceneviewer_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/sceneviewer.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/sceneviewer.hpp"
+#include "cmlibs/zinc/region.hpp"
 #include "region/cmiss_region.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 
 namespace
 {
@@ -109,7 +109,7 @@ void SceneviewerJsonIO::ioFilterEntries(Json::Value &sceneviewerSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::Scenefilter scenefilter = sceneviewer.getScenefilter();
+		CMLibs::Zinc::Scenefilter scenefilter = sceneviewer.getScenefilter();
 		if (scenefilter.isValid())
 		{
 			char *name = scenefilter.getName();
@@ -121,9 +121,9 @@ void SceneviewerJsonIO::ioFilterEntries(Json::Value &sceneviewerSettings)
 	{
 		if (sceneviewerSettings["Scenefilter"].isString())
 		{
-			OpenCMISS::Zinc::Scene scene = sceneviewer.getScene();
-			OpenCMISS::Zinc::Scenefiltermodule filtermodule = scene.getScenefiltermodule();
-			OpenCMISS::Zinc::Scenefilter scenefilter = filtermodule.findScenefilterByName(
+			CMLibs::Zinc::Scene scene = sceneviewer.getScene();
+			CMLibs::Zinc::Scenefiltermodule filtermodule = scene.getScenefiltermodule();
+			CMLibs::Zinc::Scenefilter scenefilter = filtermodule.findScenefilterByName(
 				sceneviewerSettings["Scenefilter"].asCString());
 			if (scenefilter.isValid())
 			{
@@ -137,8 +137,8 @@ void SceneviewerJsonIO::ioSceneEntries(Json::Value &sceneviewerSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		OpenCMISS::Zinc::Scene scene = sceneviewer.getScene();
-		OpenCMISS::Zinc::Region region = scene.getRegion();
+		CMLibs::Zinc::Scene scene = sceneviewer.getScene();
+		CMLibs::Zinc::Region region = scene.getRegion();
 		if (region.isValid())
 		{
 			char *regionPath = region.getPath();
@@ -150,11 +150,11 @@ void SceneviewerJsonIO::ioSceneEntries(Json::Value &sceneviewerSettings)
 	{
 		if (sceneviewerSettings["Scene"].isString())
 		{
-			OpenCMISS::Zinc::Scene scene = sceneviewer.getScene();
-			OpenCMISS::Zinc::Region rootRegion = scene.getRegion().getRoot();
+			CMLibs::Zinc::Scene scene = sceneviewer.getScene();
+			CMLibs::Zinc::Region rootRegion = scene.getRegion().getRoot();
 			if (rootRegion.isValid())
 			{
-				OpenCMISS::Zinc::Region region = rootRegion.findSubregionAtPath(sceneviewerSettings["Scene"].asCString());
+				CMLibs::Zinc::Region region = rootRegion.findSubregionAtPath(sceneviewerSettings["Scene"].asCString());
 				this->sceneviewer.setScene(region.getScene());
 			}
 		}

@@ -1,16 +1,16 @@
 /**
  * FILE : graphics_module.cpp
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/glyph.h"
-#include "opencmiss/zinc/material.h"
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/timekeeper.h"
+#include "cmlibs/zinc/glyph.h"
+#include "cmlibs/zinc/material.h"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/timekeeper.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -51,7 +51,7 @@ void cmzn_graphics_module_glyph_manager_callback(
 			for (regionIter = regionsList.begin(); regionIter != regionsList.end(); ++regionIter)
 			{
 				cmzn_region *region = *regionIter;
-				if (cmzn_region_is_root(region))
+				if (!region->getParent())
 				{
 					cmzn_scene *scene = region->getScene();
 					cmzn_scene_glyph_change(scene, message);
@@ -79,7 +79,7 @@ void cmzn_graphics_module_material_manager_callback(
 			for (regionIter = regionsList.begin(); regionIter != regionsList.end(); ++regionIter)
 			{
 				cmzn_region *region = *regionIter;
-				if (cmzn_region_is_root(region))
+				if (!region->getParent())
 				{
 					cmzn_scene *scene = region->getScene();
 					cmzn_scene_material_change(scene, message);
@@ -116,7 +116,7 @@ void cmzn_graphics_module_spectrum_manager_callback(
 			for (regionIter = regionsList.begin(); regionIter != regionsList.end(); ++regionIter)
 			{
 				cmzn_region *region = *regionIter;
-				if (cmzn_region_is_root(region))
+				if (!region->getParent())
 				{
 					cmzn_scene *scene = region->getScene();
 					cmzn_scene_spectrum_change(scene, message);
@@ -176,7 +176,7 @@ void cmzn_graphics_module_tessellation_manager_callback(
 			for (regionIter = regionsList.begin(); regionIter != regionsList.end(); ++regionIter)
 			{
 				cmzn_region *region = *regionIter;
-				if (cmzn_region_is_root(region))
+				if (!region->getParent())
 				{
 					cmzn_scene *scene = region->getScene();
 					cmzn_scene_tessellation_change(scene, message);
@@ -204,7 +204,7 @@ void cmzn_graphics_module_font_manager_callback(
 			for (regionIter = regionsList.begin(); regionIter != regionsList.end(); ++regionIter)
 			{
 				cmzn_region *region = *regionIter;
-				if (cmzn_region_is_root(region))
+				if (!region->getParent())
 				{
 					cmzn_scene *scene = region->getScene();
 					cmzn_scene_font_change(scene, message);

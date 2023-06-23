@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library
+ * Zinc Library
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,8 +9,8 @@
 #ifndef IMAGE_IO_ANALYZE_H_
 #define IMAGE_IO_ANALYZE_H_
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/types/streamid.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/streamid.h"
 #include "analyze_header.h"
 
 struct Cmgui_image_information;

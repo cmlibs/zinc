@@ -3,7 +3,7 @@
  * 
  * Implements an array container allocated in blocks.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -445,7 +445,7 @@ public:
 	 * @param limit  One past the last index to check.
 	 * @return  True if index found, false if reached limit.
 	 */
-	bool advanceIndexWhileFalse(IndexType& index, IndexType limit)
+	bool advanceIndexWhileFalse(IndexType& index, IndexType limit) const
 	{
 		const IndexType blockIndexSize = this->getBlockLength()*32;
 		const IndexType blockLimit = this->getBlockCount()*blockIndexSize;

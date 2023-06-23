@@ -6,7 +6,7 @@ LAST MODIFIED : 12 February 1995
 DESCRIPTION :
 Public header file for the 3-D drawing widget library.  Modelled on Xm.h
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

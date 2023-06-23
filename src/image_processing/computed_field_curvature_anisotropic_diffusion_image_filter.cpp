@@ -6,12 +6,12 @@ LAST MODIFIED : 15 Dec 2006
 DESCRIPTION :
 Wraps itk::CurvatureAnisotropicDiffusionImageFilter
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "opencmiss/zinc/fieldimageprocessing.h"
+#include "cmlibs/zinc/fieldimageprocessing.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"

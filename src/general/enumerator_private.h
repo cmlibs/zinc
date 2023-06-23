@@ -18,7 +18,7 @@ increments by 1 to the last value which has an ENUMERATOR_STRING. If your enum
 declaration does not match this pattern, you will have to write the contents
 of these functions yourself.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

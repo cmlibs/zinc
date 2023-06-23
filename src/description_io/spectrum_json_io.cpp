@@ -4,7 +4,7 @@
  * The definition to spectrum_json_io.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,8 @@
 
 #include "description_io/spectrum_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/spectrum.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/spectrum.hpp"
+#include "cmlibs/zinc/status.h"
 
 void SpectrumcomponentJsonIO::ioEntries(Json::Value &componentSettings)
 {
@@ -121,7 +121,7 @@ void SpectrumJsonIO::ioEntries(Json::Value &spectrumSettings)
 		spectrumSettings["Name"] = name;
 		DEALLOCATE(name);
 		spectrumSettings["MaterialOverwrite"] = spectrum.isMaterialOverwrite();
-		OpenCMISS::Zinc::Spectrumcomponent spectrumcomponent = spectrum.getFirstSpectrumcomponent();
+		CMLibs::Zinc::Spectrumcomponent spectrumcomponent = spectrum.getFirstSpectrumcomponent();
 		while (spectrumcomponent.isValid())
 		{
 			Json::Value componentSettings;
@@ -145,7 +145,7 @@ void SpectrumJsonIO::ioEntries(Json::Value &spectrumSettings)
 		Json::Value componentSettings = spectrumSettings["Components"];
 		for (unsigned int index = 0; index < componentSettings.size(); ++index )
 		{
-			OpenCMISS::Zinc::Spectrumcomponent spectrumcomponent = spectrum.createSpectrumcomponent();
+			CMLibs::Zinc::Spectrumcomponent spectrumcomponent = spectrum.createSpectrumcomponent();
 			SpectrumcomponentJsonIO(spectrumcomponent, IO_MODE_IMPORT).ioEntries(componentSettings[index]);
 		}
 		spectrum.setManaged(true);
@@ -185,7 +185,7 @@ int SpectrummoduleJsonImport::import(const std::string &jsonString)
 void SpectrummoduleJsonImport::importSpectrum(Json::Value &spectrumSettings)
 {
 	const char *spectrumName = spectrumSettings["Name"].asCString();
-	OpenCMISS::Zinc::Spectrum spectrum = spectrummodule.findSpectrumByName(spectrumName);
+	CMLibs::Zinc::Spectrum spectrum = spectrummodule.findSpectrumByName(spectrumName);
 	if (!spectrum.isValid())
 	{
 		spectrum = spectrummodule.createSpectrum();
@@ -198,9 +198,9 @@ std::string SpectrummoduleJsonExport::getExportString()
 {
 	Json::Value root;
 
-	OpenCMISS::Zinc::Spectrumiterator spectrumiterator =
+	CMLibs::Zinc::Spectrumiterator spectrumiterator =
 		spectrummodule.createSpectrumiterator();
-	OpenCMISS::Zinc::Spectrum spectrum = spectrumiterator.next();
+	CMLibs::Zinc::Spectrum spectrum = spectrumiterator.next();
 	while (spectrum.isValid())
 	{
 		Json::Value spectrumSettings;

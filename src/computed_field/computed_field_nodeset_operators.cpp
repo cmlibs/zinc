@@ -1,22 +1,22 @@
-/***************************************************************************//**
+/**
  * FILE : computed_field_nodeset_operators.cpp
  *
  * Implementation of field operators that act on a nodeset.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldnodesetoperators.h"
-#include "opencmiss/zinc/nodeset.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldnodesetoperators.h"
+#include "cmlibs/zinc/nodeset.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
-#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/field_module.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
+#include "mesh/nodeset_group.hpp"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.hpp"
@@ -84,15 +84,12 @@ public:
 
 	char* get_command_string();
 
-	// if the nodeset is a nodeset group, also need to propagate changes from it
 	virtual int check_dependency()
 	{
 		int return_code = Computed_field_core::check_dependency();
 		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
 		{
-			cmzn_field_node_group *nodeGroupField = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
-			if (nodeGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
-				cmzn_field_node_group_base_cast(nodeGroupField)->manager_change_status))
+			if (this->nodeset->hasMembershipChanges())
 			{
 				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 				return_code = this->field->manager_change_status;
@@ -143,16 +140,16 @@ public:
 	/** @return  Result OK on success, ERROR_ARGUMENT if nodeset missing or from wrong region */
 	int setNodeset(cmzn_nodeset *nodesetIn)
 	{
-		if ((!nodesetIn) || (cmzn_nodeset_get_region_internal(nodesetIn) != this->field->getRegion()))
+		if ((!nodesetIn) || (nodesetIn->getRegion() != this->field->getRegion()))
 		{
 			display_message(ERROR_MESSAGE, "FieldNodesetOperator setNodeset:  Invalid nodeset");
 			return CMZN_ERROR_ARGUMENT;
 		}
-		if (!cmzn_nodeset_match(this->nodeset, nodesetIn))
+		if (nodesetIn != this->nodeset)
 		{
 			cmzn_nodeset *oldNodeset = this->nodeset;
-			this->nodeset = cmzn_nodeset_access(nodesetIn);
-			cmzn_nodeset_destroy(&oldNodeset);
+			this->nodeset = nodesetIn->access();
+			cmzn_nodeset::deaccess(oldNodeset);
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -181,8 +178,9 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 			return 0;  // invalid element
 		}
 		// evaluate at element, operator applies to nodes with mapping to element
-		FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(this->nodeset);
-		cmzn_field_node_group *nodeGroup = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
+		FE_nodeset *feNodeset = this->nodeset->getFeNodeset();
+		cmzn_nodeset_group* nodesetGroup = dynamic_cast<cmzn_nodeset_group*>(this->nodeset);
+
 		FE_field *feField = nullptr;
 		Computed_field_get_type_finite_element(elementMap, &feField);
 		if (!feField)
@@ -206,7 +204,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 		for (int i = 0; i < size; ++i)
 		{
 			const DsLabelIndex nodeIndex = nodeIndexes[i];
-			if ((nodeGroup) && !Computed_field_node_group_core_cast(nodeGroup)->containsIndex(nodeIndex))
+			if ((nodesetGroup) && !nodesetGroup->containsIndex(nodeIndex))
 				continue;
 			extraCache.setNodeWithHostElement(feNodeset->getNode(nodeIndex), element);
 			const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
@@ -217,7 +215,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 	else
 	{
 		// iterate over whole nodeset
-		cmzn_nodeiterator *iterator = cmzn_nodeset_create_nodeiterator(this->nodeset);
+		cmzn_nodeiterator *iterator = this->nodeset->createNodeiterator();
 		cmzn_node *node = 0;
 		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 		{
@@ -226,7 +224,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 			if (sourceValueCache)
 				termOperator.processTerm(sourceValueCache->values);
 		}
-		cmzn_nodeiterator_destroy(&iterator);
+		cmzn::Deaccess(iterator);
 	}
 	return 1;
 }
@@ -248,8 +246,8 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateDeriv
 		return 0;  // invalid element
 	}
 	// evaluate at element, operator applies to nodes with mapping to element
-	FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(this->nodeset);
-	cmzn_field_node_group *nodeGroup = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
+	FE_nodeset *feNodeset = this->nodeset->getFeNodeset();
+	cmzn_nodeset_group* nodesetGroup = dynamic_cast<cmzn_nodeset_group*>(this->nodeset);
 	FE_field *feField = nullptr;
 	Computed_field_get_type_finite_element(elementMap, &feField);
 	if (!feField)
@@ -269,7 +267,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateDeriv
 	for (int i = 0; i < size; ++i)
 	{
 		const DsLabelIndex nodeIndex = nodeIndexes[i];
-		if ((nodeGroup) && !Computed_field_node_group_core_cast(nodeGroup)->containsIndex(nodeIndex))
+		if ((nodesetGroup) && !nodesetGroup->containsIndex(nodeIndex))
 			continue;
 		extraCache.setNodeWithHostElement(feNodeset->getNode(nodeIndex), element);
 		const DerivativeValueCache *sourceDerivativeCache = sourceField->evaluateDerivative(extraCache, fieldDerivative);
@@ -344,7 +342,7 @@ public:
 		Computed_field_nodeset_sum *other =
 			dynamic_cast<Computed_field_nodeset_sum*>(other_core);
 		if (other)
-			return cmzn_nodeset_match(nodeset, other->get_nodeset());
+			return nodeset == other->get_nodeset();
 		return 0;
 	}
 
@@ -424,7 +422,7 @@ public:
 	{
 		Computed_field_nodeset_mean *other = dynamic_cast<Computed_field_nodeset_mean*>(other_core);
 		if (other)
-			return cmzn_nodeset_match(nodeset, other->get_nodeset());
+			return nodeset == other->get_nodeset();
 		return 0;
 	}
 
@@ -516,7 +514,7 @@ public:
 		Computed_field_nodeset_sum_squares *other =
 			dynamic_cast<Computed_field_nodeset_sum_squares*>(other_core);
 		if (other)
-			return cmzn_nodeset_match(nodeset, other->get_nodeset());
+			return nodeset == other->get_nodeset();
 		return 0;
 	}
 
@@ -566,7 +564,7 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 	}
 	int number_of_terms = 0;
 	cmzn_field_id sourceField = field->source_fields[0];
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
+	cmzn_nodeiterator* iterator = nodeset->createNodeiterator();
 	cmzn_node_id node = 0;
 	cmzn_element *element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -579,7 +577,7 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 				++number_of_terms;
 		}
 	}
-	cmzn_nodeiterator_destroy(&iterator);
+	cmzn::Deaccess(iterator);
 	return number_of_terms;
 }
 
@@ -704,7 +702,7 @@ public:
 		Computed_field_nodeset_mean_squares *other =
 			dynamic_cast<Computed_field_nodeset_mean_squares*>(other_core);
 		if (other)
-			return cmzn_nodeset_match(nodeset, other->get_nodeset());
+			return nodeset == other->get_nodeset();
 		return 0;
 	}
 
@@ -820,7 +818,7 @@ public:
 		Computed_field_nodeset_minimum *other =
 			dynamic_cast<Computed_field_nodeset_minimum*>(other_core);
 		if (other)
-			return cmzn_nodeset_match(nodeset, other->get_nodeset());
+			return nodeset == other->get_nodeset();
 		return 0;
 	}
 
@@ -909,7 +907,7 @@ public:
 		Computed_field_nodeset_maximum *other =
 			dynamic_cast<Computed_field_nodeset_maximum*>(other_core);
 		if (other)
-			return cmzn_nodeset_match(nodeset, other->get_nodeset());
+			return nodeset == other->get_nodeset();
 		return 0;
 	}
 
@@ -1049,7 +1047,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
-		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		(nodeset) && (nodeset->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,
@@ -1068,7 +1066,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
-		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		(nodeset) && (nodeset->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,
@@ -1087,7 +1085,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
-		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		(nodeset) && (nodeset->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,
@@ -1106,7 +1104,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
-		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		(nodeset) && (nodeset->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,
@@ -1125,7 +1123,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
-		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		(nodeset) && (nodeset->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,
@@ -1144,7 +1142,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
-		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		(nodeset) && (nodeset->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,

@@ -4,7 +4,7 @@
  * Implements a set of labels identifying nodes, elements, field components.
  * Used to index a dimension of a datastore map.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -183,7 +183,7 @@ public:
 	 * @param  condition  Boolean array which must be true for given index to include.
 	 * @return accessed iterator, or 0 if failed.
 	 */
-	DsLabelIterator *createLabelIterator(bool_array<DsLabelIndex> *condition = 0) const;
+	DsLabelIterator *createLabelIterator(const bool_array<DsLabelIndex> *condition = nullptr) const;
 
 	void removeLabelIterator(DsLabelIterator *iterator) const; // only used by ~DsLabelIterator;
 
@@ -210,7 +210,7 @@ class DsLabelIterator : public cmzn::RefCounted
 private:
 	const DsLabels *labels;
 	DsLabelIdentifierToIndexMap::ext_iterator *iter; // set and used only if non-contiguous iteration
-	bool_array<DsLabelIndex> *condition; // set and used if iterating over DsLabelsGroup
+	const bool_array<DsLabelIndex> *condition; // set and used if iterating over DsLabelsGroup
 	DsLabelIndex index;
 	DsLabelIterator *next, *previous; // for linked-list in owning DsLabels
 

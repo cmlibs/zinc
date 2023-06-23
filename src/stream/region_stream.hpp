@@ -4,7 +4,7 @@
  * The private interface to cmzn_region_stream.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/region.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/region.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "stream/stream_private.hpp"
 

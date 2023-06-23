@@ -6,7 +6,7 @@ LAST MODIFIED : 15 May 2008
 DESCRIPTION :
 Implements a number of basic component wise operators on computed fields.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -201,8 +201,7 @@ cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
 	cmzn_field_access(source_field_two);
 	if (field_module && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -532,8 +531,7 @@ cmzn_field *cmzn_fieldmodule_create_field_multiply(
 	cmzn_field_access(source_field_two);
 	if (field_module && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -767,8 +765,7 @@ cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
 	cmzn_field_access(source_field_two);
 	if (field_module && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -1023,8 +1020,7 @@ cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmo
 	cmzn_field_access(source_field_two);
 	if (fieldmodule && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{

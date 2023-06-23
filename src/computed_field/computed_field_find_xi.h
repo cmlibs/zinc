@@ -7,7 +7,7 @@ DESCRIPTION :
 Implements algorithm to find the element and xi location at which a field
 has a particular value.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

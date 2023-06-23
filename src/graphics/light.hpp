@@ -6,7 +6,7 @@ LAST MODIFIED : 8 October 2002
 DESCRIPTION :
 The data structures used for representing graphical lights.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@ The data structures used for representing graphical lights.
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "opencmiss/zinc/light.h"
+#include "cmlibs/zinc/light.h"
 
 /*
 Global functions

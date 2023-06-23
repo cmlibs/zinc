@@ -3,21 +3,21 @@
  * 
  * Implementation of field assignment class.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
 #include "computed_field/fieldassignmentprivate.hpp"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/nodeset.hpp"
 #include "general/debug.h"
 
 cmzn_fieldassignment::cmzn_fieldassignment(cmzn_field *targetFieldIn, cmzn_field *sourceFieldIn) :
@@ -95,7 +95,7 @@ int cmzn_fieldassignment::setNodeset(cmzn_nodeset *nodesetIn)
 {
 	if (nodesetIn)
 	{
-		if (cmzn_nodeset_get_region_internal(nodesetIn) != Computed_field_get_region(this->targetField))
+		if (nodesetIn->getRegion() != Computed_field_get_region(this->targetField))
 		{
 			display_message(ERROR_MESSAGE, "Fieldassignment setNodeset:  Invalid or incompatible nodeset");
 			return CMZN_RESULT_ERROR_ARGUMENT;

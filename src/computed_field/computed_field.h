@@ -28,7 +28,7 @@ possibly depending on each other to get the maximum benefit out of values that
 have already been calculated, without requiring complex logic for determining
 if a value is already known.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,8 +36,8 @@ if a value is already known.
 #if !defined (COMPUTED_FIELD_H)
 #define COMPUTED_FIELD_H
 
-#include "opencmiss/zinc/types/meshid.h"
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/types/meshid.h"
+#include "cmlibs/zinc/field.h"
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
 #include "general/list.h"

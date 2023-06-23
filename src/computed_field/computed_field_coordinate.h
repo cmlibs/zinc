@@ -5,7 +5,7 @@ LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,6 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_COORDINATE_H)
 #define COMPUTED_FIELD_COORDINATE_H
 
-#include "opencmiss/zinc/fieldcoordinatetransformation.h"
+#include "cmlibs/zinc/fieldcoordinatetransformation.h"
 
 #endif /* !defined (COMPUTED_FIELD_COORDINATE_H) */

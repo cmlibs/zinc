@@ -3,7 +3,7 @@
  *
  * Implementation of finite element basis functions.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@
 #include <cmath>
 #include <cstring>
 #include <vector>
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 #include "finite_element/finite_element_basis.hpp"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -3593,7 +3593,7 @@ Some examples of basis descriptions are:
  */
 static char *FE_basis_type_array_to_string(const int *type_array)
 {
-	char *basis_string, temp[20];
+	char *basis_string, temp[30];
 	const char *basis_type_string;
 	const int *type, *relation_type;
 	enum FE_basis_type basis_type;

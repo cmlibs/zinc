@@ -2,7 +2,7 @@
  * rendergl.hpp
  * OpenGL rendering calls
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ public:
 	int use_display_list;
 
 	// use second pointer to save highlight_functor while it is disabled
-	SubObjectGroupHighlightFunctor *highlight_functor, *saved_highlight_functor;
+	GraphicsHighlightFunctor *highlight_functor, *saved_highlight_functor;
 
 private:
 	// scale factor multiplying graphics render_line_width and render_point_size
@@ -115,12 +115,14 @@ public:
 		return current_layer;
 	}
 
-	virtual int set_highlight_functor(SubObjectGroupHighlightFunctor *functor)
+	virtual bool set_highlight_functor(GraphicsHighlightFunctor *functor)
 	{
-		if (highlight_functor)
+		if (this->highlight_functor)
+		{
 			delete highlight_functor;
+		}
 		highlight_functor = functor;
-		return 1;
+		return true;
 	}
 
 	// store current highlight_functor, if any, disabling highlighting if there is one
@@ -129,7 +131,7 @@ public:
 		if (this->highlight_functor)
 		{
 			this->saved_highlight_functor = this->highlight_functor;
-			this->highlight_functor = 0;
+			this->highlight_functor = nullptr;
 		}
 	}
 
@@ -139,7 +141,7 @@ public:
 		if (this->saved_highlight_functor)
 		{
 			this->highlight_functor = this->saved_highlight_functor;
-			this->saved_highlight_functor = 0;
+			this->saved_highlight_functor = nullptr;
 		}
 	}
 

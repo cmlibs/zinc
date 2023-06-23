@@ -17,7 +17,7 @@ translating and zooming with mouse button and press and motion events.
 HISTORY :
 November 97 Created from rendering part of Drawing.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,11 +25,11 @@ November 97 Created from rendering part of Drawing.
 #include <cmath>
 #include <cstdio>
 #include <map>
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/scenefilter.h"
-#include "opencmiss/zinc/sceneviewerinput.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/scenefilter.h"
+#include "cmlibs/zinc/sceneviewerinput.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field_image.h"
 #include "description_io/sceneviewer_json_io.hpp"
 #include "general/compare.h"
@@ -2695,6 +2695,12 @@ cmzn_sceneviewermodule *cmzn_sceneviewermodule::create(struct Colour *background
 	return sceneviewermodule;
 }
 
+int cmzn_sceneviewermodule::setDefaultBackgroundColourAlpha(double alpha)
+{
+	this->background_colour.alpha = alpha;
+	return CMZN_OK;
+}
+
 int cmzn_sceneviewermodule::getDefaultBackgroundColourRGB(double *valuesOut3) const
 {
 	if (valuesOut3)
@@ -2803,7 +2809,10 @@ cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_i
 int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneviewermodule_address)
 {
 	if (sceneviewermodule_address)
-		return cmzn_sceneviewermodule::deaccess(*sceneviewermodule_address);
+	{
+		cmzn_sceneviewermodule::deaccess(*sceneviewermodule_address);
+		return CMZN_OK;
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 

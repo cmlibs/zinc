@@ -4,18 +4,18 @@
  * Derived field type that stores an image buffer suitable for I/O and
  * texturing.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/result.h"
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/stream.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/result.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/stream.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_find_xi_private.hpp"
@@ -230,12 +230,6 @@ private:
 		return change;
 	}
 };
-
-inline Computed_field *Computed_field_cast(
-	cmzn_field_image *image_field)
-{
-	return (reinterpret_cast<Computed_field*>(image_field));
-}
 
 inline Computed_field_image *Computed_field_image_core_cast(
 	cmzn_field_image *image_field)

@@ -3,13 +3,13 @@
  * 
  * Implements a subset of a datastore labels set.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "datastore/labelsgroup.hpp"
 
 DsLabelsGroup::DsLabelsGroup(DsLabels *labelsIn) :
@@ -49,20 +49,38 @@ void DsLabelsGroup::clear()
 	this->indexLimit = 0;
 }
 
-int DsLabelsGroup::removeGroup(DsLabelsGroup& otherGroup)
+int DsLabelsGroup::addGroup(const DsLabelsGroup& otherGroup)
 {
-	// This could be made faster by working directly with data blocks
-	int numberRemoved = 0;
-	DsLabelIndex index = -1;  // So first increment gives 0 == first valid index
-	while (this->incrementIndex(index))
+	if (otherGroup.labels != this->labels)
 	{
-		if (otherGroup.hasIndex(index))
+		return CMZN_ERROR_ARGUMENT;
+	}
+	// could be made much faster by getting bool_array to do bitwise OR on raw unsigned ints, but must maintain labelsCount
+	DsLabelIndex index = -1;  // So first increment gives 0 == first valid index
+	while (otherGroup.incrementIndex(index))
+	{
+		const int result = this->setIndex(index, true);
+		if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
 		{
-			this->setIndex(index, false);
-			++numberRemoved;
+			return result;
 		}
 	}
-	return numberRemoved;
+	return CMZN_OK;
+}
+
+int DsLabelsGroup::removeGroup(const DsLabelsGroup& otherGroup)
+{
+	if (otherGroup.labels != this->labels)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	// could be made much faster by getting bool_array to do bitwise AND COMPLEMENT on raw unsigned ints, but must maintain labelsCount
+	DsLabelIndex index = -1;  // So first increment gives 0 == first valid index
+	while (otherGroup.incrementIndex(index))
+	{
+		this->setIndex(index, false);
+	}
+	return CMZN_OK;
 }
 
 int DsLabelsGroup::setIndex(DsLabelIndex index, bool inGroup)
@@ -110,7 +128,55 @@ DsLabelIndex DsLabelsGroup::getFirstIndex(DsLabelIterator &iterator)
 	return index;
 }
 
-DsLabelIterator *DsLabelsGroup::createLabelIterator()
+DsLabelIterator *DsLabelsGroup::createLabelIterator() const
 {
 	return this->labels->createLabelIterator(&(this->values));
+}
+
+int DsLabelsGroup::addIndexesInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last)
+{
+	if (first > last)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	int return_code = CMZN_OK;
+	DsLabelIndex index;
+	DsLabelIdentifier identifier;
+	const DsLabelIndex indexSize = this->labels->getIndexSize();
+	if (((last - first) > indexSize) ||
+		((!this->labels->isContiguous()) && ((last - first) > (indexSize / 10))))
+	{
+		for (index = 0; index < indexSize; ++index)
+		{
+			identifier = this->labels->getIdentifier(index);
+			// invalid identifier == deleted element; skip
+			if ((DS_LABEL_IDENTIFIER_INVALID != identifier) &&
+				(identifier >= first) && (identifier <= last))
+			{
+				const int result = this->setIndex(index, true);
+				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+				{
+					return_code = result;
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (identifier = first; identifier <= last; ++identifier)
+		{
+			index = labels->findLabelByIdentifier(identifier);
+			if (DS_LABEL_INDEX_INVALID != index)
+			{
+				const int result = this->setIndex(index, true);
+				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+				{
+					return_code = result;
+					break;
+				}
+			}
+		}
+	}
+	return return_code;
 }

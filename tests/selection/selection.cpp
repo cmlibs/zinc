@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,20 +8,18 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldgroup.h>
-#include <opencmiss/zinc/fieldsubobjectgroup.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/selection.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldgroup.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/selection.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldgroup.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/node.hpp>
-#include <opencmiss/zinc/scene.hpp>
-#include <opencmiss/zinc/selection.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/node.hpp>
+#include <cmlibs/zinc/scene.hpp>
+#include <cmlibs/zinc/selection.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -75,8 +73,7 @@ TEST(cmzn_selectionnotifier, changeCallback)
 	addSomeNodes(zinc.fm);
 
 	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	cmzn_field_node_group_id nodeGroup = cmzn_field_group_create_field_node_group(group, nodeset);
-	cmzn_nodeset_group_id nodesetGroup = cmzn_field_node_group_get_nodeset_group(nodeGroup);
+	cmzn_nodeset_group_id nodesetGroup = cmzn_field_group_create_nodeset_group(group, nodeset);
 	cmzn_node_id node1 = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
 	EXPECT_NE(static_cast<cmzn_node_id>(0), node1);
 	cmzn_node_id node2 = cmzn_nodeset_find_node_by_identifier(nodeset, 2);
@@ -137,7 +134,6 @@ TEST(cmzn_selectionnotifier, changeCallback)
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_clear_callback(selectionnotifier));
 
 	cmzn_nodeset_group_destroy(&nodesetGroup);
-	cmzn_field_node_group_destroy(&nodeGroup);
 	cmzn_nodeset_destroy(&nodeset);
 	cmzn_field_group_destroy(&group);
 	cmzn_field_destroy(&group_field);
@@ -376,9 +372,7 @@ TEST(ZincSelectionnotifier, reentrancy)
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
-	FieldNodeGroup fieldNodeGroup = group.createFieldNodeGroup(nodes);
-	EXPECT_TRUE(fieldNodeGroup.isValid());
-	NodesetGroup nodesetGroup = fieldNodeGroup.getNodesetGroup();
+	NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(group));
 
@@ -427,9 +421,7 @@ TEST(ZincSelectionnotifier, inheritSelectionGroup)
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
-	FieldNodeGroup fieldNodeGroup = group.createFieldNodeGroup(childNodes);
-	EXPECT_TRUE(fieldNodeGroup.isValid());
-	NodesetGroup nodesetGroup = fieldNodeGroup.getNodesetGroup();
+	NodesetGroup nodesetGroup = group.createNodesetGroup(childNodes);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(group));
 

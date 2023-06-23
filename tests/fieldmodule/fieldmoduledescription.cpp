@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,39 +8,38 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/element.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldcache.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/fieldarithmeticoperators.h>
-#include <opencmiss/zinc/fieldcomposite.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/fieldconditional.h>
-#include <opencmiss/zinc/fieldcoordinatetransformation.h>
-#include <opencmiss/zinc/fieldderivatives.h>
-#include <opencmiss/zinc/fieldfiniteelement.h>
-#include <opencmiss/zinc/fieldgroup.h>
-#include <opencmiss/zinc/fieldlogicaloperators.h>
-#include <opencmiss/zinc/fieldmatrixoperators.h>
-#include <opencmiss/zinc/fieldmeshoperators.h>
-#include <opencmiss/zinc/fieldnodesetoperators.h>
-#include <opencmiss/zinc/fieldsubobjectgroup.h>
-#include <opencmiss/zinc/fieldtrigonometry.h>
-#include <opencmiss/zinc/fieldvectoroperators.h>
-#include <opencmiss/zinc/fieldtime.h>
-#include <opencmiss/zinc/mesh.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/nodeset.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/stream.h>
-#include <opencmiss/zinc/streamregion.h>
-#include <opencmiss/zinc/timekeeper.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/element.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldcache.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/fieldarithmeticoperators.h>
+#include <cmlibs/zinc/fieldcomposite.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/fieldconditional.h>
+#include <cmlibs/zinc/fieldcoordinatetransformation.h>
+#include <cmlibs/zinc/fieldderivatives.h>
+#include <cmlibs/zinc/fieldfiniteelement.h>
+#include <cmlibs/zinc/fieldgroup.h>
+#include <cmlibs/zinc/fieldlogicaloperators.h>
+#include <cmlibs/zinc/fieldmatrixoperators.h>
+#include <cmlibs/zinc/fieldmeshoperators.h>
+#include <cmlibs/zinc/fieldnodesetoperators.h>
+#include <cmlibs/zinc/fieldtrigonometry.h>
+#include <cmlibs/zinc/fieldvectoroperators.h>
+#include <cmlibs/zinc/fieldtime.h>
+#include <cmlibs/zinc/mesh.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/nodeset.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/stream.h>
+#include <cmlibs/zinc/streamregion.h>
+#include <cmlibs/zinc/timekeeper.h>
 
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -321,14 +320,10 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 2);
 	cmzn_field_id triangleField = cmzn_fieldmodule_find_field_by_name(fieldmodule, "triangle");
 	cmzn_field_group_id triangleGroup = cmzn_field_cast_group(triangleField);
-	cmzn_field_element_group_id triangleElementGroup2d = cmzn_field_group_get_field_element_group(triangleGroup, mesh2d);
-	EXPECT_NE(static_cast<cmzn_field_element_group *>(0), triangleElementGroup2d);
-	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_element_group_get_mesh_group(triangleElementGroup2d);
+	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_group_get_mesh_group(triangleGroup, mesh2d);
 	EXPECT_EQ(1, cmzn_mesh_get_size(cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
 	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	cmzn_field_node_group_id triangleNodeGroup = cmzn_field_group_get_field_node_group(triangleGroup, nodes);
-	EXPECT_NE(static_cast<cmzn_field_node_group *>(0), triangleNodeGroup);
-	cmzn_nodeset_group_id triangleNodesetGroup = cmzn_field_node_group_get_nodeset_group(triangleNodeGroup);
+	cmzn_nodeset_group_id triangleNodesetGroup = cmzn_field_group_get_nodeset_group(triangleGroup, nodes);
 	EXPECT_EQ(3, cmzn_nodeset_get_size(cmzn_nodeset_group_base_cast(triangleNodesetGroup)));
 
 	cmzn_mesh_id mesh;
@@ -342,11 +337,11 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_find_mesh_location_id findMeshLocation = cmzn_field_cast_find_mesh_location(findMeshLocationField);
 	EXPECT_NE(static_cast<cmzn_field_find_mesh_location *>(0), findMeshLocation);
 	mesh = cmzn_field_find_mesh_location_get_mesh(findMeshLocation);
-	EXPECT_TRUE(cmzn_mesh_match(mesh3d, mesh));
+	EXPECT_EQ(mesh3d, mesh);
 	cmzn_mesh_destroy(&mesh);
 	EXPECT_EQ(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST, cmzn_field_find_mesh_location_get_search_mode(findMeshLocation));
 	mesh = cmzn_field_find_mesh_location_get_search_mesh(findMeshLocation);
-	EXPECT_TRUE(cmzn_mesh_match(cmzn_mesh_group_base_cast(triangleMeshGroup2d), mesh));
+	EXPECT_EQ(cmzn_mesh_group_base_cast(triangleMeshGroup2d), mesh);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_field_find_mesh_location_destroy(&findMeshLocation);
 	cmzn_field_destroy(&findMeshLocationField);
@@ -360,7 +355,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_mesh_integral_id meshIntegral = cmzn_field_cast_mesh_integral(meshIntegralField);
 	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegral);
 	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegral);
-	EXPECT_TRUE(cmzn_mesh_match(cmzn_mesh_group_base_cast(triangleMeshGroup2d), mesh));
+	EXPECT_EQ(cmzn_mesh_group_base_cast(triangleMeshGroup2d), mesh);
 	cmzn_mesh_destroy(&mesh);
 	EXPECT_EQ(CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN, cmzn_field_mesh_integral_get_element_quadrature_rule(meshIntegral));
 	EXPECT_EQ(2, cmzn_field_mesh_integral_get_numbers_of_points(meshIntegral, 2, numbersOfPoints));
@@ -376,7 +371,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_mesh_integral_id meshIntegralSquares = cmzn_field_cast_mesh_integral(meshIntegralSquaresField);
 	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegralSquares);
 	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegralSquares);
-	EXPECT_TRUE(cmzn_mesh_match(mesh2d, mesh));
+	EXPECT_EQ(mesh2d, mesh);
 	cmzn_mesh_destroy(&mesh);
 	EXPECT_EQ(CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT, cmzn_field_mesh_integral_get_element_quadrature_rule(meshIntegralSquares));
 	EXPECT_EQ(2, cmzn_field_mesh_integral_get_numbers_of_points(meshIntegralSquares, 2, numbersOfPoints));
@@ -401,17 +396,15 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		EXPECT_EQ((i == 4) ? storedMeshLocationField : static_cast<cmzn_field *>(0), field);
 		cmzn_field_destroy(&field);
 		nodeset = cmzn_field_nodeset_operator_get_nodeset(nodesetOperator);
-		EXPECT_TRUE(cmzn_nodeset_match((i == 4) ? cmzn_nodeset_group_base_cast(triangleNodesetGroup) : nodes, nodeset));
+		EXPECT_EQ((i == 4) ? cmzn_nodeset_group_base_cast(triangleNodesetGroup) : nodes, nodeset);
 		cmzn_nodeset_destroy(&nodeset);
 		cmzn_field_nodeset_operator_destroy(&nodesetOperator);
 		cmzn_field_destroy(&nodesetOperatorField);
 	}
 
 	cmzn_nodeset_group_destroy(&triangleNodesetGroup);
-	cmzn_field_node_group_destroy(&triangleNodeGroup);
 	cmzn_nodeset_destroy(&nodes);
 	cmzn_mesh_group_destroy(&triangleMeshGroup2d);
-	cmzn_field_element_group_destroy(&triangleElementGroup2d);
 	cmzn_field_group_destroy(&triangleGroup);
 	cmzn_field_destroy(&triangleField);
 	cmzn_mesh_destroy(&mesh2d);
@@ -727,14 +720,10 @@ TEST(fieldmodule_description, write)
 	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 2);
 	cmzn_field_id triangleField = cmzn_fieldmodule_find_field_by_name(fieldmodule, "triangle");
 	cmzn_field_group_id triangleGroup = cmzn_field_cast_group(triangleField);
-	cmzn_field_element_group_id triangleElementGroup2d = cmzn_field_group_get_field_element_group(triangleGroup, mesh2d);
-	EXPECT_NE(static_cast<cmzn_field_element_group *>(0), triangleElementGroup2d);
-	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_element_group_get_mesh_group(triangleElementGroup2d);
+	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_group_get_mesh_group(triangleGroup, mesh2d);
 	EXPECT_EQ(1, cmzn_mesh_get_size(cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
 	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	cmzn_field_node_group_id triangleNodeGroup = cmzn_field_group_get_field_node_group(triangleGroup, nodes);
-	EXPECT_NE(static_cast<cmzn_field_node_group *>(0), triangleNodeGroup);
-	cmzn_nodeset_group_id triangleNodesetGroup = cmzn_field_node_group_get_nodeset_group(triangleNodeGroup);
+	cmzn_nodeset_group_id triangleNodesetGroup = cmzn_field_group_get_nodeset_group(triangleGroup, nodes);
 	EXPECT_EQ(3, cmzn_nodeset_get_size(cmzn_nodeset_group_base_cast(triangleNodesetGroup)));
 
 	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_create_field_stored_mesh_location(
@@ -815,10 +804,8 @@ TEST(fieldmodule_description, write)
 	}
 
 	cmzn_nodeset_group_destroy(&triangleNodesetGroup);
-	cmzn_field_node_group_destroy(&triangleNodeGroup);
 	cmzn_nodeset_destroy(&nodes);
 	cmzn_mesh_group_destroy(&triangleMeshGroup2d);
-	cmzn_field_element_group_destroy(&triangleElementGroup2d);
 	cmzn_field_group_destroy(&triangleGroup);
 	cmzn_field_destroy(&triangleField);
 	cmzn_mesh_destroy(&mesh2d);
@@ -894,4 +881,46 @@ TEST(Fieldmodule_description, writeFieldCoordinateSystemTypeNotApplicable)
 	EXPECT_NE(nullptr, description);
 	EXPECT_EQ(RESULT_OK, zinc.fm.readDescription(description));
 	cmzn_deallocate(description);
+}
+
+TEST(ZincFieldmodule, description_io_missing_field)
+{
+	ZincTestSetupCpp zinc;
+
+	const char* fieldmoduleDescription =
+		"{\n"
+		"    \"Fields\" : [\n"
+		"        {\n"
+		"            \"CoordinateSystemType\" : \"RECTANGULAR_CARTESIAN\",\n"
+		"            \"FieldConstant\" : {\n"
+		"                \"Values\" : [1, 4, 2]\n"
+		"            },\n"
+		"            \"IsManaged\" : true,\n"
+		"            \"Name\" : \"Constant\"\n"
+		"        },\n"
+		"        {\n"
+		"            \"FieldAbs\" : {\n"
+		"                \"SourceFields\" : [\"bob\"]\n"
+		"            },\n"
+		"            \"IsManaged\" : true,\n"
+		"            \"Name\" : \"Abs\"\n"
+		"        },\n"
+		"        {\n"
+		"            \"FieldPower\" : {\n"
+		"                \"SourceFields\" : [\"Abs\"]\n"
+		"            },\n"
+		"            \"IsManaged\" : true,\n"
+		"            \"Name\" : \"Power\"\n"
+		"        }\n"
+		"    ]\n"
+		"}\n";
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.readDescription(fieldmoduleDescription));
+
+	Field constant = zinc.fm.findFieldByName("Constant");
+	EXPECT_TRUE(constant.isValid());
+	Field abs = zinc.fm.findFieldByName("Abs");
+	EXPECT_FALSE(abs.isValid());
+	Field power = zinc.fm.findFieldByName("Power");
+	EXPECT_FALSE(power.isValid());
 }

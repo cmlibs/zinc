@@ -5,7 +5,7 @@ LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_IMAGE_H)
 #define COMPUTED_FIELD_IMAGE_H
 
-#include "opencmiss/zinc/fieldimage.h"
+#include "cmlibs/zinc/fieldimage.h"
 #include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 

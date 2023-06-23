@@ -1,4 +1,4 @@
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,16 +8,16 @@
 #define SCENE_PICKER_HPP
 
 #include <map>
-#include "opencmiss/zinc/scenepicker.h"
-#include "opencmiss/zinc/types/graphicsid.h"
-#include "opencmiss/zinc/types/scenefilterid.h"
-#include "opencmiss/zinc/types/fieldgroupid.h"
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/nodeid.h"
-#include "opencmiss/zinc/types/sceneid.h"
-#include "opencmiss/zinc/types/scenecoordinatesystem.h"
-#include "opencmiss/zinc/types/scenepickerid.h"
-#include "opencmiss/zinc/types/sceneviewerid.h"
+#include "cmlibs/zinc/scenepicker.h"
+#include "cmlibs/zinc/types/graphicsid.h"
+#include "cmlibs/zinc/types/scenefilterid.h"
+#include "cmlibs/zinc/types/fieldgroupid.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/nodeid.h"
+#include "cmlibs/zinc/types/sceneid.h"
+#include "cmlibs/zinc/types/scenecoordinatesystem.h"
+#include "cmlibs/zinc/types/scenepickerid.h"
+#include "cmlibs/zinc/types/sceneviewerid.h"
 
 enum cmzn_scenepicker_object_type
 {

@@ -8,7 +8,7 @@ Structure for storing and manipulating multiple, non-overlapping ranges of
 values, eg. 1-5,7-7,29-100.
 At present, limited to int type, but could be converted to other number types.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

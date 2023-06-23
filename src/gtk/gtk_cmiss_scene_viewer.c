@@ -9,7 +9,7 @@ scenes.  This creates a GtkWidget that represents the scene viewer and allows
 the cmzn_scene_viewer to be integrated with other Gtk widgets.  To control
 the scene viewer get the contained cmzn_scene_viewer object and use its api.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

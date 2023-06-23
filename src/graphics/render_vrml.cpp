@@ -6,7 +6,7 @@ LAST MODIFIED : 20 March 2003
 DESCRIPTION :
 Renders gtObjects to VRML file
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@ Renders gtObjects to VRML file
 #include <string.h>
 #include <math.h>
 
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"

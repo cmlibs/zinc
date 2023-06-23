@@ -6,15 +6,15 @@ LAST MODIFIED : 27 November 2002
 DESCRIPTION :
 Representing time in finite elements.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
 
-#include "opencmiss/zinc/timesequence.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/timesequence.h"
+#include "cmlibs/zinc/status.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"

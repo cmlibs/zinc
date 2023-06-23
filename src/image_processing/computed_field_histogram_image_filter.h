@@ -5,7 +5,7 @@ LAST MODIFIED : 25 March 2008
 
 DESCRIPTION :
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER_H
 
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/field.h"
 
 int cmzn_field_get_type_histogram_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **numberOfBins, double *marginalScale,

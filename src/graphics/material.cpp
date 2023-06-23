@@ -20,7 +20,7 @@ easier, compile_Graphical_material is a list/manager iterator function.
 execute function can take over compiling as well. Furthermore, it is easy to
 return to direct rendering, as described with these routines.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,10 +32,10 @@ return to direct rendering, as described with these routines.
 #include <cstring>
 #include <iterator>
 
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/material.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_private.hpp"

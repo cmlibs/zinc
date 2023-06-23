@@ -9,18 +9,18 @@ DESCRIPTION :
 cmzn_spectrumcomponent structure and routines for describing and manipulating the
 appearance of spectrums.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/list.h"

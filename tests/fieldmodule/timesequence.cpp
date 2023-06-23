@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/timesequence.hpp>
+#include <cmlibs/zinc/timesequence.hpp>
 #include "zinctestsetupcpp.hpp"
 
 TEST(ZincTimesequence, api)

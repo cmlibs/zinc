@@ -3,14 +3,14 @@
  * 
  * Implements a cache for prescribed domain locations and field evaluations.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <cstdio>
-#include "opencmiss/zinc/field.h"
+#include "cmlibs/zinc/field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/field_module.hpp"
 #include "computed_field/field_range.hpp"

@@ -3,7 +3,7 @@
  *
  * Declarations of types and methods for finite element basis functions.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,8 +11,8 @@
 #if !defined (FINITE_ELEMENT_BASIS_HPP)
 #define FINITE_ELEMENT_BASIS_HPP
 
-#include "opencmiss/zinc/types/elementbasisid.h"
-#include "opencmiss/zinc/types/nodeid.h"
+#include "cmlibs/zinc/types/elementbasisid.h"
+#include "cmlibs/zinc/types/nodeid.h"
 #include "finite_element/finite_element_constants.hpp"
 #include "general/list.h"
 #include "general/manager.h"
@@ -212,6 +212,7 @@ class Standard_basis_function_evaluation
 public:
 	Standard_basis_function_evaluation() :
 		standard_basis_function(0),
+		standard_basis_function_arguments(),
 		number_of_basis_functions(0),
 		basis_function_values(0),
 		number_of_values_allocated(0),

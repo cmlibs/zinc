@@ -3,7 +3,7 @@
  *
  * Renders gtObjects to finite elements
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,21 +12,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "opencmiss/zinc/types/scenefilterid.h"
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/elementbasis.h"
-#include "opencmiss/zinc/elementtemplate.h"
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/nodetemplate.h"
+#include "cmlibs/zinc/types/scenefilterid.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementfieldtemplate.h"
+#include "cmlibs/zinc/elementtemplate.h"
+#include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/nodetemplate.h"
+#include "cmlibs/zinc/region.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_group.hpp"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/list.h"
@@ -61,6 +63,7 @@ struct Render_to_finite_elements_data
 	cmzn_mesh_id master_mesh_1d, mesh_1d;
 	cmzn_mesh_id master_mesh_2d, mesh_2d;
 	cmzn_nodetemplate_id node_template;
+	cmzn_elementfieldtemplate_id line_eft, triangle_eft, square_eft;
 	cmzn_elementtemplate_id line_element_template, triangle_element_template, square_element_template;
 	FE_value line_density, line_density_scale_factor, surface_density, surface_density_scale_factor;
 
@@ -76,15 +79,18 @@ struct Render_to_finite_elements_data
 		render_mode(render_mode),
 		coordinate_field(coordinate_field),
 		master_nodeset(cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES)),
-		nodeset(0),
+		nodeset(nullptr),
 		master_mesh_1d(cmzn_fieldmodule_find_mesh_by_dimension(field_module, 1)),
-		mesh_1d(0),
+		mesh_1d(nullptr),
 		master_mesh_2d(cmzn_fieldmodule_find_mesh_by_dimension(field_module, 2)),
-		mesh_2d(0),
-		node_template(0),
-		line_element_template(0),
-		triangle_element_template(0),
-		square_element_template(0),
+		mesh_2d(nullptr),
+		node_template(nullptr),
+		line_eft(nullptr),
+		triangle_eft(nullptr),
+		square_eft(nullptr),
+		line_element_template(nullptr),
+		triangle_element_template(nullptr),
+		square_element_template(nullptr),
 		line_density(line_density_in),
 		line_density_scale_factor(line_density_scale_factor_in),
 		surface_density(surface_density_in),
@@ -92,31 +98,19 @@ struct Render_to_finite_elements_data
 	{
 		if (group)
 		{
-			cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
-			if (nodeset_in && ((RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode) ||
+			if ((nodeset_in) && ((RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode) ||
 				(RENDER_TO_FINITE_ELEMENTS_NODES == render_mode)))
 			{
-				nodeset = cmzn_nodeset_access(nodeset_in);
+				this->nodeset = cmzn_nodeset_access(nodeset_in);
 			}
 			else
 			{
-				if (!node_group)
-					node_group = cmzn_field_group_create_field_node_group(group, master_nodeset);
-				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-				cmzn_field_node_group_destroy(&node_group);
+				this->nodeset = cmzn_field_group_get_or_create_nodeset_group(group, this->master_nodeset);
 			}
 			if (RENDER_TO_FINITE_ELEMENTS_NODES != render_mode)
 			{
-				cmzn_field_element_group_id element_group_1d = cmzn_field_group_get_field_element_group(group, master_mesh_1d);
-				if (!element_group_1d)
-					element_group_1d = cmzn_field_group_create_field_element_group(group, master_mesh_1d);
-				mesh_1d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_1d));
-				cmzn_field_element_group_destroy(&element_group_1d);
-				cmzn_field_element_group_id element_group_2d = cmzn_field_group_get_field_element_group(group, master_mesh_2d);
-				if (!element_group_2d)
-					element_group_2d = cmzn_field_group_create_field_element_group(group, master_mesh_2d);
-				mesh_2d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_2d));
-				cmzn_field_element_group_destroy(&element_group_2d);
+				this->mesh_1d = cmzn_field_group_get_or_create_mesh_group(group, this->master_mesh_1d);
+				this->mesh_2d = cmzn_field_group_get_or_create_mesh_group(group, this->master_mesh_2d);
 			}
 		}
 		else
@@ -140,19 +134,22 @@ struct Render_to_finite_elements_data
 
 	~Render_to_finite_elements_data()
 	{
-		cmzn_elementtemplate_destroy(&square_element_template);
-		cmzn_elementtemplate_destroy(&triangle_element_template);
-		cmzn_elementtemplate_destroy(&line_element_template);
-		cmzn_nodetemplate_destroy(&node_template);
-		cmzn_mesh_destroy(&mesh_2d);
-		cmzn_mesh_destroy(&master_mesh_2d);
-		cmzn_mesh_destroy(&mesh_1d);
-		cmzn_mesh_destroy(&master_mesh_1d);
-		cmzn_nodeset_destroy(&nodeset);
-		cmzn_nodeset_destroy(&master_nodeset);
-		cmzn_fieldcache_destroy(&field_cache);
-		cmzn_fieldmodule_end_change(field_module);
-		cmzn_fieldmodule_destroy(&field_module);
+		cmzn_elementtemplate_destroy(&this->square_element_template);
+		cmzn_elementtemplate_destroy(&this->triangle_element_template);
+		cmzn_elementtemplate_destroy(&this->line_element_template);
+		cmzn_elementfieldtemplate_destroy(&this->line_eft);
+		cmzn_elementfieldtemplate_destroy(&this->triangle_eft);
+		cmzn_elementfieldtemplate_destroy(&this->square_eft);
+		cmzn_nodetemplate_destroy(&this->node_template);
+		cmzn_mesh_destroy(&this->mesh_2d);
+		cmzn_mesh_destroy(&this->master_mesh_2d);
+		cmzn_mesh_destroy(&this->mesh_1d);
+		cmzn_mesh_destroy(&this->master_mesh_1d);
+		cmzn_nodeset_destroy(&this->nodeset);
+		cmzn_nodeset_destroy(&this->master_nodeset);
+		cmzn_fieldcache_destroy(&this->field_cache);
+		cmzn_fieldmodule_end_change(this->field_module);
+		cmzn_fieldmodule_destroy(&this->field_module);
 	}
 
 	int checkValidCoordinateField()
@@ -166,37 +163,41 @@ struct Render_to_finite_elements_data
 			return_code = 0;
 		if (RENDER_TO_FINITE_ELEMENTS_NODES != render_mode)
 		{
-			const int local_node_indexes[] = { 1, 2, 3, 4 };
-
-			line_element_template = cmzn_mesh_create_elementtemplate(mesh_1d);
-			cmzn_elementtemplate_set_element_shape_type(line_element_template, CMZN_ELEMENT_SHAPE_TYPE_LINE);
-			cmzn_elementtemplate_set_number_of_nodes(line_element_template, 2);
 			cmzn_elementbasis_id line_basis = cmzn_fieldmodule_create_elementbasis(
 				field_module, /*dimension*/1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
-			if (!cmzn_elementtemplate_define_field_simple_nodal(line_element_template,
-				coordinate_field, /*component_number*/-1, line_basis, /*number_of_nodes*/2, local_node_indexes))
-				return_code = 0;
+			this->line_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_1d, line_basis);
 			cmzn_elementbasis_destroy(&line_basis);
+			this->line_element_template = cmzn_mesh_create_elementtemplate(this->mesh_1d);
+			cmzn_elementtemplate_set_element_shape_type(this->line_element_template, CMZN_ELEMENT_SHAPE_TYPE_LINE);
+			if (CMZN_OK != cmzn_elementtemplate_define_field(this->line_element_template,
+				coordinate_field, /*component_number*/-1, this->line_eft))
+			{
+				return_code = 0;
+			}
 
-			triangle_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
-			cmzn_elementtemplate_set_element_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE);
-			cmzn_elementtemplate_set_number_of_nodes(triangle_element_template, 3);
 			cmzn_elementbasis_id triangle_basis = cmzn_fieldmodule_create_elementbasis(
 				field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
-			if (!cmzn_elementtemplate_define_field_simple_nodal(triangle_element_template,
-				coordinate_field, /*component_number*/-1, triangle_basis, /*number_of_nodes*/3, local_node_indexes))
-				return_code = 0;
+			this->triangle_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_2d, triangle_basis);
 			cmzn_elementbasis_destroy(&triangle_basis);
+			this->triangle_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
+			cmzn_elementtemplate_set_element_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE);
+			if (CMZN_OK != cmzn_elementtemplate_define_field(this->triangle_element_template,
+				coordinate_field, /*component_number*/-1, this->triangle_eft))
+			{
+				return_code = 0;
+			}
 
-			square_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
-			cmzn_elementtemplate_set_element_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_TYPE_SQUARE);
-			cmzn_elementtemplate_set_number_of_nodes(square_element_template, 4);
 			cmzn_elementbasis_id square_basis = cmzn_fieldmodule_create_elementbasis(
 				field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
-			if (!cmzn_elementtemplate_define_field_simple_nodal(square_element_template,
-				coordinate_field, /*component_number*/-1, square_basis, /*number_of_nodes*/4, local_node_indexes))
-				return_code = 0;
+			this->square_eft = cmzn_mesh_create_elementfieldtemplate(this->mesh_2d, square_basis);
 			cmzn_elementbasis_destroy(&square_basis);
+			this->square_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
+			cmzn_elementtemplate_set_element_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_TYPE_SQUARE);
+			if (CMZN_OK != cmzn_elementtemplate_define_field(this->square_element_template,
+				coordinate_field, /*component_number*/-1, this->square_eft))
+			{
+				return_code = 0;
+			}
 		}
 
 		return return_code;
@@ -364,9 +365,13 @@ int Render_to_finite_elements_data::addLine(int number_of_data_components, struc
 		{
 			if (node1 && node1->fe_node && node2 && node2->fe_node)
 			{
-				cmzn_elementtemplate_set_node(line_element_template, 1, node1->fe_node);
-				cmzn_elementtemplate_set_node(line_element_template, 2, node2->fe_node);
-				return_code = cmzn_mesh_define_element(mesh_1d, /*identifier*/-1, line_element_template);
+				cmzn_element* element = cmzn_mesh_create_element(this->mesh_1d, /*identifier*/-1, this->line_element_template);
+				if ((CMZN_OK != cmzn_element_set_node(element, this->line_eft, 1, node1->fe_node)) ||
+					(CMZN_OK != cmzn_element_set_node(element, this->line_eft, 2, node2->fe_node)))
+				{
+					return_code = 0;
+				}
+				cmzn_element_destroy(&element);
 			}
 			else
 			{
@@ -461,10 +466,14 @@ int Render_to_finite_elements_data::addTriangle(int number_of_data_components,
 		{
 			if (node1 && node1->fe_node && node2 && node2->fe_node && node3 && node3->fe_node)
 			{
-				cmzn_elementtemplate_set_node(triangle_element_template, 1, node1->fe_node);
-				cmzn_elementtemplate_set_node(triangle_element_template, 2, node2->fe_node);
-				cmzn_elementtemplate_set_node(triangle_element_template, 3, node3->fe_node);
-				return_code = cmzn_mesh_define_element(mesh_2d, /*identifier*/-1, triangle_element_template);
+				cmzn_element* element = cmzn_mesh_create_element(this->mesh_2d, /*identifier*/-1, this->triangle_element_template);
+				if ((CMZN_OK != cmzn_element_set_node(element, this->line_eft, 1, node1->fe_node)) ||
+					(CMZN_OK != cmzn_element_set_node(element, this->line_eft, 2, node2->fe_node)) ||
+					(CMZN_OK != cmzn_element_set_node(element, this->line_eft, 3, node3->fe_node)))
+				{
+					return_code = 0;
+				}
+				cmzn_element_destroy(&element);
 			}
 			else
 			{
@@ -499,11 +508,15 @@ int Render_to_finite_elements_data::addSquare(int number_of_data_components,
 			if (node1 && node1->fe_node && node2 && node2->fe_node &&
 				node3 && node3->fe_node && node4 && node4->fe_node)
 			{
-				cmzn_elementtemplate_set_node(square_element_template, 1, node1->fe_node);
-				cmzn_elementtemplate_set_node(square_element_template, 2, node2->fe_node);
-				cmzn_elementtemplate_set_node(square_element_template, 3, node3->fe_node);
-				cmzn_elementtemplate_set_node(square_element_template, 4, node4->fe_node);
-				return_code = cmzn_mesh_define_element(mesh_2d, /*identifier*/-1, square_element_template);
+				cmzn_element* element = cmzn_mesh_create_element(this->mesh_2d, /*identifier*/-1, this->square_element_template);
+				if ((CMZN_OK != cmzn_element_set_node(element, this->line_eft, 1, node1->fe_node)) ||
+					(CMZN_OK != cmzn_element_set_node(element, this->line_eft, 2, node2->fe_node)) ||
+					(CMZN_OK != cmzn_element_set_node(element, this->line_eft, 3, node3->fe_node)) ||
+					(CMZN_OK != cmzn_element_set_node(element, this->line_eft, 4, node4->fe_node)))
+				{
+					return_code = 0;
+				}
+				cmzn_element_destroy(&element);
 			}
 			else
 			{

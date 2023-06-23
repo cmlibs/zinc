@@ -3,7 +3,7 @@
  * 
  * Common data and classes for FieldML 0.5 I/O.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,8 @@
 #if !defined (CMZN_FIELDML_COMMON_HPP)
 #define CMZN_FIELDML_COMMON_HPP
 
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/elementbasisid.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/elementbasisid.h"
 #include "fieldml_api.h"
 #include "datastore/labels.hpp"
 #include "datastore/map.hpp"

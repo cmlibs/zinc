@@ -3,7 +3,7 @@
  *
  * Internal header of field module api.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 #if !defined (FIELD_MODULE_H)
 #define FIELD_MODULE_H
 
-#include "opencmiss/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 
 class FE_region_changes;

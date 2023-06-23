@@ -3,22 +3,21 @@
  *
  * Functions for exporting finite element data to CMISS IP files.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/region.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/region.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/export_cm_files.h"
@@ -30,6 +29,10 @@
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/message.h"
+#include "mesh/mesh.hpp"
+#include "mesh/mesh_group.hpp"
+#include "mesh/nodeset.hpp"
+#include "mesh/nodeset_group.hpp"
 #include "region/cmiss_region.hpp"
 
 /*
@@ -204,20 +207,13 @@ static int write_ipbase_file(FILE *ipbase_file, cmzn_region *region,
 		for (dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
 		{
 			cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
-			cmzn_elementiterator *iterator = 0;
 			if (group)
 			{
-				cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
-				if (element_group)
-				{
-					cmzn_mesh_group *mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
-					iterator = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(mesh_group));
-					cmzn_mesh_group_destroy(&mesh_group);
-					cmzn_field_element_group_destroy(&element_group);
-				}
+				cmzn_mesh_group* mesh_group = cmzn_field_group_get_mesh_group(group, mesh);
+				cmzn_mesh_destroy(&mesh);
+				mesh = mesh_group;
 			}
-			else
-				iterator = cmzn_mesh_create_elementiterator(mesh);
+			cmzn_elementiterator* iterator = cmzn_mesh_create_elementiterator(mesh);
 			if (iterator)
 			{
 				cmzn_element *element;
@@ -811,18 +807,14 @@ static int write_ipnode_file(FILE *ipnode_file, FILE *ipmap_file,
 		cm_node_data.ipnode_file = ipnode_file;
 		cm_node_data.ipmap_file = ipmap_file;
 
-		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
-		cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
+		cmzn_fieldmodule* fieldmodule = cmzn_region_get_fieldmodule(region);
+		cmzn_nodeset* nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
 		cmzn_fieldmodule_destroy(&fieldmodule);
 		if (group)
 		{
-			cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+			cmzn_nodeset_group* nodeset_group = cmzn_field_group_get_nodeset_group(group, nodeset);
 			cmzn_nodeset_destroy(&nodeset);
-			if (node_group)
-			{
-				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-				cmzn_field_node_group_destroy(&node_group);
-			}
+			nodeset = nodeset_group;
 		}
 
 		cmzn_nodeiterator *iterator;
@@ -1168,21 +1160,14 @@ static int write_ipelem_file(FILE *ipelem_file,
 			}
 			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
 			{
-				cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
-				cmzn_elementiterator *iterator = 0;
+				cmzn_mesh* mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
 				if (group)
 				{
-					cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
-					if (element_group)
-					{
-						cmzn_mesh_group *mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
-						iterator = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(mesh_group));
-						cmzn_mesh_group_destroy(&mesh_group);
-						cmzn_field_element_group_destroy(&element_group);
-					}
+					cmzn_mesh_group* mesh_group = cmzn_field_group_get_mesh_group(group, mesh);
+					cmzn_mesh_destroy(&mesh);
+					mesh = mesh_group;
 				}
-				else
-					iterator = cmzn_mesh_create_elementiterator(mesh);
+				cmzn_elementiterator* iterator = cmzn_mesh_create_elementiterator(mesh);
 				if (iterator)
 				{
 					cmzn_element *element;
@@ -1205,6 +1190,7 @@ static int write_ipelem_file(FILE *ipelem_file,
 					}
 					cmzn_elementiterator_destroy(&iterator);
 				}
+				cmzn_mesh_destroy(&mesh);
 			}
 		}
 		cmzn_fieldmodule_destroy(&fieldmodule);

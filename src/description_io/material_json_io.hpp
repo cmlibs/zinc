@@ -4,7 +4,7 @@
  * Interface to material serialisation in JSON format.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
 #if !defined (MATERIAL_JSON_IO_HPP)
 #define MATERIAL_JSON_IO_HPP
 
-#include "opencmiss/zinc/material.hpp"
+#include "cmlibs/zinc/material.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 
@@ -23,7 +23,7 @@
 class MaterialmoduleJsonExport
 {
 private:
-	OpenCMISS::Zinc::Materialmodule materialmodule;
+	CMLibs::Zinc::Materialmodule materialmodule;
 
 public:
 
@@ -40,7 +40,7 @@ public:
 class MaterialmoduleJsonImport
 {
 private:
-	OpenCMISS::Zinc::Materialmodule materialmodule;
+	CMLibs::Zinc::Materialmodule materialmodule;
 
 public:
 

@@ -6,7 +6,7 @@ LAST MODIFIED : 14 December 2010
 DESCRIPTION :
 Implements a field which formats numeric values as a string.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

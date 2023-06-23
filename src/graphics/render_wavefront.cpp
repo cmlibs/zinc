@@ -6,21 +6,20 @@ LAST MODIFIED : 20 March 2003
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <math.h>
+#include <sstream>
+
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.hpp"
-#include "graphics/render_wavefront.h"
+#include "graphics/render_wavefront.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/spectrum.h"
 #include "general/message.h"
@@ -211,7 +210,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(
 	Wavefront_vertex,
 	position,struct Wavefront_vertex_position *,compare_vertex_location)
 
-static int activate_material_wavefront(FILE *file,
+static int activate_material_wavefront(std::ostringstream& wavefront_output,
 	cmzn_material *material,
 	cmzn_material **current_material)
 /*******************************************************************************
@@ -224,7 +223,7 @@ Writes Wavefront object file that defines the material
 	int return_code;
 
 	ENTER(activate_material_wavefront);
-	if (material&&file)
+    if (material)
 	{
 		if (current_material)
 		{
@@ -234,21 +233,21 @@ Writes Wavefront object file that defines the material
 			}
 			else
 			{
-				fprintf(file,"usemtl %s\n",Graphical_material_name(material));
+                wavefront_output << "usemtl " << material->getName() << std::endl;
 				*current_material = material;
 				return_code=1;
 			}
 		}
 		else
 		{
-			fprintf(file,"usemtl %s\n",Graphical_material_name(material));
+            wavefront_output << "usemtl " << material->getName() << std::endl;
 			return_code=1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"activate_material_wavefront.  Missing material or FILE handle");
+            "activate_material_wavefront.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
@@ -256,10 +255,10 @@ Writes Wavefront object file that defines the material
 	return (return_code);
 } /* activate_material_wavefront */
 
-static int makewavefront(FILE *wavefront_file, int full_comments,
+static int makewavefront(std::ostringstream &wavefront_output, int full_comments,
 	gtObject *object, ZnReal time);
 
-int draw_glyph_set_wavefront(FILE *wavefront_file,
+int draw_glyph_set_wavefront(std::ostringstream& wavefront_output,
 	GT_glyphset_vertex_buffers *glyph_set,	Graphics_vertex_array *vertex_array,
 	cmzn_material *material)
 /*******************************************************************************
@@ -288,8 +287,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 			GLfloat *position = position_buffer;
 			for (unsigned int i = 0; i < position_vertex_count; i++)
 			{
-				fprintf(wavefront_file, "v %.8f %.8f %.8f\n",
-					position[0], position[1], position[2]);
+                wavefront_output << "v " << position[0] << " " << position[1] << " " << position[2] << std::endl;
 				position += position_values_per_vertex;
 			}
 		}
@@ -325,7 +323,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				{
 					set_GT_object_default_material(transformed_object,
 						material);
-					makewavefront(wavefront_file, 1, transformed_object, 0);
+                    makewavefront(wavefront_output, 1, transformed_object, 0);
 					DEACCESS(GT_object)(&transformed_object);
 				}
 				position_buffer += position_values_per_vertex;
@@ -345,7 +343,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 	return (return_code);
 } /* draw_glyph_set_wavefront */
 
-int draw_surface_wavefront(FILE *file,
+int draw_surface_wavefront(std::ostringstream& wavefront_output,
 	GT_surface_vertex_buffers *surface,
 	Graphics_vertex_array *vertex_array,
 	cmzn_material *material,
@@ -383,23 +381,17 @@ DESCRIPTION :
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_ARRAY,
 			&index_vertex_buffer, &index_values_per_vertex,
 			&index_vertex_count);
-		activate_material_wavefront(file, material, current_material);
+        activate_material_wavefront(wavefront_output, material, current_material);
 		for (i = 0; i< position_vertex_count; i++)
 		{
-			fprintf(file, "v %.8f %.8f %.8f\n",
-				position_buffer[0],
-				position_buffer[1],
-				position_buffer[2]);
+            wavefront_output << "v " << position_buffer[0] << " " << position_buffer[1] << " " << position_buffer[2] << std::endl;
 			position_buffer += position_values_per_vertex;
 		}
 		if (texture_coordinate0_buffer)
 		{
 			for (i = 0; i< texture_coordinate0_vertex_count; i++)
 			{
-				fprintf(file, "vt %f %f %f\n",
-					texture_coordinate0_buffer[0],
-					texture_coordinate0_buffer[1],
-					texture_coordinate0_buffer[2]);
+                wavefront_output << "vt " << texture_coordinate0_buffer[0] << " " << texture_coordinate0_buffer[1] << " " << texture_coordinate0_buffer[2] << std::endl;
 				texture_coordinate0_buffer += texture_coordinate0_values_per_vertex;
 			}
 		}
@@ -436,30 +428,22 @@ DESCRIPTION :
 							{
 								if (texture_coordinate0_buffer)
 								{
-									fprintf(file, "f %d/%d %d/%d %d/%d\n",
-										indices[j]+1, indices[j]+1,
-										indices[j+1]+1, indices[j+1]+1,
-										indices[j+2]+1, indices[j+2]+1);
+                                    wavefront_output << "f " << indices[j]+1 << "/" << indices[j]+1 << " " << indices[j+1]+1 << "/" << indices[j+1]+1 << " " << indices[j+2]+1 << "/" << indices[j+2]+1 << std::endl;
 								}
 								else
 								{
-									fprintf(file, "f %d %d %d\n",
-										indices[j]+1,indices[j+1]+1,indices[j+2]+1);
+                                    wavefront_output << "f " << indices[j]+1 << " " << indices[j+1]+1 << " " << indices[j+2]+1 << std::endl;
 								}
 							}
 							else
 							{
 								if (texture_coordinate0_buffer)
 								{
-									fprintf(file, "f %d/%d %d/%d %d/%d\n",
-										indices[j+1]+1, indices[j+1]+1,
-										indices[j]+1, indices[j]+1,
-										indices[j+2]+1, indices[j+2]+1);
+                                    wavefront_output << "f " << indices[j+1]+1 << "/" << indices[j+1]+1 << " " << indices[j]+1 << "/" << indices[j]+1 << " " << indices[j+2]+1 << "/" << indices[j+2]+1 << std::endl;
 								}
 								else
 								{
-									fprintf(file, "f %d %d %d\n",
-										indices[j+1]+1,indices[j]+1,indices[j+2]+1);
+                                    wavefront_output << "f " << indices[j+1]+1 << " " << indices[j]+1 << " " << indices[j+2]+1 << std::endl;
 								}
 							}
 						}
@@ -480,15 +464,11 @@ DESCRIPTION :
 					{
 						if (texture_coordinate0_buffer)
 						{
-							fprintf(file, "f %d/%d %d/%d %d/%d\n",
-								current_index, current_index,
-								current_index+1, current_index+1,
-								current_index+2, current_index+2);
+                            wavefront_output << "f " << current_index << "/" << current_index << " " << current_index+1 << "/" << current_index+1 << " " << current_index+2 << "/" << current_index+2 << std::endl;
 						}
 						else
 						{
-							fprintf(file, "f %d %d %d\n",
-								current_index,current_index+1,current_index+2);
+                            wavefront_output << "f " << current_index << " " << current_index+1 << " " << current_index+2 << std::endl;
 						}
 						current_index += 3;
 					}
@@ -506,7 +486,7 @@ DESCRIPTION :
 	return (return_code);
 } /* draw_surface_wavefront */
 
-static int makewavefront(FILE *wavefront_file, int full_comments,
+static int makewavefront(std::ostringstream& wavefront_output, int full_comments,
 	gtObject *object, ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2003
@@ -543,7 +523,7 @@ Convert graphical object into Wavefront object file.
 						object->primitive_lists->gt_glyphset_vertex_buffers;
 					if (gt_glyphset_vertex_buffers != 0)
 					{
-							draw_glyph_set_wavefront(wavefront_file,
+                            draw_glyph_set_wavefront(wavefront_output,
 								gt_glyphset_vertex_buffers,
 								object->vertex_array,
 								object->default_material);
@@ -568,7 +548,7 @@ Convert graphical object into Wavefront object file.
 							case g_SH_DISCONTINUOUS:
 							case g_SH_DISCONTINUOUS_TEXMAP:
 							{
-								draw_surface_wavefront(wavefront_file,
+                                draw_surface_wavefront(wavefront_output,
 									gt_surface_vertex_buffers,
 									object->vertex_array,
 									object->default_material,
@@ -606,9 +586,8 @@ Convert graphical object into Wavefront object file.
 
 struct Export_to_wavefront_data
 {
-	char *file_basename;
-	char *file_path;
-	FILE *wavefront_file;
+    std::vector<std::string> object_names;
+    std::vector<std::string> objects;
 	int full_comments;
 }; /* struct Export_to_wavefront_data */
 
@@ -621,75 +600,38 @@ DESCRIPTION :
 Write the window object to the <wavefront_file_void>.
 ==============================================================================*/
 {
-	FILE *wavefront_global_file, *wavefront_object_file;
 	int return_code = 0;
 	struct Export_to_wavefront_data *export_to_wavefront_data;
-#if defined(WIN32_SYSTEM)
-	const char *system_dir_seperator = "\\";
-#else
-	const char *system_dir_seperator = "/";
-#endif /* defined(WIN32_SYSTEM) */
 
 	ENTER(graphics_object_export_to_wavefront);
 	/* check arguments */
 	if (gt_object && (export_to_wavefront_data=
 		(struct Export_to_wavefront_data *)export_to_wavefront_data_void))
 	{
-		wavefront_global_file = export_to_wavefront_data->wavefront_file;
 		switch(gt_object->object_type)
 		{
 			case g_GLYPH_SET_VERTEX_BUFFERS:
 			case g_SURFACE_VERTEX_BUFFERS:
 			{
-				int error = 0;
-				char *parsed_name = duplicate_string(gt_object->name);
-				char *split_str = strtok(parsed_name, "/");
-				char *file_name = NULL;
-				if (export_to_wavefront_data->file_path != NULL)
-					file_name = duplicate_string(export_to_wavefront_data->file_path);
-				char *file_basename = duplicate_string(export_to_wavefront_data->file_basename);
-				while (split_str != NULL)
-				{
-					if ((strlen(file_basename) > 0) && (strncmp(split_str, ".", 1) != 0))
-					{
-						append_string(&file_basename, "_", &error);
-					}
-					append_string(&file_basename, split_str, &error);
-					split_str = strtok(NULL, "/");
-				}
-				append_string(&file_basename, ".obj", &error);
+                std::string parsed_name(gt_object->name);
+                std::replace(parsed_name.begin(), parsed_name.end(), '/', '_');
+                parsed_name += ".obj";
 
-				DEALLOCATE(parsed_name);
-				fprintf(wavefront_global_file,"call %s\n",file_basename);
-				if ((file_name != NULL) && (strlen(file_name) > 0))
-				{
-					append_string(&file_name, system_dir_seperator, &error);
-				}
-				append_string(&file_name, file_basename, &error);
+                export_to_wavefront_data->object_names.push_back(parsed_name);
 
-				wavefront_object_file = fopen(file_name, "w");
-				if ( wavefront_object_file != 0)
-				{
-					fprintf(wavefront_object_file,
-						"# CMGUI Wavefront Object file generator\n#%s \n",file_basename);
-					fprintf(wavefront_object_file,"mtllib global.mtl\n\n");
-					file_vertex_index = 0;
-					file_normal_vertex_index = 0;
-					file_texture_vertex_index = 0;
-					return_code=makewavefront(wavefront_object_file,
-						export_to_wavefront_data->full_comments,
-						gt_object, time);
-					fclose(wavefront_object_file);
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"graphics_object_export_to_wavefront.  "
-						"Could not open wavefront object file %s", file_name);
-					return_code=0;
-				}
-				DEALLOCATE(file_basename);
-				DEALLOCATE(file_name);
+                std::ostringstream ss;
+                ss << "# CMGUI Wavefront Object file generator" << std::endl;
+                ss << parsed_name << std::endl;
+                ss << "mtllib global.mtl" << std::endl << std::endl;
+                file_vertex_index = 0;
+                file_normal_vertex_index = 0;
+                file_texture_vertex_index = 0;
+                return_code = makewavefront(ss,
+                    export_to_wavefront_data->full_comments,
+                    gt_object, time);
+
+                export_to_wavefront_data->objects.push_back(ss.str());
+                return_code = 1;
 			} break;
 			default:
 			{
@@ -715,7 +657,7 @@ Global functions
 ----------------
 */
 
-int export_to_wavefront(char *file_name, cmzn_scene_id scene,
+std::vector<std::string> export_to_wavefront(cmzn_scene_id scene,
 	cmzn_scenefilter_id filter, int full_comments)
 /******************************************************************************
 LAST MODIFIED : 31 May 2000
@@ -724,16 +666,7 @@ DESCRIPTION :
 Renders the visible objects to Wavefront object files.
 ==============================================================================*/
 {
-	char *extension;
-#if defined(WIN32_SYSTEM)
-	const char system_dir_seperator = '\\';
-#else
-	const char system_dir_seperator = '/';
-#endif /* defined(WIN32_SYSTEM) */
-	char *file_path = NULL;
-	char *file_basename = NULL;
-	FILE *wavefront_global_file;
-	int return_code;
+    std::vector<std::string> content;
 	struct Export_to_wavefront_data export_to_wavefront_data;
 
 	ENTER(export_to_wavefront);
@@ -741,67 +674,32 @@ Renders the visible objects to Wavefront object files.
 	{
 		build_Scene(scene, filter);
 		/* Write all the graphics objects in the scene */
-		/* Open file and add header */
-		wavefront_global_file = fopen(file_name, "w");
-		if (wavefront_global_file != 0)
-		{
-			/*???debug */
-			display_message(WARNING_MESSAGE,
-				"export_to_wavefront.  Not fully implemented");
+        /*???debug */
+        display_message(WARNING_MESSAGE,
+            "export_to_wavefront.  Not fully implemented");
+        export_to_wavefront_data.full_comments = full_comments;
 
-			fprintf(wavefront_global_file,
-				"# CMGUI Wavefront Object file generator\n");
-			/* Transform.... */
+        int return_code = for_each_graphics_object_in_scene_tree(scene, filter,
+            graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
 
-			/* Draw objects */
+        if (return_code == CMZN_OK)
+        {
+            std::ostringstream ss;
+            ss << "# CMGUI Wavefront Object file generator" << std::endl;
+            for(const std::string &name : export_to_wavefront_data.object_names) {
+                ss << "call " << name << std::endl;
+            }
+            content.push_back(ss.str());
+            std::copy(export_to_wavefront_data.objects.begin(), export_to_wavefront_data.objects.end(), std::back_inserter(content));
+        }
 
-			export_to_wavefront_data.wavefront_file = wavefront_global_file;
-			extension = strrchr ( file_name, '.' );
-			if (extension != 0)
-			{
-				*extension = 0;
-			}
-			file_basename = strrchr(file_name, system_dir_seperator);
-			if (file_basename == NULL)
-			{
-				export_to_wavefront_data.file_path = NULL;
-				export_to_wavefront_data.file_basename = duplicate_string(file_name);
-			}
-			else
-			{
-				int file_path_length = static_cast<int>(file_basename-file_name);
-				ALLOCATE(file_path, char, file_path_length+1);
-				strncpy(file_path, file_name, file_path_length);
-				file_path[file_path_length] = '\0';
-				export_to_wavefront_data.file_path = file_path;
-				export_to_wavefront_data.file_basename = duplicate_string(file_basename+1);
-			}
-			export_to_wavefront_data.full_comments = full_comments;
-
-			return_code=for_each_graphics_object_in_scene_tree(scene, filter,
-				graphics_object_export_to_wavefront,(void *)&export_to_wavefront_data);
-
-			if (export_to_wavefront_data.file_path)
-				DEALLOCATE(export_to_wavefront_data.file_path);
-			if (export_to_wavefront_data.file_basename)
-				DEALLOCATE(export_to_wavefront_data.file_basename);
-			fclose (wavefront_global_file);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"export_to_wavefront.  Could not open wavefront global file");
-			return_code=0;
-		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"export_to_wavefront.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
-	return( return_code);
+    return content;
 } /* export_to_wavefront */
 

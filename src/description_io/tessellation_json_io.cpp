@@ -4,7 +4,7 @@
  * The definition to tessellation_json_io.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,8 @@
 
 #include "description_io/tessellation_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/tessellation.hpp"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/tessellation.hpp"
+#include "cmlibs/zinc/status.h"
 
 void TessellationJsonIO::ioEntries(Json::Value &tessellationSettings)
 {
@@ -110,7 +110,7 @@ int TessellationmoduleJsonImport::import(const std::string &jsonString)
 void TessellationmoduleJsonImport::importTessellation(Json::Value &tessellationSettings)
 {
 	const char *tessellationName = tessellationSettings["Name"].asCString();
-	OpenCMISS::Zinc::Tessellation tessellation = tessellationmodule.findTessellationByName(tessellationName);
+	CMLibs::Zinc::Tessellation tessellation = tessellationmodule.findTessellationByName(tessellationName);
 	if (!tessellation.isValid())
 	{
 		tessellation = tessellationmodule.createTessellation();
@@ -123,9 +123,9 @@ std::string TessellationmoduleJsonExport::getExportString()
 {
 	Json::Value root;
 
-	OpenCMISS::Zinc::Tessellationiterator tessellationiterator =
+	CMLibs::Zinc::Tessellationiterator tessellationiterator =
 		tessellationmodule.createTessellationiterator();
-	OpenCMISS::Zinc::Tessellation tessellation = tessellationiterator.next();
+	CMLibs::Zinc::Tessellation tessellation = tessellationiterator.next();
 	while (tessellation.isValid())
 	{
 		Json::Value tessellationSettings;

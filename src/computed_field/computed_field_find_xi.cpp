@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_find_xi.c
+FILE : computed_field_find_xi.cpp
 
 LAST MODIFIED : 24 August 2006
 
@@ -7,7 +7,7 @@ DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
 lookup of the element.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,8 +23,10 @@ lookup of the element.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_private.hpp"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
+#include "mesh/mesh.hpp"
 
 #define MAX_FIND_XI_ITERATIONS 50
 
@@ -423,7 +425,7 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 				/* Now try every element */
 				if (!*element_address)
 				{
-					cmzn_elementiterator *iterator = cmzn_mesh_create_elementiterator(searchMesh);
+					cmzn_elementiterator *iterator = searchMesh->createElementiterator();
 					while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 					{
 						if (element != findElementXiCache->element)  // since already tried it

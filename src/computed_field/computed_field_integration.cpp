@@ -8,15 +8,15 @@ Implements a computed field which integrates along elements, including
 travelling between adjacent elements, using the faces for 2D and 3D elements
 and the nodes for 1D elements.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
 #include <stdio.h>
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -35,7 +35,7 @@ and the nodes for 1D elements.
 #include "general/list_private.h"
 #include "general/message.h"
 #include "computed_field/computed_field_integration.h"
-#include "mesh/cmiss_element_private.hpp"
+#include "mesh/mesh.hpp"
 
 namespace {
 
@@ -1489,7 +1489,7 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_integration */
 
-/*****************************************************************************//**
+/**
  * Creates a field that computes an integration over a mesh.
  * The seed element is set to the number given and the mapping calculated.
  * Sets the number of components to be the same as the <integrand> field.
@@ -1512,7 +1512,7 @@ cmzn_field *cmzn_fieldmodule_create_field_integration(
 	int magnitude_coordinates, cmzn_field *coordinate_field)
 {
 	cmzn_field *field = nullptr;
-	if ((fieldmodule) && (mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+	if ((fieldmodule) && (mesh) && (mesh->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)) &&
 		(seed_element) && cmzn_mesh_contains_element(mesh, seed_element) &&
 		(integrand) && integrand->isNumerical() && (coordinate_field) &&

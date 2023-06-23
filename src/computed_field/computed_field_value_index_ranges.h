@@ -7,7 +7,7 @@ DESCRIPTION :
 Stores ranges of indices of field values in a multi-range for a Computed_field.
 Used, eg., to indicate which components have been modified in an editor.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

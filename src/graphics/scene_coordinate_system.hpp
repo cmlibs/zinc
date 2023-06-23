@@ -1,7 +1,7 @@
 /**
  * FILE: scene_coordinate_system.hpp
  */ 
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,7 +10,7 @@
 #ifndef SCENE_COORDINATE_SYSTEM_HPP
 #define SCENE_COORDINATE_SYSTEM_HPP
 
-#include "opencmiss/zinc/types/scenecoordinatesystem.h"
+#include "cmlibs/zinc/types/scenecoordinatesystem.h"
 #include "general/enumerator.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scenecoordinatesystem);

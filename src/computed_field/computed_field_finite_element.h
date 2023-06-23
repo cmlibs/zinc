@@ -6,7 +6,7 @@ LAST MODIFIED : 25 May 2006
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "opencmiss/zinc/types/fieldfiniteelementid.h"
+#include "cmlibs/zinc/types/fieldfiniteelementid.h"
 #include "computed_field/computed_field.h"
 #include "general/enumerator.h"
 #include "general/list.h"

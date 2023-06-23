@@ -3,7 +3,7 @@
  *
  * The main root structure of cmgui.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,8 @@
 #define CONTEXT_H
 
 #include <list>
-#include "opencmiss/zinc/context.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/context.h"
+#include "cmlibs/zinc/status.h"
 #include "general/message_log.hpp"
 #include "general/manager.h"
 

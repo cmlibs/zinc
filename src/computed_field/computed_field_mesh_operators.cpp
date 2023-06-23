@@ -3,7 +3,7 @@
  *
  * Field operators that act on a mesh: integration etc.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,12 +13,12 @@
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_mesh_operators.hpp"
 #include "computed_field/field_module.hpp"
-#include "mesh/cmiss_element_private.hpp"
-#include "opencmiss/zinc/fieldmeshoperators.h"
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/fieldmeshoperators.h"
+#include "cmlibs/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "element/element_operations.h"
+#include "mesh/mesh.hpp"
 #include "region/cmiss_region.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -97,7 +97,7 @@ public:
 		Computed_field_mesh_integral *other =
 			dynamic_cast<Computed_field_mesh_integral*>(other_core);
 		if (other)
-			return cmzn_mesh_match(mesh, other->mesh);
+			return (this->mesh == other->mesh);
 		return 0;
 	}
 
@@ -130,16 +130,16 @@ public:
 	/** @return  Result OK on success, ERROR_ARGUMENT if mesh missing or from wrong region */
 	int setMesh(cmzn_mesh *meshIn)
 	{
-		if ((!meshIn) || (cmzn_mesh_get_region_internal(meshIn) != this->field->getRegion()))
+		if ((!meshIn) || (meshIn->getRegion() != this->field->getRegion()))
 		{
 			display_message(ERROR_MESSAGE, "FieldMeshIntegral setMesh:  Invalid mesh");
 			return CMZN_ERROR_ARGUMENT;
 		}
-		if (!cmzn_mesh_match(this->mesh, meshIn))
+		if (meshIn != this->mesh)
 		{
 			cmzn_mesh *oldMesh = this->mesh;
-			this->mesh = cmzn_mesh_access(meshIn);
-			cmzn_mesh_destroy(&oldMesh);
+			this->mesh = meshIn->access();
+			cmzn_mesh::deaccess(oldMesh);
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -211,15 +211,12 @@ public:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
-	// if the mesh is a mesh group, also need to propagate changes from it
 	virtual int check_dependency()
 	{
 		int return_code = Computed_field_core::check_dependency();
 		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
 		{
-			cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
-			if (elementGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
-				cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+			if (this->mesh->hasMembershipChanges())
 			{
 				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 				return_code = this->field->manager_change_status;
@@ -243,7 +240,7 @@ template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(Pro
 	if (element_xi_location)
 	{
 		cmzn_element *element = element_xi_location->get_element();
-		if (cmzn_mesh_contains_element(this->getMesh(), element))
+		if (this->getMesh()->containsElement(element))
 		{
 			IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
 			if (0 == shapePoints)
@@ -294,7 +291,7 @@ public:
 		integrandField(meshIntegral.getSourceField(0)),
 		coordinateField(meshIntegral.getSourceField(1)),
 		coordinatesCount(coordinateField->number_of_components),
-		fieldDerivativeMesh(*cmzn_mesh_get_FE_mesh_internal(meshIntegral.getMesh())->getFieldDerivative(/*order*/1)),
+		fieldDerivativeMesh(*meshIntegral.getMesh()->getFeMesh()->getFieldDerivative(/*order*/1)),
 		element(0),
 		point_index(0)
 	{
@@ -718,7 +715,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral(
 	if ((fieldmodule) &&
 		(integrand_field) && integrand_field->isNumerical() &&
 		(coordinate_field) && coordinate_field->isNumerical() &&
-		(mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+		(mesh) && (mesh->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
@@ -837,7 +834,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral_squares(
 	if ((fieldmodule) &&
 		(integrand_field) && integrand_field->isNumerical() &&
 		(coordinate_field) && coordinate_field->isNumerical() &&
-		(mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+		(mesh) && (mesh->getRegion() ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);

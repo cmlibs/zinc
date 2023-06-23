@@ -6,7 +6,7 @@ LAST MODIFIED : 28 December 1999
 DESCRIPTION :
 This provides an object which supplies a concept of time to Cmgui
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ This provides an object which supplies a concept of time to Cmgui
 #if !defined (TIME_TIME_H) /* Distinguish general/time.h and time/time.h */
 #define TIME_TIME_H
 
-#include "opencmiss/zinc/timenotifier.h"
+#include "cmlibs/zinc/timenotifier.h"
 #include "general/object.h"
 #include "time/time_keeper.hpp"
 

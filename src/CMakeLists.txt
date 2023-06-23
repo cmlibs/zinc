@@ -1,4 +1,4 @@
-# OpenCMISS-Zinc Library
+# Zinc Library
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,8 @@ endif()
 
 set(FILES_FOR_CLEANING)
 
-set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/opencmiss/zinc/zincconfigure.h )
-set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/opencmiss/zinc/zincsharedobject.h )
+set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/cmlibs/zinc/zincconfigure.h )
+set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/cmlibs/zinc/zincsharedobject.h )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/configure/zincconfigure.h.cmake
     ${ZINC_CONFIGURE_HDR} )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/configure/zincsharedobject.h.cmake
@@ -147,7 +147,7 @@ if( ZINC_BUILD_STATIC_LIBRARY )
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED ON
         OUTPUT_NAME "${ZINC_LIBRARY_NAME}" PREFIX "lib" )
-    export(TARGETS ${ZINC_STATIC_TARGET} ${OPENCMISSDEPENDENCIES_TARGET}
+    export(TARGETS ${ZINC_STATIC_TARGET} ${CMLIBSDEPENDENCIES_TARGET}
         FILE "${PROJECT_BINARY_DIR}/zinc-targets.cmake" APPEND)
 endif()
 
@@ -189,7 +189,7 @@ endif()
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${FILES_FOR_CLEANING}")
 # Install rules for Zinc
 install(TARGETS
-    ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} ${OPENCMISSDEPENDENCIES_TARGET}
+    ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} ${CMLIBSDEPENDENCIES_TARGET}
     EXPORT ${ZINC_EXPORT_SET_NAME}
     RUNTIME DESTINATION ${ZINC_INSTALL_BIN_DIR}
     COMPONENT Runtime
@@ -205,11 +205,11 @@ install(FILES
     ${ZINC_CONFIGURE_HDR}
     ${API_HDRS}
     ${APIPP_HDRS}
-    DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc
+    DESTINATION ${ZINC_INSTALL_INC_DIR}/cmlibs/zinc
     COMPONENT Development
 )
 
 install(FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
-    DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc/types
+    DESTINATION ${ZINC_INSTALL_INC_DIR}/cmlibs/zinc/types
     COMPONENT Development
 )

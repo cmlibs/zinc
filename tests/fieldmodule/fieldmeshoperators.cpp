@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,18 +9,18 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/element.hpp>
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldmeshoperators.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/fieldtime.hpp>
-#include <opencmiss/zinc/fieldtrigonometry.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldmeshoperators.hpp>
+#include <cmlibs/zinc/fieldtime.hpp>
+#include <cmlibs/zinc/fieldtrigonometry.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
 #include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
@@ -45,9 +45,9 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	// create mesh group containing exterior faces for integrating to get surface area
 	Mesh masterMesh2d = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(masterMesh2d.isValid());
-	FieldElementGroup elementGroup = zinc.fm.createFieldElementGroup(masterMesh2d);
-	EXPECT_TRUE(elementGroup.isValid());
-	MeshGroup exteriorMesh2d = elementGroup.getMeshGroup();
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	MeshGroup exteriorMesh2d = group.createMeshGroup(masterMesh2d);
 	EXPECT_TRUE(exteriorMesh2d.isValid());
 	const int exteriorFaceIdentifiers[] = { 2,4,5,8,9,10,12,13,14,16,17,18,19,20,21,22,23,24 };
 	const int size = sizeof(exteriorFaceIdentifiers)/sizeof(int);
@@ -319,9 +319,9 @@ TEST(ZincFieldMeshIntegral, cube_setMesh)
 	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &length));
 	EXPECT_NEAR(12.0, length, TOL);
 
-	FieldElementGroup elementGroup2 = zinc.fm.createFieldElementGroup(mesh2d);
-	EXPECT_TRUE(elementGroup2.isValid());
-	MeshGroup meshGroup2 = elementGroup2.getMeshGroup();
+	FieldGroup group2 = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group2.isValid());
+	MeshGroup meshGroup2 = group2.createMeshGroup(mesh2d);
 	EXPECT_TRUE(meshGroup2.isValid());
 	EXPECT_EQ(0, meshGroup2.getSize());
 	EXPECT_EQ(RESULT_OK, meshIntegral.setMesh(meshGroup2));

@@ -2,8 +2,8 @@
 
 # -- Project information
 
-project = 'OpenCMISS-Zinc'
-copyright = '2022, University of Auckland'
+project = 'Zinc'
+copyright = '2023, University of Auckland'
 author = 'University of Auckland'
 
 release = '0.1'

@@ -3,7 +3,7 @@
  * 
  * Implementation of field assignment class.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,10 +12,10 @@
 #if !defined (CMZN_FIELDASSIGNMENTPRIVATE_HPP)
 #define CMZN_FIELDASSIGNMENTPRIVATE_HPP
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldassignment.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/result.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldassignment.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/result.h"
 
 struct cmzn_fieldassignment
 {

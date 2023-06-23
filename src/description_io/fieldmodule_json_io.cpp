@@ -4,29 +4,31 @@
  * The definition to fieldmodule_json_io.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "cmlibs/zinc/changemanager.hpp"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "description_io/field_json_io.hpp"
 #include "description_io/fieldmodule_json_io.hpp"
 #include "general/debug.h"
-#include "opencmiss/zinc/changemanager.hpp"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldconstant.hpp"
-#include "opencmiss/zinc/status.h"
+#include "general/message.h"
 #include <cstring>
 
-OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fieldSettings)
+CMLibs::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fieldSettings)
 {
-	OpenCMISS::Zinc::Field field = importTypeSpecificField(fieldmodule, fieldSettings, this);
+	CMLibs::Zinc::Field field = importTypeSpecificField(fieldmodule, fieldSettings, this);
 	const char *fieldName = fieldSettings["Name"].asCString();
-	OpenCMISS::Zinc::Field existingField = this->fieldmodule.findFieldByName(fieldName);
+	CMLibs::Zinc::Field existingField = this->fieldmodule.findFieldByName(fieldName);
 	if (existingField.isValid())
 	{
 		if (existingField.getId()->compareFullDefinition(*(field.getId())))
@@ -50,13 +52,13 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fie
 			else
 			{
 				display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Failed to define field %s over temporary dummy real field as defined differently", fieldName);
-				field = OpenCMISS::Zinc::Field();
+				field = CMLibs::Zinc::Field();
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Field %s is incompatible with existing field", fieldName);
-			field = OpenCMISS::Zinc::Field();
+			field = CMLibs::Zinc::Field();
 		}
 	}
 	if (field.isValid())
@@ -68,7 +70,7 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fie
 
 void FieldmoduleJsonImport::setManaged(const Json::Value &fieldSettings)
 {
-	OpenCMISS::Zinc::Field field(0);
+	CMLibs::Zinc::Field field(0);
 	field = fieldmodule.findFieldByName(fieldSettings["Name"].asCString());
 	if (field.isValid())
 	{
@@ -79,9 +81,9 @@ void FieldmoduleJsonImport::setManaged(const Json::Value &fieldSettings)
 	}
 }
 
-OpenCMISS::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_name)
+CMLibs::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_name)
 {
-	OpenCMISS::Zinc::Field field = fieldmodule.findFieldByName(field_name);
+	CMLibs::Zinc::Field field = fieldmodule.findFieldByName(field_name);
 	if (!field.isValid())
 	{
 		unsigned int index = 0;
@@ -98,6 +100,13 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_n
 			}
 			++index;
 		}
+		if (!field.isValid())
+		{
+			char* regionName = this->getRegion().getName();
+			display_message(WARNING_MESSAGE, "Fieldmodule.readDescription: Region %s could not find field %s",
+				regionName ? regionName : "/", field_name);
+			cmzn_deallocate(regionName);
+		}
 	}
 
 	return field;
@@ -111,7 +120,7 @@ int FieldmoduleJsonImport::import(const std::string &jsonString)
 
 	if (Json::Reader().parse(jsonString, root, true))
 	{
-		OpenCMISS::Zinc::ChangeManager<OpenCMISS::Zinc::Fieldmodule> changeFields(this->fieldmodule);
+		CMLibs::Zinc::ChangeManager<CMLibs::Zinc::Fieldmodule> changeFields(this->fieldmodule);
 		if (root.isObject())
 		{
 			fieldsList = root["Fields"];
@@ -130,9 +139,9 @@ std::string FieldmoduleJsonExport::getExportString()
 {
 	Json::Value root;
 
-	OpenCMISS::Zinc::Fielditerator fielditerator =
+	CMLibs::Zinc::Fielditerator fielditerator =
 		fieldmodule.createFielditerator();
-	OpenCMISS::Zinc::Field field = fielditerator.next();
+	CMLibs::Zinc::Field field = fielditerator.next();
 	while (field.isValid())
 	{
 		if (cmzn_field_get_type(field.getId()) != CMZN_FIELD_TYPE_INVALID)

@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,20 +8,20 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/graphics.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/graphics.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/fieldconstant.hpp"
-#include "opencmiss/zinc/graphics.hpp"
+#include "cmlibs/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/graphics.hpp"
 
 TEST(cmzn_graphics_streamlines, create_cast)
 {

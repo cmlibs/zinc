@@ -3,7 +3,7 @@
  *
  * Objects for controlling shaders program used in Zinc.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 
 #include <list>
 #include <cstdlib>
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"

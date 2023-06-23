@@ -3,14 +3,14 @@
  *
  * File containing a class for exporting threejs vertices and script for rendering.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "opencmiss/zinc/material.h"
+#include "cmlibs/zinc/material.h"
 #include "graphics/threejs_export.hpp"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"

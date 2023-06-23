@@ -7,7 +7,7 @@ DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
 finite element fields defined on or interpolated over them.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,7 +56,7 @@ public:
 	{
 		if (fe_region)
 			return new FE_region_changes(fe_region);
-		return 0;
+		return nullptr;
 	}
 
 	FE_region_changes *access()
@@ -174,8 +174,6 @@ class FE_region_FE_object_method_class( object_type ) \
 Global functions
 ----------------
 */
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 
 /**
  * Increments the change counter in <region>. No update callbacks will occur until

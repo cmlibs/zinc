@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,26 +8,26 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldgroup.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/graphics.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/scenefilter.h>
-#include <opencmiss/zinc/sceneviewer.h>
-#include <opencmiss/zinc/scenepicker.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldgroup.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/graphics.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/scenefilter.h>
+#include <cmlibs/zinc/sceneviewer.h>
+#include <cmlibs/zinc/scenepicker.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/element.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/scenepicker.hpp"
-#include "opencmiss/zinc/scene.hpp"
-#include "opencmiss/zinc/sceneviewer.hpp"
+#include "cmlibs/zinc/element.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/scenepicker.hpp"
+#include "cmlibs/zinc/scene.hpp"
+#include "cmlibs/zinc/sceneviewer.hpp"
 
 TEST(cmzn_scenepicker_api, valid_args)
 {

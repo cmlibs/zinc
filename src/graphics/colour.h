@@ -7,7 +7,7 @@ DESCRIPTION :
 Colour structures and support code.
 ???DB.  I'm not sure that colour needs to be abstracted/formalized.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@ Colour structures and support code.
 #if !defined( COLOUR_H )
 #define COLOUR_H
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #define COLOUR_VECTOR(colour_struct_ptr) \
 ((COLOUR_PRECISION *)colour_struct_ptr)

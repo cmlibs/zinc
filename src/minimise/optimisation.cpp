@@ -7,7 +7,7 @@
  * @see-also api/zinc/optimisation.h
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,23 +15,23 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldcache.hpp"
-#include "opencmiss/zinc/fieldarithmeticoperators.hpp"
-#include "opencmiss/zinc/fieldcomposite.hpp"
-#include "opencmiss/zinc/fieldmeshoperators.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/fieldnodesetoperators.hpp"
-#include "opencmiss/zinc/fieldparameters.hpp"
-#include "opencmiss/zinc/fieldvectoroperators.hpp"
-#include "opencmiss/zinc/mesh.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/nodeset.hpp"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldcache.hpp"
+#include "cmlibs/zinc/fieldarithmeticoperators.hpp"
+#include "cmlibs/zinc/fieldcomposite.hpp"
+#include "cmlibs/zinc/fieldmeshoperators.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldnodesetoperators.hpp"
+#include "cmlibs/zinc/fieldparameters.hpp"
+#include "cmlibs/zinc/fieldvectoroperators.hpp"
+#include "cmlibs/zinc/mesh.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/nodeset.hpp"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
@@ -46,14 +46,14 @@
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
-#include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
+#include "mesh/mesh.hpp"
+#include "mesh/nodeset.hpp"
 #include "time/time_keeper.hpp"
 #include "general/message.h"
 #include "computed_field/computed_field_private.hpp"
 #include "minimise/optimisation.hpp"
 #include "general/enumerator_private.hpp"
-#include "mesh/cmiss_element_private.hpp"
 #include "computed_field/field_module.hpp"
 #include <iostream>
 #include <sstream>
@@ -69,7 +69,7 @@ using namespace std;
 
 using NEWMAT::ColumnVector;
 using namespace ::OPTPP;
-using namespace OpenCMISS::Zinc;
+using namespace CMLibs::Zinc;
 
 // global variable needed to pass minimisation object to Opt++ init functions.
 static void* GlobalVariableMinimisation = NULL;
@@ -705,11 +705,13 @@ int Minimisation::minimise_Newton()
 				if (feField)
 				{
 					FE_mesh *hostMesh = feField->getElementXiHostMesh();
-					FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodesetOperator.getNodeset().getId());
+					FE_nodeset *feNodeset = nodesetOperator.getNodeset().getId()->getFeNodeset();
 					FE_mesh_embedded_node_field *embeddedNodeField = feField->getEmbeddedNodeField(feNodeset);
 					if ((hostMesh) && (embeddedNodeField))
 					{
-						mesh = Mesh(cmzn_mesh_create(hostMesh));
+						cmzn_region* region = FE_region_get_cmzn_region(hostMesh->get_FE_region());
+						// need to access as public C++ wrapper takes ownership
+						mesh = Mesh(region->findMeshByDimension(hostMesh->getDimension())->access());
 					}
 				}
 			}

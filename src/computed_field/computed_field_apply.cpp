@@ -4,7 +4,7 @@
  * Implements fields for applying the function of other fields, including from
  * other regions, with argument binding.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -785,12 +785,6 @@ char *Computed_field_argument_real::get_command_string()
 Public API
 ----------
 */
-
-cmzn_field_id cmzn_fieldmodule_create_field_alias(cmzn_fieldmodule_id field_module,
-	cmzn_field_id original_field)
-{
-	return cmzn_fieldmodule_create_field_apply(field_module, original_field);
-}
 
 cmzn_field_id cmzn_fieldmodule_create_field_apply(
 	cmzn_fieldmodule_id fieldmodule, cmzn_field_id evaluate_field)

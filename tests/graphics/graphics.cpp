@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,23 +8,23 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/changemanager.hpp>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/graphics.h>
-#include <opencmiss/zinc/spectrum.h>
+#include <cmlibs/zinc/changemanager.hpp>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/graphics.h>
+#include <cmlibs/zinc/spectrum.h>
 
-#include "opencmiss/zinc/fieldconstant.hpp"
-#include "opencmiss/zinc/fieldgroup.hpp"
-#include "opencmiss/zinc/fieldfiniteelement.hpp"
-#include "opencmiss/zinc/font.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/result.hpp"
+#include "cmlibs/zinc/fieldconstant.hpp"
+#include "cmlibs/zinc/fieldgroup.hpp"
+#include "cmlibs/zinc/fieldfiniteelement.hpp"
+#include "cmlibs/zinc/font.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/result.hpp"
 
 #include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
@@ -1843,30 +1843,25 @@ TEST(ZincGraphics, boundaryMode_range3d)
 		group3d = zinc.fm.createFieldGroup();
 		group3d.setName("subgroup3d");
 		group3d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
-		FieldElementGroup elementGroup3d = group3d.createFieldElementGroup(mesh3d);
-		MeshGroup meshGroup3d = elementGroup3d.getMeshGroup();
+		MeshGroup meshGroup3d = group3d.createMeshGroup(mesh3d);
 		const int elementIdentifiers3d[2] = { 2, 3 };
 		for (int e = 0; e < 2; ++e)
 			meshGroup3d.addElement(mesh3d.findElementByIdentifier(elementIdentifiers3d[e]));
 		EXPECT_EQ(2, meshGroup3d.getSize());
-		FieldElementGroup elementGroup2d = group3d.getFieldElementGroup(mesh2d);
-		MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+		MeshGroup meshGroup2d = group3d.getMeshGroup(mesh2d);
 		EXPECT_EQ(9, meshGroup2d.getSize());
-		FieldElementGroup elementGroup1d = group3d.getFieldElementGroup(mesh1d);
-		MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+		MeshGroup meshGroup1d = group3d.getMeshGroup(mesh1d);
 		EXPECT_EQ(14, meshGroup1d.getSize());
 
 		group2d = zinc.fm.createFieldGroup();
 		group2d.setName("subgroup2d");
 		group2d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
-		elementGroup2d = group2d.createFieldElementGroup(mesh2d);
-		meshGroup2d = elementGroup2d.getMeshGroup();
+		meshGroup2d = group2d.createMeshGroup(mesh2d);
 		const int elementIdentifiers2d[6] = { 10, 12, 13, 15, 23, 24 };
 		for (int e = 0; e < 6; ++e)
 			meshGroup2d.addElement(mesh2d.findElementByIdentifier(elementIdentifiers2d[e]));
 		EXPECT_EQ(6, meshGroup2d.getSize());
-		elementGroup1d = group2d.getFieldElementGroup(mesh1d);
-		meshGroup1d = elementGroup1d.getMeshGroup();
+		meshGroup1d = group2d.getMeshGroup(mesh1d);
 		EXPECT_EQ(12, meshGroup1d.getSize());
 	}
 
@@ -1980,14 +1975,12 @@ TEST(ZincGraphics, boundaryMode_range2d)
 		group2d = zinc.fm.createFieldGroup();
 		group2d.setName("subgroup2d");
 		group2d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
-		FieldElementGroup elementGroup2d = group2d.createFieldElementGroup(mesh2d);
-		MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+		MeshGroup meshGroup2d = group2d.createMeshGroup(mesh2d);
 		const int elementIdentifiers2d[18] = { 2, 3, 4, 7, 8, 11, 12, 14, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27 };
 		for (int e = 0; e < 18; ++e)
 			meshGroup2d.addElement(mesh2d.findElementByIdentifier(elementIdentifiers2d[e]));
 		EXPECT_EQ(18, meshGroup2d.getSize());
-		FieldElementGroup elementGroup1d = group2d.getFieldElementGroup(mesh1d);
-		MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+		MeshGroup meshGroup1d = group2d.getMeshGroup(mesh1d);
 		EXPECT_EQ(33, meshGroup1d.getSize());
 	}
 
@@ -2071,6 +2064,39 @@ TEST(ZincGraphics, boundaryMode_range2d)
 			EXPECT_EQ(CMZN_RESULT_ERROR_NOT_FOUND, result);
 		}
 	}
+}
+
+TEST(ZincGraphics, description_io_missing_field)
+{
+	ZincTestSetupCpp zinc;
+
+	const char* sceneDescription =
+		"{\n"
+		"    \"Graphics\" : [\n"
+		"    {\n"
+		"        \"DataField\" : \"data\",\n"
+		"        \"SubgroupField\" : \"bob\",\n"
+		"        \"Lines\" : {},\n"
+		"        \"Type\" : \"LINES\"\n"
+		"    }\n"
+		"    ],\n"
+		"    \"VisibilityFlag\" : true\n"
+		"}\n";
+
+	double values[] = { 1.0, 2.0, 3.0 };
+	Field dataField = zinc.fm.createFieldConstant(sizeof(values) / sizeof(double), values);
+	dataField.setName("data");
+	EXPECT_TRUE(dataField.isValid());
+
+	EXPECT_EQ(RESULT_OK, zinc.scene.readDescription(sceneDescription, true));
+	CMLibs::Zinc::GraphicsLines lines = zinc.scene.getFirstGraphics().castLines();
+	EXPECT_TRUE(lines.isValid());
+
+	EXPECT_EQ(dataField, lines.getDataField());
+	EXPECT_FALSE(lines.getSubgroupField().isValid());  // but it should have warned "bob" was not found
+
+	CMLibs::Zinc::Graphics graphics = zinc.scene.getNextGraphics(lines);
+	EXPECT_FALSE(graphics.isValid());
 }
 
 TEST(ZincGraphics, BoundaryModeEnum)

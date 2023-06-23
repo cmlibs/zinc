@@ -11,7 +11,7 @@ elements, or with nodes.  The texture nodes are arranged as a 3d lattice in xi1,
 xi2, xi3 space.
 ???DB.  OPENGL ?
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

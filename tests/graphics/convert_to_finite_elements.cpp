@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,27 +8,27 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/context.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldfiniteelement.h>
-#include <opencmiss/zinc/fieldmodule.h>
-#include <opencmiss/zinc/graphics.h>
-#include <opencmiss/zinc/node.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/scene.h>
-#include <opencmiss/zinc/scenefilter.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/context.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldfiniteelement.h>
+#include <cmlibs/zinc/fieldmodule.h>
+#include <cmlibs/zinc/graphics.h>
+#include <cmlibs/zinc/node.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/scene.h>
+#include <cmlibs/zinc/scenefilter.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/graphics.hpp"
-#include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/fieldmodule.hpp"
-#include "opencmiss/zinc/fieldfiniteelement.hpp"
-#include "opencmiss/zinc/fieldsubobjectgroup.hpp"
-#include "opencmiss/zinc/node.hpp"
-#include "opencmiss/zinc/region.hpp"
+#include "cmlibs/zinc/graphics.hpp"
+#include "cmlibs/zinc/field.hpp"
+#include "cmlibs/zinc/fieldmodule.hpp"
+#include "cmlibs/zinc/fieldfiniteelement.hpp"
+#include "cmlibs/zinc/fieldgroup.hpp"
+#include "cmlibs/zinc/node.hpp"
+#include "cmlibs/zinc/region.hpp"
 
 #include "test_resources.h"
 
@@ -94,10 +94,10 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	// put output into a node group
 	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
-	FieldNodeGroup nodeGroupField = outputFm.createFieldNodeGroup(masterNodeset);
+	FieldGroup nodeGroupField = outputFm.createFieldGroup();
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setName("bob"));
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setManaged(true));
-	NodesetGroup nodeset = nodeGroupField.getNodesetGroup();
+	NodesetGroup nodeset = nodeGroupField.createNodesetGroup(masterNodeset);
 	EXPECT_TRUE(nodeset.isValid());
 
 	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(Scenefilter(),
@@ -270,10 +270,10 @@ TEST(cmzn_scene_convert_points_to_nodes,element_points_cpp)
 	// put output into a node group
 	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
-	FieldNodeGroup nodeGroupField = outputFm.createFieldNodeGroup(masterNodeset);
+	FieldGroup nodeGroupField = outputFm.createFieldGroup();
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setName("bob"));
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setManaged(true));
-	NodesetGroup nodeset = nodeGroupField.getNodesetGroup();
+	NodesetGroup nodeset = nodeGroupField.createNodesetGroup(masterNodeset);
 	EXPECT_TRUE(nodeset.isValid());
 
 	EXPECT_EQ(CMZN_OK, zinc.scene.convertPointsToNodes(Scenefilter(),

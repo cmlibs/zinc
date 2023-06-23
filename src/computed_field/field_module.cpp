@@ -3,15 +3,15 @@
  *
  * Internal implementation of field module api.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <string>
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/timesequence.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/timesequence.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_apply.hpp"

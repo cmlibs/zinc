@@ -9,15 +9,15 @@ elements.
 
 ???DB.  What about time integrals?
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"

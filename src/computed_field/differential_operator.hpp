@@ -4,7 +4,7 @@
  * Internal header for class representing a differential differential_operator
  * that can be applied to a field to obtain a derivative.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,8 @@
 #if !defined (DIFFERENTIAL_OPERATOR_HPP)
 #define DIFFERENTIAL_OPERATOR_HPP
 
-#include "opencmiss/zinc/differentialoperator.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/differentialoperator.h"
+#include "cmlibs/zinc/status.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/field_derivative.hpp"
 

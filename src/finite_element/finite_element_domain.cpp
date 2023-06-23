@@ -3,13 +3,14 @@
  *
  * Abstract base class for finite element domains built on a set of labels.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "finite_element/finite_element_domain.hpp"
+#include "finite_element/finite_element_region_private.h"
 #include "general/debug.h"
 #include "general/message.h"
 
@@ -45,6 +46,15 @@ void FE_domain::createChangeLog()
 void FE_domain::detach_from_FE_region()
 {
 	this->fe_region = 0;
+}
+
+cmzn_region* FE_domain::getRegion() const
+{
+	if (this->fe_region)
+	{
+		return this->fe_region->getRegion();
+	}
+	return nullptr;
 }
 
 DsLabelsGroup *FE_domain::createLabelsGroup()

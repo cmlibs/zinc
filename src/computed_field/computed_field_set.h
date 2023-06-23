@@ -6,7 +6,7 @@ LAST MODIFIED : 4 December 2003
 DESCRIPTION :
 Functions for selecting computed fields from the commands line.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

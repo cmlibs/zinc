@@ -8,7 +8,7 @@ This object defines a relationship between a bunch of time objects, keeps them
 in sync and allows control such as play, rewind and fast forward.
 This is intended to be multithreaded......
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,8 +17,8 @@ This is intended to be multithreaded......
 #include <stdio.h>
 
 #include "description_io/timekeeper_json_io.hpp"
-#include "opencmiss/zinc/status.h"
-#include "opencmiss/zinc/timekeeper.h"
+#include "cmlibs/zinc/status.h"
+#include "cmlibs/zinc/timekeeper.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/mystring.h"

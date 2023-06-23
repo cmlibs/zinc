@@ -4,7 +4,7 @@
  * The private interface to cmzn_streaminformation_scene.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,8 @@
 #define CMZN_SCENE_STREAM_HPP
 
 #include "graphics/scene.hpp"
-#include "opencmiss/zinc/scenefilter.h"
-#include "opencmiss/zinc/scenepicker.h"
+#include "cmlibs/zinc/scenefilter.h"
+#include "cmlibs/zinc/scenepicker.h"
 #include "stream/stream_private.hpp"
 
 struct cmzn_streaminformation_scene : cmzn_streaminformation
@@ -87,8 +87,22 @@ public:
 				numberOfResources += 1;
 			return numberOfResources;
 		}
-		else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION)
+        else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION ||
+                 format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_ASCII_STL)
+        {
 			return 1;
+        }
+        else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_WAVEFRONT)
+        {
+            int numberOfResources = Scene_get_number_of_exportable_glyph_resources(scene, scenefilter);
+            numberOfResources += Scene_get_number_of_graphics_with_surface_vertices_in_tree(
+                scene, scenefilter);
+            if (numberOfResources > 0)
+            {
+                numberOfResources += 1;
+            }
+            return numberOfResources;
+        }
 		else
 			return 0;
 	}

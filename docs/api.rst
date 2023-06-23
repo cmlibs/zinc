@@ -4,15 +4,11 @@ Zinc API
 Introduction
 ------------
 
-The `OpenCMISS website <http://opencmiss.org>`_ provides some reference material for the OpenCMISS-Zinc API and its usage:
+The `CMLibs website <https://cmlibs.org>`_ provides some reference material for the Zinc API and its usage:
 
-* `Zinc data model and API usage <http://opencmiss.org/documentation/zinc/index.html>`_;
-* `Zinc C++ API class documentation <http://opencmiss.org/documentation/apidoc/zinc/latest/classes.html>`_;
-* `Basic tutorials <http://opencmiss.org/documentation/tutorials/index.html>`_.
-
-.. note::
-
-   OpenCMISS-Iron is a separate parallel computation library with documentation on the same site.
+* `Zinc data model and API usage <https://cmlibs.org/documentation/zinc/index.html>`_;
+* `Zinc C++ API class documentation <https://cmlibs.org/documentation/apidoc/zinc/latest/classes.html>`_;
+* `Basic tutorials <https://cmlibs.org/documentation/tutorials/index.html>`_.
 
 Python
 ------
@@ -48,14 +44,14 @@ Apart from syntax differences (no semicolons, imports vs. #include) using the AP
 
 * C++::
 
-   #include <opencmiss/zinc/material.hpp>
+   #include <cmlibs/zinc/material.hpp>
 
    const double orange[3] = { 1.0, 0.5, 0.0 };
    material.setAttributeReal3(Material::ATTRIBUTE_DIFFUSE, orange);
 
 * Python::
 
-   from opencmiss.zinc.material import Material
+   from cmlibs.zinc.material import Material
 
    orange = [ 1.0, 0.5, 0.0 ]
    material.setAttributeReal3(Material.ATTRIBUTE_DIFFUSE, orange)

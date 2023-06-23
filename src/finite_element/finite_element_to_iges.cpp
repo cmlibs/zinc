@@ -7,7 +7,7 @@ DESCRIPTION :
 Functions for building IGES information from finite elements and exporting
 to file.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,11 +19,12 @@ to file.
 #include <cstring>
 #include <ctime>
 
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/region.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
@@ -33,7 +34,7 @@ to file.
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
-#include "mesh/cmiss_element_private.hpp"
+#include "mesh/mesh.hpp"
 #include "general/debug.h"
 #include "general/message.h"
 
@@ -165,7 +166,7 @@ public:
 			name = 0;
 			cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(this->destination_mesh);
 			cmzn_element *element;
-			FE_mesh *feMesh = cmzn_mesh_get_FE_mesh_internal(this->destination_mesh);
+			FE_mesh *feMesh = this->destination_mesh->getFeMesh();
 			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
 				if (1 >= feMesh->getElementParentsCount(element->getIndex()))

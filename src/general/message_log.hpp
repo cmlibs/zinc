@@ -1,7 +1,7 @@
 /**
  * @file message_log.hpp
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,9 +10,9 @@
 #ifndef MESSAGE_LOG_HPP__
 #define MESSAGE_LOG_HPP__
 
-#include "opencmiss/zinc/types/loggerid.h"
-#include "opencmiss/zinc/logger.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/types/loggerid.h"
+#include "cmlibs/zinc/logger.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/mystring.h"

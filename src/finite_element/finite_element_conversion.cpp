@@ -6,7 +6,7 @@ LAST MODIFIED : 5 April 2006
 DESCRIPTION :
 Functions for converting one finite_element representation to another.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,20 +17,21 @@ Functions for converting one finite_element representation to another.
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "opencmiss/zinc/core.h"
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/elementbasis.h"
-#include "opencmiss/zinc/elementtemplate.h"
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/nodetemplate.h"
-#include "opencmiss/zinc/region.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/core.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/elementbasis.h"
+#include "cmlibs/zinc/elementfieldtemplate.h"
+#include "cmlibs/zinc/elementtemplate.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/nodetemplate.h"
+#include "cmlibs/zinc/region.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
@@ -128,6 +129,8 @@ struct Convert_finite_elements_data
 	cmzn_mesh_id destination_mesh;
 	cmzn_fieldcache_id destination_fieldcache;
 	cmzn_nodetemplate_id nodetemplate;
+	cmzn_elementbasis_id elementbasis;
+	cmzn_elementfieldtemplate_id eft;
 	cmzn_elementtemplate_id elementtemplate;
 	int number_of_fields;
 	cmzn_field_id *source_fields;
@@ -160,7 +163,9 @@ struct Convert_finite_elements_data
 		destination_mesh(cmzn_fieldmodule_find_mesh_by_dimension(destination_fieldmodule, this->mode_dimension)),
 		destination_fieldcache(cmzn_fieldmodule_create_fieldcache(destination_fieldmodule)),
 		nodetemplate(0),
-		elementtemplate(0),
+		elementbasis(nullptr),
+		eft(nullptr),
+		elementtemplate(nullptr),
 		number_of_fields(0),
 		source_fields(0),
 		destination_fields(0),
@@ -176,31 +181,35 @@ struct Convert_finite_elements_data
 			delta_xi[i] = 1.0 / (FE_value)(this->refinement.count[i]);
 		}
 
+		cmzn_elementbasis_function_type basis_function_type = CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
 		switch (this->mode)
 		{
 		case CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT:
-			this->number_of_local_nodes = HERMITE_2D_NUMBER_OF_NODES;
+			basis_function_type = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE;
 			this->destination_xi = destination_xi_bicubic_hermite;
 			break;
 		case CONVERT_TO_FINITE_ELEMENTS_BICUBIC:
-			this->number_of_local_nodes = BICUBIC_NUMBER_OF_NODES;
+			basis_function_type = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE;
 			this->destination_xi = destination_xi_bicubic;
 			break;
 		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
-			this->number_of_local_nodes = TRILINEAR_NUMBER_OF_NODES;
+			basis_function_type = CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE;
 			this->destination_xi = destination_xi_trilinear;
 			break;
 		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
-			this->number_of_local_nodes = TRIQUADRATIC_NUMBER_OF_NODES;
+			basis_function_type = CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE;
 			this->destination_xi = destination_xi_triquadratic;
 			break;
 		case CONVERT_TO_FINITE_ELEMENTS_TRICUBIC:
-			this->number_of_local_nodes = TRICUBIC_NUMBER_OF_NODES;
+			basis_function_type = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE;
 			this->destination_xi = destination_xi_tricubic;
 			break;
 		case CONVERT_TO_FINITE_ELEMENTS_MODE_UNSPECIFIED:
 			break;
 		}
+		this->elementbasis = cmzn_fieldmodule_create_elementbasis(this->destination_fieldmodule, this->mode_dimension, basis_function_type);
+		this->number_of_local_nodes = cmzn_elementbasis_get_number_of_nodes(this->elementbasis);
+		this->eft = cmzn_mesh_create_elementfieldtemplate(destination_mesh, this->elementbasis);
 		cmzn_fieldmodule_begin_change(this->destination_fieldmodule);
 	}
 
@@ -208,6 +217,8 @@ struct Convert_finite_elements_data
 	{
 		cmzn_fieldmodule_end_change(this->destination_fieldmodule);
 		cmzn_elementtemplate_destroy(&this->elementtemplate);
+		cmzn_elementfieldtemplate_destroy(&this->eft);
+		cmzn_elementbasis_destroy(&this->elementbasis);
 		cmzn_nodetemplate_destroy(&this->nodetemplate);
 		if (this->temporary_values)
 			DEALLOCATE(this->temporary_values);
@@ -370,20 +381,17 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 		{
 			FE_value destination_xi[HERMITE_2D_NUMBER_OF_NODES][2] =
 				{{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
-			int return_code = 1;
 			for (int n = 0 ; n < HERMITE_2D_NUMBER_OF_NODES; ++n)
 			{
 				cmzn_node_id node = cmzn_nodeset_create_node(this->destination_nodeset, -1, this->nodetemplate);
 				nodes[n] = node;
-				if (!node || (CMZN_OK != cmzn_elementtemplate_set_node(this->elementtemplate, n + 1, node)))
+				if (!node)
 				{
-					display_message(ERROR_MESSAGE, "convert elements.  Failed to create or set element node.");
-					return_code = 0;
+					display_message(ERROR_MESSAGE, "convert elements.  Failed to create node.");
+					return 0;
 				}
 				cmzn_node_destroy(&node);
 			}
-			if (return_code == 0)
-				return return_code;
 			for (int f = 0 ; f < number_of_fields; ++f)
 			{
 				cmzn_field_id source_field = this->source_fields[f];
@@ -462,7 +470,6 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 						bool setFieldValues = true;
 						if (f==0)
 						{
-							int return_code = 1;
 							// assuming first field is coordinate field, find node with same field value
 							cmzn_node_id node = getNearestNode(values);
 							if (node)
@@ -480,18 +487,11 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 								else
 								{
 									display_message(ERROR_MESSAGE, "convert elements.  Failed to create node.");
-									return_code = 0;
+									return 0;
 								}
-							}
-							if (CMZN_OK != cmzn_elementtemplate_set_node(this->elementtemplate, n + 1, node))
-							{
-								display_message(ERROR_MESSAGE, "convert elements.  Failed to set element node.");
-								return_code = 0;
 							}
 							nodes[n] = node;
 							cmzn_node_destroy(&node);
-							if (return_code == 0)
-								return return_code;
 						}
 						if (setFieldValues)
 						{
@@ -511,9 +511,25 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 					}
 				}
 			}
-			if (CMZN_OK != cmzn_mesh_define_element(this->destination_mesh, -1, this->elementtemplate))
+			cmzn_element_id element = cmzn_mesh_create_element(this->destination_mesh, -1, this->elementtemplate);
+			if (!element)
 			{
 				display_message(ERROR_MESSAGE, "convert elements:  Failed to create element.");
+				return 0;
+			}
+			bool success = true;
+			for (int n = 0; n < this->number_of_local_nodes; ++n)
+			{
+				if (CMZN_OK != cmzn_element_set_node(element, this->eft, n + 1, nodes[n]))
+				{
+					display_message(ERROR_MESSAGE, "convert elements.  Failed to set element local node.");
+					success = false;
+					break;
+				}
+			}
+			cmzn_element_destroy(&element);
+			if (!success)
+			{
 				return 0;
 			}
 		} break;
@@ -611,12 +627,6 @@ int finite_element_conversion(cmzn_region_id source_region,
 	if (result != CMZN_OK)
 		return 0;
 
-	/* Set up data */
-	const int nodeIndexesCount = data.number_of_local_nodes;
-	int nodeIndexes[MAX_NUMBER_OF_NODES];
-	for (int i = 0; i < nodeIndexesCount; ++i)
-		nodeIndexes[i] = i + 1;
-
 	cmzn_element_shape_type elementShapeType = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	switch (mode)
 	{
@@ -665,26 +675,22 @@ int finite_element_conversion(cmzn_region_id source_region,
 			}
 			data.elementtemplate = cmzn_mesh_create_elementtemplate(data.destination_mesh);
 			if (!(data.elementtemplate)
-				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, elementShapeType))
-				|| (CMZN_OK != cmzn_elementtemplate_set_number_of_nodes(data.elementtemplate, 4)))
+				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, elementShapeType)))
 			{
 				display_message(ERROR_MESSAGE, "convert elements:  Failed to create Hermite element template.");
 				return 0;
 			}
-			cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(data.destination_fieldmodule, 2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE);
 			bool success = true;
 			for (int f = 0; f < data.number_of_fields; ++f)
 			{
 				cmzn_field_id destination_field = cmzn_field_finite_element_base_cast(data.destination_fields[f]);
-				if (CMZN_OK != cmzn_elementtemplate_define_field_simple_nodal(data.elementtemplate,
-					destination_field, -1, elementbasis, nodeIndexesCount, nodeIndexes))
+				if (CMZN_OK != cmzn_elementtemplate_define_field(data.elementtemplate, destination_field , -1, data.eft))
 				{
 					display_message(ERROR_MESSAGE, "convert elements:  Failed to define Hermite element template field");
 					success = false;
 					break;
 				}
 			}
-			cmzn_elementbasis_destroy(&elementbasis);
 			if (!success)
 				return 0;
 		} break;
@@ -715,32 +721,22 @@ int finite_element_conversion(cmzn_region_id source_region,
 			}
 			data.elementtemplate = cmzn_mesh_create_elementtemplate(data.destination_mesh);
 			if (!(data.elementtemplate)
-				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, elementShapeType))
-				|| (CMZN_OK != cmzn_elementtemplate_set_number_of_nodes(data.elementtemplate, nodeIndexesCount)))
+				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, elementShapeType)))
 			{
 				display_message(ERROR_MESSAGE, "convert elements:  Failed to create Lagrange element template.");
 				return 0;
 			}
-			const cmzn_elementbasis_function_type basis_function_type =
-				(mode == CONVERT_TO_FINITE_ELEMENTS_BICUBIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE :
-				(mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE :
-				(mode == CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE :
-				(mode == CONVERT_TO_FINITE_ELEMENTS_TRICUBIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE :
-				CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
-			cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(data.destination_fieldmodule, data.mode_dimension, basis_function_type);
 			bool success = true;
 			for (int f = 0; f < data.number_of_fields; ++f)
 			{
 				cmzn_field_id destination_field = cmzn_field_finite_element_base_cast(data.destination_fields[f]);
-				if (CMZN_OK != cmzn_elementtemplate_define_field_simple_nodal(data.elementtemplate,
-					destination_field, -1, elementbasis, nodeIndexesCount, nodeIndexes))
+				if (CMZN_OK != cmzn_elementtemplate_define_field(data.elementtemplate, destination_field, -1, data.eft))
 				{
 					display_message(ERROR_MESSAGE, "convert elements:  Failed to define Lagrange element template field");
 					success = false;
 					break;
 				}
 			}
-			cmzn_elementbasis_destroy(&elementbasis);
 			if (!success)
 				return 0;
 		} break;

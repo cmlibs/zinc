@@ -4,18 +4,20 @@
  * The definition to cmzn_streaminformation_scene.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <string>
 #include <vector>
-#include "opencmiss/zinc/streamscene.h"
+#include "cmlibs/zinc/streamscene.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
+#include "graphics/render_stl.hpp"
+#include "graphics/render_wavefront.hpp"
 #include "description_io/scene_json_export.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "stream/scene_stream.hpp"
@@ -89,6 +91,19 @@ int cmzn_scene_write(cmzn_scene_id scene,
 				SceneJsonExport jsonExport(scene);
 				outputStrings.push_back(jsonExport.getExportString());
 			}
+            else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_ASCII_STL)
+            {
+                number_of_entries = 1;
+                cmzn_scenefilter_id scenefilter = streaminformation_scene->getScenefilter();
+                outputStrings.push_back(export_to_stl(scene, scenefilter));
+            }
+            else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_WAVEFRONT)
+            {
+                cmzn_scenefilter_id scenefilter = streaminformation_scene->getScenefilter();
+                outputStrings = export_to_wavefront(scene, scenefilter, 1);
+                number_of_entries = outputStrings.size();
+            }
+
 			cmzn_scene_destroy(&scene);
 
 			if (return_code != CMZN_OK)

@@ -4,14 +4,14 @@
  * The definition to cmzn_field_image_stream.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/fieldimage.h"
-#include "opencmiss/zinc/streamimage.h"
+#include "cmlibs/zinc/fieldimage.h"
+#include "cmlibs/zinc/streamimage.h"
 #include "computed_field/computed_field_image.h"
 #include "general/debug.h"
 #include "general/mystring.h"

@@ -6,7 +6,7 @@ LAST MODIFIED : 15 October 1998
 DESCRIPTION :
 Spectrum structures and support code.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,8 @@ Spectrum structures and support code.
 #if !defined(SPECTRUM_H)
 #define SPECTRUM_H
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/spectrum.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/spectrum.h"
 
 #if defined (USE_GLEW)
 #include <GL/glew.h>

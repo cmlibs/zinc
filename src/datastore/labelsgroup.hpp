@@ -3,7 +3,7 @@
  * 
  * Implements a subset of a datastore labels set.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -85,11 +85,17 @@ public:
 		return values.getBool(/*index*/index);
 	}
 
+	/** Add all indexes from other labels group to this.
+	 * @param otherGroup  Other group for same underlying labels.
+	 * @return  Result OK on success, ERROR_ARGUMENT if other group is not for same
+	 * labels, ERROR_MEMORY if failed to add. */
+	int addGroup(const DsLabelsGroup& otherGroup);
+
 	/** Remove indexes from group which are in otherGroup.
-	 * @param otherGroup  A labels group for the same underlying set.
-	 * @return  Number of indexes removed.
-	 */
-	int removeGroup(DsLabelsGroup& otherGroup);
+	 * @param otherGroup  Other group for same underlying labels.
+	 * @return  Result OK on success, ERROR_ARGUMENT if other group is not for same
+	 * labels. */
+	int removeGroup(const DsLabelsGroup& otherGroup);
 
 	/**
 	 * Set whether index is in the group.
@@ -106,14 +112,14 @@ public:
 	 * Create new iterator initially pointing before first label.
 	 * @return accessed iterator, or 0 if failed.
 	 */
-	DsLabelIterator *createLabelIterator();
+	DsLabelIterator *createLabelIterator() const;
 
 	/**
 	 * Increment index to next index in group.
 	 * Assumes index set to DS_LABEL_INDEX_INVALID (-1) before start.
 	 * @return true if index advanced to valid index in group, false if iteration over
 	 */
-	bool incrementIndex(DsLabelIndex& index)
+	bool incrementIndex(DsLabelIndex& index) const
 	{
 		++index;
 		return this->values.advanceIndexWhileFalse(index, this->labels->getIndexSize());
@@ -123,6 +129,10 @@ public:
 	{
 		this->labels->invalidateLabelIteratorsWithCondition(&(this->values));
 	}
+
+	/** Ensure indexes with identifiers in the supplied range (inclusive) are in group.
+	 * @return  Result OK on success, ERROR_ARGUMENT if first > last */
+	int addIndexesInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last);
 
 };
 

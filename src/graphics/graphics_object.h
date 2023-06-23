@@ -3,7 +3,7 @@
  *
  * Private interfaces to Graphical object data structures.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,16 +12,16 @@
 #define GRAPHICS_OBJECT_H
 
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/types/glyphid.h"
-#include "opencmiss/zinc/graphics.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/glyphid.h"
+#include "cmlibs/zinc/graphics.h"
 #include "general/geometry.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
-#include "opencmiss/zinc/fieldcad.h"
+#include "cmlibs/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 /*

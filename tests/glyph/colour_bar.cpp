@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/glyph.h>
-#include <opencmiss/zinc/spectrum.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/glyph.h>
+#include <cmlibs/zinc/spectrum.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

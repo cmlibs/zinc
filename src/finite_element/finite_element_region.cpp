@@ -7,7 +7,7 @@ DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
 finite element fields defined on or interpolated over them.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@ finite element fields defined on or interpolated over them.
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/node.h"
+#include "cmlibs/zinc/element.h"
+#include "cmlibs/zinc/node.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_private.hpp"
 #include "finite_element/finite_element_mesh.hpp"
@@ -39,7 +39,7 @@ Module types
 */
 
 FE_region_changes::FE_region_changes(struct FE_region *fe_regionIn) :
-	fe_region(ACCESS(FE_region)(fe_regionIn)),
+	fe_region(fe_regionIn->access()),
 	access_count(1)
 {
 	this->fe_field_changes = fe_region->extractFieldChangeLog();
@@ -80,7 +80,7 @@ FE_region_changes::~FE_region_changes()
 		cmzn::Deaccess(this->nodeChangeLogs[n]);
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		cmzn::Deaccess(this->elementChangeLogs[dim]);
-	DEACCESS(FE_region)(&(this->fe_region));
+	FE_region::deaccess(this->fe_region);
 }
 
 /** If not already done, propagate field changes from nodes, or higher
@@ -293,22 +293,6 @@ struct CHANGE_LOG(FE_field) *FE_region::extractFieldChangeLog()
 Global functions
 ----------------
 */
-
-/**
- * Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
- */
-static int DESTROY(FE_region)(struct FE_region **fe_region_address)
-{
-	if (fe_region_address)
-	{
-		delete *fe_region_address;
-		fe_region_address = 0;
-		return 1;
-	}
-	return 0;
-}
-
-DECLARE_OBJECT_FUNCTIONS(FE_region)
 
 int FE_region_begin_change(struct FE_region *fe_region)
 {
@@ -595,7 +579,7 @@ Fields can only be removed if not defined on any nodes and element in
 			else
 			{
 				/* access field in case it is only accessed here */
-				ACCESS(FE_field)(fe_field);
+				fe_field->access();
 				return_code = REMOVE_OBJECT_FROM_LIST(FE_field)(fe_field,
 					fe_region->fe_field_list);
 				if (return_code)
@@ -603,7 +587,7 @@ Fields can only be removed if not defined on any nodes and element in
 					fe_region->FE_field_change(fe_field, CHANGE_LOG_OBJECT_REMOVED(FE_field));
 					fe_region->update();
 				}
-				DEACCESS(FE_field)(&fe_field);
+				FE_field::deaccess(fe_field);
 			}
 		}
 		else

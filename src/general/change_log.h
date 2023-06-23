@@ -12,7 +12,7 @@ change_log are accessed so that removed objects exist until after clients
 get to hear about their imminent demise. Change enumerator logic is slightly
 involved -- refer to function CHANGE_LOG_ADD for details.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

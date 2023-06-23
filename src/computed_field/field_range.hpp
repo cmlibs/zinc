@@ -4,7 +4,7 @@
  * Stores range of a fields values over a chosen domain, the locations at
  * which each component minimum or maximum occurs and the field values there.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,10 +12,10 @@
 #if !defined (__FIELD_RANGE_HPP__)
 #define __FIELD_RANGE_HPP__
 
-#include "opencmiss/zinc/types/fieldrangeid.h"
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldrange.h"
+#include "cmlibs/zinc/types/fieldrangeid.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldrange.h"
 #include "computed_field/field_location.hpp"
 
 struct cmzn_fieldrange

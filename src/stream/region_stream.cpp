@@ -4,14 +4,14 @@
  * The definition to cmzn_region_stream.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/streamregion.h"
-#include "opencmiss/zinc/streamregion.h"
+#include "cmlibs/zinc/streamregion.h"
+#include "cmlibs/zinc/streamregion.h"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/read_fieldml.hpp"
 #include "field_io/write_fieldml.hpp"

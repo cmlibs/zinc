@@ -9,7 +9,7 @@ quantities, usually for graphical display or editing. For example, making a
 wrapper rectangular Cartesian field out of a prolate coordinate field, making
 fibre_axes out of a fibre field.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

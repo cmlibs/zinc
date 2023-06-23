@@ -11,7 +11,7 @@ Only certain such tools will be capable of receiving input events from scene
 viewer/mouse input and other devices, but many more will follow and change the
 content of the global selections and objects with text input.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

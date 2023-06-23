@@ -6,7 +6,7 @@ LAST MODIFIED : 16 Apr 2009
 DESCRIPTION :
 This provides an object which supplies a concept of time to Cmgui
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

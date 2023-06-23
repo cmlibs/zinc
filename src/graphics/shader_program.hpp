@@ -1,8 +1,8 @@
 #if !defined (SHADER_PROGRAM_H)
 #define SHADER_PROGRAM_H
 
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/shader.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/shader.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

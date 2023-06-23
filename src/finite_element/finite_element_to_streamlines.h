@@ -8,7 +8,7 @@ Functions for calculating streamlines in finite elements.
 ???DB.  Put into finite_element_to_graphics_object or split
 	finite_element_to_graphics_object further ?
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

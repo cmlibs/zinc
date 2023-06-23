@@ -4,7 +4,7 @@
  * The interface to graphics_json_import.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,8 @@
 #if !defined (GRAPHICS_JSON_IMPORT_HPP)
 #define GRAPHICS_JSON_IMPORT_HPP
 
-#include "opencmiss/zinc/graphics.h"
-#include "opencmiss/zinc/graphics.hpp"
+#include "cmlibs/zinc/graphics.h"
+#include "cmlibs/zinc/graphics.hpp"
 #include "description_io/graphics_json_io.hpp"
 #include "jsoncpp/json.h"
 #include <string>
@@ -31,7 +31,7 @@ public:
 		GraphicsJsonIO(graphics_in, GraphicsJsonIO::IO_MODE_IMPORT), graphicsJson(graphicsJsonIn)
 	{  }
 
-	GraphicsJsonImport(const OpenCMISS::Zinc::Graphics &graphics_in, Json::Value &graphicsJsonIn) :
+	GraphicsJsonImport(const CMLibs::Zinc::Graphics &graphics_in, Json::Value &graphicsJsonIn) :
 		GraphicsJsonIO(graphics_in, GraphicsJsonIO::IO_MODE_IMPORT), graphicsJson(graphicsJsonIn)
 	{	}
 

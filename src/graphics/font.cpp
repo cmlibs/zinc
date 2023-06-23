@@ -6,16 +6,16 @@ LAST MODIFIED : 17 November 2005
 DESCRIPTION :
 This provides a Cmgui interface to the font contexts of many types.
 ******************************************************************************/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <string.h>
-#include "opencmiss/zinc/zincconfigure.h"
-#include "opencmiss/zinc/font.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/zincconfigure.h"
+#include "cmlibs/zinc/font.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"

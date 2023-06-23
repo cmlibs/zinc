@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * graphics.h
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,10 +11,10 @@
 #define CMZN_GRAPHICS_H
 
 #include <ctime>
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/graphics.h"
-#include "opencmiss/zinc/types/scenefilterid.h"
-#include "opencmiss/zinc/types/fieldmoduleid.h"
+#include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/graphics.h"
+#include "cmlibs/zinc/types/scenefilterid.h"
+#include "cmlibs/zinc/types/fieldmoduleid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"

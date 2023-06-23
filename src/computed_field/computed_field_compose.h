@@ -5,7 +5,7 @@ LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_COMPOSE_H)
 #define COMPUTED_FIELD_COMPOSE_H
 
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/mesh.h"
 #include "finite_element/finite_element.h"
 #include "region/cmiss_region.hpp"
 #include "computed_field/computed_field_private.hpp"

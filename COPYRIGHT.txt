@@ -1,4 +1,4 @@
-OpenCMISS-Zinc Library
+Zinc Library
 
 The Initial Developer is:
 Auckland UniServices Ltd, Auckland, New Zealand.

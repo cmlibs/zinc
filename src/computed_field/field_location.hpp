@@ -6,7 +6,7 @@
  * May contain object pointers, but does not access them for thread safety.
  * Client using them must monitor for changes and clear as needed.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,9 +14,9 @@
 #if !defined (__FIELD_LOCATION_HPP__)
 #define __FIELD_LOCATION_HPP__
 
-#include "opencmiss/zinc/types/elementid.h"
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/types/nodeid.h"
+#include "cmlibs/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/types/nodeid.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_basis.hpp"
 #include "general/value.h"

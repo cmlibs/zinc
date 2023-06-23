@@ -20,7 +20,7 @@ TO DO :
 1 Have to do something to make sure that objects aren't destroyed twice.  Check
 	if access_count<0 ?
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

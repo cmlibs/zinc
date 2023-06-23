@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,36 +8,36 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/fieldarithmeticoperators.h>
-#include <opencmiss/zinc/fieldcomposite.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/fieldvectoroperators.h>
-#include <opencmiss/zinc/graphics.h>
-#include <opencmiss/zinc/region.h>
-#include <opencmiss/zinc/scenefilter.h>
-#include <opencmiss/zinc/streamscene.h>
-#include <opencmiss/zinc/stream.h>
-#include <opencmiss/zinc/sceneviewer.h>
-#include <opencmiss/zinc/spectrum.h>
+#include <cmlibs/zinc/status.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/fieldarithmeticoperators.h>
+#include <cmlibs/zinc/fieldcomposite.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/fieldvectoroperators.h>
+#include <cmlibs/zinc/graphics.h>
+#include <cmlibs/zinc/region.h>
+#include <cmlibs/zinc/scenefilter.h>
+#include <cmlibs/zinc/streamscene.h>
+#include <cmlibs/zinc/stream.h>
+#include <cmlibs/zinc/sceneviewer.h>
+#include <cmlibs/zinc/spectrum.h>
 
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldimage.hpp>
-#include <opencmiss/zinc/fieldtime.hpp>
-#include <opencmiss/zinc/streamimage.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
-#include <opencmiss/zinc/graphics.hpp>
-#include <opencmiss/zinc/material.hpp>
-#include <opencmiss/zinc/scene.hpp>
-#include <opencmiss/zinc/types/scenecoordinatesystem.hpp>
-#include <opencmiss/zinc/scenefilter.hpp>
-#include <opencmiss/zinc/sceneviewer.hpp>
-#include <opencmiss/zinc/spectrum.hpp>
-#include <opencmiss/zinc/streamscene.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldimage.hpp>
+#include <cmlibs/zinc/fieldtime.hpp>
+#include <cmlibs/zinc/streamimage.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/graphics.hpp>
+#include <cmlibs/zinc/material.hpp>
+#include <cmlibs/zinc/scene.hpp>
+#include <cmlibs/zinc/types/scenecoordinatesystem.hpp>
+#include <cmlibs/zinc/scenefilter.hpp>
+#include <cmlibs/zinc/sceneviewer.hpp>
+#include <cmlibs/zinc/spectrum.hpp>
+#include <cmlibs/zinc/streamscene.hpp>
 
 #include "test_resources.h"
 #include "utilities/testenum.hpp"
@@ -1625,4 +1625,121 @@ TEST(ZincScenecoordinatesystem, ScenecoordinatesystemEnum)
         "NORMALISED_WINDOW_FIT_LEFT", "NORMALISED_WINDOW_FIT_RIGHT", "NORMALISED_WINDOW_FIT_BOTTOM", "NORMALISED_WINDOW_FIT_TOP",
         "WINDOW_PIXEL_BOTTOM_LEFT", "WINDOW_PIXEL_TOP_LEFT" };
     testEnum(11, enumNames, ScenecoordinatesystemEnumToString, ScenecoordinatesystemEnumFromString);
+}
+
+TEST(cmzn_scene, stl_export_text)
+{
+    ZincTestSetupCpp zinc;
+
+    int result;
+
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
+
+    GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+    EXPECT_TRUE(surfaces.isValid());
+
+    Field coordinateField = zinc.fm.findFieldByName("coordinates");
+    EXPECT_TRUE(coordinateField.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+    StreaminformationScene si = zinc.scene.createStreaminformationScene();
+    EXPECT_TRUE(si.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_ASCII_STL));
+
+    EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
+
+    EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+    double double_result = 0.0;
+    EXPECT_EQ(0.0, double_result = si.getInitialTime());
+    EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIODataType(si.IO_DATA_TYPE_COLOUR));
+
+    StreamresourceMemory memory_sr = si.createStreamresourceMemory();
+
+    EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+    const char *memory_buffer = nullptr;
+    unsigned int size = 0;
+
+    result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    const char *temp_char = strstr(memory_buffer, "solid default");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "facet normal");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "  vertex ");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "endsolid default");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
+TEST(cmzn_scene, wavefront_export_text)
+{
+    ZincTestSetupCpp zinc;
+
+    int result;
+
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/cube.exformat").c_str()));
+
+    GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+    EXPECT_TRUE(surfaces.isValid());
+
+    Field coordinateField = zinc.fm.findFieldByName("coordinates");
+    EXPECT_TRUE(coordinateField.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+    StreaminformationScene si = zinc.scene.createStreaminformationScene();
+    EXPECT_TRUE(si.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_WAVEFRONT));
+
+    EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
+
+    EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+    double double_result = 0.0;
+    EXPECT_EQ(0.0, double_result = si.getInitialTime());
+    EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIODataType(si.IO_DATA_TYPE_COLOUR));
+
+    StreamresourceMemory memory_sr1 = si.createStreamresourceMemory();
+    StreamresourceMemory memory_sr2 = si.createStreamresourceMemory();
+
+    EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+    const char *memory_buffer = nullptr;
+    unsigned int size = 0;
+
+    result = memory_sr1.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    printf("%s\n", memory_buffer);
+    const char *temp_char = strstr(memory_buffer, "call .1.obj");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    result = memory_sr2.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    printf("%s\n", memory_buffer);
+    temp_char = strstr(memory_buffer, "usemtl default");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, ".1.obj");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "v 1 1 1");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr(memory_buffer, "f 21 22 23");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
 }

@@ -1,7 +1,7 @@
 
 # Defines COMPUTED_FIELD_CORE_SRCS, COMPUTED_FIELD_GRAPHICS_SRCS, COMPUTED_FIELD_SRCS (contains previous two)
 
-# OpenCMISS-Zinc Library
+# Zinc Library
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,6 @@ SET( COMPUTED_FIELD_CORE_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_mesh_operators.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_nodeset_operators.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_scene_viewer_projection.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_subobject_group.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_string_constant.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_trigonometry.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_vector_operators.cpp
@@ -56,7 +55,6 @@ SET( COMPUTED_FIELD_CORE_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_mesh_operators.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_nodeset_operators.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_scene_viewer_projection.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_subobject_group.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_string_constant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_trigonometry.h
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_vector_operators.hpp

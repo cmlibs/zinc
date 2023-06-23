@@ -4,7 +4,7 @@
  * Template implementing a map from a single datastore labels set to fixed size
  * array of given type.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this

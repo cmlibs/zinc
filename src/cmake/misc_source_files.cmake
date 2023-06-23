@@ -1,5 +1,5 @@
 
-# OpenCMISS-Zinc Library
+# Zinc Library
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,9 +24,13 @@ SET( DATASTORE_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/datastore/mapindexing.hpp )
 
 SET( ELEMENT_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/element/element_operations.cpp )
+  ${CMAKE_CURRENT_SOURCE_DIR}/element/element_operations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/element/elementbasis.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/element/elementtemplate.cpp )
 SET( ELEMENT_HDRS
-  ${CMAKE_CURRENT_SOURCE_DIR}/element/element_operations.h )
+  ${CMAKE_CURRENT_SOURCE_DIR}/element/element_operations.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/element/elementbasis.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/element/elementtemplate.hpp )
 
 SET( EMOTER_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/emoter/em_cmgui.cpp )
@@ -63,18 +67,32 @@ SET( LICENSE_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/license.h )
 
 SET( MESH_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/mesh/cmiss_element_private.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/cmiss_node_private.cpp )
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/cmiss_node_private.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/mesh.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/mesh_group.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/nodeset.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/nodeset_group.cpp)
 SET( MESH_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/mesh/cmiss_node_private.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/cmiss_element_private.hpp )
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/cmiss_element_private.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/mesh.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/mesh_group.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/nodeset.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mesh/nodeset_group.hpp)
 
-SET( NODE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/node/node_operations.cpp )
-SET( NODE_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/node/node_operations.h )
+SET( NODE_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/node/node_operations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/node/nodetemplate.cpp )
+SET( NODE_HDRS
+  ${CMAKE_CURRENT_SOURCE_DIR}/node/node_operations.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/node/nodetemplate.hpp )
 
-SET( REGION_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/region/cmiss_region.cpp
+SET( REGION_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/region/cmiss_region.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/stream/region_stream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/region/cmiss_region_write_info.cpp )
-SET( REGION_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/region/cmiss_region.hpp
+SET( REGION_HDRS
+  ${CMAKE_CURRENT_SOURCE_DIR}/region/cmiss_region.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/stream/region_stream.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/region/cmiss_region_write_info.h )
 

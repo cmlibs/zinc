@@ -6,7 +6,7 @@ LAST MODIFIED : 27 July 2007
 DESCRIPTION :
 Implements computed fields which conditionally calculate their inputs.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ Implements computed fields which conditionally calculate their inputs.
 #if !defined (COMPUTED_FIELD_CONDITIONAL_H)
 #define COMPUTED_FIELD_CONDITIONAL_H
 
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldconditional.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldconditional.h"
 
 #endif /* !defined (COMPUTED_FIELD_CONDITIONAL_H) */

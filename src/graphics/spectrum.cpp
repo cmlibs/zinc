@@ -6,7 +6,7 @@ LAST MODIFIED : 22 January 2002
 DESCRIPTION :
 Spectrum functions and support code.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,10 +19,11 @@ Spectrum functions and support code.
 #include <list>
 #include <vector>
 #include <math.h>
-#include "opencmiss/zinc/scene.h"
-#include "opencmiss/zinc/spectrum.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/scene.h"
+#include "cmlibs/zinc/spectrum.h"
+#include "cmlibs/zinc/status.h"
 #include "description_io/spectrum_json_io.hpp"
+#include "general/cmiss_set.hpp"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"

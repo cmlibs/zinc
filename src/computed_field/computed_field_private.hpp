@@ -5,7 +5,7 @@ LAST MODIFIED : 31 March 2008
 
 DESCRIPTION :
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,9 +19,9 @@ Computed field types
 Types used only internally to computed fields.
 */
 
-#include "opencmiss/zinc/types/fieldparametersid.h"
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/fieldcache.h"
+#include "cmlibs/zinc/types/fieldparametersid.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/fieldcache.h"
 #include "general/cmiss_set.hpp"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_location.hpp"
@@ -729,6 +729,20 @@ public:
 	/** @return  Non-accessed owning region */
 	inline cmzn_region *getRegion() const;
 
+	/**
+	 * Takes two accessed fields <field_one> and <field_two> and compares their number
+	 * of components.  If they are equal then the function just returns.  If one
+	 * is a scalar field and the other is not then the scalar is wrapped in a component
+	 * field repeating the scalar to match the non scalar number of components. The
+	 * wrapped field will be deaccessed by the function but now will be accessed by
+	 * the wrapping field and an accessed pointer to the wrapper field is returned
+	 * replacing the wrapped field.
+	 * If none of the above criteria are found the function returns the fail code.
+	 * Caller must ensure only numeric fields are passed in.
+	 * @return True on success, false on failure.
+	 */
+	static bool broadcastComponents(cmzn_field*& field_one, cmzn_field*& field_two);
+
 }; /* struct cmzn_field */
 
 inline void Computed_field_core::beginChange() const
@@ -1032,21 +1046,6 @@ inline void cmzn_field::dependencyChanged()
 {
 	MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_FULL_RESULT(cmzn_field));
 }
-
-/**
- * Takes two ACCESSED fields <field_one> and <field_two> and compares their number
- * of components.  If they are equal then the function just returns.  If one
- * is a scalar field and the other is not then the scalar is wrapped in a component
- * field repeating the scalar to match the non scalar number of components.  The
- * wrapped field will be DEACCESSED by the function but now will be accessed by
- * the wrapping field and an ACCESSED pointer to the wrapper field is returned
- * replacing the wrapped field.
- * If the two fields are non scalar and have different numbers of components then
- * nothing is done, although other shape broadcast operations could be proposed
- * for matrix operations.
- */
-int Computed_field_broadcast_field_components(cmzn_fieldmodule *fieldmodule,
-	cmzn_field **field_one, cmzn_field **field_two);
 
 /**
  * For each hierarchical field in manager, propagates changes from sub-region

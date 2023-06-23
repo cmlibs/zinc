@@ -5,7 +5,7 @@
  * Following operators are defined: AND, OR, XOR, NOT, EQUAL_TO, LESS_THAN,
  * GREATER_THAN, IS_DEFINED.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -99,8 +99,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_or(
 	if ((fieldmodule) &&
 		(source_field_one) && source_field_one->isNumerical() &&
 		(source_field_two) && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -236,8 +235,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_and(
 	if ((fieldmodule) &&
 		(source_field_one) && source_field_one->isNumerical() &&
 		(source_field_two) && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -380,8 +378,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_xor(
 	if ((fieldmodule) &&
 		(source_field_one) && source_field_one->isNumerical() &&
 		(source_field_two) && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -540,8 +537,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_equal_to(
 	cmzn_field_access(source_field_two);
 	if ((fieldmodule) && (source_field_one) && (source_field_two) &&
 		(source_field_one->getValueType() == source_field_two->getValueType()) &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -677,8 +673,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_less_than(
 	if ((fieldmodule) &&
 		(source_field_one) && source_field_one->isNumerical() &&
 		(source_field_two) && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -813,8 +808,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
 	if ((fieldmodule) &&
 		(source_field_one) && source_field_one->isNumerical() &&
 		(source_field_two) && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(fieldmodule,
-			&source_field_one, &source_field_two) &&
+		cmzn_field::broadcastComponents(source_field_one, source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{

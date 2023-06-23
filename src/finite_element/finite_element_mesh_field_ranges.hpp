@@ -3,7 +3,7 @@
  *
  * Caches field ranges in elements, owned by FE_mesh.
  */
- /* OpenCMISS-Zinc Library
+ /* Zinc Library
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,10 +11,10 @@
 #if !defined (FINITE_ELEMENT_MESH_FIELD_RANGES_HPP)
 #define FINITE_ELEMENT_MESH_FIELD_RANGES_HPP
 
-#include "opencmiss/zinc/types/fieldcacheid.h"
-#include "opencmiss/zinc/types/fieldid.h"
-#include "opencmiss/zinc/types/fieldsubobjectgroupid.h"
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/types/fieldcacheid.h"
+#include "cmlibs/zinc/types/fieldid.h"
+#include "cmlibs/zinc/types/meshid.h"
+#include "cmlibs/zinc/zincconfigure.h"
 #include "datastore/labels.hpp"
 #include "finite_element/finite_element_domain.hpp"
 #include "general/block_array.hpp"
@@ -25,7 +25,6 @@
 
 class FE_mesh;
 class FeMeshFieldRangesCache;
-
 
 class FeElementFieldRange
 {
@@ -44,7 +43,7 @@ public:
 
 	/** copy constructor requires componentsCount */
 	FeElementFieldRange(int componentsCount, const FeElementFieldRange& source) :
-		ranges(new FE_value[componentsCount * 2])
+		ranges(new FE_value[static_cast<size_t>(componentsCount) * 2])
 	{
 		for (int i = 0; i < componentsCount * 2; ++i)
 		{
@@ -122,7 +121,7 @@ public:
 class FeMeshFieldRanges
 {
 	FeMeshFieldRangesCache *meshFieldRangesCache;  // owner, not accessed
-	cmzn_field_element_group *fieldElementGroup;  // optional group this is for, not accessed
+	cmzn_mesh_group* meshGroup;  // optional mesh group this is for, not accessed
 	// Note: owns and frees FeElementFieldRange objects only if no fieldElementGroup
 	block_array<DsLabelIndex, const FeElementFieldRange *> elementFieldRanges;
 	FeElementFieldRange *totalRange;  // total range of whole mesh, if valid
@@ -132,7 +131,7 @@ class FeMeshFieldRanges
 
 public:
 
-	FeMeshFieldRanges(FeMeshFieldRangesCache *meshFieldRangesCacheIn, cmzn_field_element_group *fieldElementGroupIn);
+	FeMeshFieldRanges(FeMeshFieldRangesCache* meshFieldRangesCacheIn, cmzn_mesh_group* meshGroupIn);
 
 	~FeMeshFieldRanges();
 
@@ -180,10 +179,10 @@ public:
 		return this->elementFieldRanges.setValue(elementIndex, elementFieldRange);
 	}
 
-	/** @return  Optional element group this is for */
-	cmzn_field_element_group *getFieldElementGroup() const
+	/** @return  Optional mesh group the ranges are for */
+	cmzn_mesh_group* getMeshGroup() const
 	{
-		return this->fieldElementGroup;
+		return this->meshGroup;
 	}
 
 	/** @return  Small tolerance for testing whether in element range */
@@ -213,23 +212,23 @@ public:
 /**
  * Caches of ranges of elements for field on mesh, for whole mesh or groups.
  */
-class FeMeshFieldRangesCache : public FE_domain_group
+class FeMeshFieldRangesCache : public FE_domain_mapper
 {
-	FE_mesh *mesh;  // not accessed
-	cmzn_field *field;  // not accessed
-	FeMeshFieldRanges *masterRanges;  // all currently calculated ranges, or whole mesh if all evaluated
-	std::map<cmzn_field_element_group *, FeMeshFieldRanges *> groupRanges;  // ranges for particular groups
+	FE_mesh* feMesh;  // not accessed
+	cmzn_field* field;  // not accessed
+	FeMeshFieldRanges* masterRanges;  // all currently calculated ranges, or whole mesh if all evaluated
+	std::map<cmzn_mesh_group*, FeMeshFieldRanges*> groupRanges;  // ranges for particular mesh groups
 	// because cache is shared between threads, must lock evaluateMutex when evaluating ranges
 	std::mutex evaluateMutex;
 	int access_count;
 
 public:
-	FeMeshFieldRangesCache(FE_mesh *meshIn, cmzn_field *fieldIn);
+	FeMeshFieldRangesCache(FE_mesh *feMeshIn, cmzn_field *fieldIn);
 
 	virtual ~FeMeshFieldRangesCache();
 
 	/** Clear all ranges, but do not remove them. */
-	void clearRanges();
+	void clearAllRanges();
 
 	FeMeshFieldRangesCache *access()
 	{
@@ -252,21 +251,21 @@ public:
 	}
 
 	/** @return  Element labels object if still attached to mesh, otherwise nullptr */
-	const DsLabels *getLabels() const;
+	const DsLabels* getLabels() const;
 
 	/** @return  Owning mesh or nullptr if detached (mesh destroyed) */
-	FE_mesh *getMesh() const
+	FE_mesh* getFeMesh() const
 	{
-		return this->mesh;
+		return this->feMesh;
 	}
 
 	/** @return  Accessed ranges for element group or whole mesh.
-	 * @param elementGroup  Optional element group field; if nullptr use whole mesh.
+	 * @param meshIn  Mesh or mesh group ranges are for.
 	 */
-	FeMeshFieldRanges *getMeshFieldRanges(cmzn_field_element_group *elementGroup);
+	FeMeshFieldRanges* getMeshFieldRanges(cmzn_mesh* meshIn);
 
 	/** Called by ~FeMeshFieldRanges to remove from parent */
-	void removeMeshFieldRanges(FeMeshFieldRanges *meshFieldRanges);
+	void removeMeshFieldRanges(FeMeshFieldRanges* meshFieldRanges);
 
 	/** notification from parent FE_mesh that all elements have been destroyed: clear ranges */
 	virtual void destroyedAllObjects();
@@ -275,7 +274,7 @@ public:
 	virtual void destroyedObject(DsLabelIndex destroyedIndex);
 
 	/** notification from parent FE_mesh that a group of elements has been destroyed: remove their ranges */
-	virtual void destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup);
+	virtual void destroyedObjectGroup(const DsLabelsGroup& destroyedLabelsGroup);
 };
 
 #endif /* !defined (FINITE_ELEMENT_MESH_FIELD_RANGES_HPP) */

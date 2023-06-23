@@ -4,13 +4,13 @@
  * The definition to cmzn_stream.
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/stream.h"
+#include "cmlibs/zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "stream/stream_private.hpp"

@@ -6,15 +6,15 @@
  * @see-also api/zinc/optimisation.h
  *
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <cstdio>
-#include "opencmiss/zinc/field.h"
-#include "opencmiss/zinc/region.h"
+#include "cmlibs/zinc/field.h"
+#include "cmlibs/zinc/region.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/fieldassignmentprivate.hpp"
 #include "computed_field/computed_field_composite.h"
@@ -584,42 +584,6 @@ int cmzn_optimisation_add_dependent_field(cmzn_optimisation_id optimisation,
 }
 
 int cmzn_optimisation_remove_dependent_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id field)
-{
-	if (optimisation && field)
-		return optimisation->removeDependentField(field);
-	return CMZN_ERROR_ARGUMENT;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-cmzn_field_id cmzn_optimisation_get_first_independent_field(
-	cmzn_optimisation_id optimisation)
-{
-	if (optimisation)
-		return optimisation->getFirstDependentField();
-	return nullptr;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-cmzn_field_id cmzn_optimisation_get_next_independent_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id ref_field)
-{
-	if (optimisation && ref_field)
-		return optimisation->getNextDependentField(ref_field);
-	return nullptr;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
-	cmzn_field_id field)
-{
-	if (optimisation && field)
-		return optimisation->addDependentField(field);
-	return CMZN_ERROR_ARGUMENT;
-}
-
-/** @deprecated  Misnamed: use dependent field function. */
-int cmzn_optimisation_remove_independent_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id field)
 {
 	if (optimisation && field)

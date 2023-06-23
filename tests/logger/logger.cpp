@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "zinctestsetup.hpp"
-#include <opencmiss/zinc/zincconfigure.h>
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/logger.h>
-#include <opencmiss/zinc/region.h>
+#include <cmlibs/zinc/zincconfigure.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/logger.h>
+#include <cmlibs/zinc/region.h>
 #include "zinctestsetupcpp.hpp"
-#include <opencmiss/zinc/region.hpp>
-#include <opencmiss/zinc/logger.hpp>
+#include <cmlibs/zinc/region.hpp>
+#include <cmlibs/zinc/logger.hpp>
 
 #include "test_resources.h"
 

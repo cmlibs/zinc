@@ -6,7 +6,7 @@ LAST MODIFIED : 4 June 2004
 DESCRIPTION :
 This provides a Cmgui interface to the OpenGL contexts of many types.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_BUFFER_H)
 #define GRAPHICS_BUFFER_H
 
-#include "opencmiss/zinc/zincconfigure.h"
+#include "cmlibs/zinc/zincconfigure.h"
 
 #if defined (OPENGL_API)
 #  if defined (GTK_USER_INTERFACE)

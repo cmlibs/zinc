@@ -4,7 +4,7 @@
  * Definition of cmzn_region, container of fields for representing model data,
  * and child regions for building hierarchical models.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,10 @@
 #if !defined (CMZN_REGION_H)
 #define CMZN_REGION_H
 
-#include "opencmiss/zinc/types/contextid.h"
-#include "opencmiss/zinc/types/regionid.h"
+#include "cmlibs/zinc/types/contextid.h"
+#include "cmlibs/zinc/types/meshid.h"
+#include "cmlibs/zinc/types/nodesetid.h"
+#include "cmlibs/zinc/types/regionid.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_derivative.hpp"
 #include <list>
@@ -147,6 +149,9 @@ private:
 	struct MANAGER(Computed_field) *field_manager;
 	void *field_manager_callback_id;
 	struct FE_region *fe_region;
+	cmzn_nodeset* nodesets[2];  // 0=nodes, 1=datapoints
+	cmzn_mesh* meshes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+
 	int field_cache_size; // 1 more than highest field cache index given out
 	// all field caches currently in use for this region, for clearing
 	// when fields changed, and adding value caches for new fields.
@@ -417,6 +422,20 @@ public:
 			(char *)fieldName, this->field_manager);
 	}
 
+	/** @return  Non-accessed master mesh of 1 <= dimension <= maximum dimension, otherwise nullptr */
+	cmzn_mesh* findMeshByDimension(int dimension) const;
+
+	/** @return  Non-accessed mesh of given name, either a master mesh of name mesh#d for dimension
+	  * or a mesh group of name GROUP_NAME.MESH_NAME, otherwise nullptr */
+	cmzn_mesh* findMeshByName(const char *meshName) const;
+
+	/** @return  Non-accessed master nodeset of field domain type, otherwise nullptr */
+	cmzn_nodeset* findNodesetByFieldDomainType(cmzn_field_domain_type nodesetDomainType) const;
+
+	/** @return  Non-accessed nodeset of given name, either a master nodeset "nodes" or "datapoints"
+	  * or a nodeset group of name GROUP_NAME.NODESET_NAME, otherwise nullptr */
+	cmzn_nodeset* findNodesetByName(const char* nodesetName) const;
+
 	const char *getName() const
 	{
 		return this->name;
@@ -529,47 +548,11 @@ Global functions
 int cmzn_region_clear_finite_elements(struct cmzn_region *region);
 
 /***************************************************************************//**
- * Returns FE_region for this cmzn_region.
- */
-struct FE_region *cmzn_region_get_FE_region(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Returns the field manager for this region.
- */
-struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
-	struct cmzn_region *region);
-
-/***************************************************************************//**
  * Allocates and returns the path to the root_region ("/").
  *
  * @return  Allocated string "/".
  */
 char *cmzn_region_get_root_region_path(void);
-
-/*******************************************************************************
- * Internal only. External API is cmzn_fieldmodule_find_field_by_name.
- * @return  Accessed handle to field of given name, or NULL if none.
- */
-cmzn_field_id cmzn_region_find_field_by_name(cmzn_region_id region,
-	const char *field_name);
-
-/***************************************************************************//**
- * Deprecated legacy version of cmzn_region_find_subregion_at_path returning
- * non-ACCESSed region as final argument.
- *
- * @param region  The region to search.
- * @param path  The directory-style path to the subregion.
- * @param subregion_address  Address to put region at path. Set to NULL if no
- * region is identified.
- * @return  1 if region found, 0 otherwise.
- */
-int cmzn_region_get_region_from_path_deprecated(struct cmzn_region *region,
-	const char *path, struct cmzn_region **subregion_address);
-
-/**
- * Returns true if region has no parent.
- */
-bool cmzn_region_is_root(struct cmzn_region *region);
 
 /**
  * Separates a region/path/name into the region plus region-path and remainder
@@ -611,17 +594,5 @@ Lists the cmzn_region hierarchy starting from <region>. Contents are listed
 indented from the left margin by <indent> spaces; this is incremented by
 <indent_increment> for each child level.
 ==============================================================================*/
-
-/** Called only by ~FieldDerivative.
- * Add the field derivative to the list in the region and assign its unique
- * cache index.
- * NOTE: Throws an exception on any failure.
- * @return  Accessed field derivative or nullptr if failed.
- */
-void cmzn_region_add_field_derivative(cmzn_region *region,
-	FieldDerivative *fieldDerivative);
-
-/** Called only by ~FieldDerivative */
-void cmzn_region_remove_field_derivative(cmzn_region *region, FieldDerivative *field_derivative);
 
 #endif /* !defined (CMZN_REGION_H) */

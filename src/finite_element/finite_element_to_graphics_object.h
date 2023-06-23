@@ -6,7 +6,7 @@ LAST MODIFIED : 14 March 2003
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ The function prototypes for creating graphical objects from finite elements.
 #if !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H)
 #define FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H
 
-#include "opencmiss/zinc/types/nodesetid.h"
+#include "cmlibs/zinc/types/nodesetid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"

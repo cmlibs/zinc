@@ -4,21 +4,21 @@
  * Describes parameter mapping and interpolation for a scalar
  * field or field component over an element.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/elementfieldtemplate.h"
-#include "opencmiss/zinc/mesh.h"
+#include "cmlibs/zinc/elementfieldtemplate.h"
+#include "cmlibs/zinc/mesh.h"
+#include "element/elementbasis.hpp"
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/node_field_template.hpp"
 #include "general/message.h"
-#include "mesh/cmiss_element_private.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/mesh.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -1293,7 +1293,7 @@ cmzn_elementfieldtemplate_id cmzn_mesh_create_elementfieldtemplate(
 	if (mesh && elementbasis)
 	{
 		FE_basis *basis = cmzn_elementbasis_get_FE_basis(elementbasis);
-		cmzn_elementfieldtemplate_id eft = cmzn_elementfieldtemplate::create(cmzn_mesh_get_FE_mesh_internal(mesh), basis);
+		cmzn_elementfieldtemplate_id eft = cmzn_elementfieldtemplate::create(mesh->getFeMesh(), basis);
 		return eft;
 	}
 	return 0;

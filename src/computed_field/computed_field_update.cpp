@@ -6,18 +6,19 @@ LAST MODIFIED : 24 August 2006
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "opencmiss/zinc/fieldcache.h"
-#include "opencmiss/zinc/fieldderivatives.h"
-#include "opencmiss/zinc/fieldfiniteelement.h"
-#include "opencmiss/zinc/fieldmodule.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/nodeset.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldcache.h"
+#include "cmlibs/zinc/fieldderivatives.h"
+#include "cmlibs/zinc/fieldfiniteelement.h"
+#include "cmlibs/zinc/fieldmodule.h"
+#include "cmlibs/zinc/mesh.h"
+#include "cmlibs/zinc/node.h"
+#include "cmlibs/zinc/nodeset.h"
+#include "cmlibs/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
@@ -28,8 +29,7 @@ Functions for updating values of one computed field from those of another.
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/message.h"
-#include "mesh/cmiss_element_private.hpp"
-#include "mesh/cmiss_node_private.hpp"
+#include "mesh/mesh.hpp"
 
 int cmzn_nodeset_assign_field_from_source(
 	cmzn_nodeset_id nodeset, cmzn_field_id destination_field,
@@ -587,13 +587,12 @@ int cmzn_mesh_assign_grid_field_from_source(
 	FE_value time)
 {
 	int return_code = 1;
-	if (mesh && destination_field && source_field)
+	if ((mesh) && (destination_field) && (source_field))
 	{
 		if (cmzn_field_get_number_of_components(source_field) ==
 			 cmzn_field_get_number_of_components(destination_field))
 		{
-			cmzn_region_id region = cmzn_mesh_get_region_internal(mesh);
-			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(mesh->getRegion());
 			cmzn_fieldmodule_begin_change(fieldmodule);
 			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 			cmzn_fieldcache_set_time(field_cache, time);

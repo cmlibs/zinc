@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,28 +9,27 @@
 #include <gtest/gtest.h>
 
 #include "zinctestsetup.hpp"
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/field.h>
-#include <opencmiss/zinc/fieldconstant.h>
-#include <opencmiss/zinc/optimisation.h>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/field.h>
+#include <cmlibs/zinc/fieldconstant.h>
+#include <cmlibs/zinc/optimisation.h>
 
 #include "zinctestsetupcpp.hpp"
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldassignment.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldderivatives.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
-#include <opencmiss/zinc/fieldgroup.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldmatrixoperators.hpp>
-#include <opencmiss/zinc/fieldmeshoperators.hpp>
-#include <opencmiss/zinc/fieldnodesetoperators.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
-#include <opencmiss/zinc/optimisation.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldassignment.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldcomposite.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldderivatives.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldmatrixoperators.hpp>
+#include <cmlibs/zinc/fieldmeshoperators.hpp>
+#include <cmlibs/zinc/fieldnodesetoperators.hpp>
+#include <cmlibs/zinc/fieldvectoroperators.hpp>
+#include <cmlibs/zinc/optimisation.hpp>
 
 #include "test_resources.h"
 #include <cmath>
@@ -144,32 +143,6 @@ TEST(ZincOptimisation, arguments)
     EXPECT_FALSE(temp.isValid());
 }
 
-TEST(ZincOptimisation, deprecatedIndependentFieldAPI)
-{
-    ZincTestSetupCpp zinc;
-
-    Optimisation optimisation = zinc.fm.createOptimisation();
-    EXPECT_TRUE(optimisation.isValid());
-    // made-up fields to test independent field APIs
-    FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
-    EXPECT_TRUE(f1.isValid());
-    FieldFiniteElement f2 = zinc.fm.createFieldFiniteElement(1);
-    EXPECT_TRUE(f2.isValid());
-    // Test Dependent and deprecated Independent field APIs do the same thing
-    EXPECT_EQ(OK, optimisation.addIndependentField(f1));
-    EXPECT_EQ(f1, optimisation.getFirstIndependentField());
-    EXPECT_EQ(f1, optimisation.getFirstDependentField());
-    EXPECT_EQ(OK, optimisation.addDependentField(f2));
-    EXPECT_EQ(f2, optimisation.getNextIndependentField(f1));
-    EXPECT_EQ(f2, optimisation.getNextDependentField(f1));
-    EXPECT_EQ(OK, optimisation.removeIndependentField(f1));
-    EXPECT_EQ(f2, optimisation.getFirstIndependentField());
-    EXPECT_EQ(f2, optimisation.getFirstDependentField());
-    EXPECT_EQ(OK, optimisation.removeDependentField(f2));
-    EXPECT_FALSE(optimisation.getFirstIndependentField().isValid());
-    EXPECT_FALSE(optimisation.getFirstDependentField().isValid());
-}
-
 // A non-linear optimisation for deformation of a tricubic Lagrange unit cube.
 // All nodes on end1 are fixed in x,y,z by being excluded as DOFs
 // All nodes on end2 are fixed to x=1.5 by a penalty
@@ -196,8 +169,8 @@ TEST(ZincOptimisation, tricubicFit)
 
     const int end2NodeIdentifiers[] = { 4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64 };
     const int end2NodeIdentifiersSize = sizeof(end2NodeIdentifiers)/sizeof(int);
-    FieldNodeGroup end2NodeGroup = zinc.fm.createFieldNodeGroup(nodeset);
-    NodesetGroup end2Nodeset = end2NodeGroup.getNodesetGroup();
+    FieldGroup end2Group = zinc.fm.createFieldGroup();
+    NodesetGroup end2Nodeset = end2Group.createNodesetGroup(nodeset);
     EXPECT_TRUE(end2Nodeset.isValid());
     for (int i = 0; i < end2NodeIdentifiersSize; ++i)
     {
@@ -349,9 +322,9 @@ TEST(ZincOptimisation, addFieldassignment)
     EXPECT_EQ(RESULT_OK, objective.setName("objective"));
 
     // make the set of nodes we wish to offset
-    FieldNodeGroup nodeGroupField = zinc.fm.createFieldNodeGroup(nodes);
-    EXPECT_TRUE(nodeGroupField.isValid());
-    NodesetGroup nodesetGroup = nodeGroupField.getNodesetGroup();
+    FieldGroup group = zinc.fm.createFieldGroup();
+    EXPECT_TRUE(group.isValid());
+    NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
     EXPECT_TRUE(nodesetGroup.isValid());
     const int optimiseNodeIdentifiers[] = { 6, 8 };
     const int iCount = sizeof(optimiseNodeIdentifiers)/sizeof(int);
@@ -475,9 +448,9 @@ TEST(ZincOptimisation, addFieldassignmentReset)
     EXPECT_EQ(RESULT_OK, objective.setName("objective"));
 
     // make the set of nodes we wish to offset
-    FieldNodeGroup nodeGroupField = zinc.fm.createFieldNodeGroup(nodes);
-    EXPECT_TRUE(nodeGroupField.isValid());
-    NodesetGroup nodesetGroup = nodeGroupField.getNodesetGroup();
+    FieldGroup group = zinc.fm.createFieldGroup();
+    EXPECT_TRUE(group.isValid());
+    NodesetGroup nodesetGroup = group.createNodesetGroup(nodes);
     EXPECT_TRUE(nodesetGroup.isValid());
     const int optimiseNodeIdentifiers[] = { 7, 8, 9, 10, 11, 12 };
     const int iCount = sizeof(optimiseNodeIdentifiers)/sizeof(int);
@@ -660,7 +633,7 @@ TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
     FieldGroup outside = zinc.fm.createFieldGroup();
     EXPECT_TRUE(outside.isValid());
     EXPECT_EQ(RESULT_OK, outside.setName("outside"));
-    MeshGroup outsideMeshGroup = outside.createFieldElementGroup(mesh2d).getMeshGroup();
+    MeshGroup outsideMeshGroup = outside.createMeshGroup(mesh2d);
     EXPECT_TRUE(outsideMeshGroup.isValid());
     outsideMeshGroup.addElementsConditional(zinc.fm.createFieldIsExterior());
     EXPECT_EQ(10, outsideMeshGroup.getSize());
@@ -844,16 +817,12 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
     FieldGroup one = zinc.fm.createFieldGroup();
     EXPECT_TRUE(one.isValid());
     EXPECT_EQ(RESULT_OK, one.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
-    FieldElementGroup oneElements = one.createFieldElementGroup(mesh3d);
-    EXPECT_TRUE(oneElements.isValid());
-    MeshGroup oneMesh3d = oneElements.getMeshGroup();
+    MeshGroup oneMesh3d = one.createMeshGroup(mesh3d);
     EXPECT_EQ(RESULT_OK, oneMesh3d.addElement(element1));
 
     FieldGroup left = zinc.fm.createFieldGroup();
     EXPECT_TRUE(left.isValid());
-    FieldElementGroup leftFaceGroup = left.createFieldElementGroup(mesh2d);
-    EXPECT_TRUE(leftFaceGroup.isValid());
-    MeshGroup leftFaceMeshGroup = leftFaceGroup.getMeshGroup();
+    MeshGroup leftFaceMeshGroup = left.createMeshGroup(mesh2d);
     EXPECT_EQ(RESULT_OK, leftFaceMeshGroup.addElement(face1));
 
     FieldComponent x = zinc.fm.createFieldComponent(coordinates, 1);

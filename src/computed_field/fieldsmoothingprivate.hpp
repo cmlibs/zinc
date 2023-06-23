@@ -3,7 +3,7 @@
  * 
  * Implementation of field smoothing class.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,8 @@
 #if !defined (CMZN_FIELDSMOOTHINGPRIVATE_HPP)
 #define CMZN_FIELDSMOOTHINGPRIVATE_HPP
 
-#include "opencmiss/zinc/fieldsmoothing.h"
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/fieldsmoothing.h"
+#include "cmlibs/zinc/status.h"
 
 struct cmzn_fieldsmoothing
 {

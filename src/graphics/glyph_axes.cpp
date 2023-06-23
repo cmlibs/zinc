@@ -4,13 +4,13 @@
  * Derived glyph type which creates 2 or 3 dimensional axes with optional
  * per axis labels and materials.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/status.h"
+#include "cmlibs/zinc/status.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/mystring.h"

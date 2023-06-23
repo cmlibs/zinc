@@ -6,14 +6,16 @@ LAST MODIFIED : 8 July 2008
 DESCRIPTION :
 Renders gtObjects to STL stereolithography file.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <sstream>
 #include <stack>
 #include <stdio.h>
+#include "cmlibs/zinc/region.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/message.h"
@@ -21,7 +23,7 @@ Renders gtObjects to STL stereolithography file.
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/render_stl.h"
+#include "graphics/render_stl.hpp"
 #include "graphics/scene.hpp"
 
 namespace {
@@ -105,42 +107,48 @@ public:
 class Stl_context
 {
 private:
-	FILE *stl_file;
-	char *solid_name;
+    std::ostringstream stl_content;
+    std::string solid_name;
 	/* Future: add binary option */
 	std::stack<Transformation_matrix> transformation_stack;
 
 public:
-	Stl_context(const char *file_name, const char *solid_name_in) :
-		stl_file(fopen(file_name, "w"))
+    Stl_context(const char *solid_name_in) :
+        stl_content(),
+        solid_name(solid_name_in == nullptr ? "default" : solid_name_in)
 	{
-		/* ASCII STL header */
-		if (solid_name_in == 0)
-			solid_name = duplicate_string("default");
-		else
-			solid_name = duplicate_string(solid_name_in);
-
-		fprintf(stl_file,"solid %s\n",solid_name);
 	}
 
 	~Stl_context()
 	{
-		fprintf(stl_file,"endsolid %s\n",solid_name);
-		DEALLOCATE(solid_name);
-		fclose(stl_file);
 	}
 
-	/***************************************************************************//**
-	 * Confirms STL file is correctly opened.
+    void begin()
+    {
+        stl_content << "solid " << this->solid_name << std::endl;
+    }
+
+    std::string get_export_string() const
+    {
+        return stl_content.str();
+    }
+
+    void end()
+    {
+        stl_content << "endsolid " << this->solid_name << std::endl;
+    }
+
+    /**
+     * Confirms STL content is not malformed.
 	 * 
-	 * @return true if context is correctly constructed, false if not.
+     * @return @c true if content is not malformed, @c false if not.
 	 */
 	bool is_valid() const
 	{
-		return (stl_file != (FILE *)NULL) && (solid_name != (char *)NULL);
+        return !solid_name.empty();
 	}
 
-/***************************************************************************//**
+/**
  * Pushes another item onto the transformation stack equal to the previous top
  * item multiplied by the incoming matrix. 
  * 
@@ -184,7 +192,7 @@ public:
 	}
 
 	/***************************************************************************//**
-	 * Writes a single STL triangle to file.
+     * Writes a single STL triangle to string.
 	 * 
 	 * @param v1 coordinates of first vertex
 	 * @param v2 coordinates of second vertex
@@ -208,13 +216,13 @@ public:
 		cross_product3(tangent1, tangent2, normal);
 		if (0.0 < normalize3(normal))
 		{
-			fprintf(stl_file, "facet normal %f %f %f\n", (ZnReal)normal[0], (ZnReal)normal[1], (ZnReal)normal[2]);
-			fprintf(stl_file, " outer loop\n");		
-			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv1[0], (ZnReal)tv1[1], (ZnReal)tv1[2]);		
-			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv2[0], (ZnReal)tv2[1], (ZnReal)tv2[2]);
-			fprintf(stl_file, "  vertex %g %g %g\n", (ZnReal)tv3[0], (ZnReal)tv3[1], (ZnReal)tv3[2]);
-			fprintf(stl_file, " endloop\n");
-		 	fprintf(stl_file, "endfacet\n");
+            this->stl_content << "facet normal " << (ZnReal)normal[0] << " " << (ZnReal)normal[1] << " " << (ZnReal)normal[2] << std::endl;
+            this->stl_content << " outer loop" << std::endl;
+            this->stl_content << "  vertex " << (ZnReal)tv1[0] << " " << (ZnReal)tv1[1] << " " << (ZnReal)tv1[2] << std::endl;
+            this->stl_content << "  vertex " << (ZnReal)tv2[0] << " " << (ZnReal)tv2[1] << " " << (ZnReal)tv2[2] << std::endl;
+            this->stl_content << "  vertex " << (ZnReal)tv3[0] << " " << (ZnReal)tv3[1] << " " << (ZnReal)tv3[2] << std::endl;
+            this->stl_content << " endloop" << std::endl;
+            this->stl_content << "endfacet" << std::endl;
 		}
 	} /* write_triangle_stl */
 
@@ -548,12 +556,12 @@ int write_graphics_object_stl(Stl_context& stl_context,
 	return (return_code);
 } /* write_graphics_object_stl */
 
-int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
+int Graphics_object_to_stl(struct GT_object *graphics_object, double time,
 	void *stl_context_void)
 {
 	int return_code;
 
-	ENTER(Graphcis_object_to_stl);
+    ENTER(Graphics_object_to_stl);
 	if (graphics_object && stl_context_void)
 	{
 		return_code = 1;
@@ -563,22 +571,22 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphcis_object_to_stl.  Invalid argument(s)");
+            "Graphics_object_to_stl.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* Graphcis_object_to_stl */
+} /* Graphics_object_to_stl */
 
 /**
  * Renders the visible objects in a scene to STL.
  * 
- * @param stl_context output STL file and context data
+ * @param stl_context output STL context data
  * @param scene the scene to output
  * @param filter the filter to filter scenes
- * @return 1 on success, 0 on failure
+ * @return Result OK on success, ERROR_ARGUMENT if invalid scene, otherwise ERROR_GENERAL if failed.
  */
 int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	cmzn_scenefilter_id filter)
@@ -587,13 +595,14 @@ int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
 	
 	if (scene)
 	{
-		return_code=for_each_graphics_object_in_scene_tree(scene, filter,
-			Graphcis_object_to_stl,(void *)&stl_context);
+        const int result = for_each_graphics_object_in_scene_tree(scene, filter,
+            Graphics_object_to_stl,(void *)&stl_context);
+        return_code = (result == 1) ? CMZN_OK : CMZN_ERROR_GENERAL;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"write_scene_stl.  Missing scene");
-		return_code = 0;
+        return_code = CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
@@ -607,32 +616,36 @@ Global functions
 ----------------
 */
 
-int export_to_stl(char *file_name, cmzn_scene_id scene, cmzn_scenefilter_id filter)
+std::string export_to_stl(cmzn_scene_id scene, cmzn_scenefilter_id filter)
 {
-	int return_code;
+    std::string content;
 
-	if (file_name && scene)
+    if (scene)
 	{
 		build_Scene(scene, filter);
 		char *solid_name = cmzn_region_get_name(cmzn_scene_get_region_internal(scene));
-		Stl_context stl_context(file_name, solid_name);
-		if (stl_context.is_valid())
+        Stl_context stl_context(solid_name);
+        DEALLOCATE(solid_name);
+        if (stl_context.is_valid())
 		{
-			return_code = write_scene_stl(stl_context, scene, filter);
+            stl_context.begin();
+            int return_code = write_scene_stl(stl_context, scene, filter);
+            if (return_code == CMZN_OK)
+            {
+                stl_context.end();
+                content = stl_context.get_export_string();
+            }
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"export_to_stl.  Could not open stl file %s", file_name);
-			return_code = 0;
+                "export_to_stl.  Failed to create a valid STL context.");
 		}
-		DEALLOCATE(solid_name);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"export_to_stl.  Invalid argument(s)");
-		return_code = 0;
 	}
 
-	return( return_code);
+    return content;
 } /* export_to_stl */

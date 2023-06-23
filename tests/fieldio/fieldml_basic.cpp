@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library Unit Tests
+ * Zinc Library Unit Tests
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,19 +9,21 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
-#include <opencmiss/zinc/core.h>
-#include <opencmiss/zinc/field.hpp>
-#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
-#include <opencmiss/zinc/fieldconstant.hpp>
-#include <opencmiss/zinc/fieldfiniteelement.hpp>
-#include <opencmiss/zinc/fieldlogicaloperators.hpp>
-#include <opencmiss/zinc/fieldmeshoperators.hpp>
-#include <opencmiss/zinc/fieldmodule.hpp>
-#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
-#include <opencmiss/zinc/region.hpp>
-#include <opencmiss/zinc/result.hpp>
-#include <opencmiss/zinc/streamregion.hpp>
+#include <cmlibs/zinc/changemanager.hpp>
+#include <cmlibs/zinc/core.h>
+#include <cmlibs/zinc/element.hpp>
+#include <cmlibs/zinc/field.hpp>
+#include <cmlibs/zinc/fieldarithmeticoperators.hpp>
+#include <cmlibs/zinc/fieldcache.hpp>
+#include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
+#include <cmlibs/zinc/fieldgroup.hpp>
+#include <cmlibs/zinc/fieldlogicaloperators.hpp>
+#include <cmlibs/zinc/fieldmeshoperators.hpp>
+#include <cmlibs/zinc/fieldmodule.hpp>
+#include <cmlibs/zinc/region.hpp>
+#include <cmlibs/zinc/result.hpp>
+#include <cmlibs/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
 
@@ -201,10 +203,10 @@ void check_tetmesh_model(Fieldmodule& fm)
     FieldMeshIntegral volume = fm.createFieldMeshIntegral(one, coordinates, mesh3d);
     EXPECT_TRUE(volume.isValid());
 
-    FieldElementGroup exteriorFacesGroup = fm.createFieldElementGroup(mesh2d);
+    FieldGroup exteriorFacesGroup = fm.createFieldGroup();
     EXPECT_TRUE(exteriorFacesGroup.isValid());
     EXPECT_EQ(OK, result = exteriorFacesGroup.setManaged(true));
-    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.createMeshGroup(mesh2d);
     EXPECT_TRUE(exteriorFacesMeshGroup.isValid());
     FieldIsExterior isExterior = fm.createFieldIsExterior();
     EXPECT_TRUE(isExterior.isValid());
@@ -313,10 +315,10 @@ void check_wheel_model(Fieldmodule& fm)
     const int pointCount = 2;
     EXPECT_EQ(OK, result = volume.setNumbersOfPoints(1, &pointCount));
 
-    FieldElementGroup exteriorFacesGroup = fm.createFieldElementGroup(mesh2d);
+    FieldGroup exteriorFacesGroup = fm.createFieldGroup();
     EXPECT_TRUE(exteriorFacesGroup.isValid());
     EXPECT_EQ(OK, result = exteriorFacesGroup.setManaged(true));
-    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+    MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.createMeshGroup(mesh2d);
     EXPECT_TRUE(exteriorFacesMeshGroup.isValid());
     FieldIsExterior isExterior = fm.createFieldIsExterior();
     EXPECT_TRUE(isExterior.isValid());
@@ -400,42 +402,42 @@ namespace {
 
 void create_mixed_template_squares(Fieldmodule& fm)
 {
-    fm.beginChange();
+    ChangeManager<Fieldmodule> changeField(fm);
     int result;
 
     FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/2);
     EXPECT_TRUE(coordinates.isValid());
-    EXPECT_EQ(OK, result = coordinates.setName("coordinates"));
-    EXPECT_EQ(OK, result = coordinates.setTypeCoordinate(true));
-    EXPECT_EQ(OK, result = coordinates.setManaged(true));
-    EXPECT_EQ(OK, result = coordinates.setComponentName(1, "x"));
-    EXPECT_EQ(OK, result = coordinates.setComponentName(2, "y"));
+    EXPECT_EQ(RESULT_OK, result = coordinates.setName("coordinates"));
+    EXPECT_EQ(RESULT_OK, result = coordinates.setTypeCoordinate(true));
+    EXPECT_EQ(RESULT_OK, result = coordinates.setManaged(true));
+    EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(1, "x"));
+    EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(2, "y"));
 
     FieldFiniteElement pressure = fm.createFieldFiniteElement(/*numberOfComponents*/1);
     EXPECT_TRUE(pressure.isValid());
-    EXPECT_EQ(OK, result = pressure.setName("pressure"));
-    EXPECT_EQ(OK, result = pressure.setManaged(true));
+    EXPECT_EQ(RESULT_OK, result = pressure.setName("pressure"));
+    EXPECT_EQ(RESULT_OK, result = pressure.setManaged(true));
 
     FieldFiniteElement temperature = fm.createFieldFiniteElement(/*numberOfComponents*/1);
     EXPECT_TRUE(temperature.isValid());
-    EXPECT_EQ(OK, result = temperature.setName("temperature"));
-    EXPECT_EQ(OK, result = temperature.setManaged(true));
+    EXPECT_EQ(RESULT_OK, result = temperature.setName("temperature"));
+    EXPECT_EQ(RESULT_OK, result = temperature.setManaged(true));
 
     Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
     EXPECT_TRUE(nodeset.isValid());
 
     Nodetemplate nodetemplate_cpt = nodeset.createNodetemplate();
-    EXPECT_EQ(OK, result = nodetemplate_cpt.defineField(coordinates));
-    EXPECT_EQ(OK, result = nodetemplate_cpt.defineField(pressure));
-    EXPECT_EQ(OK, result = nodetemplate_cpt.defineField(temperature));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_cpt.defineField(coordinates));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_cpt.defineField(pressure));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_cpt.defineField(temperature));
     Nodetemplate nodetemplate_cp = nodeset.createNodetemplate();
-    EXPECT_EQ(OK, result = nodetemplate_cp.defineField(coordinates));
-    EXPECT_EQ(OK, result = nodetemplate_cp.defineField(pressure));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_cp.defineField(coordinates));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_cp.defineField(pressure));
     Nodetemplate nodetemplate_ct = nodeset.createNodetemplate();
-    EXPECT_EQ(OK, result = nodetemplate_ct.defineField(coordinates));
-    EXPECT_EQ(OK, result = nodetemplate_ct.defineField(temperature));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_ct.defineField(coordinates));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_ct.defineField(temperature));
     Nodetemplate nodetemplate_c = nodeset.createNodetemplate();
-    EXPECT_EQ(OK, result = nodetemplate_c.defineField(coordinates));
+    EXPECT_EQ(RESULT_OK, result = nodetemplate_c.defineField(coordinates));
     Fieldcache fieldcache = fm.createFieldcache();
     for (int j = 0; j < 9; ++j)
         for (int i = 0; i < 9; ++i)
@@ -456,18 +458,18 @@ void create_mixed_template_squares(Fieldmodule& fm)
                 node = nodeset.createNode(identifier, nodetemplate_ct);
             else
                 node = nodeset.createNode(identifier, nodetemplate_c);
-            EXPECT_EQ(OK, fieldcache.setNode(node));
+            EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
             double coordinatesValues[2] = { i*0.5, j*0.5 };
-            EXPECT_EQ(OK, coordinates.assignReal(fieldcache, 2, coordinatesValues));
+            EXPECT_EQ(RESULT_OK, coordinates.assignReal(fieldcache, 2, coordinatesValues));
             if (hasPressure)
             {
                 double pressureValues = fabs((double)(i - j));
-                EXPECT_EQ(OK, pressure.assignReal(fieldcache, 1, &pressureValues));
+                EXPECT_EQ(RESULT_OK, pressure.assignReal(fieldcache, 1, &pressureValues));
             }
             if (hasTemperature)
             {
                 double temperatureValues = j*j + i*i;
-                EXPECT_EQ(OK, temperature.assignReal(fieldcache, 1, &temperatureValues));
+                EXPECT_EQ(RESULT_OK, temperature.assignReal(fieldcache, 1, &temperatureValues));
             }
         }
 
@@ -476,31 +478,32 @@ void create_mixed_template_squares(Fieldmodule& fm)
 
     Elementbasis bilinearBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
     EXPECT_TRUE(bilinearBasis.isValid());
+    Elementfieldtemplate bilinearEft = mesh.createElementfieldtemplate(bilinearBasis);
+    EXPECT_TRUE(bilinearEft.isValid());
     Elementbasis biquadraticBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_QUADRATIC_LAGRANGE);
     EXPECT_TRUE(biquadraticBasis.isValid());
+    Elementfieldtemplate biquadraticEft = mesh.createElementfieldtemplate(biquadraticBasis);
+    EXPECT_TRUE(biquadraticEft.isValid());
 
-    int biquadraticLocalNodeIndexes[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    int bilinearLocalNodeIndexes[4] = { 1, 3, 7, 9 };
     Elementtemplate elementtemplate_cpt = mesh.createElementtemplate();
-    EXPECT_EQ(OK, result = elementtemplate_cpt.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
-    EXPECT_EQ(OK, result = elementtemplate_cpt.setNumberOfNodes(9));
-    EXPECT_EQ(OK, result = elementtemplate_cpt.defineFieldSimpleNodal(coordinates, /*componentNumber*/1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_cpt.defineFieldSimpleNodal(coordinates, /*componentNumber*/2, bilinearBasis, 4, bilinearLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_cpt.defineFieldSimpleNodal(pressure, /*componentNumber*/-1, bilinearBasis, 4, bilinearLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_cpt.defineFieldSimpleNodal(temperature, /*componentNumber*/-1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.defineField(coordinates, /*componentNumber*/1, biquadraticEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.defineField(coordinates, /*componentNumber*/2, bilinearEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.defineField(pressure, /*componentNumber*/-1, bilinearEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cpt.defineField(temperature, /*componentNumber*/-1, biquadraticEft));
     Elementtemplate elementtemplate_cp = mesh.createElementtemplate();
-    EXPECT_EQ(OK, result = elementtemplate_cp.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
-    EXPECT_EQ(OK, result = elementtemplate_cp.setNumberOfNodes(9));
-    EXPECT_EQ(OK, result = elementtemplate_cp.defineFieldSimpleNodal(coordinates, /*componentNumber*/1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_cp.defineFieldSimpleNodal(coordinates, /*componentNumber*/2, bilinearBasis, 4, bilinearLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_cp.defineFieldSimpleNodal(pressure, /*componentNumber*/-1, bilinearBasis, 4, bilinearLocalNodeIndexes));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cp.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cp.defineField(coordinates, /*componentNumber*/1, biquadraticEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cp.defineField(coordinates, /*componentNumber*/2, bilinearEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_cp.defineField(pressure, /*componentNumber*/-1, bilinearEft));
     Elementtemplate elementtemplate_ct = mesh.createElementtemplate();
-    EXPECT_EQ(OK, result = elementtemplate_ct.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
-    EXPECT_EQ(OK, result = elementtemplate_ct.setNumberOfNodes(9));
-    EXPECT_EQ(OK, result = elementtemplate_ct.defineFieldSimpleNodal(coordinates, /*componentNumber*/1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_ct.defineFieldSimpleNodal(coordinates, /*componentNumber*/2, bilinearBasis, 4, bilinearLocalNodeIndexes));
-    EXPECT_EQ(OK, result = elementtemplate_ct.defineFieldSimpleNodal(temperature, /*componentNumber*/-1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_ct.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_ct.defineField(coordinates, /*componentNumber*/1, biquadraticEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_ct.defineField(coordinates, /*componentNumber*/2, bilinearEft));
+    EXPECT_EQ(RESULT_OK, result = elementtemplate_ct.defineField(temperature, /*componentNumber*/-1, biquadraticEft));
+    int nodeIdentifiers[9];
     for (int j = 0; j < 4; ++j)
+    {
         for (int i = 0; i < 4; ++i)
         {
             const bool hasPressure = j < 3;
@@ -515,18 +518,19 @@ void create_mixed_template_squares(Fieldmodule& fm)
             }
             else
                 elementtemplate = elementtemplate_ct;
-            const int baseNodeIdentifier = 18*j + 2*i + 1;
+            const int elementIdentifier = j * 4 + i + 1;
+            Element element = mesh.createElement(elementIdentifier, elementtemplate);
+
+            const int baseNodeIdentifier = 18 * j + 2 * i + 1;
             for (int n = 0; n < 9; ++n)
             {
-                const int nodeIdentifier = baseNodeIdentifier + (n / 3)*9 + (n % 3);
-                Node node = nodeset.findNodeByIdentifier(nodeIdentifier);
-                EXPECT_TRUE(node.isValid());
-                EXPECT_EQ(OK, result = elementtemplate.setNode(n + 1, node));
+                nodeIdentifiers[n] = baseNodeIdentifier + (n / 3) * 9 + (n % 3);
             }
-            const int elementIdentifier = j*4 + i + 1;
-            EXPECT_EQ(OK, result = mesh.defineElement(elementIdentifier, elementtemplate));
+            const int bilinearNodeIdentifier[4] = { nodeIdentifiers[0], nodeIdentifiers[2], nodeIdentifiers[6], nodeIdentifiers[8] };
+            EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(bilinearEft, 4, bilinearNodeIdentifier));
+            EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(biquadraticEft, 9, nodeIdentifiers));
         }
-    fm.endChange();
+    }
 }
 
 void check_mixed_template_squares(Fieldmodule& fm)
@@ -552,8 +556,8 @@ void check_mixed_template_squares(Fieldmodule& fm)
     Mesh mesh1d = fm.findMeshByDimension(1);
     EXPECT_EQ(40, mesh1d.getSize());
     Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
-    int nodesetSize;
-    EXPECT_EQ(81, nodesetSize = nodes.getSize());
+    int nodesetSize = nodes.getSize();
+    EXPECT_EQ(81, nodesetSize);
     Fieldcache fieldcache = fm.createFieldcache();
     EXPECT_TRUE(fieldcache.isValid());
     for (int e = 1; e <= elementsCount; ++e)
@@ -600,16 +604,12 @@ void check_mixed_template_squares(Fieldmodule& fm)
 
     FieldIsDefined pressureDefined = fm.createFieldIsDefined(pressure);
     EXPECT_TRUE(pressureDefined.isValid());
-    FieldElementGroup pressureGroup = fm.createFieldElementGroup(mesh2d);
-    EXPECT_TRUE(pressureGroup.isValid());
-    MeshGroup pressureMesh = pressureGroup.getMeshGroup();
+    MeshGroup pressureMesh = fm.createFieldGroup().createMeshGroup(mesh2d);
     EXPECT_EQ(OK, pressureMesh.addElementsConditional(pressureDefined));
 
     FieldIsDefined temperatureDefined = fm.createFieldIsDefined(temperature);
     EXPECT_TRUE(temperatureDefined.isValid());
-    FieldElementGroup temperatureGroup = fm.createFieldElementGroup(mesh2d);
-    EXPECT_TRUE(temperatureGroup.isValid());
-    MeshGroup temperatureMesh = temperatureGroup.getMeshGroup();
+    MeshGroup temperatureMesh = fm.createFieldGroup().createMeshGroup(mesh2d);
     EXPECT_EQ(OK, temperatureMesh.addElementsConditional(temperatureDefined));
 
     const int pointCount = 1;
@@ -1036,7 +1036,7 @@ void check_ex_special_node_fields(Fieldmodule& fm)
         EXPECT_TRUE(node.isValid());
         EXPECT_EQ(RESULT_OK, cache.setNode(node));
 
-        double cell_type_out_double;
+        double cell_type_out_double = -1.0;
         // don't have evaluateInteger yet:
         EXPECT_EQ(RESULT_OK, cell_type.evaluateReal(cache, 1, &cell_type_out_double));
         EXPECT_DOUBLE_EQ(static_cast<double>(expected_cell_type[n]), cell_type_out_double);

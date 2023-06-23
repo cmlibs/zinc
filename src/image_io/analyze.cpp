@@ -1,5 +1,5 @@
 /*
- * OpenCMISS-Zinc Library
+ * Zinc Library
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "analyze.h"
-#include "opencmiss/zinc/types/streamid.h"
+#include "cmlibs/zinc/types/streamid.h"
 #include "general/image_utilities.h"
 #include "general/mystring.h"
 #include "general/debug.h"

@@ -7,7 +7,7 @@ DESCRIPTION :
 Private interfaces to FE_region types and functions to be included only by
 privileged finite_element modules.
 ==============================================================================*/
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -100,12 +100,33 @@ struct FE_region
 	bool informed_make_cmiss_number_field;
 	bool informed_make_xi_field;
 
+private:
 	/* number of objects using this region */
 	int access_count;
 
+public:
 	FE_region(cmzn_region *region, FE_region *base_fe_region);
 
 	~FE_region();
+
+	FE_region* access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static void deaccess(FE_region*& feRegion)
+	{
+		if (feRegion)
+		{
+			--(feRegion->access_count);
+			if (feRegion->access_count <= 0)
+			{
+				delete feRegion;
+			}
+			feRegion = nullptr;
+		}
+	}
 
 	/**
 	 * Only to be called by owning cmzn_region during clean up.

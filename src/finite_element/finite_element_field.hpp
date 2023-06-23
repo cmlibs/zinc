@@ -3,7 +3,7 @@
  *
  * Internal class for field interpolated over finite elements.
  */
-/* OpenCMISS-Zinc Library
+/* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 #if !defined (FINITE_ELEMENT_FIELD_HPP)
 #define FINITE_ELEMENT_FIELD_HPP
 
-#include "opencmiss/zinc/types/elementid.h"
+#include "cmlibs/zinc/types/elementid.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "general/change_log.h"
 #include "general/enumerator.h"
