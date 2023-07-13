@@ -739,7 +739,7 @@ int cmzn_mesh_group::removeElementsConditional(cmzn_field* conditionalField)
 				continue;
 			}
 			const int result = this->labelsGroup->setIndex(element->getIndex(), false);
-			if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+			if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
 			{
 				return_code = result;
 				break;
