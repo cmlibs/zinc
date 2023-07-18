@@ -188,9 +188,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
-	cmzn_field *source_field_one,
-	cmzn_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_power(cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two)
 {
 	cmzn_field *field, *source_fields[2];
 
@@ -518,9 +518,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_multiply(
-	cmzn_fieldmodule *field_module,
-	cmzn_field *source_field_one, cmzn_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_multiply(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
 	cmzn_field *field, *source_fields[2];
 
@@ -752,9 +752,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
-	cmzn_field *source_field_one,
-	cmzn_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two)
 {
 	cmzn_field *field, *source_fields[2];
 
@@ -1047,17 +1047,17 @@ cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmo
 	return (field);
 }
 
-cmzn_field *cmzn_fieldmodule_create_field_add(cmzn_fieldmodule *field_module,
-	cmzn_field *source_field_one,
-	cmzn_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_add(cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two)
 {
 	return(cmzn_fieldmodule_create_field_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, 1.0));
 }
 
-cmzn_field *cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule *field_module,
-	cmzn_field *source_field_one,
-	cmzn_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two)
 {
 	cmzn_field *field = cmzn_fieldmodule_create_field_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, -1.0);
@@ -2509,15 +2509,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_log(cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_LOG with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-==============================================================================*/
+cmzn_field_id cmzn_fieldmodule_create_field_log(cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -2713,15 +2706,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SQRT with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-==============================================================================*/
+cmzn_field_id cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -2917,15 +2903,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EXP with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-==============================================================================*/
+cmzn_field_id cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -3134,13 +3113,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
-/*******************************************************************************
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EXP with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-==============================================================================*/
+cmzn_field_id cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())

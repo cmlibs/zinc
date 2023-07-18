@@ -52,7 +52,7 @@ ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
  * @return  status CMZN_OK if successfully remove scene, any other value on
  * failure.
  */
-ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene_address);
+ZINC_API int cmzn_scene_destroy(cmzn_scene_id *scene_address);
 
 /**
  * Use this function before making multiple changes on the scene, this

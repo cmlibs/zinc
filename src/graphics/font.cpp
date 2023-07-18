@@ -743,14 +743,14 @@ int cmzn_font_changed(cmzn_font_id font)
 	}
 }
 
-cmzn_font_typeface_type cmzn_font_get_typeface_type(cmzn_font_id font)
+enum cmzn_font_typeface_type cmzn_font_get_typeface_type(cmzn_font_id font)
 {
 	if (font)
 		return font->typeface_type;
 	return CMZN_FONT_TYPEFACE_TYPE_INVALID;
 }
 
-int cmzn_font_set_typeface_type(cmzn_font_id font, cmzn_font_typeface_type typeface_type)
+int cmzn_font_set_typeface_type(cmzn_font_id font, enum cmzn_font_typeface_type typeface_type)
 {
 	if (font && ENUMERATOR_STRING(cmzn_font_typeface_type)(typeface_type))
 	{
@@ -764,7 +764,7 @@ int cmzn_font_set_typeface_type(cmzn_font_id font, cmzn_font_typeface_type typef
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_font_render_type cmzn_font_get_render_type(
+enum cmzn_font_render_type cmzn_font_get_render_type(
 	cmzn_font_id font)
 {
 	if (font)
@@ -778,7 +778,7 @@ cmzn_font_render_type cmzn_font_get_render_type(
 }
 
 int cmzn_font_set_render_type(cmzn_font_id font,
-	cmzn_font_render_type render_type)
+	enum cmzn_font_render_type render_type)
 {
 	if (font)
 	{

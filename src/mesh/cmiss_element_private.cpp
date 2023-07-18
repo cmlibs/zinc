@@ -108,7 +108,7 @@ cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 	return cmzn_elementfieldtemplate::create(eft);
 }
 
-int cmzn_element_get_identifier(struct cmzn_element *element)
+int cmzn_element_get_identifier(cmzn_element_id element)
 {
 	if (element)
 		return element->getIdentifier();

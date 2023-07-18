@@ -150,7 +150,7 @@ ZINC_API cmzn_region_id cmzn_region_get_parent(cmzn_region_id region);
  * @param region  The region whose path is requested.
  * @return  On success: allocated string containing full region path.
  */
-ZINC_API char *cmzn_region_get_path(struct cmzn_region *region);
+ZINC_API char *cmzn_region_get_path(cmzn_region_id region);
 
 /**
  * Returns the relative path to this region from base region, a string
@@ -163,8 +163,8 @@ ZINC_API char *cmzn_region_get_path(struct cmzn_region *region);
  * @return  Allocated string containing relative region path, or null string
  * if regions are invalid or not in a common tree.
  */
-ZINC_API char *cmzn_region_get_relative_path(struct cmzn_region *region,
-	struct cmzn_region *base_region);
+ZINC_API char *cmzn_region_get_relative_path(cmzn_region_id region,
+	cmzn_region_id base_region);
 
 /**
  * Get the root or top parent region for this region, which may be itself.

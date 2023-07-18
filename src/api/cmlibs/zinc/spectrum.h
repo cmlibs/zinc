@@ -395,7 +395,7 @@ ZINC_API double cmzn_spectrumcomponent_get_range_minimum(
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_range_minimum(
-	cmzn_spectrumcomponent_id component,	double value);
+	cmzn_spectrumcomponent_id component, double value);
 
 /**
  * Get the maximum value of the range this spectrum component will
@@ -419,7 +419,7 @@ ZINC_API double cmzn_spectrumcomponent_get_range_maximum(
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_range_maximum(
-	cmzn_spectrumcomponent_id component,	double value);
+	cmzn_spectrumcomponent_id component, double value);
 
 /**
  * Get the colour value mapped to the minimum spectrum component data range.
@@ -503,7 +503,7 @@ ZINC_API double cmzn_spectrumcomponent_get_step_value(
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_step_value(
-	cmzn_spectrumcomponent_id component,	double value);
+	cmzn_spectrumcomponent_id component, double value);
 
 /**
  * Get the value which alters the colour progression when scale type
@@ -526,7 +526,7 @@ ZINC_API double cmzn_spectrumcomponent_get_exaggeration(
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_exaggeration(
-	cmzn_spectrumcomponent_id component,	double value);
+	cmzn_spectrumcomponent_id component, double value);
 
 /**
  * Get the value determining the proportion of band present on each section, number of
@@ -551,7 +551,7 @@ ZINC_API double cmzn_spectrumcomponent_get_banded_ratio(
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_banded_ratio(
-	cmzn_spectrumcomponent_id component,	double value);
+	cmzn_spectrumcomponent_id component, double value);
 
 /**
  * Get the active state of a spectrum component, only active spectrum component
@@ -682,7 +682,7 @@ ZINC_API int cmzn_spectrumcomponent_get_field_component(
  * failed.
  */
 ZINC_API int cmzn_spectrumcomponent_set_field_component(
-	cmzn_spectrumcomponent_id component,	int component_number);
+	cmzn_spectrumcomponent_id component, int component_number);
 
 /**
  * Query whether this component's data range maximum is marked as fixed.
@@ -825,7 +825,7 @@ cmzn_spectrumcomponent_get_colour_mapping_type(cmzn_spectrumcomponent_id compone
  * 	failed.
  */
 ZINC_API int cmzn_spectrumcomponent_set_colour_mapping_type(
-	cmzn_spectrumcomponent_id component,	enum cmzn_spectrumcomponent_colour_mapping_type type);
+	cmzn_spectrumcomponent_id component, enum cmzn_spectrumcomponent_colour_mapping_type type);
 
 /**
  * Returns a new handle to the iterator with reference count incremented.

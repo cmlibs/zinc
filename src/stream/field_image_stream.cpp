@@ -520,7 +520,7 @@ char *cmzn_streaminformation_image_attribute_enum_to_string(
 
 int cmzn_streaminformation_image_set_file_format(
 	cmzn_streaminformation_image_id streaminformation,
-	enum cmzn_streaminformation_image_file_format format)
+	enum cmzn_streaminformation_image_file_format file_format)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	enum Image_file_format cmgui_file_format = JPG_FILE_FORMAT;
@@ -530,7 +530,7 @@ int cmzn_streaminformation_image_set_file_format(
 		(NULL != (image_information = streaminformation->getImageInformation())))
 	{
 		return_code = 1;
-		switch (format)
+		switch (file_format)
 		{
 			case CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_BMP:
 			{

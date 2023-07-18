@@ -1224,7 +1224,7 @@ cmzn_scene_id cmzn_graphics_get_scene(cmzn_graphics_id graphics)
 }
 
 enum cmzn_scenecoordinatesystem cmzn_graphics_get_scenecoordinatesystem(
-	struct cmzn_graphics *graphics)
+	cmzn_graphics_id graphics)
 {
 	if (graphics)
 		return graphics->coordinate_system;
@@ -1232,7 +1232,7 @@ enum cmzn_scenecoordinatesystem cmzn_graphics_get_scenecoordinatesystem(
 }
 
 int cmzn_graphics_set_scenecoordinatesystem(
-	struct cmzn_graphics *graphics, enum cmzn_scenecoordinatesystem coordinate_system)
+	cmzn_graphics_id graphics, enum cmzn_scenecoordinatesystem coordinate_system)
 {
 	if (graphics)
 	{
@@ -1256,7 +1256,7 @@ int cmzn_graphics_set_scenecoordinatesystem(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-bool cmzn_graphics_get_visibility_flag(struct cmzn_graphics *graphics)
+bool cmzn_graphics_get_visibility_flag(cmzn_graphics_id graphics)
 {
 	if (graphics)
 	{
@@ -1265,7 +1265,7 @@ bool cmzn_graphics_get_visibility_flag(struct cmzn_graphics *graphics)
 	return false;
 }
 
-int cmzn_graphics_set_visibility_flag(struct cmzn_graphics *graphics,
+int cmzn_graphics_set_visibility_flag(cmzn_graphics_id graphics,
 	bool visibility_flag)
 {
 	if (graphics)
@@ -1585,14 +1585,14 @@ int cmzn_graphics_set_material(cmzn_graphics_id graphics,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_material *cmzn_graphics_get_selected_material(
-	struct cmzn_graphics *graphics)
+cmzn_material_id cmzn_graphics_get_selected_material(
+	cmzn_graphics_id graphics)
 {
 	if (graphics)
 	{
 		return ACCESS(cmzn_material)(graphics->selected_material);
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_graphics_set_selected_material(cmzn_graphics_id graphics,
@@ -1642,7 +1642,7 @@ char *cmzn_graphics_get_name_internal(struct cmzn_graphics *graphics)
 	return name;
 }
 
-int cmzn_graphics_set_name(struct cmzn_graphics *graphics, const char *name)
+int cmzn_graphics_set_name(cmzn_graphics_id graphics, const char *name)
 {
 	if (graphics)
 	{
@@ -4367,7 +4367,7 @@ int cmzn_graphics_extract_graphics_object_from_list(
 } /* cmzn_graphics_extract_graphics_object_from_list */
 
 enum cmzn_graphics_render_polygon_mode cmzn_graphics_get_render_polygon_mode(
-	struct cmzn_graphics *graphics)
+	cmzn_graphics_id graphics)
 {
 	if (graphics)
 		return graphics->render_polygon_mode;
@@ -4396,11 +4396,11 @@ cmzn_field_id cmzn_graphics_get_subgroup_field(cmzn_graphics_id graphics)
 	{
 		return ACCESS(Computed_field)(graphics->subgroup_field);
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_graphics_set_subgroup_field(
-	struct cmzn_graphics *graphics, struct Computed_field *subgroup_field)
+	cmzn_graphics_id graphics, cmzn_field_id subgroup_field)
 {
 	if (graphics && ((0 == subgroup_field) ||
 		Computed_field_is_scalar(subgroup_field, (void*)0)))
@@ -4429,11 +4429,11 @@ cmzn_tessellation_id cmzn_graphics_get_tessellation(
 	{
 		return ACCESS(cmzn_tessellation)(graphics->tessellation);
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_graphics_set_tessellation(
-	cmzn_graphics_id graphics, struct cmzn_tessellation *tessellation)
+	cmzn_graphics_id graphics, cmzn_tessellation_id tessellation)
 {
 	if (graphics && tessellation)
 	{
@@ -4452,7 +4452,7 @@ cmzn_field_id cmzn_graphics_get_tessellation_field(
 {
 	if (graphics && graphics->tessellation_field)
 		return ACCESS(Computed_field)(graphics->tessellation_field);
-	return 0;
+	return nullptr;
 }
 
 int cmzn_graphics_set_tessellation_field(cmzn_graphics_id graphics,
@@ -4618,7 +4618,7 @@ cmzn_field_id cmzn_graphics_get_texture_coordinate_field(
 	{
 		return ACCESS(Computed_field)(graphics->texture_coordinate_field);
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_graphics_set_texture_coordinate_field(

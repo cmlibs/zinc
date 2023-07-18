@@ -55,7 +55,7 @@ int cmzn_fieldsmoothing_destroy(cmzn_fieldsmoothing_id *fieldsmoothing_address)
 }
 
 int cmzn_fieldsmoothing_set_algorithm(cmzn_fieldsmoothing_id fieldsmoothing,
-	cmzn_fieldsmoothing_algorithm algorithm)
+	enum cmzn_fieldsmoothing_algorithm algorithm)
 {
 	if (!fieldsmoothing)
 		return CMZN_ERROR_ARGUMENT;

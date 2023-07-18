@@ -172,9 +172,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_sin(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_sin(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -370,9 +370,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_cos(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_cos(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -568,9 +568,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_tan(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_tan(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -768,9 +768,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_asin(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_asin(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -968,9 +968,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_acos(
-		struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_acos(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -1167,9 +1167,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_atan(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_atan(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -1381,9 +1381,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_atan2(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field_one, cmzn_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_atan2(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) &&
