@@ -1,5 +1,8 @@
 CHANGE LOG: Zinc Library
 
+v4.0.1
+Fix group remove nodes/elements conditional
+
 v4.0.0
 (Break) Rebrand as Zinc, using namespace 'cmlibs'.
 (Break) Remove subobject groups. Group field directly owns mesh groups and nodeset groups.
