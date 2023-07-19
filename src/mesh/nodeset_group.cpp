@@ -264,7 +264,7 @@ int cmzn_nodeset_group::removeNodesConditional(cmzn_field* conditionalField)
 				continue;
 			}
 			const int result = this->labelsGroup->setIndex(node->getIndex(), false);
-			if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+			if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
 			{
 				return_code = result;
 				break;
