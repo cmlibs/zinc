@@ -49,130 +49,141 @@ public:
 
 	bool isEmpty() const
 	{
-		return cmzn_field_group_is_empty(getDerivedId());
+		return cmzn_field_group_is_empty(this->getDerivedId());
 	}
 
 	bool isEmptyLocal() const
 	{
-		return cmzn_field_group_is_empty_local(getDerivedId());
+		return cmzn_field_group_is_empty_local(this->getDerivedId());
 	}
 
 	int clear()
 	{
-		return cmzn_field_group_clear(getDerivedId());
+		return cmzn_field_group_clear(this->getDerivedId());
 	}
 
 	int clearLocal()
 	{
-		return cmzn_field_group_clear_local(getDerivedId());
+		return cmzn_field_group_clear_local(this->getDerivedId());
+	}
+
+	int removeEmptySubobjectGroups()
+	{
+		return cmzn_field_group_remove_empty_subobject_groups(this->getDerivedId());
 	}
 
 	int removeEmptySubgroups()
 	{
-		return cmzn_field_group_remove_empty_subgroups(getDerivedId());
+		return cmzn_field_group_remove_empty_subgroups(this->getDerivedId());
 	}
 
 	int addLocalRegion()
 	{
-		return cmzn_field_group_add_local_region(getDerivedId());
+		return cmzn_field_group_add_local_region(this->getDerivedId());
 	}
 
 	bool containsLocalRegion() const
 	{
-		return cmzn_field_group_contains_local_region(getDerivedId());
+		return cmzn_field_group_contains_local_region(this->getDerivedId());
 	}
 
 	int removeLocalRegion()
 	{
-		return cmzn_field_group_remove_local_region(getDerivedId());
+		return cmzn_field_group_remove_local_region(this->getDerivedId());
 	}
 
 	int addRegion(const Region& region)
 	{
-		return cmzn_field_group_add_region(getDerivedId(),
+		return cmzn_field_group_add_region(this->getDerivedId(),
 			region.getId());
 	}
 
 	int removeRegion(const Region& region)
 	{
-		return cmzn_field_group_remove_region(getDerivedId(), region.getId());
+		return cmzn_field_group_remove_region(this->getDerivedId(), region.getId());
 	}
 
 	bool containsRegion(const Region& region) const
 	{
-		return cmzn_field_group_contains_region(getDerivedId(), region.getId());
+		return cmzn_field_group_contains_region(this->getDerivedId(), region.getId());
 	}
 
 	SubelementHandlingMode getSubelementHandlingMode() const
 	{
 		return static_cast<SubelementHandlingMode>(
-			cmzn_field_group_get_subelement_handling_mode(getDerivedId()));
+			cmzn_field_group_get_subelement_handling_mode(this->getDerivedId()));
 	}
 
 	int setSubelementHandlingMode(SubelementHandlingMode mode)
 	{
-		return cmzn_field_group_set_subelement_handling_mode(getDerivedId(),
+		return cmzn_field_group_set_subelement_handling_mode(this->getDerivedId(),
 			static_cast<cmzn_field_group_subelement_handling_mode>(mode));
 	}
 
 	FieldGroup createSubregionFieldGroup(const Region& region)
 	{
 		return FieldGroup(cmzn_field_group_create_subregion_field_group(
-			getDerivedId(), region.getId()));
+			this->getDerivedId(), region.getId()));
 	}
 
 	FieldGroup getSubregionFieldGroup(const Region& region) const
 	{
 		return FieldGroup(cmzn_field_group_get_subregion_field_group(
-			getDerivedId(), region.getId()));
+			this->getDerivedId(), region.getId()));
 	}
 
 	FieldGroup getOrCreateSubregionFieldGroup(const Region& region)
 	{
 		return FieldGroup(cmzn_field_group_get_or_create_subregion_field_group(
-			getDerivedId(), region.getId()));
+			this->getDerivedId(), region.getId()));
+	}
+
+	int removeSubregionFieldGroup(const Region& subregion)
+	{
+		return cmzn_field_group_remove_subregion_field_group(
+			this->getDerivedId(), subregion.getId());
 	}
 
 	NodesetGroup createNodesetGroup(const Nodeset& nodeset)
 	{
 		return NodesetGroup(cmzn_field_group_create_nodeset_group(
-			getDerivedId(), nodeset.getId()));
+			this->getDerivedId(), nodeset.getId()));
 	}
 
 	NodesetGroup getNodesetGroup(const Nodeset& nodeset) const
 	{
 		return NodesetGroup(cmzn_field_group_get_nodeset_group(
-			getDerivedId(), nodeset.getId()));
+			this->getDerivedId(), nodeset.getId()));
 	}
 
 	NodesetGroup getOrCreateNodesetGroup(const Nodeset& nodeset) const
 	{
 		return NodesetGroup(cmzn_field_group_get_or_create_nodeset_group(
-			getDerivedId(), nodeset.getId()));
+			this->getDerivedId(), nodeset.getId()));
 	}
 
 	MeshGroup createMeshGroup(const Mesh& mesh)
 	{
 		return MeshGroup(cmzn_field_group_create_mesh_group(
-			getDerivedId(), mesh.getId()));
+			this->getDerivedId(), mesh.getId()));
 	}
 
 	MeshGroup getMeshGroup(const Mesh& mesh) const
 	{
 		return MeshGroup(cmzn_field_group_get_mesh_group(
-			getDerivedId(), mesh.getId()));
+			this->getDerivedId(), mesh.getId()));
 	}
 
 	MeshGroup getOrCreateMeshGroup(const Mesh& mesh) const
 	{
 		return MeshGroup(cmzn_field_group_get_or_create_mesh_group(
-			getDerivedId(), mesh.getId()));
+			this->getDerivedId(), mesh.getId()));
 	}
 
 	FieldGroup getFirstNonEmptySubregionFieldGroup() const
 	{
 		return FieldGroup(cmzn_field_group_get_first_non_empty_subregion_field_group(
-			getDerivedId()));
+			this->getDerivedId()));
 	}
 
 };
