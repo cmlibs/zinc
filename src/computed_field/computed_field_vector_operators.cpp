@@ -158,9 +158,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_normalise(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_normalise(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical())
@@ -821,7 +821,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_dot_product(
-	struct cmzn_fieldmodule *fieldmodule,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
 	cmzn_field *field = NULL;

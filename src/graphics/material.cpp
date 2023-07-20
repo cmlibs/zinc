@@ -4025,7 +4025,7 @@ int cmzn_material_set_managed(cmzn_material_id material, bool value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_material_set_name(cmzn_material *material, const char *name)
+int cmzn_material_set_name(cmzn_material_id material, const char *name)
 {
 	if (material)
 		return material->setName(name);

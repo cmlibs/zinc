@@ -188,7 +188,7 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(cmzn_fieldcach
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_string_constant(
-	struct cmzn_fieldmodule *fieldmodule, const char *string_value_in)
+	cmzn_fieldmodule_id fieldmodule, const char *string_value_in)
 {
 	cmzn_field_id field = nullptr;
 	if ((fieldmodule) && (string_value_in))

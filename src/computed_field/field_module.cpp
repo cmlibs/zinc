@@ -142,7 +142,7 @@ struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region)
 	return (fieldmodule);
 };
 
-struct cmzn_fieldmodule *cmzn_fieldmodule_access(struct cmzn_fieldmodule *fieldmodule)
+cmzn_fieldmodule_id cmzn_fieldmodule_access(cmzn_fieldmodule_id fieldmodule)
 {
 	if (fieldmodule)
 		++(fieldmodule->access_count);
@@ -150,7 +150,7 @@ struct cmzn_fieldmodule *cmzn_fieldmodule_access(struct cmzn_fieldmodule *fieldm
 }
 
 int cmzn_fieldmodule_destroy(
-	struct cmzn_fieldmodule **fieldmodule_address)
+	cmzn_fieldmodule_id *fieldmodule_address)
 {
 	struct cmzn_fieldmodule *fieldmodule;
 	if (fieldmodule_address && (NULL != (fieldmodule = *fieldmodule_address)))
@@ -167,17 +167,15 @@ int cmzn_fieldmodule_destroy(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct Computed_field *cmzn_fieldmodule_find_field_by_name(
-	struct cmzn_fieldmodule *fieldmodule, const char *field_name)
+cmzn_field_id cmzn_fieldmodule_find_field_by_name(
+	cmzn_fieldmodule_id fieldmodule, const char *field_name)
 {
-	struct Computed_field *field;
+	cmzn_field *field;
 	struct MANAGER(Computed_field) *manager;
 
-	ENTER(cmzn_fieldmodule_find_field_by_name);
-	if (fieldmodule && field_name && (manager = fieldmodule->region->getFieldManager()))
+	if (fieldmodule && field_name)
 	{
-		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			(char *)field_name, manager);
+		field = fieldmodule->region->findFieldByName(field_name);
 		if (field)
 		{
 			field->access();
@@ -187,10 +185,8 @@ struct Computed_field *cmzn_fieldmodule_find_field_by_name(
 	{
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_find_field_by_name.  Invalid argument(s)");
-		field = (struct Computed_field *)NULL;
+		field = nullptr;
 	}
-	LEAVE;
-
 	return (field);
 }
 
@@ -209,8 +205,7 @@ struct cmzn_region *cmzn_fieldmodule_get_region_internal(
 	return 0;
 }
 
-struct cmzn_region *cmzn_fieldmodule_get_region(
-	struct cmzn_fieldmodule *fieldmodule)
+cmzn_region_id cmzn_fieldmodule_get_region(cmzn_fieldmodule_id fieldmodule)
 {
 	if ((fieldmodule) && (fieldmodule->region))
 		return fieldmodule->region->access();

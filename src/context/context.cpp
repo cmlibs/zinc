@@ -11,7 +11,9 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include "cmlibs/zinc/context.h"
 #include "cmlibs/zinc/fieldgroup.h"
+#include "cmlibs/zinc/region.h"
 #include "configure/version.h"
 #include "context/context.hpp"
 #include "general/debug.h"
@@ -103,19 +105,19 @@ int cmzn_context::setDefaultRegion(cmzn_region *regionIn)
 	return CMZN_OK;
 }
 
-cmzn_context *cmzn_context_create(const char *name)
+cmzn_context_id cmzn_context_create(const char *name)
 {
 	return cmzn_context::create(name);
 }
 
-cmzn_context *cmzn_context_access(cmzn_context *context)
+cmzn_context_id cmzn_context_access(cmzn_context_id context)
 {
 	if (context)
 		return context->access();
 	return 0;
 }
 
-int cmzn_context_destroy(cmzn_context **context_address)
+int cmzn_context_destroy(cmzn_context_id *context_address)
 {
 	if (context_address)
 	{
@@ -132,7 +134,7 @@ char* cmzn_context_get_name(cmzn_context_id context)
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_context_get_default_region(cmzn_context *context)
+cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context)
 {
 	if (!context)
 	{
@@ -161,7 +163,7 @@ int cmzn_context_set_default_region(cmzn_context_id context,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct cmzn_region *cmzn_context_create_region(cmzn_context *context)
+cmzn_region_id cmzn_context_create_region(cmzn_context_id context)
 {
 	if (context)
 		return context->createRegion();
