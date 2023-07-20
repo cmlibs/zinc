@@ -1,5 +1,8 @@
 CHANGE LOG: Zinc Library
 
+v4.1.0
+Add API to selectively remove subobject and subregion groups from group field.
+
 v4.0.0
 (Break) Rebrand as Zinc, using namespace 'cmlibs'.
 (Break) Remove subobject groups. Group field directly owns mesh groups and nodeset groups.
