@@ -1,5 +1,8 @@
 CHANGE LOG: Zinc Library
 
+v4.0.2
+Python bindings infrastructure changes
+
 v4.0.1
 Fix group remove nodes/elements conditional
 
