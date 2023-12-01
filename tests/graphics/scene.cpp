@@ -26,6 +26,7 @@
 #include <cmlibs/zinc/fieldcache.hpp>
 #include <cmlibs/zinc/fieldcomposite.hpp>
 #include <cmlibs/zinc/fieldconstant.hpp>
+#include <cmlibs/zinc/fieldfiniteelement.hpp>
 #include <cmlibs/zinc/fieldimage.hpp>
 #include <cmlibs/zinc/fieldtime.hpp>
 #include <cmlibs/zinc/streamimage.hpp>
@@ -1679,6 +1680,25 @@ TEST(cmzn_scene, stl_export_text)
 
     temp_char = strstr(memory_buffer, "endsolid default");
     EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
+TEST(cmzn_scene, stl_export_empty_points_crash)
+{
+    ZincTestSetupCpp zinc;
+
+    Field coordinates = zinc.fm.createFieldFiniteElement(3);
+    EXPECT_TRUE(coordinates.isValid());
+
+    GraphicsPoints points = zinc.scene.createGraphicsPoints();
+    EXPECT_TRUE(points.isValid());
+    EXPECT_EQ(CMZN_OK, points.setFieldDomainType(Field::DOMAIN_TYPE_NODES));
+    EXPECT_EQ(CMZN_OK, points.setCoordinateField(coordinates));
+
+    StreaminformationScene si = zinc.scene.createStreaminformationScene();
+    EXPECT_TRUE(si.isValid());
+    EXPECT_EQ(CMZN_OK, si.setIOFormat(si.IO_FORMAT_ASCII_STL));
+    StreamresourceMemory srm = si.createStreamresourceMemory();
+    EXPECT_EQ(CMZN_OK, zinc.scene.write(si));
 }
 
 TEST(cmzn_scene, wavefront_export_text)
