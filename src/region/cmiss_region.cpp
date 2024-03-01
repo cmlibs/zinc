@@ -651,21 +651,24 @@ int cmzn_region::defineAllFaces(cmzn_field* coordinateField)
 		for (int dimension = highestMeshDimension; dimension > 1; --dimension)
 		{
 			int result = mesh->defineAllElementFaces(*meshFaceMap);
-			if (result == CMZN_WARNING_PART_DONE)
+			if (result != CMZN_OK)
 			{
-				return_code = result;
-			}
-			else if (result == CMZN_ERROR_NOT_FOUND)
-			{
-				if (return_code != CMZN_WARNING_PART_DONE)
+				if (result == CMZN_WARNING_PART_DONE)
 				{
 					return_code = result;
 				}
-			}
-			else
-			{
-				return_code = result;
-				break;
+				else if (result == CMZN_ERROR_NOT_FOUND)
+				{
+					if (return_code != CMZN_WARNING_PART_DONE)
+					{
+						return_code = result;
+					}
+				}
+				else
+				{
+					return_code = result;
+					break;
+				}
 			}
 			mesh = mesh->getFaceMesh();
 		}
