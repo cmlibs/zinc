@@ -631,7 +631,7 @@ int cmzn_region::defineAllFaces(cmzn_field* coordinateField)
 		return CMZN_OK;
 	}
 	this->beginChangeFields();
-	FE_mesh* feMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, highestMeshDimension);
+	FE_mesh* highestDimensionMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, highestMeshDimension);
 	cmzn_fieldcache* fieldcache = cmzn_fieldcache::create(this);
 	int return_code = CMZN_OK;
 	for (size_t i = 0; i < coordinateFields.size(); ++i)
@@ -641,15 +641,16 @@ int cmzn_region::defineAllFaces(cmzn_field* coordinateField)
 		{
 			continue; // don't waste our time
 		}
-		FeMeshFaceMap* meshFaceMap = FeMeshFaceMap::create(feMesh, field, fieldcache);
+		FeMeshFaceMap* meshFaceMap = FeMeshFaceMap::create(highestDimensionMesh, field, fieldcache);
 		if (!meshFaceMap)
 		{
 			return_code = CMZN_ERROR_GENERAL;
 			break;
 		}
+		FE_mesh* mesh = highestDimensionMesh;
 		for (int dimension = highestMeshDimension; dimension > 1; --dimension)
 		{
-			int result = feMesh->defineAllElementFaces(*meshFaceMap);
+			int result = mesh->defineAllElementFaces(*meshFaceMap);
 			if (result == CMZN_WARNING_PART_DONE)
 			{
 				return_code = result;
@@ -666,9 +667,11 @@ int cmzn_region::defineAllFaces(cmzn_field* coordinateField)
 				return_code = result;
 				break;
 			}
+			mesh = mesh->getFaceMesh();
 		}
 		cmzn::Deaccess(meshFaceMap);
 	}
+	cmzn_fieldcache::deaccess(fieldcache);
 	this->endChangeFields();
 	return return_code;
 }
