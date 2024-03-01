@@ -12,14 +12,18 @@
 #include "cmlibs/zinc/element.h"
 #include "computed_field/field_derivative.hpp"
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_mesh_field_ranges.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region_private.h"
 #include "general/object.h"
 #include "general/debug.h"
+#include "general/indexed_list_private.h"
+#include "general/matrix_vector.h"
 #include "general/message.h"
 #include "general/mystring.h"
 #include <algorithm>
@@ -1326,8 +1330,6 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	lastMergedElementTemplate(0),
 	parentMesh(0),
 	faceMesh(0),
-	element_type_node_sequence_list(0),
-	definingFaces(false),
 	activeElementIterators(0)
 {
 	this->createChangeLog();
@@ -2825,99 +2827,337 @@ DsLabelIndex FE_mesh::getElementFirstNeighbour(DsLabelIndex elementIndex, int fa
 	return DS_LABEL_INDEX_INVALID;
 }
 
+/** Used to index lists of FeFaceDescription for fast matching */
+struct FeFaceDescriptionIdentifier
+{
+	const int nodeCount, centroidComponentsCount;
+	int* nodeIdentifiers;  // sorted in constructor from low to high
+	FE_value centroid[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value tolerance;  // tolerance for comparing centroid coordinates
+
+	FeFaceDescriptionIdentifier(int nodeCountIn, int* nodeIdentifiersIn,
+		int centroidComponentsCountIn, FE_value* centroidIn, FE_value toleranceIn) :
+		nodeCount(nodeCountIn),
+		centroidComponentsCount(centroidComponentsCountIn),
+		nodeIdentifiers(new int[nodeCountIn]),
+		tolerance(toleranceIn)
+	{
+		memcpy(nodeIdentifiers, nodeIdentifiersIn, nodeCount * sizeof(int));
+		// bubble sort node identifiers from lowest to highest. OK as list will be small
+		bool swap = true;
+		while (swap)
+		{
+			swap = false;
+			for (int i = 1; i < nodeCount; ++i)
+			{
+				if (this->nodeIdentifiers[i] < this->nodeIdentifiers[i - 1])
+				{
+					const int tmpIdentifier = this->nodeIdentifiers[i - 1];
+					this->nodeIdentifiers[i - 1] = this->nodeIdentifiers[i];
+					this->nodeIdentifiers[i] = tmpIdentifier;
+					swap = true;
+				}
+			}
+		}
+		for (int c = 0; c < this->centroidComponentsCount; ++c)
+		{
+			this->centroid[c] = centroidIn[c];
+		}
+	}
+
+	~FeFaceDescriptionIdentifier()
+	{
+		delete[] this->nodeIdentifiers;
+	}
+
+	/**
+	 * Compare function for face descriptions, comparing in order:
+	 * - number_of_nodes.
+	 * - node numbers in ascending order of indentifiers.
+	 * - centroid within tolerance, in order of component
+	 * Returns values like strcmp:
+	 * -1 = identifier 1 < identifier 2
+	 *  0 = identifier 1 == identifier 2
+	 *  1 = identifier 1 > identifier 2
+	 */
+	static int compare(FeFaceDescriptionIdentifier& identifier1, FeFaceDescriptionIdentifier& identifier2)
+	{
+		// 1. compare number_of_nodes
+		const int nodeCount = identifier1.nodeCount;
+		if (nodeCount < identifier2.nodeCount)
+		{
+			return -1;
+		}
+		else if (nodeCount > identifier2.nodeCount)
+		{
+			return 1;
+		}
+		else
+		{
+			// 2. compare node_numbers - assumed in ascending order
+			for (int i = 0; i < nodeCount; ++i)
+			{
+				if (identifier1.nodeIdentifiers[i] < identifier2.nodeIdentifiers[i])
+				{
+					return -1;
+				}
+				else if (identifier1.nodeIdentifiers[i] > identifier2.nodeIdentifiers[i])
+				{
+					return 1;
+				}
+			}
+		}
+		// no need to compare face dimension as should only be in lists of same dimension
+		const int centroidComponentsCount = identifier1.centroidComponentsCount;
+		// 3. compare centroid, using max tolerance
+		const FE_value tolerance = (identifier1.tolerance > identifier2.tolerance) ? identifier1.tolerance : identifier2.tolerance;
+		for (int c = 0; c < centroidComponentsCount; ++c)
+		{
+			if (identifier1.centroid[c] < (identifier2.centroid[c] - tolerance))
+			{
+				return -1;
+			}
+			else if (identifier1.centroid[c] > (identifier2.centroid[c] + tolerance))
+			{
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+};
+
+/**
+ * Description of face nodes and centroid for finding/matching faces in meshes.
+ * Note: not perfect, but fully matching general linear map is expensive and complex
+ * due to having to handle all permutations of xi directions on each face.
+ */
+struct FeFaceDescription
+{
+	FeFaceDescriptionIdentifier identifier;
+	cmzn_element* element;  // accessed face element, or parent element if face
+	int faceNumber;  // negative if face element, otherwise face number of element
+	int accessCount;
+
+	FeFaceDescription(int nodeCountIn, int* nodeIdentifiersIn, cmzn_element* elementIn,
+			int faceNumberIn, int centroidComponentsCountIn, FE_value* centroidIn, FE_value toleranceIn) :
+		identifier(nodeCountIn, nodeIdentifiersIn, centroidComponentsCountIn, centroidIn, toleranceIn),
+		element(elementIn->access()),
+		faceNumber(faceNumberIn),
+		accessCount(1)
+	{
+	}
+
+	~FeFaceDescription()
+	{
+		cmzn_element::deaccess(this->element);
+	}
+
+	inline FeFaceDescription* access()
+	{
+		++(this->accessCount);
+		return this;
+	}
+
+	static void deaccess(FeFaceDescription*& faceDescriptionRef)
+	{
+		if (faceDescriptionRef)
+		{
+			FeFaceDescription* faceDescription = faceDescriptionRef;
+			faceDescriptionRef = nullptr;
+			--(faceDescription->accessCount);
+			if (faceDescription->accessCount <= 0)
+			{
+				delete faceDescription;
+			}
+		}
+	}
+
+	/**
+	 * Only call if element is a face element, i.e. faceNumber is negative.
+	 */
+	cmzn_element* getFaceElement() const
+	{
+		return this->element;
+	}
+
+	/**
+	 * Set the actual face element once defined.
+	 */
+	void setFaceElement(cmzn_element* faceElement)
+	{
+		cmzn_element::deaccess(this->element);
+		this->element = faceElement->access();
+		this->faceNumber = -1;
+	}
+};
+
+PROTOTYPE_OBJECT_FUNCTIONS(FeFaceDescription);
+
+DECLARE_LIST_TYPES(FeFaceDescription);
+
+PROTOTYPE_LIST_FUNCTIONS(FeFaceDescription);
+
+FULL_DECLARE_INDEXED_LIST_TYPE(FeFaceDescription);
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(FeFaceDescription)
+{
+	if (object)
+	{
+		return object->access();
+	}
+	return nullptr;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FeFaceDescription)
+{
+	if (object_address)
+	{
+		FeFaceDescription::deaccess(*object_address);
+		return 1;
+	}
+	display_message(ERROR_MESSAGE, "DEACCESS(FeFaceDescription).  Invalid argument");
+	return 0;
+}
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FeFaceDescription, \
+	identifier, FeFaceDescriptionIdentifier&, FeFaceDescriptionIdentifier::compare)
+
+DECLARE_INDEXED_LIST_FUNCTIONS(FeFaceDescription)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FeFaceDescription, \
+	identifier, FeFaceDescriptionIdentifier&, FeFaceDescriptionIdentifier::compare)
+
+class FeFaceDescriptionMap
+{
+	struct LIST(FeFaceDescription)* indexedList;
+
+public:
+	FeFaceDescriptionMap():
+		indexedList(CREATE(LIST(FeFaceDescription))())
+	{
+	}
+
+	~FeFaceDescriptionMap()
+	{
+		DESTROY(LIST(FeFaceDescription))(&this->indexedList);
+	}
+
+	int addFaceDescription(FeFaceDescription* faceDescription)
+	{
+		if (!faceDescription)
+		{
+			return CMZN_ERROR_ARGUMENT;
+		}
+		if (!ADD_OBJECT_TO_LIST(FeFaceDescription)(faceDescription, this->indexedList))
+		{
+			return CMZN_ERROR_GENERAL;
+		}
+		return CMZN_OK;
+	}
+
+	/** @return Existing faceDescription or nullptr if not found */
+	FeFaceDescription* findMatchingFaceDescription(FeFaceDescription* faceDescription)
+	{
+		if (faceDescription)
+		{
+			return FIND_BY_IDENTIFIER_IN_LIST(FeFaceDescription, identifier)(
+				faceDescription->identifier, this->indexedList);
+		}
+		return nullptr;
+	}
+};
+
+
 /**
  * Find or create an element in this mesh that can be used on face number of
  * the parent element. The face is added to the parent.
  * The new face element is added to this mesh, but without adding faces.
- * Must be between calls to begin_define_faces/end_define_faces.
  * Can only match faces correctly for coordinate fields with standard node
  * to element maps and no versions.
- * The element type node sequence list is updated with any new face.
+ * Adds face descriptions for new faces to the map.
  *
  * @param parentIndex  Index of parent element in parentMesh, to find or create
  * face for.
  * @param faceNumber  Face number on parent, starting at 0.
+ * @param meshFaceMap  Face map for finding matching faces, updated for any
+ * new faces.
  * @param faceIndex  On successful return, set to new faceIndex or
  * DS_LABEL_INDEX_INVALID if no face needed (for collapsed element face).
  * @return  Index of new face or DS_LABEL_INDEX_INVALID if failed.
- * @return  Result OK on success, ERROR_NOT_FOUND if no nodes available
- * for defining faces, otherwise any other error.
+ * @return  Result OK on success, ERROR_NOT_FOUND if field not defined or
+ * has no node mapping, otherwise any other error.
  */
-int FE_mesh::findOrCreateFace(DsLabelIndex parentIndex, int faceNumber, DsLabelIndex& faceIndex)
+int FE_mesh::findOrCreateFace(DsLabelIndex parentIndex, int faceNumber,
+	FeMeshFaceMap& meshFaceMap, DsLabelIndex& faceIndex)
 {
 	faceIndex = DS_LABEL_INDEX_INVALID;
-	cmzn_element *parentElement = this->parentMesh->getElement(parentIndex);
+	cmzn_element* parentElement = this->parentMesh->getElement(parentIndex);
 	int return_code = CMZN_OK;
-	FE_element_type_node_sequence *element_type_node_sequence =
-		CREATE(FE_element_type_node_sequence)(return_code, parentElement, faceNumber);
-	if (!element_type_node_sequence)
+	FeFaceDescription* faceDescription =
+		meshFaceMap.createFaceDescription(parentElement, faceNumber, return_code);
+	if (!faceDescription)
 	{
 		return return_code;
 	}
-
-	ACCESS(FE_element_type_node_sequence)(element_type_node_sequence);
-	if (!FE_element_type_node_sequence_is_collapsed(element_type_node_sequence))
+	FeFaceDescriptionMap* faceDescriptionMap = meshFaceMap.getFaceDescriptionMap(this);
+	FeFaceDescription* existingFaceDescription = faceDescriptionMap->findMatchingFaceDescription(faceDescription);  // not accessed
+	cmzn_element* faceElement = nullptr;
+	if (existingFaceDescription)
 	{
-		FE_element_type_node_sequence *existing_element_type_node_sequence =
-			FE_element_type_node_sequence_list_find_match(
-			this->element_type_node_sequence_list, element_type_node_sequence);
-		if (existing_element_type_node_sequence)
+		faceElement = existingFaceDescription->getFaceElement()->access();
+	}
+	else
+	{
+		FE_element_shape* parentShape = this->parentMesh->getElementShape(parentIndex);
+		FE_element_shape* faceShape = get_FE_element_shape_of_face(parentShape, faceNumber, this->fe_region);
+		if (faceShape)
 		{
-			cmzn_element *face = FE_element_type_node_sequence_get_FE_element(existing_element_type_node_sequence);
-			if (!face)
-				return_code = CMZN_ERROR_GENERAL;
-			else
-			{
-				faceIndex = face->getIndex();
-				return_code = this->parentMesh->setElementFace(parentIndex, faceNumber, faceIndex);
-			}
-		}
-		else
-		{
-			FE_element_shape *parentShape = this->parentMesh->getElementShape(parentIndex);
-			FE_element_shape *faceShape = get_FE_element_shape_of_face(parentShape, faceNumber, this->fe_region);
-			if (!faceShape)
-				return_code = CMZN_ERROR_GENERAL;
-			else
-			{
-				cmzn_element *face = this->get_or_create_FE_element_with_identifier(/*identifier*/-1, faceShape);
-				if (!face)
-					return_code = CMZN_ERROR_GENERAL;
-				else
-				{
-					FE_element_type_node_sequence_set_FE_element(element_type_node_sequence, face);
-					faceIndex = face->getIndex();
-					return_code = this->parentMesh->setElementFace(parentIndex, faceNumber, faceIndex);
-					if (CMZN_OK == return_code)
-					{
-						if (!ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
-								element_type_node_sequence, this->element_type_node_sequence_list))
-							return_code = CMZN_ERROR_GENERAL;
-					}
-					cmzn_element::deaccess(face);
-				}
-			}
+			faceElement = this->get_or_create_FE_element_with_identifier(/*identifier*/-1, faceShape);
 		}
 	}
-	DEACCESS(FE_element_type_node_sequence)(&element_type_node_sequence);
+	if (faceElement)
+	{
+		faceIndex = faceElement->getIndex();
+		return_code = this->parentMesh->setElementFace(parentIndex, faceNumber, faceIndex);
+		if (!existingFaceDescription)
+		{
+			faceDescription->setFaceElement(faceElement);
+			if (faceDescriptionMap->addFaceDescription(faceDescription) != CMZN_OK)
+			{
+				return_code = CMZN_ERROR_GENERAL;
+			}
+		}
+		cmzn_element::deaccess(faceElement);
+	}
+	else
+	{
+		return_code = CMZN_ERROR_GENERAL;
+	}
+	FeFaceDescription::deaccess(faceDescription);
 	return return_code;
 }
 
 /**
  * Recursively define faces for element, creating and adding them to face
  * mesh if they don't already exist.
- * Always call between FE_region_begin/end_define_faces.
  * Records but doesn't notify of element/face/field changes.
  * Always call between FE_region_begin/end_changes.
  * Function ensures that elements share existing faces and lines in preference to
- * creating new ones if they have matching dimension and nodes.
- * @return  CMZN_OK on success, otherwise any error code.
+ * creating new ones if they have matching dimension, nodes and centroid.
+ * @return  CMZN_OK on success, CMZN_WARNING_PART_DONE if some faces not added
+ * due to coordinate field not defined or not using node mapping,
+ * ERROR_NOT_FOUND if no new faces added for this reason, or any other
+ * error if failed in a more serious way.
  */
-int FE_mesh::defineElementFaces(DsLabelIndex elementIndex)
+int FE_mesh::defineElementFaces(DsLabelIndex elementIndex, FeMeshFaceMap& meshFaceMap)
 {
-	if (!(this->faceMesh && this->definingFaces && (elementIndex >= 0)))
+	if ((!this->faceMesh) || (elementIndex < 0) ||
+		(meshFaceMap.getTopLevelMesh()->fe_region != this->fe_region))
+	{
 		return CMZN_ERROR_ARGUMENT;
-	ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+	}
+	ElementShapeFaces* elementShapeFaces = this->getElementShapeFaces(elementIndex);
 	if (!elementShapeFaces)
 	{
 		display_message(ERROR_MESSAGE, "FE_mesh::defineElementFaces.  Missing ElementShapeFaces");
@@ -2925,36 +3165,61 @@ int FE_mesh::defineElementFaces(DsLabelIndex elementIndex)
 	}
 	const int faceCount = elementShapeFaces->getFaceCount();
 	if (0 == faceCount)
+	{
 		return CMZN_OK;
-	DsLabelIndex *faces = elementShapeFaces->getOrCreateElementFaces(elementIndex);
+	}
+	DsLabelIndex* faces = elementShapeFaces->getOrCreateElementFaces(elementIndex);
 	if (!faces)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::defineElementFaces.  Failed to get or create element faces array");
 		return CMZN_ERROR_GENERAL;
+	}
 	int return_code = CMZN_OK;
 	int newFaceCount = 0;
+	int notFoundFaceCount = 0;
 	for (int faceNumber = 0; faceNumber < faceCount; ++faceNumber)
 	{
 		DsLabelIndex faceIndex = faces[faceNumber];
 		if (faceIndex < 0)
 		{
-			return_code = this->faceMesh->findOrCreateFace(elementIndex, faceNumber, faceIndex);
-			if (CMZN_OK != return_code)
+			int result = this->faceMesh->findOrCreateFace(elementIndex, faceNumber, meshFaceMap, faceIndex);
+			if (result == CMZN_OK)
 			{
-				if (CMZN_ERROR_NOT_FOUND == return_code)
+				if (DS_LABEL_INDEX_INVALID != faceIndex)
 				{
-					continue;
+					++newFaceCount;
 				}
+			}
+			else if (result == CMZN_ERROR_NOT_FOUND)
+			{
+				++notFoundFaceCount;
+			}
+			else
+			{
+				return_code = result;
 				break;
 			}
-			if (faceIndex >= 0)
-				++newFaceCount;
 		}
 		if ((this->dimension > 2) && (DS_LABEL_INDEX_INVALID != faceIndex))
 		{
 			// recursively add faces of faces, whether existing or new
-			return_code = this->faceMesh->defineElementFaces(faceIndex);
-			if (CMZN_OK != return_code)
+			int result = this->faceMesh->defineElementFaces(faceIndex, meshFaceMap);
+			if (result != CMZN_OK)
 			{
-				break;
+				if (result == CMZN_WARNING_PART_DONE)
+				{
+					++newFaceCount;
+					++notFoundFaceCount;
+				}
+				else if (result == CMZN_ERROR_NOT_FOUND)
+				{
+					++notFoundFaceCount;
+				}
+				else
+				{
+					return_code = result;
+					break;
+				}
 			}
 		}
 	}
@@ -2964,113 +3229,349 @@ int FE_mesh::defineElementFaces(DsLabelIndex elementIndex)
 		if (fe_region)
 		{
 			this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-			fe_region->update();
 		}
 	}
-	if ((CMZN_OK != return_code) && (CMZN_ERROR_NOT_FOUND != return_code))
+	if (return_code == CMZN_OK)
+	{
+		if (notFoundFaceCount)
+		{
+			if (newFaceCount)
+			{
+				return_code = CMZN_WARNING_PART_DONE;
+			}
+			else
+			{
+				return_code = CMZN_ERROR_NOT_FOUND;
+			}
+		}
+	}
+	else
 	{
 		display_message(ERROR_MESSAGE, "FE_mesh::defineElementFaces.  Failed");
-	}
-	return (return_code);
-}
-
-/**
- * Creates a list of FE_element_type_node_sequence, and
- * if mesh dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS fills it with sequences
- * for this element. Fails if any two faces have the same shape and nodes.
- */
-int FE_mesh::begin_define_faces()
-{
-	if (this->element_type_node_sequence_list)
-	{
-		display_message(ERROR_MESSAGE, "FE_mesh::begin_define_faces.  Already defining faces");
-		return CMZN_ERROR_ALREADY_EXISTS;
-	}
-	this->element_type_node_sequence_list = CREATE(LIST(FE_element_type_node_sequence))();
-	if (!this->element_type_node_sequence_list)
-	{
-		display_message(ERROR_MESSAGE, "FE_mesh::begin_define_faces.  Could not create node sequence list");
-		return CMZN_ERROR_MEMORY;
-	}
-	this->definingFaces = true;
-	int return_code = CMZN_OK;
-	if (this->dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS)
-	{
-		cmzn_elementiterator_id iter = this->createElementiterator();
-		cmzn_element_id element = 0;
-		FE_element_type_node_sequence *element_type_node_sequence;
-		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
-		{
-			element_type_node_sequence = CREATE(FE_element_type_node_sequence)(return_code, element);
-			if (!element_type_node_sequence)
-			{
-				if (CMZN_ERROR_NOT_FOUND == return_code)
-				{
-					return_code = CMZN_OK;
-					continue;
-				}
-				display_message(ERROR_MESSAGE, "FE_mesh::begin_define_faces.  "
-					"Could not create FE_element_type_node_sequence for %d-D element %d",
-					this->dimension, get_FE_element_identifier(element));
-				break;
-			}
-			if (!ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
-				element_type_node_sequence, this->element_type_node_sequence_list))
-			{
-				display_message(WARNING_MESSAGE, "FE_mesh::begin_define_faces.  "
-					"Could not add FE_element_type_node_sequence for %d-D element %d.",
-					this->dimension, get_FE_element_identifier(element));
-				FE_element_type_node_sequence *existing_element_type_node_sequence =
-					FE_element_type_node_sequence_list_find_match(
-						this->element_type_node_sequence_list, element_type_node_sequence);
-				if (existing_element_type_node_sequence)
-				{
-					display_message(WARNING_MESSAGE,
-						"Reason: Existing %d-D element %d uses same node list, and will be used for face matching.",
-						this->dimension, get_FE_element_identifier(
-							FE_element_type_node_sequence_get_FE_element(existing_element_type_node_sequence)));
-				}
-				DESTROY(FE_element_type_node_sequence)(&element_type_node_sequence);
-			}
-		}
-		cmzn_elementiterator_destroy(&iter);
 	}
 	return return_code;
 }
 
-void FE_mesh::end_define_faces()
+FeMeshFaceMap::FeMeshFaceMap(FE_mesh* topLevelMeshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn) :
+	cmzn::RefCounted(),
+	topLevelMesh(cmzn::Access(topLevelMeshIn)),
+	coordinateField(coordinateFieldIn->access()),
+	feField(cmzn_field_finite_element_get_FE_field(coordinateFieldIn)->access()),
+	fieldcache(fieldCacheIn->access())
 {
-	if (this->element_type_node_sequence_list)
-		DESTROY(LIST(FE_element_type_node_sequence))(&this->element_type_node_sequence_list);
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; ++d)
+	{
+		faceDescriptionMaps[d] = new FeFaceDescriptionMap();
+	}
+}
+
+FeMeshFaceMap::~FeMeshFaceMap()
+{
+	cmzn::Deaccess(this->topLevelMesh);
+	cmzn_field::deaccess(this->coordinateField);
+	cmzn_fieldcache::deaccess(this->fieldcache);
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; ++d)
+	{
+		delete faceDescriptionMaps[d];
+	}
+}
+
+/**
+ * Fill face description map for face mesh.
+ */
+int FeMeshFaceMap::fillFaceMeshMap(FE_mesh *faceMesh)
+{
+	if ((!faceMesh) || (faceMesh->getTopLevelMesh() != this->topLevelMesh) || (faceMesh == this->topLevelMesh))
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::fillFaceMeshMap.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FeFaceDescriptionMap* faceDescriptionMap = this->faceDescriptionMaps[faceMesh->getDimension() - 1];
+	int result = CMZN_OK;
+	cmzn_elementiterator* iter = faceMesh->createElementiterator();
+	if (!iter)
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::fillFaceMeshMap.  Failed to create element iterator");
+		return CMZN_ERROR_MEMORY;
+	}
+	cmzn_element* element = nullptr;
+	while ((element = iter->nextElement()))
+	{
+		FeFaceDescription* faceDescription = this->createFaceDescription(element, /*faceNumber*/-1, result);
+		if (faceDescription)
+		{
+			if (CMZN_OK != faceDescriptionMap->addFaceDescription(faceDescription))
+			{
+				display_message(WARNING_MESSAGE, "FeMeshFaceMap::fillFaceMeshMap.  "
+					"Could not add face description for %d-D element %d.",
+					element->getDimension(), element->getIdentifier());
+				result = CMZN_ERROR_GENERAL;
+				break;
+			}
+			FeFaceDescription::deaccess(faceDescription);
+		}
+		else
+		{
+			if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
+			{
+				display_message(WARNING_MESSAGE, "FeMeshFaceMap::fillFaceMeshMap.  "
+					"Failed to create face description for %d-D element %d.",
+					element->getDimension(), element->getIdentifier());
+				break;
+			}
+			result = CMZN_OK;
+		}
+	}
+	cmzn_elementiterator_destroy(&iter);
+	return result;
+}
+
+/**
+ * Create a map from face descriptions to face elements for the hierarchy of
+ * meshes containing meshIn. This can take some time to generate, but is needed
+ * to define shared faces across a mesh.
+ * This object should be destroyed after faces have been defined.
+ * @param meshIn  Any mesh. The top-level (parent or parent of parent) mesh is
+ * found from this.
+ * @param coordinateFieldIn  A finite element coordinate field from the same
+ * region as mesh, with up to MAXIMUM_ELEMENT_XI_DIMENSIONS (3) components, but
+ * at least meshIn dimension.
+ * @param fieldcacheIn  A fieldcache for the same region as mesh, held by
+ * @return On full success, a mesh face map with access count 1, otherwise nullptr.
+ */
+FeMeshFaceMap* FeMeshFaceMap::create(FE_mesh* meshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn)
+{
+	FE_field* feField = nullptr;
+	if (!((meshIn) && (coordinateFieldIn) && (fieldCacheIn) &&
+		(meshIn->getRegion() == coordinateFieldIn->getRegion()) &&
+		(fieldCacheIn->getRegion() == meshIn->getRegion()) &&
+		Computed_field_get_type_finite_element(coordinateFieldIn, &feField) &&
+		(feField->get_CM_field_type() == CM_COORDINATE_FIELD) &&
+		(meshIn->getDimension() <= coordinateFieldIn->getNumberOfComponents()) &&
+		(1 < coordinateFieldIn->getNumberOfComponents()) &&
+		(coordinateFieldIn->getNumberOfComponents() <= MAXIMUM_ELEMENT_XI_DIMENSIONS)))
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::create.  Invalid argument(s)");
+		return nullptr;
+	}
+	FE_mesh* topLevelMesh = meshIn->getTopLevelMesh();
+	FeMeshFaceMap* meshFaceMap = new FeMeshFaceMap(topLevelMesh, coordinateFieldIn, fieldCacheIn);
+	FE_mesh* faceMesh = topLevelMesh->getFaceMesh();
+	while (faceMesh)
+	{
+		if (meshFaceMap->fillFaceMeshMap(faceMesh) != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "FeMeshFaceMap::create.  Failed to fill mesh face map for dimension %d", faceMesh->getDimension());
+			delete meshFaceMap;
+			return nullptr;
+		}
+		faceMesh = faceMesh->getFaceMesh();
+	}
+	return meshFaceMap;
+}
+
+FeFaceDescriptionMap* FeMeshFaceMap::getFaceDescriptionMap(FE_mesh* faceMesh) const
+{
+	if ((!faceMesh) || (faceMesh == this->topLevelMesh) || (faceMesh->getTopLevelMesh() != this->topLevelMesh))
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::getFaceDescriptionMap.  Invalid face mesh");
+		return nullptr;
+	}
+	return this->faceDescriptionMaps[faceMesh->getDimension() - 1];
+}
+
+/**
+ * @param result  If no face description returned, and value is CMZN_OK or CMZN_NOT_FOUND,
+ * no face exists. For all other value an error has occurred.
+ * @return  A new face description object with access count 1, or nullptr if:
+ * - element is collapsed (result CMZN_OK)
+ * - coordinate field not found (result CMZN_NOT_FOUND)
+ * - failed with some other error code.
+ */
+FeFaceDescription* FeMeshFaceMap::createFaceDescription(cmzn_element* element, int faceNumber, int& result)
+{
+	if ((!element) || ((element->getDimension() == 1) && (faceNumber >= 0)))
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::createFaceDescription.  Invalid element or face number");
+		result = CMZN_ERROR_ARGUMENT;
+		return nullptr;
+	}
+	int nodeCount = 0;
+	cmzn_node** nodes = nullptr;
+	result = calculate_FE_element_field_nodes(element, faceNumber, this->feField,
+		&nodeCount, &nodes, /*top_level_element*/nullptr);
+	if ((CMZN_OK != result) || (nodeCount <= 0))
+	{
+		if (CMZN_ERROR_NOT_FOUND != result)
+		{
+			display_message(ERROR_MESSAGE, "FeMeshFaceMap::createFaceDescription.  Failed to get nodes in element/face");
+		}
+		return nullptr;
+	}
+	std::vector<int> nodeIdentifiers(nodeCount, -1);
+	for (int n = 0; n < nodeCount; ++n)
+	{
+		nodeIdentifiers[n] = nodes[n]->getIdentifier();
+	}
+	delete[] nodes;
+	nodes = nullptr;
+	const FE_element_shape* elementShape = element->getElementShape();
+	const FE_element_shape* faceShape = (faceNumber < 0) ? elementShape :
+		get_FE_element_shape_of_face(elementShape, faceNumber, this->topLevelMesh->get_FE_region());
+	FE_value xiCentroid[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	result = FE_element_shape_get_xi_centroid(faceShape, xiCentroid);
+	if (CMZN_OK != result)
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::createFaceDescription.  Failed to get element xi centroid");
+		return nullptr;
+	}
+	const int elementDimension = element->getDimension();
+	if (faceNumber >= 0)
+	{
+		// convert face xi to element xi
+		FE_value faceXiCentroid[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		const int faceDimension = get_FE_element_shape_dimension(faceShape);
+		for (int c = 0; c < faceDimension; ++c)
+		{
+			faceXiCentroid[c] = xiCentroid[c];
+		}
+		const FE_value* faceToElement = get_FE_element_shape_face_to_element(elementShape, faceNumber);
+		const FE_value* trans = faceToElement;
+		for (int d = 0; d < elementDimension; ++d)
+		{
+			FE_value sum = *trans;
+			++trans;
+			for (int c = 0; c < faceDimension; ++c)
+			{
+				sum += trans[c] * faceXiCentroid[c];
+			}
+			xiCentroid[d] = sum;
+			trans += faceDimension;
+		}
+	}
+	// evaluate centroid coordinates, and derivatives to detect tolerance or collapse
+	const FieldDerivative* fieldDerivative = element->getMesh()->getFieldDerivative(1);
+	this->fieldcache->setMeshLocation(element, xiCentroid);
+	FE_value centroid[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	const RealFieldValueCache* valueCache = this->coordinateField->evaluateDerivativeTree(*this->fieldcache, *fieldDerivative);
+	if (!valueCache)
+	{
+		display_message(ERROR_MESSAGE, "FeMeshFaceMap::createFaceDescription.  Failed to evaluate centroid coordinates");
+		result = CMZN_ERROR_NOT_FOUND;
+		return nullptr;
+	}
+	const FE_value* cacheCentroid = RealFieldValueCache::cast(valueCache)->values;
+	const int componentsCount = RealFieldValueCache::cast(valueCache)->componentCount;
+	for (int c = 0; c < componentsCount; ++c)
+	{
+		centroid[c] = cacheCentroid[c];
+	}
+	const DerivativeValueCache* derivativeCache = valueCache->getDerivativeValueCache(*fieldDerivative);
+	FE_value maxDerivativeMag = 0.0;
+	FE_value minCrossProductMag = 0.0;
+	// make derivative components cycle fastest, xi terms slowest, and pad with zeros to use cross_product3
+	FE_value derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS * MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	for (int d = 0; d < elementDimension; ++d)
+	{
+		const FE_value* sd = derivativeCache->values + d;
+		FE_value* dd = derivatives + d * MAXIMUM_ELEMENT_XI_DIMENSIONS;
+		for (int c = 0; c < componentsCount; ++c)
+		{
+			dd[c] = sd[c * elementDimension];
+		}
+		for (int c = componentsCount; c < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++c)
+		{
+			dd[c] = 0.0;
+		}
+	}
+	const FE_value* d1 = derivatives;
+	for (int d = 0; d < elementDimension; ++d)
+	{
+		const FE_value dmag = norm3(d1);
+		if (dmag == 0.0)
+		{
+			// zero derivative => collapsed
+			result = CMZN_OK;
+			return nullptr;
+		}
+		if (dmag > maxDerivativeMag)
+		{
+			maxDerivativeMag = dmag;
+		}
+		if (((elementDimension == 2) && (d == 0)) || (elementDimension > 2))
+		{
+			const FE_value* d2 = (d == (elementDimension - 1)) ? derivatives : d1 + componentsCount;
+			FE_value r[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			cross_product3(d1, d2, r);
+			const FE_value rmag = norm3(r);
+			if ((d == 0) || (rmag < minCrossProductMag))
+			{
+				minCrossProductMag = rmag;
+			}
+		}
+		d1 += componentsCount;
+	}
+	const FE_value tolerance = 1.0E-6 * maxDerivativeMag;
+	if ((elementDimension > 1) && (minCrossProductMag < tolerance))
+	{
+		// negligible min cross product of any 2 derivatives => collapsed
+		result = CMZN_OK;
+		return nullptr;
+	}
+	FeFaceDescription* faceDescription = new FeFaceDescription(nodeCount, nodeIdentifiers.data(),
+		element, faceNumber, componentsCount, centroid, tolerance);
+	if (faceDescription)
+	{
+		result = CMZN_OK;
+	}
 	else
-		display_message(ERROR_MESSAGE, "FE_mesh::end_define_faces.  Wasn't defining faces");
-	this->definingFaces = false;
+	{
+		result = CMZN_ERROR_GENERAL;
+	}
+	return faceDescription;
 }
 
 /**
  * Ensures faces of elements in mesh exist in face mesh.
- * Recursively does same for faces in face mesh.
- * Call between begin/end_define_faces and begin/end_change.
+ * Recursively does same for faces of face mesh.
  */
-int FE_mesh::define_faces()
+int FE_mesh::defineAllElementFaces(FeMeshFaceMap& meshFaceMap)
 {
+	if ((this->dimension == 1) ||
+		(this->getTopLevelMesh() != meshFaceMap.getTopLevelMesh()))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::defineAllElementFaces.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
 	DsLabelIterator *iter = this->labels.createLabelIterator();
 	if (!iter)
+	{
 		return CMZN_ERROR_GENERAL;
+	}
 	int return_code = CMZN_OK;
 	DsLabelIndex elementIndex;
 	int successCount = 0;
 	while ((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
-		const int result = this->defineElementFaces(elementIndex);
+		const int result = this->defineElementFaces(elementIndex, meshFaceMap);
 		if (result != CMZN_OK)
 		{
-			return_code = result;
-			if (result == CMZN_ERROR_NOT_FOUND)
+			if (result == CMZN_WARNING_PART_DONE)
 			{
-				continue;
+				return_code = result;
 			}
-			break;
+			else if (result == CMZN_ERROR_NOT_FOUND)
+			{
+				if (return_code != CMZN_WARNING_PART_DONE)
+				{
+					return_code = result;
+				}
+			}
+			else
+			{
+				return_code = result;
+				break;
+			}
 		}
 		++successCount;
 	}

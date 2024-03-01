@@ -182,22 +182,22 @@ public:
 	virtual void resetEvaluationCounter();
 
 
-	static const RealFieldValueCache* cast(const FieldValueCache* valueCache)
+	inline static const RealFieldValueCache* cast(const FieldValueCache* valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<const RealFieldValueCache*>(valueCache);
 	}
 
-	static RealFieldValueCache* cast(FieldValueCache* valueCache)
+	inline static RealFieldValueCache* cast(FieldValueCache* valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache*>(valueCache);
 	}
 
-	static const RealFieldValueCache& cast(const FieldValueCache& valueCache)
+	inline static const RealFieldValueCache& cast(const FieldValueCache& valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<const RealFieldValueCache&>(valueCache);
 	}
 
-	static RealFieldValueCache& cast(FieldValueCache& valueCache)
+	inline static RealFieldValueCache& cast(FieldValueCache& valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache&>(valueCache);
 	}

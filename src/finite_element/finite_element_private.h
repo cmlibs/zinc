@@ -19,7 +19,6 @@ modules such as finite_element_region.c.
 #include "cmlibs/zinc/status.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/node_field_template.hpp"
-#include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list.h"
 #include "general/object.h"
@@ -39,29 +38,6 @@ cmzn_node structures.
 ==============================================================================*/
 
 DECLARE_LIST_TYPES(FE_node_field_info);
-
-struct FE_element_type_node_sequence_identifier;
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-See struct FE_element_type_node_sequence.
-==============================================================================*/
-
-struct FE_element_type_node_sequence;
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Structure for storing an element with its identifier being its cm_type and the
-number and list - in ascending order - of the nodes referred to by the default
-coordinate field of the element. Indexed lists, indexed using function
-compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. FE_mesh
-uses them to find faces and lines for elements without them, if they exist.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(FE_element_type_node_sequence);
 
 /*
 Private functions
@@ -288,78 +264,5 @@ PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_node,cm_node_identif
  * during I/O.
  */
 int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge = 0);
-
-/**
- * Create structure storing an element with its identifier being its cm_type
- * and the number and list - in ascending order - of the nodes referred to by
- * the default coordinate field of the element. Indexed lists, indexed using
- * function compare_FE_element_type_node_sequence_identifier ensure that
- * recalling a line or face with the same nodes is extremely rapid.
- * FE_mesh uses them to find faces and lines for elements without them,
- * if they exist.
- * @param face_number  If non-negative, calculate nodes for face number of
- * element, as if the face element were supplied to this function. If so, the
- * returned structure accesses the supplied element. It is assumed this is
- * only used when creating new faces, and the face should be set as soon as
- * created.
- * @param result  Result OK on success, otherwise ERROR_NOT_FOUND if
- * nodes not obtainable, otherwise any other error.
- * @return  On success, newly created sequence.
- */
-struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
-	int &result, struct FE_element *element, int face_number = -1);
-
-int DESTROY(FE_element_type_node_sequence)(
-	struct FE_element_type_node_sequence **element_type_node_sequence_address);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Cleans up memory used by the FE_element_type_node_sequence.
-==============================================================================*/
-
-int FE_element_type_node_sequence_is_collapsed(
-	struct FE_element_type_node_sequence *element_type_node_sequence);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns true if the <element_type_node_sequence> represents an element that
-has collapsed, ie, is a face with <= 2 unique nodes, or a line with 1 unique
-node.
-???RC Note that repeated nodes in the face/line are not put in the node_numbers
-array twice, facilitating the simple logic in this function. If they were, then
-this function would have to be modified extensively.
-==============================================================================*/
-
-/**
- * Gets the FE_element from the <element_type_node_sequence>.
- */
-struct FE_element *FE_element_type_node_sequence_get_FE_element(
-	struct FE_element_type_node_sequence *element_type_node_sequence);
-
-/**
- * Sets the FE_element in the <element_type_node_sequence>. Use only to
- * substitute face element when sequence was created from face number of
- * parent element.
- */
-void FE_element_type_node_sequence_set_FE_element(
-	struct FE_element_type_node_sequence *element_type_node_sequence,
-	struct FE_element *element);
-
-/**
- * Returns existing FE_element_type_node_sequence from list with matching
- * identifier to supplied one.
- */
-FE_element_type_node_sequence *FE_element_type_node_sequence_list_find_match(
-	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list,
-	FE_element_type_node_sequence *element_type_node_sequence);
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_element_type_node_sequence);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_element_type_node_sequence);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_type_node_sequence, \
-	identifier, FE_element_type_node_sequence_identifier&);
 
 #endif /* !defined (FINITE_ELEMENT_PRIVATE_H) */

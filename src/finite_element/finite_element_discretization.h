@@ -382,6 +382,17 @@ public:
 	}
 };
 
+/**
+ * Get centroid of element shape's xi coordinates.
+ * @parm elementShape  Element shape to query.
+ * @param xiCentroidOut  Pointer to array of at least shape dimension, e.g.
+ * MAXIMUM_ELEMENT_XI_DIMENSIONS to receive centroid xi location for shape.
+ * @return  Result OK on success, or ERROR_ARGUMENT if invalid arguments, ot
+ * ERROR_NOT_IMPLEMENTED if unimplemented for element shape.
+ */
+int FE_element_shape_get_xi_centroid(const FE_element_shape* elementShape,
+	FE_value* xiCentroidOut);
+
 int FE_element_shape_get_xi_points_cell_centres(
 	struct FE_element_shape *element_shape, const int *number_in_xi,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);

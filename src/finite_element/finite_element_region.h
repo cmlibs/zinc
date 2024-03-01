@@ -375,28 +375,6 @@ int FE_region_get_number_of_FE_elements_of_dimension(
 int FE_region_get_highest_dimension(struct FE_region *fe_region);
 
 /**
- * Sets up <fe_region> to automatically define faces on any elements merged into
- * it, and their faces recursively.
- * Call FE_region_end_define_faces as soon as face definition is finished.
- * Always put face definition calls between calls to begin_change/end_change.
- */
-int FE_region_begin_define_faces(struct FE_region *fe_region);
-
-/**
- * Ends face definition in <fe_region>. Cleans up internal caches.
- */
-int FE_region_end_define_faces(struct FE_region *fe_region);
-
-/**
- * Ensures for elements of every dimension > 1 that there are face and line
- * elements of lower dimension in the region.
- * Requires a coordinate field to be defined to work.
- * @return  Result OK on success, WARNING_PART_DONE if failed for some
- * elements due to absent nodes, otherwise any other error.
- */
-int FE_region_define_faces(struct FE_region *fe_region);
-
-/**
  * Returns the first element in <fe_region> that satisfies
  * <conditional_function> with <user_data_void>.
  * A NULL <conditional_function> returns the first FE_element in <fe_region>,

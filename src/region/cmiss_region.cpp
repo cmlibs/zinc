@@ -566,6 +566,113 @@ cmzn_region *cmzn_region::createSubregion(const char *path)
 	return subregion;
 }
 
+namespace {
+
+inline bool isValidCoordinateField(cmzn_field* field, int minimumNumberOfComponents = 1)
+{
+	FE_field* feField = cmzn_field_finite_element_get_FE_field(field);
+	return (nullptr != feField) &&
+		(feField->getValueType() == FE_VALUE_VALUE) &&
+		(feField->get_CM_field_type() == CM_COORDINATE_FIELD) &&
+		(feField->getNumberOfComponents() >= minimumNumberOfComponents) &&
+		(feField->getNumberOfComponents() <= MAXIMUM_ELEMENT_XI_DIMENSIONS);
+}
+
+}
+
+int cmzn_region::defineAllFaces(cmzn_field* coordinateField)
+{
+	const int highestMeshDimension = FE_region_get_highest_dimension(this->fe_region);
+	std::vector<cmzn_field*> coordinateFields;
+	if (coordinateField)
+	{
+		if ((coordinateField->getRegion() != this) ||
+			(!isValidCoordinateField(coordinateField, highestMeshDimension)))
+		{
+			display_message(ERROR_MESSAGE, "Region.defineAllFaces.  Invalid coordinate field");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		coordinateFields.push_back(coordinateField);
+	}
+	else
+	{
+		cmzn_fielditerator* fielditerator = this->createFielditerator();
+		cmzn_field* field = nullptr;
+		while ((field = fielditerator->next_non_access()))
+		{
+			if (isValidCoordinateField(field, highestMeshDimension))
+			{
+				// don't add coordinate fields with the same definition
+				bool sameDefinition = false;
+				for (size_t i = 0; i < coordinateFields.size(); ++i)
+				{
+					if (cmzn_field_finite_element_get_FE_field(field)->hasSameDefinitionOnMeshes(
+						cmzn_field_finite_element_get_FE_field(coordinateFields[i])))
+					{
+						sameDefinition = true;
+						break;
+					}
+				}
+				if (!sameDefinition)
+				{
+					coordinateFields.push_back(field);
+				}
+			}
+		}
+		cmzn_fielditerator::deaccess(fielditerator);
+		if (coordinateFields.size() == 0)
+		{
+			display_message(ERROR_MESSAGE, "Region.defineAllFaces.  No valid coordinate fields found");
+			return CMZN_ERROR_ARGUMENT;
+		}
+	}
+	if (highestMeshDimension == 1)
+	{
+		return CMZN_OK;
+	}
+	this->beginChangeFields();
+	FE_mesh* feMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, highestMeshDimension);
+	cmzn_fieldcache* fieldcache = cmzn_fieldcache::create(this);
+	int return_code = CMZN_OK;
+	for (size_t i = 0; i < coordinateFields.size(); ++i)
+	{
+		cmzn_field* field = coordinateFields[i];
+		if (!cmzn_field_finite_element_get_FE_field(field)->isDefinedOnMeshes())
+		{
+			continue; // don't waste our time
+		}
+		FeMeshFaceMap* meshFaceMap = FeMeshFaceMap::create(feMesh, field, fieldcache);
+		if (!meshFaceMap)
+		{
+			return_code = CMZN_ERROR_GENERAL;
+			break;
+		}
+		for (int dimension = highestMeshDimension; dimension > 1; --dimension)
+		{
+			int result = feMesh->defineAllElementFaces(*meshFaceMap);
+			if (result == CMZN_WARNING_PART_DONE)
+			{
+				return_code = result;
+			}
+			else if (result == CMZN_ERROR_NOT_FOUND)
+			{
+				if (return_code != CMZN_WARNING_PART_DONE)
+				{
+					return_code = result;
+				}
+			}
+			else
+			{
+				return_code = result;
+				break;
+			}
+		}
+		cmzn::Deaccess(meshFaceMap);
+	}
+	this->endChangeFields();
+	return return_code;
+}
+
 /**
  * Create an iterator for the region's fields.
  * @return  Accessed iterator.
@@ -1466,9 +1573,11 @@ int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id fieldmodule)
 int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule)
 {
 	if (!fieldmodule)
+	{
 		return CMZN_ERROR_ARGUMENT;
-	return FE_region_define_faces(
-		cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region());
+	}
+	cmzn_region* region = cmzn_fieldmodule_get_region_internal(fieldmodule);
+	return region->defineAllFaces(/*coordinateField*/nullptr);
 }
 
 int cmzn_region_begin_change(struct cmzn_region *region)

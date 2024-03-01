@@ -1908,7 +1908,7 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_finite_element */
 
-int Computed_field_get_type_finite_element(struct Computed_field *field,
+int Computed_field_get_type_finite_element(cmzn_field *field,
 	struct FE_field **fe_field)
 {
 	Computed_field_finite_element* core;
@@ -1918,6 +1918,16 @@ int Computed_field_get_type_finite_element(struct Computed_field *field,
 		return 1;
 	}
 	return 0;
+}
+
+FE_field* cmzn_field_finite_element_get_FE_field(cmzn_field* field)
+{
+	Computed_field_finite_element* core;
+	if (field && (0 != (core = dynamic_cast<Computed_field_finite_element*>(field->core))))
+	{
+		return core->fe_field;
+	}
+	return nullptr;
 }
 
 namespace {

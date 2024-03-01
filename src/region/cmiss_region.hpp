@@ -371,6 +371,23 @@ public:
 	 * @return  Non-accessed region, or nullptr if failed. */
 	cmzn_region *createSubregion(const char *path);
 
+	/** Ensure face elements are defined for all higher dimensional elements,
+	 * sharing faces where fields are defined from identical node parameters on
+	 * multiple parents.
+	 * Only works for fields with node-based parameter maps. Note implementation
+	 * is not perfect: only matches the same nodes and centroid.
+	 * @param coordinateField  If supplied, only defines faces where this field
+	 * is defined, otherwise tries all coordinate fields with distinct mesh
+	 * definitions. Valid fields must be finite element type with up to 3
+	 * components and at least as many components as the highest dimension mesh,
+	 * and with 'coordinate type' flag set.
+	 * @return  Result OK on success, ERROR_ARGUMENT if the coordinate field is
+	 * invalid or no valid coordinate fields found, WARNING_PART_DONE if some
+     * faces unable to be defined due to coordinate fields not being defined,
+	 * ERROR_NOT_FOUND if no new faces defined for this reason, or any other
+	 * error if failed in a more serious way. */
+	int defineAllFaces(cmzn_field* coordinateField = nullptr);
+
 	cmzn_fielditerator *createFielditerator() const;
 
 	/** Called only by Field constructor code to assign cache index */

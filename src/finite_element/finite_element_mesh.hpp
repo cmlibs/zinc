@@ -711,6 +711,8 @@ public:
 	virtual void destroyedElementGroup(DsLabelsGroup& destroyedElementLabelsGroup) = 0;
 };
 
+class FeMeshFaceMap;
+
 /**
  * A set of elements in the FE_region.
  */
@@ -841,12 +843,6 @@ private:
 	FE_mesh *faceMesh; // not accessed
 	FE_nodeset *nodeset; // not accessed
 
-	/* information for defining faces */
-	/* existence of element_type_node_sequence_list can tell us whether faces
-		 are being defined */
-	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
-	bool definingFaces;
-
 	FieldDerivative *fieldDerivatives[MAXIMUM_MESH_DERIVATIVE_ORDER];
 
 	// caches of field ranges over elements of this mesh, to speed up FindMeshLocation Field
@@ -864,7 +860,8 @@ private:
 
 	virtual void createChangeLog();
 
-	int findOrCreateFace(DsLabelIndex parentIndex, int faceNumber, DsLabelIndex& faceIndex);
+	int findOrCreateFace(DsLabelIndex parentIndex, int faceNumber,
+		FeMeshFaceMap& meshFaceMap, DsLabelIndex& faceIndex);
 
 	void cleanupElementPrivate(DsLabelIndex elementIndex);
 
@@ -1011,6 +1008,16 @@ public:
 	void setParentMesh(FE_mesh *parentMeshIn)
 	{
 		this->parentMesh = parentMeshIn;
+	}
+
+	FE_mesh* getTopLevelMesh()
+	{
+		FE_mesh* topLevelMesh = this;
+		while (topLevelMesh->parentMesh)
+		{
+			topLevelMesh = topLevelMesh->getParentMesh();
+		}
+		return topLevelMesh;
 	}
 
 	void setNodeset(FE_nodeset *nodesetIn)
@@ -1274,13 +1281,12 @@ public:
 
 	DsLabelIndex getElementFirstNeighbour(DsLabelIndex elementIndex, int faceNumber, int &newFaceNumber);
 
-	int defineElementFaces(DsLabelIndex elementIndex);
+	// only called by FeMeshFaceMap::create()
+	int fillMeshFaceMap(FeMeshFaceMap& meshFaceMap);
 
-	int begin_define_faces();
+	int defineElementFaces(DsLabelIndex elementIndex, FeMeshFaceMap& meshFaceMap);
 
-	void end_define_faces();
-
-	int define_faces();
+	int defineAllElementFaces(FeMeshFaceMap& meshFaceMap);
 
 	int destroyElement(cmzn_element *element);
 
@@ -1360,6 +1366,53 @@ public:
 
 	bool mergePart2Fields(const FE_mesh &source);
 
+};
+
+struct FeFaceDescription;
+
+class FeFaceDescriptionMap;
+
+/**
+ * Map for efficiently finding faces and lines by common nodes and centroids.
+ * Keep only while defining faces
+ */
+class FeMeshFaceMap : public cmzn::RefCounted
+{
+	FE_mesh* topLevelMesh;  // top-level mesh this is created for, accessed.
+	cmzn_field* coordinateField;  // accessed coordinate field used to match face for, up to 3 components
+	FE_field* feField;  // finite element field for the above coordinateField, not accessed
+	cmzn_fieldcache* fieldcache;  // field cache for evaluating element coordinates
+	// map to faces for 1-D (index 0) and 2-D (index 1) faces/line meshes
+	FeFaceDescriptionMap* faceDescriptionMaps[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
+
+	FeMeshFaceMap(FE_mesh* topLevelMeshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn);
+
+	int fillFaceMeshMap(FE_mesh* faceMesh);
+
+public:
+
+	~FeMeshFaceMap();
+
+	static FeMeshFaceMap* create(FE_mesh* meshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn);
+
+	FeFaceDescriptionMap* getFaceDescriptionMap(FE_mesh* faceMesh) const;
+
+	FE_mesh* getTopLevelMesh() const
+	{
+		return this->topLevelMesh;
+	}
+
+	/**
+	 * Create a [face] element description for quickly mapping to a common face.
+	 * Note it is technically able to be created for a top-level element.
+	 * @param element  An element to get description of (unless faceNumber provided).
+	 * @param faceNumber If non-negative, get description of that face number of element.
+	 * @param result  On return result OK on success with valid face description,
+	 * result NOT_FOUND if no face description due to field not defined, or any other
+	 * error if failed without face description.
+	 * @return  A face descriptions structure, or nullptr if failed or not able to be created.
+	 */
+	FeFaceDescription* createFaceDescription(cmzn_element* element, int faceNumber, int& result);
 };
 
 inline DsLabelIdentifier cmzn_element::getIdentifier() const
@@ -1760,6 +1813,23 @@ public:
 			checkedMfts.push_back(mft);
 		}
 		return false;
+	}
+
+	/** @return  true if this and other are defined with matching mesh field templates. */
+	bool hasMatchingMeshFieldTemplates(FE_mesh_field_data& other)
+	{
+		if (this->componentCount != other.componentCount)
+		{
+			return false;
+		}
+		for (int c = 0; c < this->componentCount; ++c)
+		{
+			if (this->getComponentMeshfieldtemplate(c) != other.getComponentMeshfieldtemplate(c))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 };
 
