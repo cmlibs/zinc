@@ -3269,6 +3269,7 @@ FeMeshFaceMap::~FeMeshFaceMap()
 {
 	cmzn::Deaccess(this->topLevelMesh);
 	cmzn_field::deaccess(this->coordinateField);
+	FE_field::deaccess(this->feField);
 	cmzn_fieldcache::deaccess(this->fieldcache);
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; ++d)
 	{
