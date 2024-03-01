@@ -3412,6 +3412,7 @@ FeFaceDescription* FeMeshFaceMap::createFaceDescription(cmzn_element* element, i
 	for (int n = 0; n < nodeCount; ++n)
 	{
 		nodeIdentifiers[n] = nodes[n]->getIdentifier();
+		cmzn_node::deaccess(nodes[n]);
 	}
 	delete[] nodes;
 	nodes = nullptr;
