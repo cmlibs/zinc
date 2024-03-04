@@ -257,10 +257,10 @@ static int draw_glyph_set_stl(Stl_context& stl_context, gtObject *object)
 			axis1_vertex_count = 0, axis2_values_per_vertex = 0, axis2_vertex_count = 0,
 			axis3_values_per_vertex = 0, axis3_vertex_count = 0, scale_values_per_vertex = 0,
 			scale_vertex_count = 0;
-		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
-		GT_object *glyph = glyph_set->glyph;
-		if (glyph)
+		GT_object* glyph = nullptr;
+		if ((glyph_set) && (glyph = glyph_set->glyph))
 		{
+			cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 			if (0 < nodeset_count)
 			{
 				object->vertex_array->get_float_vertex_buffer(
