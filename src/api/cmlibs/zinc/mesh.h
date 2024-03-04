@@ -51,13 +51,13 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 
 /**
  * Get a handle to a finite element mesh from its name. A mesh is the container
- * of elements of a fixed dimension. Valid names may be any element_group field,
- * or any of the following special names:
+ * of elements of a fixed dimension.
+ * Valid names may be any of the following default mesh names:
  * "mesh3d" = 3-D elements.
  * "mesh2d" = 2-D elements including faces of 3-D elements.
  * "mesh1d" = 1-D elements including faces (lines) of 2-D elements.
- * Note that the default names for element group fields created from a group
- * is GROUP_NAME.MESH_NAME, with mesh names as above.
+ * Mesh groups (subsets of the above meshes within a group field) are found
+ * from composite names "GROUP_NAME.MESH_NAME", if existing.
  *
  * @param fieldmodule  The field module the mesh belongs to.
  * @param name  The name of the finite element mesh.
@@ -203,7 +203,7 @@ ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id elemen
  * groups they are in. All handles to removed elements become invalid.
  * All affected element iterators for the mesh or groups are invalidated.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param mesh  Handle to the mesh to destroy elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
@@ -336,7 +336,7 @@ ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
  * Ensure this mesh group contains all elements from the master mesh for which
  * the conditional field is true i.e. non-zero valued in the element.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element_group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param mesh_group  Handle to the mesh group to add elements to.
  * @param conditional_field  Field which if non-zero in an element indicates it
@@ -381,7 +381,7 @@ ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
  * Remove all elements from the mesh group for which the conditional field is
  * true i.e. non-zero valued in the element.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element_group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param mesh_group  Handle to the mesh group to remove elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it

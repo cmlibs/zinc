@@ -16,7 +16,6 @@ struct cmzn_scenefilter;
 struct cmzn_graphics;
 class GraphicsIncrementalBuild;
 struct cmzn_scene;
-struct GT_element_group;
 struct Texture;
 struct cmzn_material;
 struct cmzn_light;
@@ -282,7 +281,7 @@ public:
 /***************************************************************************//**
  * This renderer ensures that all the sub-objects are up to date.  In particular
  * this triggers scenes to generate their Graphics_object
- * representations.  (Previously this behaviour was build_GT_element_group.)
+ * representations.
  * Unless overridden this renderer only builds objects so the execute methods all
  * just return 1. 
  */

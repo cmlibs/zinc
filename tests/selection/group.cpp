@@ -178,7 +178,7 @@ TEST(ZincFieldGroup, add_remove_nodes)
 	EXPECT_TRUE(group.isValid());
 	EXPECT_EQ(RESULT_OK, result = group.setName("group"));
 
-	// test find/create node group for a subregion
+	// test find/create nodeset group for a subregion
 	NodesetGroup nodesetGroup;
 	EXPECT_FALSE(group.getNodesetGroup(childNodes).isValid());
 	EXPECT_TRUE((nodesetGroup = group.createNodesetGroup(childNodes)).isValid());
@@ -263,7 +263,7 @@ TEST(cmzn_fieldgroup, add_remove_elements)
 	cmzn_field_group_id group = cmzn_field_cast_group(groupField);
 	EXPECT_NE(static_cast<cmzn_field_group_id>(0), group);
 
-	// test find/create element group for a subregion
+	// test find/create mesh group for a subregion
 	cmzn_mesh_group_id meshGroup = 0;
 	cmzn_mesh_group_id tmpMeshGroup = 0;
 	EXPECT_EQ(static_cast<cmzn_mesh_group_id>(0), cmzn_field_group_get_mesh_group(group, childMesh3d));
@@ -348,7 +348,7 @@ TEST(ZincFieldGroup, add_remove_elements)
 	EXPECT_TRUE(group.isValid());
 	EXPECT_EQ(CMZN_OK, result = group.setName("group"));
 
-	// test find/create element group for a subregion
+	// test find/create mesh group for a subregion
 	MeshGroup meshGroup;
 	EXPECT_FALSE(group.getMeshGroup(childMesh3d).isValid());
 	EXPECT_TRUE((meshGroup = group.createMeshGroup(childMesh3d)).isValid());
@@ -464,7 +464,7 @@ TEST(ZincFieldGroup, add_remove_elements_conditional)
 
 	EXPECT_EQ(0, linesMeshGroup.getSize());
 
-	// copy into another element group to test conditional add/removal
+	// copy into another mesh group to test conditional add/removal
 	// optimisation for smaller groups
 	FieldGroup otherGroup = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(otherGroup.isValid());
@@ -555,7 +555,7 @@ TEST(ZincFieldGroup, add_remove_nodes_conditional)
 		}
 	}
 
-	// copy into another element group to test conditional add/removal
+	// copy into another mesh group to test conditional add/removal
 	// optimisation for smaller groups
 	FieldGroup otherGroup = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(otherGroup.isValid());

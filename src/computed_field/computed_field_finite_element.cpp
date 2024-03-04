@@ -3846,9 +3846,8 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	// while the mesh field has changes the ranges are not used
 	// changes to groups are fine: deletion of elements immediately removes them from any groups, and their ranges from mesh field ranges
 	// Any elements added to groups won't have a range so will fallback to the original find xi algorithm
-	// the evaluated flag is cleared when FindMeshLocation field is notified of change to either mesh field or element group
-	//cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
-	if (meshField->isResultChanged()/* || ((elementGroupField) && cmzn_field_element_group_base_cast(elementGroupField)->isResultChanged())*/)
+	// the evaluated flag is cleared when FindMeshLocation field is notified of change to either mesh field or search mesh group
+	if (meshField->isResultChanged())
 	{
 		// mesh field ranges are invalid while mesh field has unnotified result changes
 		meshFieldRanges = nullptr;

@@ -14,10 +14,10 @@
 /**
  * @brief A generic group field used for grouping local subobjects.
  *
- * A generic group field type able to record which local subobjects are in the
- * group (recorded by attached node group and element group fields), or whether
- * the entire local region is in the group. This field returns true/1 at domain
- * locations in the group, false/0 otherwise.
+ * A generic group field type able to contain subsets of domains (nodesets and
+ * meshes) or whether the entire local region is in the group.
+ * This field returns true/1 when evaluated at domain locations in the group,
+ * false/0 otherwise.
  * The group field also maintains links to child groups in child regions, for
  * building subsets of entire region trees.
  */
