@@ -171,7 +171,6 @@ cmzn_field_id cmzn_fieldmodule_find_field_by_name(
 	cmzn_fieldmodule_id fieldmodule, const char *field_name)
 {
 	cmzn_field *field;
-	struct MANAGER(Computed_field) *manager;
 
 	if (fieldmodule && field_name)
 	{
