@@ -224,7 +224,7 @@ int cmzn_sceneviewer::setTransparencyMode(cmzn_sceneviewer_transparency_mode tra
 	return CMZN_OK;
 }
 
-cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_viewer *scene_viewer)
+cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(cmzn_sceneviewer_id scene_viewer)
 {
 	cmzn_sceneviewerinput_id input = 0;
 	if (scene_viewer)
@@ -307,7 +307,7 @@ int cmzn_sceneviewerinput_set_modifier_flags(cmzn_sceneviewerinput_id input,
 }
 
 int cmzn_sceneviewerinput_set_button_type(cmzn_sceneviewerinput_id input,
-	cmzn_sceneviewerinput_button_type button_type)
+	enum cmzn_sceneviewerinput_button_type button_type)
 {
 	if (input)
 	{
@@ -317,7 +317,8 @@ int cmzn_sceneviewerinput_set_button_type(cmzn_sceneviewerinput_id input,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sceneviewerinput_event_type event_type)
+int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input,
+	enum cmzn_sceneviewerinput_event_type event_type)
 {
 	if (input)
 	{
@@ -2392,7 +2393,7 @@ Scene_viewer_render_scene_in_viewport to access this function.
 	return (return_code);
 } /* Scene_viewer_render_scene_private */
 
-int cmzn_sceneviewer_render_scene(struct Scene_viewer *sceneviewer)
+int cmzn_sceneviewer_render_scene(cmzn_sceneviewer_id sceneviewer)
 {
 	int return_code;
 	if (sceneviewer)
@@ -3731,7 +3732,7 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 } /* Scene_viewer_input_transform */
 
 int cmzn_sceneviewer_process_sceneviewerinput(
-	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input)
+	cmzn_sceneviewer_id scene_viewer, cmzn_sceneviewerinput_id input)
 {
 	return Scene_viewer_input_transform(scene_viewer, input);
 }
@@ -3775,6 +3776,41 @@ Scene_viewer_sleep to restore normal activity.
 
 	return (return_code);
 } /* Scene_viewer_awaken */
+
+#ifdef FUTURE_API
+/**
+ * Returns the scene viewer freespin tool tumble angle.
+ */
+ZINC_API int cmzn_sceneviewer_get_freespin_tumble_angle(cmzn_sceneviewer_id sceneviewer,
+	double* tumble_angle);
+
+/**
+ * Sets the scene viewer freespin tool tumble angle.
+ */
+ZINC_API int cmzn_sceneviewer_set_freespin_tumble_angle(cmzn_sceneviewer_id sceneviewer,
+	double tumble_angle);
+
+/**
+ * Gets the scene viewer tumble axis.  The <tumble_axis> is the vector
+ * about which the scene is turning relative to its lookat point.
+ */
+ZINC_API int cmzn_sceneviewer_get_freespin_tumble_axis(cmzn_sceneviewer_id sceneviewer,
+	double* tumble_axis);
+
+/**
+ * Sets the scene viewer spinning in idle time.  The <tumble_axis> is the vector
+ * about which the scene is turning relative to its lookat point and the
+ * <tumble_angle> controls how much it turns on each redraw.
+ */
+ZINC_API int cmzn_sceneviewer_start_freespin(cmzn_sceneviewer_id sceneviewer,
+	double* tumble_axis, double tumble_angle);
+
+/**
+ * Tells the scene viewer to stop all automatic informations that it produces,
+ * eg. automatic tumble.
+ */
+ZINC_API int cmzn_sceneviewer_stop_animations(cmzn_sceneviewer_id sceneviewer);
+#endif
 
 int Scene_viewer_get_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
 	double *tumble_angle)
@@ -3971,6 +4007,21 @@ See Scene_viewer_set_background_texture_info for meaning of return values.
 
 	return (return_code);
 } /* Scene_viewer_get_background_texture_info */
+
+#ifdef FUTURE_API
+/**
+ * If there is a background_texture in the scene viewer, these values specify the
+ * top,left corner, in user coordinates, where it will be displayed, while the
+ * next two parameters specify the size it will have in these coordinates.
+ * If the bk_texture_undistort_on flag is set, radial distortion parameters from the background texture are un-distorted when the
+ * texture is displayed. It does this by drawing it as a collection of polygons;
+ * the last parameter controls the size of polygons used to do this.
+ */
+ZINC_API int cmzn_sceneviewer_set_background_texture_info(cmzn_sceneviewer_id sceneviewer,
+	double bk_texture_left, double bk_texture_top,
+	double bk_texture_width, double bk_texture_height,
+	int bk_texture_undistort_on, double bk_texture_max_pixels_per_polygon);
+#endif
 
 int Scene_viewer_set_background_texture_info(struct Scene_viewer *scene_viewer,
 	double bk_texture_left,double bk_texture_top,
@@ -5669,6 +5720,43 @@ int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer
 
 	return (return_code);
 }
+#ifdef FUTURE_API
+/**
+ * Gets the viewing volume of the scene viewer.
+ */
+ZINC_API int cmzn_sceneviewer_get_viewing_volume(cmzn_sceneviewer_id sceneviewer,
+	double* left, double* right, double* bottom, double* top, double* near_plane,
+	double* far_plane);
+
+/**
+ * Sets the viewing volume of the scene viewer. Unless the viewing volume is the
+ * same shape as the window, taking into account the aspect, the scene viewer will
+ * enlarge it to maintain the desired aspect ratio. Hence, the values specified
+ * represent the minimum viewing volume. The left, right, bottom and top values
+ * are at the lookat point, not on the near plane as OpenGL assumes. This gives a
+ * similar sized viewing_volume for both parallel and perspective projections.
+ * The viewing volume can be made unsymmetric to create special effects such as
+ * rendering a higher resolution image in parts.
+ */
+ZINC_API int cmzn_sceneviewer_set_viewing_volume(cmzn_sceneviewer_id sceneviewer,
+	double left, double right, double bottom, double top, double near_plane,
+	double far_plane);
+
+// C++
+int getViewingVolume(double* left, double* right, double* bottom, double* top,
+	double* near_plane, double* far_plane) const
+{
+	return cmzn_sceneviewer_get_viewing_volume(id, left, right, bottom, top,
+		near_plane, far_plane);
+}
+
+int setViewingVolume(double left, double right, double bottom, double top,
+	double near_plane, double far_plane)
+{
+	return cmzn_sceneviewer_set_viewing_volume(id, left, right, bottom, top,
+		near_plane, far_plane);
+}
+#endif
 
 int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
 	double left,double right,double bottom,double top,
@@ -5832,6 +5920,26 @@ int cmzn_sceneviewer_set_antialias_sampling(cmzn_sceneviewer_id sceneviewer,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+#ifdef FUTURE_API
+/**
+ * Get the depth of field and focal depth of the scene viewer.
+ */
+ZINC_API int cmzn_sceneviewer_get_depth_of_field(cmzn_sceneviewer_id sceneviewer,
+	double* depth_of_field, double* focal_depth);
+
+/**
+ * Set a simulated <depth_of_field> for the scene viewer.
+ * If <depth_of_field> is 0, then this is disabled, essentially an infinite depth.
+ * Otherwise, <depth_of_field> is a normalised length in z space, so 1 is a
+ * significant value, 0.1 is a small value causing significant distortion.
+ * The <focal_depth> is depth in normalised device coordinates, -1 at near plane
+ * and +1 at far plane.  At this <focal_depth> the image is in focus no matter
+ * how small the <depth_of_field>.
+ */
+ZINC_API int cmzn_sceneviewer_set_depth_of_field(cmzn_sceneviewer_id sceneviewer,
+	double depth_of_field, double focal_depth);
+#endif
+
 int Scene_viewer_get_depth_of_field(struct Scene_viewer *scene_viewer,
 	double *depth_of_field, double *focal_depth)
 /*******************************************************************************
@@ -5976,14 +6084,8 @@ Returns the width and height of the Scene_viewers drawing area.
 	return (return_code);
 } /* Scene_viewer_get_viewport_size */
 
-int cmzn_sceneviewer_set_viewport_size(struct Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_set_viewport_size(cmzn_sceneviewer_id scene_viewer,
 	int width, int height)
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Sets the width and height of the Scene_viewers drawing area.
-==============================================================================*/
 {
 	int return_code = 0;
 
@@ -6588,7 +6690,7 @@ It is expected to be byte sized values for each of Red Green and Blue only.
 	return (return_code);
 } /* Scene_viewer_set_pixel_image */
 
-int cmzn_sceneviewer_view_all(struct Scene_viewer *scene_viewer)
+int cmzn_sceneviewer_view_all(cmzn_sceneviewer_id scene_viewer)
 {
 	int return_code;
 
@@ -6854,6 +6956,13 @@ Gets the <graphics_buffer> used for 3D graphics in the scene_viewer.
 
 	return (graphics_buffer);
 } /* Scene_viewer_get_graphics_buffer */
+
+#ifdef FUTURE_API
+/**
+ * Returns a count of the number of scene viewer redraws.
+ */
+ZINC_API unsigned int cmzn_sceneviewer_get_frame_count(cmzn_sceneviewer_id sceneviewer);
+#endif
 
 unsigned int Scene_viewer_get_frame_count(struct Scene_viewer *scene_viewer)
 /*******************************************************************************

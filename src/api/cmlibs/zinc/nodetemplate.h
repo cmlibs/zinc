@@ -152,7 +152,7 @@ ZINC_API cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
  */
 ZINC_API int cmzn_nodetemplate_set_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field,
-	struct cmzn_timesequence *timesequence);
+	cmzn_timesequence_id timesequence);
 
 /**
  * Removes field from list of fields to define or undefine in node template.

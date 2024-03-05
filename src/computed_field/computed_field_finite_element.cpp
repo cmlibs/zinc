@@ -4739,7 +4739,7 @@ int Computed_field_is_exterior::evaluateDerivative(cmzn_fieldcache& cache, RealF
 } // namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
-	struct cmzn_fieldmodule *fieldmodule)
+	cmzn_fieldmodule_id fieldmodule)
 {
 	cmzn_field *field = nullptr;
 	if (fieldmodule)
@@ -4880,7 +4880,7 @@ int Computed_field_is_on_face::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 } // namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
-	struct cmzn_fieldmodule *fieldmodule, cmzn_element_face_type face)
+	cmzn_fieldmodule_id fieldmodule, enum cmzn_element_face_type face)
 {
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) && (ENUMERATOR_STRING(cmzn_element_face_type)(face)))

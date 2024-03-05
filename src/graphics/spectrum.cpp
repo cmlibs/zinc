@@ -1185,14 +1185,7 @@ position one greater than the last.
 } /* Spectrum_add_component */
 
 int cmzn_spectrum_remove_spectrumcomponent(cmzn_spectrum_id spectrum,
-	struct cmzn_spectrumcomponent *component)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1998
-
-DESCRIPTION :
-Removes the <component> from <spectrum> and decrements the position
-of all subsequent component.
-==============================================================================*/
+	cmzn_spectrumcomponent_id component)
 {
 	int return_code = 0;
 

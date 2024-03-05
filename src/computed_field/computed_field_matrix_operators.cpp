@@ -1861,8 +1861,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 
 cmzn_field_id cmzn_fieldmodule_create_field_transpose(
-	struct cmzn_fieldmodule *fieldmodule,
-	int source_number_of_rows, struct Computed_field *source_field)
+	cmzn_fieldmodule_id fieldmodule,
+	int source_number_of_rows, cmzn_field_id source_field)
 {
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) && (0 < source_number_of_rows) &&

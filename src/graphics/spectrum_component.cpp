@@ -551,7 +551,7 @@ int cmzn_spectrumcomponent_set_colour_reverse(cmzn_spectrumcomponent_id componen
 }
 
 enum cmzn_spectrumcomponent_colour_mapping_type cmzn_spectrumcomponent_get_colour_mapping_type(
-	struct cmzn_spectrumcomponent *component)
+	cmzn_spectrumcomponent_id component)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -578,7 +578,7 @@ Returns the colour mapping of the cmzn_spectrumcomponent <spectrum>.
 	return (type);
 } /* cmzn_spectrumcomponent_get_colour_mapping_type */
 
-int cmzn_spectrumcomponent_set_colour_mapping_type(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_colour_mapping_type(cmzn_spectrumcomponent_id component,
 	enum cmzn_spectrumcomponent_colour_mapping_type type)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
@@ -621,7 +621,7 @@ double cmzn_spectrumcomponent_get_exaggeration(cmzn_spectrumcomponent_id compone
 	return 0.0;
 }
 
-int cmzn_spectrumcomponent_set_exaggeration(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_exaggeration(cmzn_spectrumcomponent_id component,
 	double value)
 {
 	if (component)
@@ -728,7 +728,7 @@ double cmzn_spectrumcomponent_get_step_value(cmzn_spectrumcomponent_id component
 	return 0.0;
 }
 
-int cmzn_spectrumcomponent_set_step_value(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_step_value(cmzn_spectrumcomponent_id component,
 	double param1)
 {
 	if (component)
@@ -857,14 +857,14 @@ int cmzn_spectrumcomponent_set_extend_below(cmzn_spectrumcomponent_id component,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-bool cmzn_spectrumcomponent_is_fix_minimum(struct cmzn_spectrumcomponent *component)
+bool cmzn_spectrumcomponent_is_fix_minimum(cmzn_spectrumcomponent_id component)
 {
 	if (component)
 		return component->fix_minimum;
 	return false;
 }
 
-int cmzn_spectrumcomponent_set_fix_minimum(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_fix_minimum(cmzn_spectrumcomponent_id component,
 	bool fix_minimum)
 {
 	if (component)
@@ -879,14 +879,14 @@ int cmzn_spectrumcomponent_set_fix_minimum(struct cmzn_spectrumcomponent *compon
 	return CMZN_ERROR_ARGUMENT;
 }
 
-bool cmzn_spectrumcomponent_is_fix_maximum(struct cmzn_spectrumcomponent *component)
+bool cmzn_spectrumcomponent_is_fix_maximum(cmzn_spectrumcomponent_id component)
 {
 	if (component)
 		return component->fix_maximum;
 	return false;
 }
 
-int cmzn_spectrumcomponent_set_fix_maximum(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_fix_maximum(cmzn_spectrumcomponent_id component,
 	bool fix_maximum)
 {
 	if (component)

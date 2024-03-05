@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : cmiss_region.cpp
  *
  * Definition of cmzn_region, container of fields for representing model data,
@@ -1507,7 +1507,7 @@ cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region)
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_region_create_child(struct cmzn_region *region,
+cmzn_region_id cmzn_region_create_child(cmzn_region_id region,
 	const char *name)
 {
 	if (!region)
@@ -1518,8 +1518,8 @@ struct cmzn_region *cmzn_region_create_child(struct cmzn_region *region,
 	return childRegion;
 }
 
-struct cmzn_region *cmzn_region_create_subregion(
-	struct cmzn_region *region, const char *path)
+cmzn_region_id cmzn_region_create_subregion(cmzn_region_id region,
+	const char *path)
 {
 	if (!region)
 		return nullptr;
@@ -1586,7 +1586,7 @@ int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule)
 	return region->defineAllFaces(/*coordinateField*/nullptr);
 }
 
-int cmzn_region_begin_change(struct cmzn_region *region)
+int cmzn_region_begin_change(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1597,7 +1597,7 @@ int cmzn_region_begin_change(struct cmzn_region *region)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_region_end_change(struct cmzn_region *region)
+int cmzn_region_end_change(cmzn_region_id region)
 {
 	if (region)
 		return region->endChange();
@@ -1605,7 +1605,7 @@ int cmzn_region_end_change(struct cmzn_region *region)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_region_begin_hierarchical_change(struct cmzn_region *region)
+int cmzn_region_begin_hierarchical_change(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1615,7 +1615,7 @@ int cmzn_region_begin_hierarchical_change(struct cmzn_region *region)
 	return 0;
 }
 
-int cmzn_region_end_hierarchical_change(struct cmzn_region *region)
+int cmzn_region_end_hierarchical_change(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1636,7 +1636,7 @@ cmzn_context_id cmzn_region_get_context(cmzn_region_id region)
 	return nullptr;
 }
 
-char *cmzn_region_get_name(struct cmzn_region *region)
+char *cmzn_region_get_name(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1647,7 +1647,7 @@ char *cmzn_region_get_name(struct cmzn_region *region)
 	return nullptr;
 }
 
-int cmzn_region_set_name(struct cmzn_region *region, const char *name)
+int cmzn_region_set_name(cmzn_region_id region, const char *name)
 {
 	if (region)
 		return region->setName(name);
@@ -1659,22 +1659,22 @@ char *cmzn_region_get_root_region_path(void)
 	return duplicate_string(CMZN_REGION_PATH_SEPARATOR_STRING);
 }
 
-char *cmzn_region_get_path(struct cmzn_region *region)
+char *cmzn_region_get_path(cmzn_region_id region)
 {
 	if (region)
 		return region->getPath();
 	return nullptr;
 }
 
-char *cmzn_region_get_relative_path(struct cmzn_region *region,
-	struct cmzn_region *base_region)
+char *cmzn_region_get_relative_path(cmzn_region_id region,
+	cmzn_region_id base_region)
 {
 	if (region)
 		return region->getRelativePath(base_region);
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_region_get_parent(struct cmzn_region *region)
+cmzn_region_id cmzn_region_get_parent(cmzn_region_id region)
 {
 	if (!region)
 		return nullptr;
@@ -1691,7 +1691,7 @@ cmzn_region_id cmzn_region_get_root(cmzn_region_id region)
 	return region->getRoot()->access();
 }
 
-struct cmzn_region *cmzn_region_get_first_child(struct cmzn_region *region)
+cmzn_region_id cmzn_region_get_first_child(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1702,7 +1702,7 @@ struct cmzn_region *cmzn_region_get_first_child(struct cmzn_region *region)
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_region_get_next_sibling(struct cmzn_region *region)
+cmzn_region_id cmzn_region_get_next_sibling(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1713,7 +1713,7 @@ struct cmzn_region *cmzn_region_get_next_sibling(struct cmzn_region *region)
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_region_get_previous_sibling(struct cmzn_region *region)
+cmzn_region_id cmzn_region_get_previous_sibling(cmzn_region_id region)
 {
 	if (region)
 	{
@@ -1724,7 +1724,7 @@ struct cmzn_region *cmzn_region_get_previous_sibling(struct cmzn_region *region)
 	return nullptr;
 }
 
-void cmzn_region_reaccess_next_sibling(struct cmzn_region **region_address)
+void cmzn_region_reaccess_next_sibling(cmzn_region_id *region_address)
 {
 	if (region_address && (*region_address))
 	{
@@ -1736,40 +1736,39 @@ void cmzn_region_reaccess_next_sibling(struct cmzn_region **region_address)
 	}
 }
 
-int cmzn_region_append_child(struct cmzn_region *region,
-	struct cmzn_region *new_child)
+int cmzn_region_append_child(cmzn_region_id region, cmzn_region_id new_child)
 {
 	if (region)
 		return region->appendChild(new_child);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_region_insert_child_before(struct cmzn_region *region,
-	struct cmzn_region *new_child, struct cmzn_region *ref_child)
+int cmzn_region_insert_child_before(cmzn_region_id region,
+	cmzn_region_id new_child, cmzn_region_id ref_child)
 {
 	if (region)
 		return region->insertChildBefore(new_child, ref_child);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_region_remove_child(struct cmzn_region *region,
-	struct cmzn_region *old_child)
+int cmzn_region_remove_child(cmzn_region_id region,
+	cmzn_region_id old_child)
 {
 	if (region)
 		return region->removeChild(old_child);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-bool cmzn_region_contains_subregion(struct cmzn_region *region,
-	struct cmzn_region *subregion)
+bool cmzn_region_contains_subregion(cmzn_region_id region,
+	cmzn_region_id subregion)
 {
 	if (region)
 		return region->containsSubregion(subregion);
 	return false;
 }
 
-struct cmzn_region *cmzn_region_find_child_by_name(
-	struct cmzn_region *region, const char *name)
+cmzn_region_id cmzn_region_find_child_by_name(
+	cmzn_region_id region, const char *name)
 {
 	if ((region) && (name))
 	{
@@ -1780,8 +1779,8 @@ struct cmzn_region *cmzn_region_find_child_by_name(
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_region_find_subregion_at_path(
-	struct cmzn_region *region, const char *path)
+cmzn_region_id cmzn_region_find_subregion_at_path(
+	cmzn_region_id region, const char *path)
 {
 	if (!region)
 		return nullptr;
@@ -1914,14 +1913,7 @@ indented from the left margin by <indent> spaces; this is incremented by
 	return (return_code);
 } /* cmzn_region_list */
 
-/***************************************************************************//**
- * Returns field module container for this region's fields, which must be passed
- * to field factory create methods.
- *
- * @param region  The region from which to obtain the field module.
- * @return  Field module object.
- */
-struct cmzn_fieldmodule *cmzn_region_get_fieldmodule(struct cmzn_region *region)
+cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region)
 {
 	return cmzn_fieldmodule_create(region);
 }

@@ -832,126 +832,126 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_light_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_light_type);
 
-double cmzn_light_get_quadratic_attenuation(struct cmzn_light *light)
+double cmzn_light_get_quadratic_attenuation(cmzn_light_id light)
 {
 	if (light)
 		return light->getQuadraticAttenuation();
 	return 0.0;
 }
 
-int cmzn_light_set_quadratic_attenuation(struct cmzn_light *light, double quadratic_attenuation)
+int cmzn_light_set_quadratic_attenuation(cmzn_light_id light, double quadratic_attenuation)
 {
 	if (light)
 		return light->setQuadraticAttenuation(quadratic_attenuation);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-double cmzn_light_get_linear_attenuation(struct cmzn_light *light)
+double cmzn_light_get_linear_attenuation(cmzn_light_id light)
 {
 	if (light)
 		return light->getLinearAttenuation();
 	return 0.0;
 }
 
-int cmzn_light_set_linear_attenuation(struct cmzn_light *light, double linear_attenuation)
+int cmzn_light_set_linear_attenuation(cmzn_light_id light, double linear_attenuation)
 {
 	if (light)
 		return light->setLinearAttenuation(linear_attenuation);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-double cmzn_light_get_constant_attenuation(struct cmzn_light *light)
+double cmzn_light_get_constant_attenuation(cmzn_light_id light)
 {
 	if (light)
 		return light->getConstantAttenuation();
 	return 0.0;
 }
 
-int cmzn_light_set_constant_attenuation(struct cmzn_light *light, double constant_attenuation)
+int cmzn_light_set_constant_attenuation(cmzn_light_id light, double constant_attenuation)
 {
 	if (light)
 		return light->setConstantAttenuation(constant_attenuation);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_get_colour_rgb(struct cmzn_light *light, double *colour)
+int cmzn_light_get_colour_rgb(cmzn_light_id light, double *colour)
 {
 	if (light)
 		return light->getColour(colour);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_set_colour_rgb(struct cmzn_light *light, const double *colour)
+int cmzn_light_set_colour_rgb(cmzn_light_id light, const double *colour)
 {
 	if (light)
 		return light->setColour(colour);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_get_direction(struct cmzn_light *light, double *direction)
+int cmzn_light_get_direction(cmzn_light_id light, double *direction)
 {
 	if (light)
 		return light->getDirection(direction);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_set_direction(struct cmzn_light *light, const double *direction)
+int cmzn_light_set_direction(cmzn_light_id light, const double *direction)
 {
 	if (light)
 		return light->setDirection(direction);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_get_position(struct cmzn_light *light, double *position)
+int cmzn_light_get_position(cmzn_light_id light, double *position)
 {
 	if (light)
 		return light->getPosition(position);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_set_position(struct cmzn_light *light, const double *position)
+int cmzn_light_set_position(cmzn_light_id light, const double *position)
 {
 	if (light)
 		return light->setPosition(position);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-double cmzn_light_get_spot_cutoff(struct cmzn_light *light)
+double cmzn_light_get_spot_cutoff(cmzn_light_id light)
 {
 	if (light)
 		return light->getSpotCutoff();
 	return 0.0;
 }
 
-int cmzn_light_set_spot_cutoff(struct cmzn_light *light, double spot_cutoff)
+int cmzn_light_set_spot_cutoff(cmzn_light_id light, double spot_cutoff)
 {
 	if (light)
 		return light->setSpotCutoff(spot_cutoff);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-double cmzn_light_get_spot_exponent(struct cmzn_light *light)
+double cmzn_light_get_spot_exponent(cmzn_light_id light)
 {
 	if (light)
 		return light->getSpotExponent();
 	return 0.0;
 }
 
-int cmzn_light_set_spot_exponent(struct cmzn_light *light, double spot_exponent)
+int cmzn_light_set_spot_exponent(cmzn_light_id light, double spot_exponent)
 {
 	if (light)
 		return light->setSpotExponent(spot_exponent);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_light_type cmzn_light_get_type(struct cmzn_light *light)
+enum cmzn_light_type cmzn_light_get_type(cmzn_light_id light)
 {
 	if (light)
 		return light->getType();
 	return CMZN_LIGHT_TYPE_INVALID;
 }
 
-int cmzn_light_set_type(struct cmzn_light *light, enum cmzn_light_type light_type)
+int cmzn_light_set_type(cmzn_light_id light, enum cmzn_light_type light_type)
 {
 	if (light)
 		return light->setType(light_type);
@@ -1163,73 +1163,73 @@ cmzn_lightmodule *cmzn_lightmodule_create()
 	return cmzn_lightmodule::create();
 }
 
-cmzn_lightmodule *cmzn_lightmodule_access(
-	cmzn_lightmodule *lightmodule)
+cmzn_lightmodule_id cmzn_lightmodule_access(
+	cmzn_lightmodule_id lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->access();
 	return 0;
 }
 
-int cmzn_lightmodule_destroy(cmzn_lightmodule **lightmodule_address)
+int cmzn_lightmodule_destroy(cmzn_lightmodule_id *lightmodule_address)
 {
 	if (lightmodule_address)
 		return cmzn_lightmodule::deaccess(*lightmodule_address);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_light *cmzn_lightmodule_create_light(
-	cmzn_lightmodule *lightmodule)
+cmzn_light_id cmzn_lightmodule_create_light(
+	cmzn_lightmodule_id lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->createLight();
 	return 0;
 }
 
-int cmzn_lightmodule_begin_change(cmzn_lightmodule *lightmodule)
+int cmzn_lightmodule_begin_change(cmzn_lightmodule_id lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->beginChange();
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_lightmodule_end_change(cmzn_lightmodule *lightmodule)
+int cmzn_lightmodule_end_change(cmzn_lightmodule_id lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->endChange();
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_light *cmzn_lightmodule_find_light_by_name(
-	cmzn_lightmodule *lightmodule, const char *name)
+cmzn_light_id cmzn_lightmodule_find_light_by_name(
+	cmzn_lightmodule_id lightmodule, const char *name)
 {
 	if (lightmodule)
 		return lightmodule->findLightByName(name);
 	return 0;
 }
 
-cmzn_light *cmzn_lightmodule_get_default_light(cmzn_lightmodule *lightmodule)
+cmzn_light_id cmzn_lightmodule_get_default_light(cmzn_lightmodule_id lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->getDefaultLight();
 	return 0;
 }
 
-int cmzn_lightmodule_set_default_light(cmzn_lightmodule *lightmodule, cmzn_light *light)
+int cmzn_lightmodule_set_default_light(cmzn_lightmodule_id lightmodule, cmzn_light_id light)
 {
 	if (lightmodule)
 		return lightmodule->setDefaultLight(light);
 	return 0;
 }
 
-cmzn_light *cmzn_lightmodule_get_default_ambient_light(cmzn_lightmodule *lightmodule)
+cmzn_light_id cmzn_lightmodule_get_default_ambient_light(cmzn_lightmodule_id lightmodule) 
 {
 	if (lightmodule)
 		return lightmodule->getDefaultAmbientLight();
 	return 0;
 }
 
-int cmzn_lightmodule_set_default_ambient_light(cmzn_lightmodule *lightmodule, cmzn_light *light)
+int cmzn_lightmodule_set_default_ambient_light(cmzn_lightmodule_id lightmodule, cmzn_light_id light)
 {
 	if (lightmodule)
 		return lightmodule->setDefaultAmbientLight(light);
@@ -1253,7 +1253,7 @@ int cmzn_light_destroy(cmzn_light_id *light_address)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-char *cmzn_light_get_name(struct cmzn_light *light)
+char *cmzn_light_get_name(cmzn_light_id light)
 {
 	char *name = NULL;
 	if (light && light->name)
@@ -1263,7 +1263,7 @@ char *cmzn_light_get_name(struct cmzn_light *light)
 	return name;
 }
 
-int cmzn_light_set_name(struct cmzn_light *light, const char *name)
+int cmzn_light_set_name(cmzn_light_id light, const char *name)
 {
 	int return_code;
 
