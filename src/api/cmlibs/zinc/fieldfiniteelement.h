@@ -648,7 +648,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
-	cmzn_fieldmodule_id fieldmodule, cmzn_element_face_type face);
+	cmzn_fieldmodule_id fieldmodule, enum cmzn_element_face_type face);
 
 /**
  * Cast field to 'is on face' type if valid.

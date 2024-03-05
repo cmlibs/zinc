@@ -24,72 +24,72 @@ extern "C" {
  * Creates a field where the components are the sine value (using radians) of the
  * components of the source_field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field Input field
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sin(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field);
 
 /**
  * Creates a field where the components are the cosine value (using radians) of the
  * components of the source_field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field Input field (components in radians)
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cos(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field);
 
 /**
  * Creates a field where the components are the trigonometric tangent value
  * (using radians) of the components of the source_field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field Input field (components in radians)
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_tan(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field);
 
 /**
  * Creates a field where the components are the arcsine value (using radians) of the
  * components of the source_field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field Input field (components in radians)
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_asin(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field);
 
 /**
  * Creates a field where the components are the arccosine value (using radians) of the
  * components of the source_field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field Input field
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_acos(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field);
 
 /**
  * Creates a field where the components are the arctangent value (using radians) of the
  * components of the source_field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field Input field
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_atan(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field);
 
 /**
@@ -98,13 +98,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_atan(
  * a plane and the vector (x,y) where x is the source_field_one component and y is
  * the source_field_two component.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_atan2(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 

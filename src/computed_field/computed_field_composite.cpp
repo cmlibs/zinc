@@ -707,25 +707,13 @@ Note returned fields are not allocated in arrays.
 	return (return_code);
 } /* Computed_field_get_type_composite */
 
-cmzn_field *cmzn_fieldmodule_create_field_constant(
-	struct cmzn_fieldmodule *fieldmodule,
+cmzn_field_id cmzn_fieldmodule_create_field_constant(
+	cmzn_fieldmodule_id fieldmodule,
 	int number_of_values, const double *values)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Creates a constructor for COMPUTED_FIELD_COMPOSITE which has constant
-components of the <number_of_values> listed in <values> array.
-Since a constant field performs a subset of the capabilities of the composite
-field type but the latter is somewhat complicated to set up, this is a
-convenience function for building a composite field which has <number_of_values>
-<values>.
-==============================================================================*/
 {
 	int i, *source_field_numbers, *source_value_numbers;
 	cmzn_field *field = nullptr;
 
-	ENTER(cmzn_fieldmodule_create_field_constant);
 	if ((fieldmodule) && (0 < number_of_values) && values)
 	{
 		ALLOCATE(source_field_numbers, int, number_of_values);
@@ -764,10 +752,8 @@ convenience function for building a composite field which has <number_of_values>
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_constant.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
-} /* cmzn_fieldmodule_create_field_constant */
+}
 
 FE_value *Computed_field_constant_get_values_storage(cmzn_field *field)
 {
@@ -943,15 +929,9 @@ Returned field is ACCESSed once.
 	return (component_field);
 } /* Computed_field_manager_get_component_wrapper */
 
-cmzn_field *cmzn_fieldmodule_create_field_identity(
-	struct cmzn_fieldmodule *fieldmodule,
-	cmzn_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Changes <field> into type composite with one input field, the <source_field>.
-==============================================================================*/
+cmzn_field_id cmzn_fieldmodule_create_field_identity(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field)
 {
 	int i, number_of_values, *source_field_numbers,
 		*source_value_numbers;

@@ -1,115 +1,10 @@
-/*******************************************************************************
+/**
 FILE : computed_field.cpp
 
-LAST MODIFIED : 16 April 2008
-
-DESCRIPTION :
-A cmzn_field is an abstraction of an FE_field. For each FE_field there is
-a wrapper cmzn_field automatically generated that can be called on to
-evaluate the field in an element or node. The interface for evaluating
-Computed_fields is much simpler than for FE_field, since they hide details of
-caching of evaluation caches, for example. Their main benefit is in
-allowing new types of fields to be defined as functions of other fields and
-source information, such as scale, offset, magnitude, gradient,
-coordinate transformations etc., thus providing cmgui with the ability to
-provide customised features without cluttering dialogs such as the graphical
-element editor. Also, finite_element_to_graphics_object is greatly simplified
-because it can assume all coordinate and other fields are in rectangular
-cartesian coordinates - if they are not already, the rest of the program can
-make a simple wrapper computed_field effecting this change. A positive
-consequence of this change is that this file should in time contain the only
-code for invoking coordinate transformations in the entire program.
-
-In addition to these functional benefits, computed fields cache the last
-position they were evaluated at and the values and derivatives of the field at
-that point so that if values at that point are requested again they can be
-immediately returned. This allows functions using a number of fields, some
-possibly depending on each other to get the maximum benefit out of values that
-have already been calculated, without requiring complex logic for determining
-if a value is already known.
-
-
-NOTES ABOUT COMPUTED FIELDS:
-----------------------------
-
-- Each cmzn_field has a coordinate system that tells the application how to
-interpret the field/components. The important thing to note is that it does not
-have to be the truth - you could for instance create a RC computed field that is
-simply a copy of the prolate field; the graphics functions will then plot the
-(lambda,mu,theta) as if they are (x,y,z) - to open up the heart, etc. If a
-coordinate system is not relevant to the field in question it should be left
-as rectangular cartesian so no automatic conversions are applied to it.
-
-- The number of components of a computed field depends on its type, parameters
-and/or source fields. In many cases it is possible to modify a field to give
-it different number of components. This has been prevented by the manager copy
-functions because a field may have been chosen on the basis of its number of
-components, and changing this number could have dire consequences.
-
-- The manager copy function also prevents you from creating a field that depends
-on itself in any way, to prevent infinite loops.
-
-- Each computed field has names for its components. If the field is a wrapper
-for an FE_field, the component names will match those for the FE_field,
-otherwise they will be called "1", "2", etc.
-
-
-FUTURE PLANS AND ISSUES:
-------------------------
-
-- Handling problems of evaluating fields on faces and lines that must be
-calculated on top level elements, eg. gradient, fibres, for which derivatives on
-the top level element are needed. Since in many cases it is important for the
-rest of the program to be able to specify which top-level element, if any - eg.
-one in the same group with the face on the correct side, the element evaluation
-functions will now allow a top_level_element to be supplied in addition to the
-main element that the field is evaluated on. Any field that requires calculation
-on a top-level element will use the given one or any top level element it can
-find if none supplied.
-
-eg. fibre_axes:
--coordinates - must be evaluated on top-level element with derivatives
--fibres - may be evaluated on face or line
-
-When evaluating fibre_axes source fields, ensure we have a top_level_element if
-one not supplied, then convert xi to top_level_xi. Then ask coordinates to be
-evaluated on the top_level_element:top_level_xi, fibres on the main_element,
-and in both cases pass on the top_level_element in case they have source fields
-that wish to use it.
-
-Random thoughts.
-
-If evaluating fibres on surfaces and subsequently asking for coordinates and
-derivatives on the face, how do we know whether we can convert the coordinates
-to the face and return them? Or can we assume this at all?
-
-Fields such as cmiss_number and xi depend on whether the element is the face or
-is top_level. Never want cmiss_number/xi to be evaluated at anything but the
-main element:xi; hence, need to pass these to source fields as well as
-top_level_element:top_level_xi. No. If you make a field that must be evaluated
-on top_level_elements, then you must expect the element for its source fields
-to be top level too.
-
-As a result, the field changes to the top_level_element only when necessary,
-and the values returned for the top_level_element are in no way expected to
-match those for the same position on a face for eg. coordinate field.
-
-- Have a separate values cache for node computations. I am thinking of
-cases where we have wrappers for calculating a coordinate field at element:xi
-taken from a field or fields at a node - for showing the projection of a data
-point during mesh fitting. At present the coordinate field of data pt. position
-may be the same as that of the element, but the position is quite different.
-Ideally, they should have distinct coordinate fields, but 3-component coordinate
-fields with the name 'coordinates' are quite pervasive.
-
-- Should handle coordinate system differently. For the majority of field types
-it can simply be assumed, eg. from source fields, or RC/irrelevant if scalar.
-For those that do allow it to be specified, should make it a leaf option with
-the gfx define field commands. Also should not allow coordinate system to be
-changed if field is in use, since field may be chosen on the basis of this,
-like the number of components.
-
-==============================================================================*/
+Definition of generic field class defining a mapping from domain locations
+to field values. Evaluation is given by Computed_field_core derived object
+owned by field, of which Finite Element field is one type.
+*/
 /* Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -1813,7 +1708,7 @@ int Computed_field_is_non_linear(struct cmzn_field *field)
 	return return_code;
 }
 
-int cmzn_field_get_number_of_components(cmzn_field *field)
+int cmzn_field_get_number_of_components(cmzn_field_id field)
 {
 	if (field)
 		return field->number_of_components;

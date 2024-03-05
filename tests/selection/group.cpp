@@ -1427,3 +1427,118 @@ TEST(ZincFieldGroup, getCreateSubregionSubobjectGroups)
 	EXPECT_FALSE(fred.createSubregionFieldGroup(child).isValid());
 	EXPECT_FALSE(fred.getOrCreateSubregionFieldGroup(child).isValid());
 }
+
+TEST(ZincFieldGroup, removeEmptySubobjectGroups)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(OK, zinc.root_region.readFile(
+		resourcePath("fieldmodule/cube.exformat").c_str()));
+
+	FieldGroup bob = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	MeshGroup bobMesh3d = bob.createMeshGroup(mesh3d);
+	EXPECT_TRUE(bobMesh3d.isValid());
+	EXPECT_EQ(RESULT_OK, bobMesh3d.addElement(mesh3d.findElementByIdentifier(1)));
+	EXPECT_EQ(1, bobMesh3d.getSize());
+	bobMesh3d = MeshGroup();  // non-zero size without an external handle
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	MeshGroup bobMesh2d = bob.createMeshGroup(mesh2d);
+	EXPECT_TRUE(bobMesh2d.isValid());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	MeshGroup bobMesh1d = bob.createMeshGroup(mesh1d);
+	EXPECT_TRUE(bobMesh1d.isValid());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	NodesetGroup bobNodes = bob.getNodesetGroup(nodes);
+	EXPECT_FALSE(bobNodes.isValid());
+	bobNodes = bob.createNodesetGroup(nodes);
+	EXPECT_TRUE(bobNodes.isValid());
+
+	// make empty child region group and empty mesh group to show not affected
+	Region child = zinc.root_region.createChild("child");
+	EXPECT_TRUE(child.isValid());
+	FieldGroup childBob = bob.createSubregionFieldGroup(child);
+	EXPECT_TRUE(childBob.isValid());
+	Fieldmodule childFm = child.getFieldmodule();
+	Mesh childMesh2d = childFm.findMeshByDimension(2);
+	MeshGroup childBobMesh2d = bob.createMeshGroup(childMesh2d);
+	EXPECT_TRUE(childBobMesh2d.isValid());
+	childBobMesh2d = MeshGroup();
+
+	EXPECT_EQ(RESULT_OK, bob.removeEmptySubobjectGroups());
+	// nothing should have been removed either because not empty or handle held
+	EXPECT_TRUE(bob.getMeshGroup(mesh3d).isValid());
+	EXPECT_EQ(bobMesh2d, bob.getMeshGroup(mesh2d));
+	EXPECT_EQ(bobMesh1d, bob.getMeshGroup(mesh1d));
+	EXPECT_EQ(bobNodes, bob.getNodesetGroup(nodes));
+	EXPECT_EQ(childBob, bob.getSubregionFieldGroup(child));
+	EXPECT_TRUE(bob.getMeshGroup(childMesh2d).isValid());
+
+	bobMesh2d = MeshGroup();
+	bobMesh1d = MeshGroup();
+	EXPECT_EQ(RESULT_OK, bobNodes.addNode(nodes.findNodeByIdentifier(1)));
+	EXPECT_EQ(1, bobNodes.getSize());
+	bobNodes = NodesetGroup();
+	EXPECT_EQ(RESULT_OK, bob.removeEmptySubobjectGroups());
+	// non-empty group and subregion groups are not affected
+	EXPECT_TRUE(bob.getMeshGroup(mesh3d).isValid());
+	EXPECT_FALSE(bob.getMeshGroup(mesh2d).isValid());
+	EXPECT_FALSE(bob.getMeshGroup(mesh1d).isValid());
+	EXPECT_TRUE(bob.getNodesetGroup(nodes).isValid());
+	EXPECT_EQ(childBob, bob.getSubregionFieldGroup(child));
+	EXPECT_TRUE(bob.getMeshGroup(childMesh2d).isValid());
+
+	bob.getMeshGroup(mesh3d).removeAllElements();
+	bob.getNodesetGroup(nodes).removeAllNodes();
+	EXPECT_EQ(RESULT_OK, bob.removeEmptySubobjectGroups());
+	EXPECT_FALSE(bob.getMeshGroup(mesh3d).isValid());
+	EXPECT_FALSE(bob.getNodesetGroup(nodes).isValid());
+}
+
+TEST(ZincFieldGroup, removeSubregionFieldGroup)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(OK, zinc.root_region.readFile(
+		resourcePath("fieldmodule/cube.exformat").c_str()));
+
+	FieldGroup bob = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, bob.setName("bob"));
+
+	Region child = zinc.root_region.createChild("child");
+	EXPECT_TRUE(child.isValid());
+	FieldGroup childBob = bob.createSubregionFieldGroup(child);
+	EXPECT_TRUE(childBob.isValid());
+
+	Region sibling = zinc.root_region.createChild("sibling");
+	EXPECT_TRUE(sibling.isValid());
+
+	Region grandchild = child.createChild("grandchild");
+	EXPECT_TRUE(grandchild.isValid());
+	FieldGroup grandchildBob = bob.createSubregionFieldGroup(grandchild);
+	EXPECT_TRUE(grandchildBob.isValid());
+	char* name = grandchildBob.getName();
+	EXPECT_STREQ("bob", name);
+	cmzn_deallocate(name);
+
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, bob.removeSubregionFieldGroup(Region()));
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, bob.removeSubregionFieldGroup(sibling));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, childBob.removeSubregionFieldGroup(child));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, childBob.removeSubregionFieldGroup(sibling));
+
+	EXPECT_EQ(RESULT_OK, bob.removeSubregionFieldGroup(grandchild));
+	// Check can still find grandchildBob by name
+	EXPECT_EQ(grandchildBob, grandchild.getFieldmodule().findFieldByName("bob"));
+	grandchildBob = FieldGroup();
+	EXPECT_FALSE(grandchild.getFieldmodule().findFieldByName("bob").isValid());
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, childBob.removeSubregionFieldGroup(grandchild));
+
+	childBob = FieldGroup();
+	EXPECT_TRUE(child.getFieldmodule().findFieldByName("bob").isValid());  // since held by parent bob
+	EXPECT_EQ(RESULT_OK, bob.removeSubregionFieldGroup(child));
+	EXPECT_FALSE(child.getFieldmodule().findFieldByName("bob").isValid());
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, bob.removeSubregionFieldGroup(child));
+ }

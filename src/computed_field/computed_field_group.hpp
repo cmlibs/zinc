@@ -125,6 +125,12 @@ private:
 	/** @return  True if nodeset or mesh groups are present in hierarchy */
 	bool hasDomainGroups() const;
 
+	/** Get subregion group without discovery by name. Recursive.
+	 * @param subregion  The subregion to get group for. Must not be same as this region.
+	 * @param parentGroupCore  Parent group core if a  group is returned.
+	 * @return  Subregion group or nullptr if not found. */
+	cmzn_field_group* getSubregionGroupPrivate(cmzn_region* subregion, Computed_field_group*& parentGroupCore);
+
 public:
 
 	Computed_field_group(cmzn_region *region);
@@ -169,12 +175,22 @@ public:
 	 * @return  Non-accessed subregion group, or nullptr if none */
 	cmzn_field_group* getOrCreateSubregionFieldGroup(cmzn_region *subregion, bool canGet=true, bool canCreate=true);
 
+	/** Remove subregion group field from this group.
+     * The subregion must be in the tree of this group's local/owning region.
+     * If the affected subregion group is in use by other clients it will remain
+     * unmodified after call but outside this group, otherwise it is destroyed. */
+	int removeSubregionFieldGroup(cmzn_region* subregion);
+
 	cmzn_field_group* getFirstNonEmptyGroup();
 
 	int for_each_group_hiearchical(cmzn_field_group_iterator_function function, void *user_data);
 
-	int remove_empty_subgroups();
+	/** remove empty subobject groups in this region, except any with external references held */
+	void removeEmptySubobjectGroups();
 
+	/** remove empty subobject groups in this region, and requests the same for each subregion
+	 * group, removing the subregion group if it is empty */
+	int removeEmptySubgroups();
 
 	/* Record that group has changed locally by object add, with client notification */
 	void changeAddLocal()
@@ -203,7 +219,7 @@ public:
 
 	virtual void subregionRemoved(cmzn_region *subregion)
 	{
-		this->remove_child_group(subregion);
+		this->removeChildGroup(subregion);
 	}
 
 	bool isEmptyLocal() const;
@@ -252,7 +268,7 @@ private:
 
 	virtual const char* get_type_string();
 
-	void remove_child_group(struct cmzn_region *child_region);
+	void removeChildGroup(struct cmzn_region *childRegion);
 
 	int compare(Computed_field_core* other_field);
 

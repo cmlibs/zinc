@@ -109,8 +109,21 @@ ZINC_API int cmzn_field_group_clear(cmzn_field_group_id group);
 ZINC_API int cmzn_field_group_clear_local(cmzn_field_group_id group);
 
 /**
+ * Remove and destroy all empty subobject groups (mesh and nodeset groups) of
+ * this group in this region.
+ * Subobject groups are not removed while external references are held to them.
+ *
+ * @param group  Handle to group field to modify.
+ * @return  CMZN_OK on success, CMZN_ERROR_ARGUMENT if invalid group.
+ */
+ZINC_API int cmzn_field_group_remove_empty_subobject_groups(
+	cmzn_field_group_id group);
+
+/**
  * Remove and destroy all empty subregion and subobject groups of this group.
- * Empty subgroups in use by other clients may remain after call.
+ * Subobject groups are not removed while external references are held to them.
+ * Empty subregion groups in use by other clients will remain after call but
+ * outside this group.
  *
  * @param group  Handle to group field to modify.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -176,7 +189,8 @@ ZINC_API bool cmzn_field_group_contains_region(cmzn_field_group_id group, cmzn_r
 /**
  * Remove specified region from group if currently in it.
  * The specified region must be in the tree of this group's local/owning region.
- * This function is not hierarchical: subregions are not removed.
+ * This function effectively clears the local group in the region; its
+ * subregion groups are unchanged.
  *
  * @param group  Handle to group field to modify.
  * @param region  Handle to region to be removed.
@@ -245,6 +259,22 @@ ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_fie
  * @return  Handle to subregion group field, or invalid handle on failure.
  */
 ZINC_API cmzn_field_group_id cmzn_field_group_get_or_create_subregion_field_group(
+	cmzn_field_group_id group, cmzn_region_id subregion);
+
+/**
+ * Remove subregion group field from this group.
+ * The subregion must be in the tree of this group's local/owning region.
+ * If the affected subregion group is in use by other clients it will remain
+ * unmodified after call but outside this group, otherwise it is destroyed.
+ *
+ * @param group  Handle to group field to modify.
+ * @param subregion  Handle to region to remove subgroup for, must be a
+ * descendent region of the owning group's region.
+ * @return  CMZN_OK on success, CMZN_ERROR_ARGUMENT if bad arguments or
+ * subregion is not in group's region tree and below it, CMZN_ERROR_NOT_FOUND
+ * if subregion group not found.
+ */
+ZINC_API int cmzn_field_group_remove_subregion_field_group(
 	cmzn_field_group_id group, cmzn_region_id subregion);
 
 /**

@@ -1051,8 +1051,8 @@ int cmzn_scene_add_graphics(struct cmzn_scene *scene,
 	return (return_code);
 }
 
-int cmzn_scene_remove_graphics(struct cmzn_scene *scene,
-	struct cmzn_graphics *graphics)
+int cmzn_scene_remove_graphics(cmzn_scene_id scene,
+	cmzn_graphics_id graphics)
 {
 	if (scene && graphics && ((graphics->getScene() == scene) ||
 		(scene->editorCopy && (graphics->getScene() == 0))))
@@ -1286,7 +1286,7 @@ cmzn_scene_id cmzn_region_get_scene(cmzn_region_id region)
 	return cmzn_scene_access(region->getScene());
 }
 
-int cmzn_scene_destroy(struct cmzn_scene **scene_address)
+int cmzn_scene_destroy(cmzn_scene_id *scene_address)
 {
 	if (scene_address && *scene_address)
 	{
@@ -1983,7 +1983,7 @@ int for_each_graphics_in_cmzn_scene(struct cmzn_scene *scene,
 	return (return_code);
 }
 
-int cmzn_scene_get_number_of_graphics(struct cmzn_scene *scene)
+int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene)
 {
 	int number_of_graphics;
 	if (scene)
@@ -2091,15 +2091,14 @@ int cmzn_scene_modify(struct cmzn_scene *destination,
 	return (return_code);
 } /* cmzn_scene_modify */
 
-bool cmzn_scene_get_visibility_flag(
-	struct cmzn_scene *scene)
+bool cmzn_scene_get_visibility_flag(cmzn_scene_id scene)
 {
 	if (scene)
 		return scene->visibility_flag;
 	return false;
 }
 
-int cmzn_scene_set_visibility_flag(struct cmzn_scene *scene,
+int cmzn_scene_set_visibility_flag(cmzn_scene_id scene,
 	bool visibility_flag)
 {
 	if (scene)
