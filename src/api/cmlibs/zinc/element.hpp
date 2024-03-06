@@ -146,6 +146,16 @@ public:
 		return Elementfieldtemplate(cmzn_element_get_elementfieldtemplate(this->id, field.getId(), componentNumber));
 	}
 
+	int getNumberOfFaces() const
+	{
+		return cmzn_element_get_number_of_faces(this->id);
+	}
+
+	Element getFaceElement(int faceNumber) const
+	{
+		return Element(cmzn_element_get_face_element(this->id, faceNumber));
+	}
+
 	int getIdentifier() const
 	{
 		return cmzn_element_get_identifier(id);

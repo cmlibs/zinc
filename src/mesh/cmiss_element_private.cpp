@@ -108,6 +108,36 @@ cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 	return cmzn_elementfieldtemplate::create(eft);
 }
 
+int cmzn_element_get_number_of_faces(cmzn_element_id element)
+{
+	if (element)
+	{
+		FE_element_shape* elementShape = element->getElementShape();
+		if (elementShape)
+		{
+			return FE_element_shape_get_number_of_faces(elementShape);
+		}
+	}
+	return 0;
+}
+
+cmzn_element_id cmzn_element_get_face_element(cmzn_element_id element, int faceNumber)
+{
+	if ((element) && (element->getMesh()))
+	{
+		DsLabelIndex faceElementIndex = element->getMesh()->getElementFace(element->getIndex(), faceNumber - 1);
+		if (faceElementIndex != DS_LABEL_INDEX_INVALID)
+		{
+			cmzn_element* faceElement = element->getMesh()->getFaceMesh()->getElement(faceElementIndex);
+			if (faceElement)
+			{
+				return faceElement->access();
+			}
+		}
+	}
+	return nullptr;
+}
+
 int cmzn_element_get_identifier(cmzn_element_id element)
 {
 	if (element)

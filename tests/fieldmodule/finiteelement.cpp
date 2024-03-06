@@ -3024,6 +3024,102 @@ TEST(ZincFieldmodule, defineFacesCollapsed)
 	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
 	EXPECT_EQ(9, mesh2d.getSize());
 	EXPECT_EQ(14, mesh1d.getSize());
+
+	const int checkElementIdentifier = 2;
+	const int expectedFaceIdentifiers[6] = { -1, 6, 7, 8, 5, 9 };
+	const int expectedLineIdentifiers[6][4] =
+	{
+		{ -1, -1, -1, -1 },
+		{ 10, 11, 9, 12 },
+		{ 6, 13, -1, 10 },
+		{ 8, 14, -1, 11 },
+		{ 4, 9, 6, 8 },
+		{ 4, 12, 13, 14 }
+	};
+	Element element = mesh3d.findElementByIdentifier(checkElementIdentifier);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(Element::SHAPE_TYPE_CUBE, element.getShapeType());
+	EXPECT_EQ(6, element.getNumberOfFaces());
+	EXPECT_FALSE(element.getFaceElement(0).isValid());
+	EXPECT_FALSE(element.getFaceElement(7).isValid());
+	for (int f = 0; f < 6; ++f)
+	{
+		Element face = element.getFaceElement(f + 1);
+		if (expectedFaceIdentifiers[f] == -1)
+		{
+			EXPECT_FALSE(face.isValid());
+			continue;
+		}
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(Element::SHAPE_TYPE_SQUARE, face.getShapeType());
+		EXPECT_EQ(expectedFaceIdentifiers[f], face.getIdentifier());
+		EXPECT_EQ(4, face.getNumberOfFaces());
+		for (int l = 0; l < 4; ++l)
+		{
+			Element line = face.getFaceElement(l + 1);
+			if (expectedLineIdentifiers[f][l] == -1)
+			{
+				EXPECT_FALSE(line.isValid());
+				continue;
+			}
+			EXPECT_TRUE(line.isValid());
+			EXPECT_EQ(Element::SHAPE_TYPE_LINE, line.getShapeType());
+			EXPECT_EQ(expectedLineIdentifiers[f][l], line.getIdentifier());
+			EXPECT_EQ(0, line.getNumberOfFaces());
+		}
+	}
+}
+
+TEST(ZincFieldmodule, defineFacesTetMesh)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldio/tetmesh.ex2").c_str()));
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(102, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(232, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(167, mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(38, nodes.getSize());
+
+	Element invalidElement;
+	EXPECT_EQ(0, invalidElement.getNumberOfFaces());
+	EXPECT_FALSE(invalidElement.getFaceElement(1).isValid());
+
+	const int checkElementIdentifier = 102;
+	const int expectedFaceIdentifiers[4] = { 232, 187, 199, 182 };
+	const int expectedLineIdentifiers[4][3] =
+	{
+		{ 153, 144, 149 },
+		{ 153, 1, 145 },
+		{ 144, 145, 151 },
+		{ 151, 1, 149 }
+	};
+	Element element = mesh3d.findElementByIdentifier(checkElementIdentifier);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(Element::SHAPE_TYPE_TETRAHEDRON, element.getShapeType());
+	EXPECT_EQ(4, element.getNumberOfFaces());
+	EXPECT_FALSE(element.getFaceElement(0).isValid());
+	EXPECT_FALSE(element.getFaceElement(5).isValid());
+	for (int f = 0; f < 4; ++f)
+	{
+		Element face = element.getFaceElement(f + 1);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(Element::SHAPE_TYPE_TRIANGLE, face.getShapeType());
+		EXPECT_EQ(expectedFaceIdentifiers[f], face.getIdentifier());
+		EXPECT_EQ(3, face.getNumberOfFaces());
+		for (int l = 0; l < 3; ++l)
+		{
+			Element line = face.getFaceElement(l + 1);
+			EXPECT_TRUE(line.isValid());
+			EXPECT_EQ(Element::SHAPE_TYPE_LINE, line.getShapeType());
+			EXPECT_EQ(expectedLineIdentifiers[f][l], line.getIdentifier());
+			EXPECT_EQ(0, line.getNumberOfFaces());
+		}
+	}
 }
 
 // Test that creating a finite element field while change cache active

@@ -1312,7 +1312,7 @@ DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementInde
 {
 	// could remove following test if good arguments guaranteed
 	if ((faceNumber < 0) || (faceNumber >= this->faceCount))
-		return CMZN_ERROR_ARGUMENT;
+		return DS_LABEL_INDEX_INVALID;
 	DsLabelIndex *faces = this->getElementFaces(elementIndex);
 	if (!faces)
 		return DS_LABEL_INDEX_INVALID;

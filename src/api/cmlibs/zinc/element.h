@@ -188,6 +188,31 @@ ZINC_API cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 	cmzn_element_id element, cmzn_field_id field, int componentNumber);
 
 /**
+ * Get the number of faces for this element. This is how many faces its shape
+ * should have, irrespective of whether faces are defined or whether they are
+ * collapsed by a coordinate field. Note: 1-D line elements do not have faces.
+ *
+ * @param element  The element to query.
+ * @return  Number of faces for element's shape, or 0 if none or failed due to
+ * invalid element or if element shape is undefined.
+ */
+ZINC_API int cmzn_element_get_number_of_faces(cmzn_element_id element);
+
+/**
+ * Get the face element of dimension one less than this element at the
+ * given face index. Can be NULL/invalid if faces have not been defined, if it
+ * has been destroyed, or is undefined due to being collapsed for the
+ * coordinate field used when defining faces.
+ *
+ * @param element  The element to query.
+ * @param faceNumber  The face number from 1 to number of faces.
+ * @return  Handle to face element or NULL/invalid handle if none or invalid
+ * element or faceNumber is out of range.
+ */
+ZINC_API cmzn_element_id cmzn_element_get_face_element(cmzn_element_id element,
+	int faceNumber);
+
+/**
  * Returns the non-negative integer uniquely identifying the element in its
  * mesh.
  *
