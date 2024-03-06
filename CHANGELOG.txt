@@ -1,6 +1,7 @@
 CHANGE LOG: Zinc Library
 
 v4.1.0
+Fix define faces to match faces with same nodes, centroid and orientation, and better detect collapsed elements.
 Add API to selectively remove subobject and subregion groups from group field.
 
 v4.0.1

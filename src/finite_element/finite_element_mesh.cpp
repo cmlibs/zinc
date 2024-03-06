@@ -2830,15 +2830,17 @@ DsLabelIndex FE_mesh::getElementFirstNeighbour(DsLabelIndex elementIndex, int fa
 /** Used to index lists of FeFaceDescription for fast matching */
 struct FeFaceDescriptionIdentifier
 {
-	const int nodeCount, centroidComponentsCount;
+	const int nodeCount, componentsCount;
 	int* nodeIdentifiers;  // sorted in constructor from low to high
 	FE_value centroid[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value orientation[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value tolerance;  // tolerance for comparing centroid coordinates
 
 	FeFaceDescriptionIdentifier(int nodeCountIn, int* nodeIdentifiersIn,
-		int centroidComponentsCountIn, FE_value* centroidIn, FE_value toleranceIn) :
+		int componentsCountIn, const FE_value* centroidIn,
+		const FE_value* orientationIn, FE_value toleranceIn) :
 		nodeCount(nodeCountIn),
-		centroidComponentsCount(centroidComponentsCountIn),
+		componentsCount(componentsCountIn),
 		nodeIdentifiers(new int[nodeCountIn]),
 		tolerance(toleranceIn)
 	{
@@ -2859,9 +2861,10 @@ struct FeFaceDescriptionIdentifier
 				}
 			}
 		}
-		for (int c = 0; c < this->centroidComponentsCount; ++c)
+		for (int c = 0; c < this->componentsCount; ++c)
 		{
 			this->centroid[c] = centroidIn[c];
+			this->orientation[c] = orientationIn[c];
 		}
 	}
 
@@ -2888,38 +2891,60 @@ struct FeFaceDescriptionIdentifier
 		{
 			return -1;
 		}
-		else if (nodeCount > identifier2.nodeCount)
+		if (nodeCount > identifier2.nodeCount)
 		{
 			return 1;
 		}
-		else
+		// 2. compare node identifiers, which must be in ascending order
+		for (int i = 0; i < nodeCount; ++i)
 		{
-			// 2. compare node_numbers - assumed in ascending order
-			for (int i = 0; i < nodeCount; ++i)
+			if (identifier1.nodeIdentifiers[i] < identifier2.nodeIdentifiers[i])
 			{
-				if (identifier1.nodeIdentifiers[i] < identifier2.nodeIdentifiers[i])
-				{
-					return -1;
-				}
-				else if (identifier1.nodeIdentifiers[i] > identifier2.nodeIdentifiers[i])
-				{
-					return 1;
-				}
+				return -1;
+			}
+			if (identifier1.nodeIdentifiers[i] > identifier2.nodeIdentifiers[i])
+			{
+				return 1;
 			}
 		}
 		// no need to compare face dimension as should only be in lists of same dimension
-		const int centroidComponentsCount = identifier1.centroidComponentsCount;
-		// 3. compare centroid, using max tolerance
+		const int componentsCount = identifier1.componentsCount;
+		// 3. compare centroids are within max tolerance
 		const FE_value tolerance = (identifier1.tolerance > identifier2.tolerance) ? identifier1.tolerance : identifier2.tolerance;
-		for (int c = 0; c < centroidComponentsCount; ++c)
+		for (int c = 0; c < componentsCount; ++c)
 		{
 			if (identifier1.centroid[c] < (identifier2.centroid[c] - tolerance))
 			{
 				return -1;
 			}
-			else if (identifier1.centroid[c] > (identifier2.centroid[c] + tolerance))
+			if (identifier1.centroid[c] > (identifier2.centroid[c] + tolerance))
 			{
 				return 1;
+			}
+		}
+		// 4. compare orientations are within tolerance, but may be opposite direction
+		FE_value dot = 0.0;
+		for (int c = 0; c < componentsCount; ++c)
+		{
+			dot += identifier1.orientation[c] * identifier2.orientation[c];
+		}
+		const FE_value sign = (dot < 0.0) ? -1.0 : 1.0;
+		const FE_value toleranceSq = tolerance * tolerance;
+		for (int c = 0; c < componentsCount; ++c)
+		{
+			const FE_value o1 = identifier1.orientation[c];
+			const FE_value o2 = sign * identifier2.orientation[c];
+			if ((o1 < (o2 - tolerance)) || (o1 > (o2 + tolerance)))
+			{
+				// need to make -1/+1 return values unaffected by sign
+				if (o1 < identifier2.orientation[c])
+				{
+					return -1;
+				}
+				else
+				{
+					return 1;
+				}
 			}
 		}
 		return 0;
@@ -2940,8 +2965,10 @@ struct FeFaceDescription
 	int accessCount;
 
 	FeFaceDescription(int nodeCountIn, int* nodeIdentifiersIn, cmzn_element* elementIn,
-			int faceNumberIn, int centroidComponentsCountIn, FE_value* centroidIn, FE_value toleranceIn) :
-		identifier(nodeCountIn, nodeIdentifiersIn, centroidComponentsCountIn, centroidIn, toleranceIn),
+			int faceNumberIn, int componentsCountIn, const FE_value* centroidIn,
+			const FE_value *orientationIn, FE_value toleranceIn) :
+		identifier(nodeCountIn, nodeIdentifiersIn, componentsCountIn, centroidIn,
+			orientationIn, toleranceIn),
 		element(elementIn->access()),
 		faceNumber(faceNumberIn),
 		accessCount(1)
@@ -3391,7 +3418,8 @@ FeFaceDescriptionMap* FeMeshFaceMap::getFaceDescriptionMap(FE_mesh* faceMesh) co
  */
 FeFaceDescription* FeMeshFaceMap::createFaceDescription(cmzn_element* element, int faceNumber, int& result)
 {
-	if ((!element) || ((element->getDimension() == 1) && (faceNumber >= 0)))
+	if ((!element) || ((element->getDimension() == 1) && (faceNumber >= 0)) ||
+		((element->getDimension() == 3) && (faceNumber < 0)))
 	{
 		display_message(ERROR_MESSAGE, "FeMeshFaceMap::createFaceDescription.  Invalid element or face number");
 		result = CMZN_ERROR_ARGUMENT;
@@ -3428,16 +3456,17 @@ FeFaceDescription* FeMeshFaceMap::createFaceDescription(cmzn_element* element, i
 		return nullptr;
 	}
 	const int elementDimension = element->getDimension();
+	const int faceDimension = get_FE_element_shape_dimension(faceShape);
+	const FE_value* faceToElement = nullptr;
 	if (faceNumber >= 0)
 	{
 		// convert face xi to element xi
 		FE_value faceXiCentroid[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-		const int faceDimension = get_FE_element_shape_dimension(faceShape);
 		for (int c = 0; c < faceDimension; ++c)
 		{
 			faceXiCentroid[c] = xiCentroid[c];
 		}
-		const FE_value* faceToElement = get_FE_element_shape_face_to_element(elementShape, faceNumber);
+		faceToElement = get_FE_element_shape_face_to_element(elementShape, faceNumber);
 		const FE_value* trans = faceToElement;
 		for (int d = 0; d < elementDimension; ++d)
 		{
@@ -3469,59 +3498,101 @@ FeFaceDescription* FeMeshFaceMap::createFaceDescription(cmzn_element* element, i
 		centroid[c] = cacheCentroid[c];
 	}
 	const DerivativeValueCache* derivativeCache = valueCache->getDerivativeValueCache(*fieldDerivative);
+	// get minimum, maximum derivative mag across element directions (or face if faceNumber < 0)
+	FE_value minDerivativeMag = 0.0;
 	FE_value maxDerivativeMag = 0.0;
-	FE_value minCrossProductMag = 0.0;
-	// make derivative components cycle fastest, xi terms slowest, and pad with zeros to use cross_product3
-	FE_value derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS * MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	for (int d = 0; d < elementDimension; ++d)
+	// make derivatives w.r.t. element xi, sort so component changes fastest, pad with zeros to use cross_product3
+	// put them in faceDerivatives which is the face if faceNumber < 0; if faceNumber >=0 these are recalculated for face below
+	FE_value faceDerivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS * MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value* fd = faceDerivatives;
+	for (int e = 0; e < elementDimension; ++e)
 	{
-		const FE_value* sd = derivativeCache->values + d;
-		FE_value* dd = derivatives + d * MAXIMUM_ELEMENT_XI_DIMENSIONS;
+		const FE_value* sd = derivativeCache->values;
 		for (int c = 0; c < componentsCount; ++c)
 		{
-			dd[c] = sd[c * elementDimension];
+			fd[c] = sd[e];
+			sd += elementDimension;
 		}
 		for (int c = componentsCount; c < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++c)
 		{
-			dd[c] = 0.0;
+			fd[c] = 0.0;
 		}
-	}
-	const FE_value* d1 = derivatives;
-	for (int d = 0; d < elementDimension; ++d)
-	{
-		const FE_value dmag = norm3(d1);
-		if (dmag == 0.0)
+		const FE_value dmag = norm3(fd);
+		if (e == 0)
 		{
-			// zero derivative => collapsed
-			result = CMZN_OK;
-			return nullptr;
+			minDerivativeMag = dmag;
+			maxDerivativeMag = dmag;
 		}
-		if (dmag > maxDerivativeMag)
+		else if (dmag < minDerivativeMag)
+		{
+			minDerivativeMag = dmag;
+		}
+		else if (dmag > maxDerivativeMag)
 		{
 			maxDerivativeMag = dmag;
 		}
-		if (((elementDimension == 2) && (d == 0)) || (elementDimension > 2))
-		{
-			const FE_value* d2 = (d == (elementDimension - 1)) ? derivatives : d1 + componentsCount;
-			FE_value r[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-			cross_product3(d1, d2, r);
-			const FE_value rmag = norm3(r);
-			if ((d == 0) || (rmag < minCrossProductMag))
-			{
-				minCrossProductMag = rmag;
-			}
-		}
-		d1 += componentsCount;
+		fd += MAXIMUM_ELEMENT_XI_DIMENSIONS;
 	}
 	const FE_value tolerance = 1.0E-6 * maxDerivativeMag;
-	if ((elementDimension > 1) && (minCrossProductMag < tolerance))
+	// prerequisite for being collapsed is having few enough nodes for dimension:
+	const bool collapsible = nodeCount <= faceDimension;
+	if (collapsible && (minDerivativeMag <= tolerance))
 	{
-		// negligible min cross product of any 2 derivatives => collapsed
+		// zero or negligible derivative => collapsed
 		result = CMZN_OK;
 		return nullptr;
 	}
+	if (faceToElement)
+	{
+		// make derivatives w.r.t. face xi, sort so component changes fastest, pad with zeros to use cross_product3
+		FE_value* fd = faceDerivatives;
+		for (int f = 0; f < faceDimension; ++f)
+		{
+			const FE_value* sd = derivativeCache->values;
+			for (int c = 0; c < componentsCount; ++c)
+			{
+				FE_value sum = 0.0;
+				for (int e = 0; e < elementDimension; ++e)
+				{
+					sum += sd[e] * faceToElement[e * elementDimension + f + 1];
+				}
+				fd[c] = sum;
+				sd += elementDimension;
+			}
+			for (int c = componentsCount; c < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++c)
+			{
+				fd[c] = 0.0;
+			}
+			fd += MAXIMUM_ELEMENT_XI_DIMENSIONS;
+		}
+	}
+	// orientation will hold tangent derivative if 1-D face,
+	// or cross product (normal) of tangent derivatives if 2-D face
+	// not implemented for MAXIMUM_ELEMENT_XI_DIMENSIONS > 3
+	FE_value orientation[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
+	if (faceDimension == 1)
+	{
+		for (int c = 0; c < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++c)
+		{
+			orientation[c] = faceDerivatives[c];
+		}
+	}
+	else // (faceDimension == 2)
+	{
+		cross_product3(faceDerivatives, faceDerivatives + MAXIMUM_ELEMENT_XI_DIMENSIONS, orientation);
+		if (collapsible)
+		{
+			const FE_value orientationMag = norm3(orientation);
+			if (orientationMag <= tolerance)
+			{
+				// negligible cross product of 2-D faceDerivatives => collapsed
+				result = CMZN_OK;
+				return nullptr;
+			}
+		}
+	}
 	FeFaceDescription* faceDescription = new FeFaceDescription(nodeCount, nodeIdentifiers.data(),
-		element, faceNumber, componentsCount, centroid, tolerance);
+		element, faceNumber, componentsCount, centroid, orientation, tolerance);
 	if (faceDescription)
 	{
 		result = CMZN_OK;

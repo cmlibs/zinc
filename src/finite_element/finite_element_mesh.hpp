@@ -1281,9 +1281,6 @@ public:
 
 	DsLabelIndex getElementFirstNeighbour(DsLabelIndex elementIndex, int faceNumber, int &newFaceNumber);
 
-	// only called by FeMeshFaceMap::create()
-	int fillMeshFaceMap(FeMeshFaceMap& meshFaceMap);
-
 	int defineElementFaces(DsLabelIndex elementIndex, FeMeshFaceMap& meshFaceMap);
 
 	int defineAllElementFaces(FeMeshFaceMap& meshFaceMap);
