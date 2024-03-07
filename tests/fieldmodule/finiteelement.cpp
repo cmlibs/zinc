@@ -3021,10 +3021,19 @@ TEST(ZincFieldmodule, defineFacesCollapsed)
 	EXPECT_EQ(0, mesh1d.getSize());
 	EXPECT_EQ(8, nodes.getSize());
 
+	// test face/parent mesh API
+	EXPECT_EQ(mesh2d, mesh3d.getFaceMesh());
+	EXPECT_EQ(mesh1d, mesh2d.getFaceMesh());
+	EXPECT_FALSE(mesh1d.getFaceMesh().isValid());
+	EXPECT_EQ(mesh2d, mesh1d.getParentMesh());
+	EXPECT_EQ(mesh3d, mesh2d.getParentMesh());
+	EXPECT_FALSE(mesh3d.getParentMesh().isValid());
+
 	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
 	EXPECT_EQ(9, mesh2d.getSize());
 	EXPECT_EQ(14, mesh1d.getSize());
 
+	// test getting face elements
 	const int checkElementIdentifier = 2;
 	const int expectedFaceIdentifiers[6] = { -1, 6, 7, 8, 5, 9 };
 	const int expectedLineIdentifiers[6][4] =
@@ -3068,6 +3077,37 @@ TEST(ZincFieldmodule, defineFacesCollapsed)
 			EXPECT_EQ(0, line.getNumberOfFaces());
 		}
 	}
+
+	// test getting parent elements
+	const int checkParentLineIdentifier = 6;
+	Element line = mesh1d.findElementByIdentifier(checkParentLineIdentifier);
+	EXPECT_TRUE(line.isValid());
+	const int expectedParentFaceIdentifiers[3] = { 2, 5, 7 };
+	const int expectedParentElementIdentifiers[3][3] =
+	{
+		// first value is number of parents, followed by parent identifiers in order
+		{ 1, 1, -1 },
+		{ 2, 1, 2 },
+		{ 1, 2, -1 }
+	};
+	EXPECT_EQ(3, line.getNumberOfParents());
+	EXPECT_FALSE(line.getParentElement(0).isValid());
+	EXPECT_FALSE(line.getParentElement(4).isValid());
+	for (int f = 0; f < 3; ++f)
+	{
+		Element face = line.getParentElement(f + 1);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(expectedParentFaceIdentifiers[f], face.getIdentifier());
+		const int expectedNumberOfParentElements = expectedParentElementIdentifiers[f][0];
+		EXPECT_EQ(expectedNumberOfParentElements, face.getNumberOfParents());
+		for (int e = 0; e < expectedNumberOfParentElements; ++e)
+		{
+			Element element = face.getParentElement(e + 1);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(expectedParentElementIdentifiers[f][e + 1], element.getIdentifier());
+			EXPECT_EQ(0, element.getNumberOfParents());
+		}
+	}
 }
 
 TEST(ZincFieldmodule, defineFacesTetMesh)
@@ -3088,7 +3128,10 @@ TEST(ZincFieldmodule, defineFacesTetMesh)
 	Element invalidElement;
 	EXPECT_EQ(0, invalidElement.getNumberOfFaces());
 	EXPECT_FALSE(invalidElement.getFaceElement(1).isValid());
+	EXPECT_EQ(0, invalidElement.getNumberOfParents());
+	EXPECT_FALSE(invalidElement.getParentElement(1).isValid());
 
+	// test getting face elements
 	const int checkElementIdentifier = 102;
 	const int expectedFaceIdentifiers[4] = { 232, 187, 199, 182 };
 	const int expectedLineIdentifiers[4][3] =
@@ -3118,6 +3161,38 @@ TEST(ZincFieldmodule, defineFacesTetMesh)
 			EXPECT_EQ(Element::SHAPE_TYPE_LINE, line.getShapeType());
 			EXPECT_EQ(expectedLineIdentifiers[f][l], line.getIdentifier());
 			EXPECT_EQ(0, line.getNumberOfFaces());
+		}
+	}
+
+	// test getting parent elements
+	const int checkParentLineIdentifier = 144;
+	Element line = mesh1d.findElementByIdentifier(checkParentLineIdentifier);
+	EXPECT_TRUE(line.isValid());
+	const int expectedParentFaceIdentifiers[4] = { 161, 162, 199, 232 };
+	const int expectedParentElementIdentifiers[4][3] =
+	{
+		// first value is number of parents, followed by parent identifiers in order
+		{ 2, 55, 75 },
+		{ 1, 55, -1 },
+		{ 2, 75, 102 },
+		{ 1, 102, -1 }
+	};
+	EXPECT_EQ(4, line.getNumberOfParents());
+	EXPECT_FALSE(line.getParentElement(0).isValid());
+	EXPECT_FALSE(line.getParentElement(5).isValid());
+	for (int f = 0; f < 4; ++f)
+	{
+		Element face = line.getParentElement(f + 1);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(expectedParentFaceIdentifiers[f], face.getIdentifier());
+		const int expectedNumberOfParentElements = expectedParentElementIdentifiers[f][0];
+		EXPECT_EQ(expectedNumberOfParentElements, face.getNumberOfParents());
+		for (int e = 0; e < expectedNumberOfParentElements; ++e)
+		{
+			Element element = face.getParentElement(e + 1);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(expectedParentElementIdentifiers[f][e + 1], element.getIdentifier());
+			EXPECT_EQ(0, element.getNumberOfParents());
 		}
 	}
 }

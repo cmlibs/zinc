@@ -243,12 +243,22 @@ ZINC_API cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term);
 
 /**
- * Returns the number of dimensions of the mesh.
+ * Get the number of dimensions of the mesh.
  *
  * @param mesh  Handle to the mesh to query.
- * @return  dimension of mesh.
+ * @return  The dimension of mesh.
  */
 ZINC_API int cmzn_mesh_get_dimension(cmzn_mesh_id mesh);
+
+/**
+ * Get the face mesh owning face elements of elements in this mesh.
+ * This is always the master mesh even if a mesh group is supplied.
+ *
+ * @param mesh  The mesh to query.
+ * @return  Handle to face mesh, or null/invalid handle if invalid mesh or mesh
+ * is dimension 1 and has no face mesh.
+ */
+ZINC_API cmzn_mesh_id cmzn_mesh_get_face_mesh(cmzn_mesh_id mesh);
 
 /**
  * Returns handle to field module for region this mesh belongs to.
@@ -276,6 +286,16 @@ ZINC_API cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh);
  * free using cmzn_deallocate().
  */
 ZINC_API char *cmzn_mesh_get_name(cmzn_mesh_id mesh);
+
+/**
+ * Get the parent mesh owning elements this mesh may have face elements of.
+ * This is always the master mesh even if a mesh group is supplied.
+ *
+ * @param mesh  The mesh to query.
+ * @return  Handle to parent mesh, or null/invalid handle if invalid mesh or
+ * mesh is already highest supported dimension, 3.
+ */
+ZINC_API cmzn_mesh_id cmzn_mesh_get_parent_mesh(cmzn_mesh_id mesh);
 
 /**
  * Return the number of elements in the mesh.

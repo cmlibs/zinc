@@ -248,6 +248,36 @@ int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
 	return result;
 }
 
+
+int cmzn_element_get_number_of_parents(cmzn_element_id element)
+{
+	if ((element) && (element->getMesh()))
+	{
+		const DsLabelIndex* parents = 0;
+		return element->getMesh()->getElementParents(element->getIndex(), parents);
+	}
+	return 0;
+}
+
+cmzn_element_id cmzn_element_get_parent_element(cmzn_element_id element, int parentNumber)
+{
+	if ((element) && (element->getMesh()) && (parentNumber > 0))
+	{
+		const DsLabelIndex* parents = 0;
+		const int parentsCount = element->getMesh()->getElementParents(element->getIndex(), parents);
+		if ((parentsCount > 0) && (parentNumber <= parentsCount))
+		{
+			const DsLabelIndex parentElementIndex = parents[parentNumber - 1];
+			cmzn_element* parentElement = element->getMesh()->getParentMesh()->getElement(parentElementIndex);
+			if (parentElement)
+			{
+				return parentElement->access();
+			}
+		}
+	}
+	return nullptr;
+}
+
 int cmzn_element_get_scale_factor(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int localScaleFactorIndex, double *valueOut)
 {

@@ -184,6 +184,16 @@ public:
 		return cmzn_element_set_nodes_by_identifier(this->id, eft.getId(), identifiersCount, identifiersIn);
 	}
 
+	int getNumberOfParents() const
+	{
+		return cmzn_element_get_number_of_parents(this->id);
+	}
+
+	Element getParentElement(int parentNumber) const
+	{
+		return Element(cmzn_element_get_parent_element(this->id, parentNumber));
+	}
+
 	int getScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex, double *valueOut) const
 	{
 		return cmzn_element_get_scale_factor(this->id, eft.getId(), scaleFactorIndex, valueOut);
