@@ -2929,7 +2929,6 @@ struct FeFaceDescriptionIdentifier
 			dot += identifier1.orientation[c] * identifier2.orientation[c];
 		}
 		const FE_value sign = (dot < 0.0) ? -1.0 : 1.0;
-		const FE_value toleranceSq = tolerance * tolerance;
 		for (int c = 0; c < componentsCount; ++c)
 		{
 			const FE_value o1 = identifier1.orientation[c];

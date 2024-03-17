@@ -513,9 +513,10 @@ int cmzn_mesh_group::addAdjacentElements(int sharedDimension)
 	}
 	const FE_mesh* faceMesh = this->feMesh->getFaceMesh();
 	const FE_mesh* lineMesh = (faceMesh) ? faceMesh->getFaceMesh() : nullptr;
-	const bool sharePoints = (sharedDimension == 0) || ((thisDimension + sharedDimension) == 0);
-	const bool shareFaces = (faceMesh) && (!sharePoints) && ((sharedDimension == -1) || (sharedDimension == (thisDimension - 1)));
-	const bool shareLines = (lineMesh) && (!sharePoints) && (!shareFaces);
+	const int absoluteSharedDimension = (sharedDimension < 0) ? thisDimension + sharedDimension : sharedDimension;
+	const bool sharePoints = absoluteSharedDimension == 0;
+	const bool addLineNeighbours = (lineMesh) && (absoluteSharedDimension < (thisDimension - 1));
+	const bool addFaceNeighbours = !addLineNeighbours;
 	int result = CMZN_OK;
 	// make new labels group for adjacent elements, later added to this group
 	DsLabelsGroup* newLabelsGroup = this->feMesh->createLabelsGroup();
@@ -564,7 +565,7 @@ int cmzn_mesh_group::addAdjacentElements(int sharedDimension)
 			const DsLabelIndex faceIndex = faces[f];
 			if (faceIndex >= 0)
 			{
-				if (shareFaces || (thisDimension == 2))
+				if (addFaceNeighbours)
 				{
 					// add parents of all faces
 					const DsLabelIndex* faceParents = nullptr;
@@ -579,7 +580,7 @@ int cmzn_mesh_group::addAdjacentElements(int sharedDimension)
 						}
 					}
 				}
-				else // if (shareLines || sharePoints)
+				else
 				{
 					// add parents' parents of all faces' faces
 					const FE_mesh::ElementShapeFaces* faceElementShapeFaces =
