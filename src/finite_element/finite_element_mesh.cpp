@@ -2467,7 +2467,7 @@ bool FE_mesh::addElementNodesToGroup(DsLabelIndex elementIndex, DsLabelsGroup& n
 	return true;
 }
 
-/** Ensure all nodes used by element are in the group.
+/** Ensure all nodes used by element are not in the group.
   * Does not handle nodes inherited from parent elements.
   * Note this is potentially expensive if there are a lot of EFTs in use.
   * @return  True on success, false on failure. */

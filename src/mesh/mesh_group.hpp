@@ -147,6 +147,11 @@ public:
 	/** @return  True if mesh group has recorded changes in membership */
 	virtual bool hasMembershipChanges() const;
 
+	/** Add elements sharing features of supplied dimension.
+	 * @param sharedDimension  Either absolute dimension 0, 1 or 2, or
+	 * relative dimension -1, -2, -3 compared to this mesh group. */
+	int addAdjacentElements(int sharedDimension);
+
 	int addElement(cmzn_element* element);
 
 	int addElementsConditional(cmzn_field* conditionalField);

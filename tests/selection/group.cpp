@@ -1541,4 +1541,147 @@ TEST(ZincFieldGroup, removeSubregionFieldGroup)
 	EXPECT_EQ(RESULT_OK, bob.removeSubregionFieldGroup(child));
 	EXPECT_FALSE(child.getFieldmodule().findFieldByName("bob").isValid());
 	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, bob.removeSubregionFieldGroup(child));
- }
+}
+
+TEST(ZincFieldGroup, tetrahedralmesh_addAdjacentElements)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldio/tetmesh.ex2").c_str()));
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(102, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(232, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(167, mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(38, nodes.getSize());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(RESULT_OK, group.setName("original"));
+	EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+	EXPECT_EQ(RESULT_OK, group.setManaged(true));
+	Element element93 = mesh3d.findElementByIdentifier(93);
+	MeshGroup meshGroup3d = group.createMeshGroup(mesh3d);
+	EXPECT_TRUE(meshGroup3d.isValid());
+	EXPECT_EQ(RESULT_OK, meshGroup3d.addElement(element93));
+	EXPECT_EQ(1, meshGroup3d.getSize());
+	MeshGroup meshGroup2d = group.getMeshGroup(mesh2d);
+	EXPECT_TRUE(meshGroup2d.isValid());
+	EXPECT_EQ(4, meshGroup2d.getSize());
+	MeshGroup meshGroup1d = group.getMeshGroup(mesh1d);
+	EXPECT_TRUE(meshGroup1d.isValid());
+	EXPECT_EQ(6, meshGroup1d.getSize());
+
+	// test some invalid arguments
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, MeshGroup().addAdjacentElements(0));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshGroup3d.addAdjacentElements(3));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshGroup3d.addAdjacentElements(-4));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshGroup2d.addAdjacentElements(2));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshGroup2d.addAdjacentElements(-3));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshGroup1d.addAdjacentElements(1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshGroup1d.addAdjacentElements(-2));
+	// 1-D is not yet implemented as there are no face maps to work off
+	EXPECT_EQ(RESULT_ERROR_NOT_IMPLEMENTED, meshGroup1d.addAdjacentElements(0));
+
+	const int expectedElementIdentifiers0[] = {
+		64, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18, 20, 22, 23, 24, 26, 27,
+		30, 31, 32, 35, 36, 39, 41, 44, 45, 47, 50, 51, 52, 60, 61, 62, 64, 65, 67,
+		69, 71, 72, 73, 74, 77, 78, 80, 81, 82, 83, 84, 86, 87, 88, 89, 90, 92, 93,
+		94, 95, 96, 98, 100, 101 };
+	const int expectedElementIdentifiers1[] = {
+		18, 2, 14, 18, 22, 30, 32, 36, 45, 50, 52, 61, 67, 77, 82, 88, 93, 94, 98 };
+	const int expectedElementIdentifiers2[] = { 5, 2, 30, 61, 77, 93 };
+	const int sharedDimensions[6] = { 2, -1, 1, -2, 0, -3 };
+	for (int i = 0; i < 6; ++i)
+	{
+		const int sharedDimension = sharedDimensions[i];
+		const int absoluteSharedDimension = (sharedDimension < 0) ? (3 + sharedDimension) : sharedDimension;
+		FieldGroup group = zinc.fm.createFieldGroup();
+		EXPECT_TRUE(group.isValid());
+		EXPECT_EQ(RESULT_OK, group.setName((std::string("adjacent") + std::to_string(sharedDimension)).c_str()));
+		EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+		EXPECT_EQ(RESULT_OK, group.setManaged(true));
+		MeshGroup meshGroup3d = group.createMeshGroup(mesh3d);
+		EXPECT_TRUE(meshGroup3d.isValid());
+		EXPECT_EQ(RESULT_OK, meshGroup3d.addElement(element93));
+		EXPECT_EQ(1, meshGroup3d.getSize());
+		EXPECT_EQ(RESULT_OK, meshGroup3d.addAdjacentElements(sharedDimension));
+		const int* expectedElementIdentifiers =
+			(absoluteSharedDimension == 0) ? expectedElementIdentifiers0 :
+			(absoluteSharedDimension == 1) ? expectedElementIdentifiers1 :
+			expectedElementIdentifiers2;
+		ASSERT_EQ(expectedElementIdentifiers[0], meshGroup3d.getSize());
+		Elementiterator iter = meshGroup3d.createElementiterator();
+		Element element;
+		int e = 1;
+		while ((element = iter.next()).isValid())
+		{
+			const int elementIdentifier = element.getIdentifier();
+			EXPECT_EQ(expectedElementIdentifiers[e], elementIdentifier);
+			++e;
+		}
+	}
+}
+
+TEST(ZincFieldGroup, trianglemesh_addAdjacentElements)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldio/triangle_mesh_1371.exf").c_str()));
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(37, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(66, mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(30, nodes.getSize());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(RESULT_OK, group.setName("original"));
+	EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+	EXPECT_EQ(RESULT_OK, group.setManaged(true));
+	Element element22 = mesh2d.findElementByIdentifier(22);
+	MeshGroup meshGroup2d = group.createMeshGroup(mesh2d);
+	EXPECT_TRUE(meshGroup2d.isValid());
+	EXPECT_EQ(RESULT_OK, meshGroup2d.addElement(element22));
+	EXPECT_EQ(1, meshGroup2d.getSize());
+	EXPECT_EQ(3, group.getMeshGroup(mesh1d).getSize());
+
+	const int expectedElementIdentifiers0[] = {
+		14, 2, 3, 7, 8, 11, 14, 17, 18, 19, 20, 21, 22, 24, 26 };
+	const int expectedElementIdentifiers1[] = { 4, 3, 17, 20, 22 };
+	const int sharedDimensions[4] = { 1, -1, 0, -2 };
+	for (int i = 0; i < 4; ++i)
+	{
+		const int sharedDimension = sharedDimensions[i];
+		const int absoluteSharedDimension = (sharedDimension < 0) ? (2 + sharedDimension) : sharedDimension;
+		FieldGroup group = zinc.fm.createFieldGroup();
+		EXPECT_TRUE(group.isValid());
+		EXPECT_EQ(RESULT_OK, group.setName((std::string("adjacent") + std::to_string(sharedDimension)).c_str()));
+		EXPECT_EQ(RESULT_OK, group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+		EXPECT_EQ(RESULT_OK, group.setManaged(true));
+		MeshGroup meshGroup2d = group.createMeshGroup(mesh2d);
+		EXPECT_TRUE(meshGroup2d.isValid());
+		EXPECT_EQ(RESULT_OK, meshGroup2d.addElement(element22));
+		EXPECT_EQ(1, meshGroup2d.getSize());
+		EXPECT_EQ(RESULT_OK, meshGroup2d.addAdjacentElements(sharedDimension));
+		const int* expectedElementIdentifiers =
+			(absoluteSharedDimension == 0) ? expectedElementIdentifiers0 :
+			expectedElementIdentifiers1;
+		ASSERT_EQ(expectedElementIdentifiers[0], meshGroup2d.getSize());
+		Elementiterator iter = meshGroup2d.createElementiterator();
+		Element element;
+		int e = 1;
+		while ((element = iter.next()).isValid())
+		{
+			const int elementIdentifier = element.getIdentifier();
+			EXPECT_EQ(expectedElementIdentifiers[e], elementIdentifier);
+			++e;
+		}
+	}
+}

@@ -341,13 +341,37 @@ ZINC_C_INLINE cmzn_mesh_id cmzn_mesh_group_base_cast(
 }
 
 /**
+ * Add adjacent elements to all the elements in this mesh group.
+ * Only works for elements with faces defined.
+ * Note: Currently only implemented for 3-D and 2-D meshes, and shared
+ * dimension 0 is only implemented for the top-level mesh on which fields are
+ * directly defined.
+ *
+ * @param mesh_group  Handle to mesh group to modify.
+ * @param shared_dimension  Either absolute dimension 0, 1 or 2, or relative
+ * dimension -1, -2, -3 compared to this mesh group's dimension, giving
+ * dimension of faces/lines/vertices which must be shared between elements
+ * to consider them adjacent.
+ * Note that 0-D mappings are found by traversing the face graph and
+ * including elements with a coordinate field mapping parameters from any
+ * node currently mapped to a coordinate field on any element already in
+ * the group.
+ * @return  Result OK on success, ERROR_ARGUMENT if either arguments is
+ * invalid, or any other error code for a more serious failure.
+ */
+ZINC_API int cmzn_mesh_group_add_adjacent_elements(
+	cmzn_mesh_group_id mesh_group, int shared_dimension);
+
+/**
  * Add specified element to mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
- * @param element  Handle to element to add. Must be from the group's master mesh.
- * @return  Status CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if element
- * was already in the group but otherwise successful, or any other error code on
- * more serious failure.
+ * @param element  Handle to element to add. Must be from the group's master
+ * mesh.
+ * @return  Result OK on success, ERROR_ALREADY_EXISTS if element was already
+ * in the group but otherwise successful, ERROR_ARGUMENT if either arguments
+ * are invalid or from different meshes, or any other error code for a more
+ * serious failure.
  */
 ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);

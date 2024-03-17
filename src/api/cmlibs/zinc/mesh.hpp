@@ -196,6 +196,12 @@ public:
 		return (cmzn_mesh_group_id)(id);
 	}
 
+	int addAdjacentElements(int sharedDimension)
+	{
+		return cmzn_mesh_group_add_adjacent_elements(this->getDerivedId(),
+			sharedDimension);
+	}
+
 	int addElement(const Element& element)
 	{
 		return cmzn_mesh_group_add_element(this->getDerivedId(),
