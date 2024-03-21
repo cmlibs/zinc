@@ -654,11 +654,6 @@ int Minimisation::minimise_Newton()
 				conditionalParameterIndex[i] = conditionalParameterCount;
 				++conditionalParameterCount;
 			}
-			//else
-			//{
-			//	display_message(WARNING_MESSAGE, "Eliminate Parameter %d (node %d, component %d, %s, version %d.",
-			//		i, (node) ? node->getIdentifier() : -1, fieldComponent + 1, cmzn_node_value_label_conversion::to_string(valueLabel), version + 1);
-			//}
 		}
 		globalParameterIndex.resize(conditionalParameterCount);
 		for (int i = 0; i < globalParameterCount; ++i)
@@ -768,21 +763,6 @@ int Minimisation::minimise_Newton()
 				return 0;
 			}
 
-			//if (conditionalFieldInternal)
-			//{
-			//	char* fieldName = objectiveField.getName();
-			//	display_message(INFORMATION_MESSAGE, "Field %s Element %d:", fieldName, element.getIdentifier());
-			//	cmzn_deallocate(fieldName);
-			//	const double* elementHessianRow = elementHessian.data();
-			//	for (int i = 0; i < elementParametersCount; ++i)
-			//	{
-			//		const int row = conditionalParameterIndex[elementParameterIndexes[i]];
-			//		display_message(INFORMATION_MESSAGE, "  %d (diag %g) -> global %d -> solve %d",
-			//			i, elementHessianRow[i], elementParameterIndexes[i], row);
-			//		elementHessianRow += elementParametersCount;
-			//	}
-			//}
-
 			// assemble
 			const double *elementHessianRow = elementHessian.data();
 			for (int i = 0; i < elementParametersCount; ++i)
@@ -856,11 +836,9 @@ int Minimisation::minimise_Newton()
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to add solution vector.");
 		return 0;
 	}
-
 	if (conditionalFieldInternal)
 	{
 		cmzn_field_destroy(&conditionalFieldInternal);
-		}
-
+	}
 	return 1;
 }

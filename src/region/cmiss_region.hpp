@@ -255,20 +255,20 @@ public:
 		if (!region)
 			return CMZN_ERROR_ARGUMENT;
 		--(region->access_count);
-        if (region->access_count <= 0)
-        {
-            delete region;
-        }
-        region = nullptr;
-        return CMZN_OK;
+		if (region->access_count <= 0)
+		{
+			delete region;
+		}
+		region = nullptr;
+		return CMZN_OK;
 	}
 
 	static void reaccess(cmzn_region* &region, cmzn_region *newRegion)
 	{
 		if (newRegion)
-        {
+		{
 			++(newRegion->access_count);
-        }
+		}
 		if ((region) && (--(region->access_count) == 0))
 			delete region;
 		region = newRegion;
@@ -383,7 +383,7 @@ public:
 	 * and with 'coordinate type' flag set.
 	 * @return  Result OK on success, ERROR_ARGUMENT if the coordinate field is
 	 * invalid or no valid coordinate fields found, WARNING_PART_DONE if some
-     * faces unable to be defined due to coordinate fields not being defined,
+	 * faces unable to be defined due to coordinate fields not being defined,
 	 * ERROR_NOT_FOUND if no new faces defined for this reason, or any other
 	 * error if failed in a more serious way. */
 	int defineAllFaces(cmzn_field* coordinateField = nullptr);

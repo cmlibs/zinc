@@ -2875,8 +2875,8 @@ struct FeFaceDescriptionIdentifier
 
 	/**
 	 * Compare function for face descriptions, comparing in order:
-	 * - number_of_nodes.
-	 * - node numbers in ascending order of indentifiers.
+	 * - number of nodes.
+	 * - node numbers in ascending order of identifiers.
 	 * - centroid within tolerance, in order of component
 	 * Returns values like strcmp:
 	 * -1 = identifier 1 < identifier 2
@@ -2885,7 +2885,7 @@ struct FeFaceDescriptionIdentifier
 	 */
 	static int compare(FeFaceDescriptionIdentifier& identifier1, FeFaceDescriptionIdentifier& identifier2)
 	{
-		// 1. compare number_of_nodes
+		// 1. compare number of nodes
 		const int nodeCount = identifier1.nodeCount;
 		if (nodeCount < identifier2.nodeCount)
 		{
@@ -3110,7 +3110,6 @@ public:
  * new faces.
  * @param faceIndex  On successful return, set to new faceIndex or
  * DS_LABEL_INDEX_INVALID if no face needed (for collapsed element face).
- * @return  Index of new face or DS_LABEL_INDEX_INVALID if failed.
  * @return  Result OK on success, ERROR_NOT_FOUND if field not defined or
  * has no node mapping, otherwise any other error.
  */
@@ -3278,12 +3277,12 @@ int FE_mesh::defineElementFaces(DsLabelIndex elementIndex, FeMeshFaceMap& meshFa
 	return return_code;
 }
 
-FeMeshFaceMap::FeMeshFaceMap(FE_mesh* topLevelMeshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn) :
+FeMeshFaceMap::FeMeshFaceMap(FE_mesh* topLevelMeshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldcacheIn) :
 	cmzn::RefCounted(),
 	topLevelMesh(cmzn::Access(topLevelMeshIn)),
 	coordinateField(coordinateFieldIn->access()),
 	feField(cmzn_field_finite_element_get_FE_field(coordinateFieldIn)->access()),
-	fieldcache(fieldCacheIn->access())
+	fieldcache(fieldcacheIn->access())
 {
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; ++d)
 	{
@@ -3366,12 +3365,12 @@ int FeMeshFaceMap::fillFaceMeshMap(FE_mesh *faceMesh)
  * @param fieldcacheIn  A fieldcache for the same region as mesh, held by
  * @return On full success, a mesh face map with access count 1, otherwise nullptr.
  */
-FeMeshFaceMap* FeMeshFaceMap::create(FE_mesh* meshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn)
+FeMeshFaceMap* FeMeshFaceMap::create(FE_mesh* meshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldcacheIn)
 {
 	FE_field* feField = nullptr;
-	if (!((meshIn) && (coordinateFieldIn) && (fieldCacheIn) &&
+	if (!((meshIn) && (coordinateFieldIn) && (fieldcacheIn) &&
 		(meshIn->getRegion() == coordinateFieldIn->getRegion()) &&
-		(fieldCacheIn->getRegion() == meshIn->getRegion()) &&
+		(fieldcacheIn->getRegion() == meshIn->getRegion()) &&
 		Computed_field_get_type_finite_element(coordinateFieldIn, &feField) &&
 		(feField->get_CM_field_type() == CM_COORDINATE_FIELD) &&
 		(meshIn->getDimension() <= coordinateFieldIn->getNumberOfComponents()) &&
@@ -3382,7 +3381,7 @@ FeMeshFaceMap* FeMeshFaceMap::create(FE_mesh* meshIn, cmzn_field* coordinateFiel
 		return nullptr;
 	}
 	FE_mesh* topLevelMesh = meshIn->getTopLevelMesh();
-	FeMeshFaceMap* meshFaceMap = new FeMeshFaceMap(topLevelMesh, coordinateFieldIn, fieldCacheIn);
+	FeMeshFaceMap* meshFaceMap = new FeMeshFaceMap(topLevelMesh, coordinateFieldIn, fieldcacheIn);
 	FE_mesh* faceMesh = topLevelMesh->getFaceMesh();
 	while (faceMesh)
 	{

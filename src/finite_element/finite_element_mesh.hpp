@@ -1382,7 +1382,7 @@ class FeMeshFaceMap : public cmzn::RefCounted
 	// map to faces for 1-D (index 0) and 2-D (index 1) faces/line meshes
 	FeFaceDescriptionMap* faceDescriptionMaps[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
 
-	FeMeshFaceMap(FE_mesh* topLevelMeshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn);
+	FeMeshFaceMap(FE_mesh* topLevelMeshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldcacheIn);
 
 	int fillFaceMeshMap(FE_mesh* faceMesh);
 
@@ -1390,7 +1390,7 @@ public:
 
 	~FeMeshFaceMap();
 
-	static FeMeshFaceMap* create(FE_mesh* meshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldCacheIn);
+	static FeMeshFaceMap* create(FE_mesh* meshIn, cmzn_field* coordinateFieldIn, cmzn_fieldcache* fieldcacheIn);
 
 	FeFaceDescriptionMap* getFaceDescriptionMap(FE_mesh* faceMesh) const;
 
