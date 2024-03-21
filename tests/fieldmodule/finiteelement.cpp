@@ -3125,10 +3125,11 @@ TEST(ZincFieldmodule, defineFacesTetMesh)
 	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(38, nodes.getSize());
 
+	// first test invalid element
 	Element invalidElement;
-	EXPECT_EQ(0, invalidElement.getNumberOfFaces());
+	EXPECT_EQ(-1, invalidElement.getNumberOfFaces());
 	EXPECT_FALSE(invalidElement.getFaceElement(1).isValid());
-	EXPECT_EQ(0, invalidElement.getNumberOfParents());
+	EXPECT_EQ(-1, invalidElement.getNumberOfParents());
 	EXPECT_FALSE(invalidElement.getParentElement(1).isValid());
 
 	// test getting face elements

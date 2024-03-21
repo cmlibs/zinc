@@ -292,7 +292,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 				}
 
 				const FE_mesh_field_data *meshFieldData = fieldIn->getMeshFieldData(fieldElement->getMesh());
-				FE_basis *basis = nullptr;
+				FE_basis *lastBasis = nullptr;
 				return_code=1;
 				int **component_grid_offset_in_xi = 0;
 				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
@@ -305,6 +305,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 						return_code = 0;
 						break;
 					}
+					FE_basis* basis = eft->getBasis();
 					if ((eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 						&& (0 != eft->getLegacyGridNumberInXi()))
 					{
@@ -473,7 +474,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 								break;
 							}
 							// transform values to standard basis functions if needed
-							FE_basis *basis = eft->getBasis();
 							const int blendedElementValuesCount = basis->getNumberOfStandardBasisFunctions();
 							if (blendedElementValuesCount > 0)
 							{
@@ -526,14 +526,13 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 						}
 						if (!return_code)
 							break;
-						if (eft->getBasis() == basis)
+						if (basis == lastBasis)
 						{
 							*standard_basis_address = *(standard_basis_address - 1);
 							*standard_basis_arguments_address = *(standard_basis_arguments_address - 1);
 						}
 						else
 						{
-							basis = eft->getBasis();
 							if (blending_matrix)
 							{
 								DEALLOCATE(blending_matrix);
@@ -559,6 +558,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 								*standard_basis_arguments_address =
 									const_cast<int *>(FE_basis_get_standard_basis_function_arguments(basis));
 							}
+							lastBasis = basis;
 						}
 						if (fieldElement == element)
 						{

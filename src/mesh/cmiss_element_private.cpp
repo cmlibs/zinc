@@ -118,7 +118,7 @@ int cmzn_element_get_number_of_faces(cmzn_element_id element)
 			return FE_element_shape_get_number_of_faces(elementShape);
 		}
 	}
-	return 0;
+	return -1;
 }
 
 cmzn_element_id cmzn_element_get_face_element(cmzn_element_id element, int faceNumber)
@@ -256,7 +256,7 @@ int cmzn_element_get_number_of_parents(cmzn_element_id element)
 		const DsLabelIndex* parents = 0;
 		return element->getMesh()->getElementParents(element->getIndex(), parents);
 	}
-	return 0;
+	return -1;
 }
 
 cmzn_element_id cmzn_element_get_parent_element(cmzn_element_id element, int parentNumber)

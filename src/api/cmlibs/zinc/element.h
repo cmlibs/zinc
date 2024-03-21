@@ -190,11 +190,12 @@ ZINC_API cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 /**
  * Get the number of faces for this element. This is how many faces its shape
  * should have, irrespective of whether faces are defined or whether they are
- * collapsed by a coordinate field. Note: 1-D line elements do not have faces.
+ * collapsed by a coordinate field.
+ * Note: 1-D line elements do not have faces and return 0 from this function.
  *
  * @param element  The element to query.
- * @return  Number of faces for element's shape, or 0 if none or failed due to
- * invalid element or if element shape is undefined.
+ * @return  Number of faces for element's shape, including 0 if none, or -1
+ * if failed due to invalid element or if element shape is undefined.
  */
 ZINC_API int cmzn_element_get_number_of_faces(cmzn_element_id element);
 
@@ -299,8 +300,8 @@ ZINC_API int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
  * elements which reference this element as a face.
  *
  * @param element  The element to query.
- * @return  Number of parent elements of this element, or 0 if none or invalid
- * element.
+ * @return  Number of parent elements of this element, 0 if none, or -1 if
+ * element is invalid.
  */
 ZINC_API int cmzn_element_get_number_of_parents(cmzn_element_id element);
 
