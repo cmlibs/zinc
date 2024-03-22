@@ -285,9 +285,9 @@ ZINC_API cmzn_field_id cmzn_graphics_get_subgroup_field(cmzn_graphics_id graphic
 
 /**
  * Sets optional field which causes graphics to be generated only for parts of
- * the domain where its value is true/non-zero. Commonly a group, node_group or
- * element_group field which is efficiently iterated over. Note general fields
- * are evaluated at an arbitrary location in elements.
+ * the domain where its value is true/non-zero. Commonly a group field is used
+ * which allows its nodeset/mesh group to be efficiently iterated over.
+ * Note general fields are evaluated at an arbitrary location in elements.
  *
  * @param graphics  The graphics to be modified.
  * @param subgroup_field  Scalar subgroup field.

@@ -816,12 +816,14 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
 
     FieldGroup one = zinc.fm.createFieldGroup();
     EXPECT_TRUE(one.isValid());
+    EXPECT_EQ(RESULT_OK, one.setName("one"));
     EXPECT_EQ(RESULT_OK, one.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
     MeshGroup oneMesh3d = one.createMeshGroup(mesh3d);
     EXPECT_EQ(RESULT_OK, oneMesh3d.addElement(element1));
 
     FieldGroup left = zinc.fm.createFieldGroup();
     EXPECT_TRUE(left.isValid());
+    EXPECT_EQ(RESULT_OK, left.setName("left"));
     MeshGroup leftFaceMeshGroup = left.createMeshGroup(mesh2d);
     EXPECT_EQ(RESULT_OK, leftFaceMeshGroup.addElement(face1));
 
@@ -831,6 +833,7 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
     FieldMultiply scalex = scale * x;
     FieldMultiply scalexSq = scalex * scalex;
     FieldMeshIntegral leftObjective = zinc.fm.createFieldMeshIntegral(scalexSq, referenceCoordinates, leftFaceMeshGroup);
+    EXPECT_EQ(RESULT_OK, leftObjective.setName("Left objective"));
     const int numberOfPoints = 4;
     EXPECT_EQ(RESULT_OK, leftObjective.setNumbersOfPoints(1, &numberOfPoints));
     EXPECT_TRUE(leftObjective.isValid());
@@ -842,6 +845,7 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
     Field deltaStrain = strain - targetStrain;
     Field stretchSq = zinc.fm.createFieldDotProduct(deltaStrain, deltaStrain);
     FieldMeshIntegral stretchObjective = zinc.fm.createFieldMeshIntegral(stretchSq, referenceCoordinates, mesh3d);
+    EXPECT_EQ(RESULT_OK, stretchObjective.setName("Stretch objective"));
     EXPECT_EQ(RESULT_OK, stretchObjective.setNumbersOfPoints(1, &numberOfPoints));
     EXPECT_TRUE(stretchObjective.isValid());
 
@@ -851,6 +855,7 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
     const double scaleDisplacementValue = 0.1;
     Field scaleDisplacementSq = displacementSq * zinc.fm.createFieldConstant(1, &scaleDisplacementValue);
     FieldMeshIntegral displacementObjective = zinc.fm.createFieldMeshIntegral(scaleDisplacementSq, referenceCoordinates, mesh3d);
+    EXPECT_EQ(RESULT_OK, displacementObjective.setName("Displacement objective"));
     // leave on 1 point as only used to stop solution drifting from centre
     //EXPECT_EQ(RESULT_OK, displacementObjective.setNumbersOfPoints(1, &numberOfPoints));
     EXPECT_TRUE(displacementObjective.isValid());
@@ -869,54 +874,75 @@ TEST(ZincOptimisation, NewtonConditionalAndFaceIntegral)
     EXPECT_EQ(OK, optimisation.setConditionalField(coordinates, one));
     EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
 
-    EXPECT_EQ(OK, optimisation.optimise());
-    char *solutionReport = optimisation.getSolutionReport();
-    EXPECT_NE((char *)0, solutionReport);
-    printf("%s", solutionReport);
-    cmzn_deallocate(solutionReport);
-
-    // check final strains match target
-    double outStrainValues[9];
-    const double xi[4][3] =
+    const double expectedStrainValues2[4][9] =
     {
-        { 0.5, 0.5, 0.5 },
-        { 0.2, 0.7, 0.0 },
-        { 0.6, 0.9, 0.9 },
-        { 0.0, 0.0, 0.0 }
+        { 0.201647355, 0.007547436829, 0.004796079083, 0.008173234501, -0.09089931891, 0.006020108833, 0.02452659972, 0.02452659972, -0.1831722107 },
+        { 0.1960085938, 0.01916019571, -0.002543413266, 0.006234574972, -0.07980044164, 0.002806616804, 0.009875937356, 0.08205938939, -0.1963500754 },
+        { 0.1992943576, -0.000961682262, 5.067218337e-05, 0.001652981781, -0.1043312657, 0.00125509515, 0.005853057598, -0.01394310219, -0.1969155053 },
+        { 0, 0, -2.334789092e-07, 0, 0, 0.06312796163, 0, 0, -0.07897356122 }
     };
     const double TOL = 1.0E-10;
-    for (int p = 0; p < 4; ++p)
+    int unchangedNodeIdentifiers[5] = { 3, 6, 9, 12, 1 };
+    for (int fitCase = 1; fitCase <= 2; ++fitCase)
     {
-        fieldcache.setMeshLocation(element1, 3, xi[p]);
-        EXPECT_EQ(RESULT_OK, strain.evaluateReal(fieldcache, 9, outStrainValues));
-        for (int i = 0; i < 9; ++i)
+        if (fitCase == 2)
         {
-            EXPECT_NEAR(targetStrainValues[i], outStrainValues[i], TOL);
+            // reset coordinates and exclude node 1 from solution
+            // this tests element with some DOFs excluded from solution, which previously had a bug
+            EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/two_cubes.exformat").c_str()));
+            NodesetGroup oneNodes = one.getNodesetGroup(nodes);
+            Node node1 = nodes.findNodeByIdentifier(1);
+            EXPECT_EQ(RESULT_OK, oneNodes.removeNode(node1));
         }
-    }
 
-    // check left constraint
-    double outLeft;
-    fieldcache.clearLocation();
-    EXPECT_EQ(RESULT_OK, leftObjective.evaluateReal(fieldcache, 1, &outLeft));
-    EXPECT_NEAR(0.0, outLeft, TOL);
+        EXPECT_EQ(OK, optimisation.optimise());
+        char* solutionReport = optimisation.getSolutionReport();
+        EXPECT_NE((char*)0, solutionReport);
+        cmzn_deallocate(solutionReport);
 
-    // check no change to end nodes not part of conditional group
-    const int nodeIdentifiers[4] = { 3, 6, 9, 12 };
-    const Node::ValueLabel valueLabels[4] = { Node::VALUE_LABEL_VALUE, Node::VALUE_LABEL_D_DS1, Node::VALUE_LABEL_D_DS2, Node::VALUE_LABEL_D2_DS1DS2 };
-    for (int n = 0; n < 4; ++n)
-    {
-        Node node = nodes.findNodeByIdentifier(nodeIdentifiers[n]);
-        EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
-        double ux[3];
-        double dx[3];
-        for (int v = 0; v < 4; ++v)
+        // check final strains match target
+        double outStrainValues[9];
+        const double xi[4][3] =
         {
-            EXPECT_EQ(RESULT_OK, referenceCoordinates.getNodeParameters(fieldcache, -1, valueLabels[v], 1, 3, ux));
-            EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(fieldcache, -1, valueLabels[v], 1, 3, dx));
-            for (int c = 0; c < 3; ++c)
+            { 0.5, 0.5, 0.5 },
+            { 0.2, 0.7, 0.0 },
+            { 0.6, 0.9, 0.9 },
+            { 0.0, 0.0, 0.0 }
+        };
+        for (int p = 0; p < 4; ++p)
+        {
+            fieldcache.setMeshLocation(element1, 3, xi[p]);
+            EXPECT_EQ(RESULT_OK, strain.evaluateReal(fieldcache, 9, outStrainValues));
+            const double* expectedStrainValues = (fitCase == 1) ? targetStrainValues : expectedStrainValues2[p];
+            for (int i = 0; i < 9; ++i)
             {
-                EXPECT_DOUBLE_EQ(ux[c], dx[c]);
+                EXPECT_NEAR(expectedStrainValues[i], outStrainValues[i], TOL);
+            }
+        }
+
+        // check left constraint
+        double outLeft;
+        fieldcache.clearLocation();
+        EXPECT_EQ(RESULT_OK, leftObjective.evaluateReal(fieldcache, 1, &outLeft));
+        EXPECT_NEAR(0.0, outLeft, 5E-6);  // not exactly satisfied by fitCase 2
+
+        // check no change to end nodes not part of conditional group
+        const int nodeIdentifiersCount = (fitCase == 1) ? 4 : 5;
+        const Node::ValueLabel valueLabels[4] = { Node::VALUE_LABEL_VALUE, Node::VALUE_LABEL_D_DS1, Node::VALUE_LABEL_D_DS2, Node::VALUE_LABEL_D2_DS1DS2 };
+        for (int n = 0; n < nodeIdentifiersCount; ++n)
+        {
+            Node node = nodes.findNodeByIdentifier(unchangedNodeIdentifiers[n]);
+            EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+            double ux[3];
+            double dx[3];
+            for (int v = 0; v < 4; ++v)
+            {
+                EXPECT_EQ(RESULT_OK, referenceCoordinates.getNodeParameters(fieldcache, -1, valueLabels[v], 1, 3, ux));
+                EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(fieldcache, -1, valueLabels[v], 1, 3, dx));
+                for (int c = 0; c < 3; ++c)
+                {
+                    EXPECT_DOUBLE_EQ(ux[c], dx[c]);
+                }
             }
         }
     }

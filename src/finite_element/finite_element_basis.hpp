@@ -93,13 +93,18 @@ public:
 	int *type;
 	// the number of basis functions
 	int number_of_basis_functions;
-	// the blending matrix is a linear mapping from the basis used (eg. cubic
-	// Hermite) to the standard basis (eg. Chebyshev polynomials).  In some cases,
-	// for example a non-polynomial basis, this may be NULL, which indicates the
-	// identity matrix
+	// the blending matrix has number_of_basis_functions rows x
+	// number_of_standard_basis_functions columns, each row giving the coefficients
+	// multiplying the standard basis function to give the equivalent true basis
+	// function. For example, the first number_of_standard_basis_functions values
+	// gives the coefficients of the standard (e.g. monomial) basis function which
+	// produce the equivalent first true basis function (e.g. cubic Hermite).
+	// It is planned e.g. for example a non-polynomial basis, that this may be
+	// nullptr, which indicates the identity matrix.
 	FE_value *blending_matrix;
-	// this array gives the row number of the last non-zero value for each of the
-	// number_of_standard_basis_functions columns in blending_matrix, if exists
+	// this array gives for each number_of_standard_basis_functions columns in
+	// blending_matrix, the number of rows starting at 0 that until the last
+	// non-zero value. Used to optimise blending to standard bases.
 	int *blending_matrix_column_size;
 	// to calculate the values of the "standard" basis functions
 	int number_of_standard_basis_functions;
@@ -142,6 +147,10 @@ public:
 		return this->standard_basis;
 	}
 
+	const int* getStandardBasisArguments() const
+	{
+		return reinterpret_cast<const int*>(this->arguments);
+	}
 };
 
 DECLARE_LIST_TYPES(FE_basis);

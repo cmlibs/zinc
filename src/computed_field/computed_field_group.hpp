@@ -83,9 +83,6 @@ typedef std::map<cmzn_region_id, cmzn_field_group_id>::const_iterator Region_fie
 
 typedef int (*cmzn_field_group_iterator_function)(cmzn_field_group_id,void *);
 
-class Computed_field_element_group;
-class Computed_field_node_group;
-
 class Computed_field_group : public Computed_field_group_base
 {
 private:

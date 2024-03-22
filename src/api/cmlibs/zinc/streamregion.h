@@ -278,7 +278,7 @@ ZINC_API int cmzn_streaminformation_region_set_resource_field_names(
  * Use this function to select either streaminformation should export
  * the region and its children or just the region itself. This applies
  * to all streaminformation resources unless this mode is set for
- * individuals resources.
+ * individual resources.
  *
  * @param streaminformation  Handle to the stream information_region.
  * @param recursion_mode  Recursion mode to be set for this streaminformation.

@@ -56,7 +56,7 @@ struct cmzn_nodeset_group : public cmzn_nodeset, public FE_domain_mapper
 	/** If the conditionalField is a group, get the nodeset group for this master nodeset.
 	 * @param  isEmptyNodesetGroup  Set to true if field is a group containing no nodes
 	 * for this master nodeset, otherwise false.
-	 * @return  Non-accessed cmzn_node_group, or nullptr if none found or not a group */
+	 * @return  Non-accessed nodeset group, or nullptr if none found or not a group */
 	const cmzn_nodeset_group* getConditionalNodesetGroup(
 		const cmzn_field* conditionalField, bool& isEmptyNodesetGroup) const;
 

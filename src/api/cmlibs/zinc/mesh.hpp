@@ -136,6 +136,11 @@ public:
 		return cmzn_mesh_get_dimension(id);
 	}
 
+	Mesh getFaceMesh() const
+	{
+		return Mesh(cmzn_mesh_get_face_mesh(this->id));
+	}
+
 	inline Fieldmodule getFieldmodule() const;
 
 	Mesh getMasterMesh() const
@@ -146,6 +151,11 @@ public:
 	char *getName() const
 	{
 		return cmzn_mesh_get_name(id);
+	}
+
+	Mesh getParentMesh() const
+	{
+		return Mesh(cmzn_mesh_get_parent_mesh(this->id));
 	}
 
 	int getSize() const
@@ -184,6 +194,12 @@ public:
 	cmzn_mesh_group_id getId() const
 	{
 		return (cmzn_mesh_group_id)(id);
+	}
+
+	int addAdjacentElements(int sharedDimension)
+	{
+		return cmzn_mesh_group_add_adjacent_elements(this->getDerivedId(),
+			sharedDimension);
 	}
 
 	int addElement(const Element& element)

@@ -25,6 +25,7 @@
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
+#include "finite_element/finite_element_value_storage.hpp"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/node_field_template.hpp"
 #include "general/debug.h"
@@ -1018,7 +1019,7 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 			}
 			else if (1 == IO_stream_scan(this->input_file, " %d", &elementIdentifier))
 			{
-				display_message(WARNING_MESSAGE, "EX Reader.  Ignoring region path in legacy element:xi field %s values", get_FE_field_name(field));
+				display_message(WARNING_MESSAGE, "EX Reader.  Ignoring region path in legacy element:xi field %s values", field->getName());
 				element_type_string = second_string;
 			}
 			else
@@ -1768,11 +1769,20 @@ FE_field *EXReader::readField(TimeSequence*& timeSequence)
 				const char *timeSequenceName = keyValueMap.getKeyValue("time sequence");
 				if (timeSequenceName)
 				{
-					timeSequence = this->findTimeSequence(timeSequenceName);
-					if (!timeSequence)
+					if (Value_type_value_storage_supports_time_sequence(value_type))
 					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Cannot find time sequence %s specified for field %s.  %s",
-							timeSequenceName, field_name, this->getFileLocation());
+						timeSequence = this->findTimeSequence(timeSequenceName);
+						if (!timeSequence)
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Cannot find time sequence %s specified for field %s.  %s",
+								timeSequenceName, field_name, this->getFileLocation());
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Cannot define time sequence for field %s of value type %s.  %s",
+							field_name, Value_type_string(value_type), this->getFileLocation());
 						return_code = 0;
 					}
 				}
@@ -2023,7 +2033,7 @@ bool EXReader::readNodeHeaderField()
 		if (!result)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Error getting component name for field %s.  %s",
-				get_FE_field_name(field), this->getFileLocation());
+				field->getName(), this->getFileLocation());
 			break;
 		}
 		const int nextChar = IO_stream_getc(this->input_file);
@@ -2047,7 +2057,7 @@ bool EXReader::readNodeHeaderField()
 					&& (0 <= number_of_derivatives)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read legacy node field %s component %s #Derivatives.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
+						field->getName(), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -2062,21 +2072,21 @@ bool EXReader::readNodeHeaderField()
 					if (!this->readNodeValueLabelsVersions(nft))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
-							get_FE_field_name(field), componentName, this->getFileLocation());
+							field->getName(), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
 					if (nft.getMaximumVersionsCount() != 1)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
-							get_FE_field_name(field), componentName, this->getFileLocation());
+							field->getName(), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
 					if (nft.getValueLabelsCount() != (number_of_derivatives + 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
-							get_FE_field_name(field), componentName, this->getFileLocation());
+							field->getName(), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
@@ -2087,7 +2097,7 @@ bool EXReader::readNodeHeaderField()
 					if (!nft.setLegacyAllValueVersionsCount(number_of_versions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
-							get_FE_field_name(field), componentName, this->getFileLocation());
+							field->getName(), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
@@ -2102,7 +2112,7 @@ bool EXReader::readNodeHeaderField()
 					&& (0 <= valuesCount)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read node field %s component %s #Values.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
+						field->getName(), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -2110,14 +2120,14 @@ bool EXReader::readNodeHeaderField()
 				if (!this->readNodeValueLabelsVersions(nft))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
+						field->getName(), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
 				if (nft.getTotalValuesCount() != valuesCount)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
+						field->getName(), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -2137,7 +2147,7 @@ bool EXReader::readNodeHeaderField()
 			if (keyValueMap.hasUnusedKeyValues())
 			{
 				std::string prefix("EX Reader.  Node field ");
-				prefix += get_FE_field_name(field);
+				prefix += field->getName();
 				prefix += " component ";
 				prefix += componentName;
 				prefix += ": ";
@@ -2160,7 +2170,7 @@ bool EXReader::readNodeHeaderField()
 		else
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Could not merge field %s into region.  %s",
-				get_FE_field_name(field), this->getFileLocation());
+				field->getName(), this->getFileLocation());
 			result = false;
 		}
 	}
@@ -2175,14 +2185,24 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (this->timeIndex)
 		{
-			// if a single time index is specified and the field has a time sequence, use nearest time in sequence
-			const FE_value time = (timeSequence) ? timeSequence->getNearestTime() : this->timeIndex->time;
-			feTimeSequence = FE_region_get_FE_time_sequence_matching_series(this->fe_region, 1, &time);
-			if (!feTimeSequence)
+			if (Value_type_value_storage_supports_time_sequence(field->getValueType()))
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Could not get single time sequence for field %s at node.  %s",
-					get_FE_field_name(field), this->getFileLocation()); 
-				result = false;
+				// if a single time index is specified and the field has a time sequence, use nearest time in sequence
+				const FE_value time = (timeSequence) ? timeSequence->getNearestTime() : this->timeIndex->time;
+				feTimeSequence = FE_region_get_FE_time_sequence_matching_series(this->fe_region, 1, &time);
+				if (!feTimeSequence)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Could not get single time sequence for field %s at node.  %s",
+						field->getName(), this->getFileLocation());
+					result = false;
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE, "EX Reader.  Field %s of value type %s does not support time variation. "
+					"Old values will be overwritten.  %s", field->getName(), Value_type_string(field->getValueType()),
+					this->getFileLocation());
+				// feTimeSequence is already nullptr;
 			}
 		}
 		else if (timeSequence)
@@ -2199,7 +2219,7 @@ bool EXReader::readNodeHeaderField()
 			else
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Could not define field %s at node.  %s",
-					get_FE_field_name(field), this->getFileLocation());
+					field->getName(), this->getFileLocation());
 				result = false;
 			}
 		}
@@ -2459,14 +2479,14 @@ cmzn_node *EXReader::readNode()
         const FE_node_field *nodeField = node->getNodeField(field);
         if (!nodeField)
         {
-            display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
+            display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", field->getName(), this->getFileLocation());
             result = false;
             break;
         }
         const int number_of_values = nodeField->getTotalValuesCount();
         if (number_of_values <= 0)
         {
-            display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
+            display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", field->getName(), this->getFileLocation());
             result = false;
             break;
         }
@@ -2501,7 +2521,7 @@ cmzn_node *EXReader::readNode()
                         && set_FE_nodal_element_xi_value(node, field, /*component_number*/k, element, xi)))
                     {
                         display_message(ERROR_MESSAGE, "EX Reader.  Error reading element_xi value for field %s at node %d.  %s",
-                            get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            field->getName(), nodeIdentifier, this->getFileLocation());
                         result = false;
                         break;
                     }
@@ -2510,7 +2530,7 @@ cmzn_node *EXReader::readNode()
             else
             {
                 display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for element_xi valued field %s at node %d.  %s",
-                    get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                    field->getName(), nodeIdentifier, this->getFileLocation());
                 result = false;
             }
         } break;
@@ -2536,14 +2556,14 @@ cmzn_node *EXReader::readNode()
                         if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &values[k]))
                         {
                             display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                                field->getName(), nodeIdentifier, this->getFileLocation());
                             result = false;
                             break;
                         }
                         if (!std::isfinite(values[k]))
                         {
                             display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
-                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                                field->getName(), nodeIdentifier, this->getFileLocation());
                             result = false;
                             break;
                         }
@@ -2577,7 +2597,7 @@ cmzn_node *EXReader::readNode()
                             fileTime, valuesCount, values))
                         {
                             display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
-                                valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                                valuesCount, field->getName(), nodeIdentifier, this->getFileLocation());
                             result = false;
                         }
                     }
@@ -2610,7 +2630,7 @@ cmzn_node *EXReader::readNode()
                         if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
                         {
                             display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                                field->getName(), nodeIdentifier, this->getFileLocation());
                             result = false;
                             break;
                         }
@@ -2644,7 +2664,7 @@ cmzn_node *EXReader::readNode()
                             fileTime, valuesCount, values))
                         {
                             display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
-                                valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                                valuesCount, field->getName(), nodeIdentifier, this->getFileLocation());
                             result = false;
                         }
                     }
@@ -2667,7 +2687,7 @@ cmzn_node *EXReader::readNode()
                         if (!set_FE_nodal_string_value(node, field, /*component_number*/k, theString))
                         {
                             display_message(ERROR_MESSAGE, "EX Reader.  Error setting string value for field %s at node %d.  %s",
-                                get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                                field->getName(), nodeIdentifier, this->getFileLocation());
                             result = false;
                             break;
                         }
@@ -2676,7 +2696,7 @@ cmzn_node *EXReader::readNode()
                     else
                     {
                         display_message(ERROR_MESSAGE, "Error reading string value for field %s at node %d.  %s",
-                            get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                            field->getName(), nodeIdentifier, this->getFileLocation());
                         result = false;
                         break;
                     }
@@ -2685,7 +2705,7 @@ cmzn_node *EXReader::readNode()
             else
             {
                 display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for string valued field %s at node %d.  %s",
-                    get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+                    field->getName(), nodeIdentifier, this->getFileLocation());
                 result = false;
             }
         } break;
@@ -3342,7 +3362,7 @@ bool EXReader::readElementHeaderField()
 		if (!result)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Error reading component name for field %s.  %s",
-				get_FE_field_name(field), this->getFileLocation());
+				field->getName(), this->getFileLocation());
 			break;
 		}
 		IO_stream_scan(this->input_file, ". ");
@@ -3476,7 +3496,7 @@ bool EXReader::readElementHeaderField()
 			if (keyValueMapBase.hasUnusedKeyValues())
 			{
 				std::string prefix("EX Reader.  Element field ");
-				prefix += get_FE_field_name(field);
+				prefix += field->getName();
 				prefix += " component ";
 				prefix += componentName;
 				prefix += ": ";
@@ -3491,7 +3511,7 @@ bool EXReader::readElementHeaderField()
 				if (1 != IO_stream_scan(this->input_file, " #Nodes=%d", &nodeCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading field %s component %s number of nodes.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
+						field->getName(), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -3520,7 +3540,7 @@ bool EXReader::readElementHeaderField()
 					if (keyValueMap.hasUnusedKeyValues())
 					{
 						std::string prefix("EX Reader.  Element field");
-						prefix += get_FE_field_name(field);
+						prefix += field->getName();
 						prefix += " component ";
 						prefix += componentName;
 						prefix += ": ";
@@ -3557,7 +3577,7 @@ bool EXReader::readElementHeaderField()
 				if (sfSet)
 				{
 					// do following later to allow legacy format to skip scale factor set if not used
-					// sfSet->addFieldComponent(get_FE_field_name(field), c);
+					// sfSet->addFieldComponent(field->getName(), c);
 					scaleFactorCount = sfSet->scaleFactorCount;
 					scaleFactorOffset = sfSet->scaleFactorOffset;
 				}
@@ -3945,7 +3965,7 @@ bool EXReader::readElementHeaderField()
 				}
 				if (sfSet)
 				{
-					sfSet->addFieldComponent(get_FE_field_name(field), c);
+					sfSet->addFieldComponent(field->getName(), c);
 				}
 				if (!result)
 					break;
@@ -4010,7 +4030,7 @@ bool EXReader::readElementHeaderField()
 					if (keyValueMap.hasUnusedKeyValues())
 					{
 						std::string prefix("EX Reader.  Element field ");
-						prefix += get_FE_field_name(field);
+						prefix += field->getName();
 						prefix += " grid based component ";
 						prefix += componentName;
 						prefix += ": ";
@@ -4030,7 +4050,7 @@ bool EXReader::readElementHeaderField()
 						if (resultCode != CMZN_OK)
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Invalid grid number in xi for field %s at element.  %s",
-								get_FE_field_name(field), this->getFileLocation());
+								field->getName(), this->getFileLocation());
 							result = false;
 						}
 					}
@@ -4051,7 +4071,7 @@ bool EXReader::readElementHeaderField()
 		if (!eft->validateAndLock())
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Field %s component %s template is not valid.  %s",
-				get_FE_field_name(field), componentName, this->getFileLocation());
+				field->getName(), componentName, this->getFileLocation());
 			result = false;
 			break;
 		}
@@ -4072,7 +4092,7 @@ bool EXReader::readElementHeaderField()
 		else
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Could not merge field %s into region.  %s",
-				get_FE_field_name(field), this->getFileLocation());
+				field->getName(), this->getFileLocation());
 			result = false;
 		}
 	}
@@ -4118,7 +4138,7 @@ bool EXReader::readElementHeaderField()
 		else
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Could not define field %s at element.  %s",
-				get_FE_field_name(field), this->getFileLocation());
+				field->getName(), this->getFileLocation());
 			result = false;
 		}
 	}

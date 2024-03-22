@@ -1,0 +1,92 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node template: node1
+Node: 1
+  0.000000000000000e+00
+  0.000000000000000e+00
+  0.000000000000000e+00
+Node: 2
+  1.000000000000000e+00
+  0.000000000000000e+00
+  0.000000000000000e+00
+Node: 3
+  0.000000000000000e+00
+  1.000000000000000e+00
+  0.000000000000000e+00
+Node: 4
+  1.000000000000000e+00
+  1.000000000000000e+00
+  0.000000000000000e+00
+Define node template: node2
+Shape. Dimension=0
+#Fields=2
+1) stored mesh location, field, element_xi, #Components=1, host mesh=mesh2d, host mesh dimension=2
+ 1. #Values=1 (value)
+2) stored string, field, string, #Components=1
+ 1. #Values=1 (value)
+Node template: node2
+Node: 5
+ 1  5.000000000000000e-01  5.000000000000000e-01
+ "test value"
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element template: element1
+Element: 1
+Element: 2
+Element: 3
+Element: 4
+!#mesh mesh2d, dimension=2, face mesh=mesh1d, nodeset=nodes
+Define element template: element2
+Shape. Dimension=2, line*line
+#Scale factor sets=0
+#Nodes=4
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+ y. l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+ z. l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+Element template: element2
+Element: 1
+ Faces:
+ 1 2 3 4
+ Nodes:
+ 1 2 3 4

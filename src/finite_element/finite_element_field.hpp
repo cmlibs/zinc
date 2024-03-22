@@ -172,6 +172,13 @@ public:
 	 * properties. */
 	bool compareFullDefinition(const FE_field* otherField) const;
 
+	/** @return  true if this field is defined on any mesh */
+	bool isDefinedOnMeshes() const;
+
+	/** @return  true if this field has same basic definition and uses the same
+	 * mesh field templates on all meshes */
+	bool hasSameDefinitionOnMeshes(const FE_field* otherField) const;
+
 	FE_region *get_FE_region() const
 	{
 		return this->fe_region;

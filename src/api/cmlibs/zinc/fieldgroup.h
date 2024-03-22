@@ -133,8 +133,8 @@ ZINC_API int cmzn_field_group_remove_empty_subgroups(cmzn_field_group_id group);
 /**
  * Add the local/owning region of this group field to the group, i.e. all local
  * objects/domains. This function is not hierarchical: subregions are not added.
- * Note that subobject groups such as node and element groups attached to this
- * group field are left intact by this function.
+ * Note that subobject groups such as nodeset and mesh groups within this group
+ * field are left intact by this function.
  *
  * @param group  Handle to group field to modify.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -154,8 +154,8 @@ ZINC_API bool cmzn_field_group_contains_local_region(cmzn_field_group_id group);
 /**
  * Remove the local/owning region of this group field from the group, i.e. all local
  * objects/domains. This function is not hierarchical: subregions are not removed.
- * Note that subobject groups such as node and element groups attached to this
- * group field are left intact by this function.
+ * Note that subobject groups such as nodeset and mesh groups within this group
+ * field are left intact by this function.
  *
  * @param group  Handle to group field to modify.
  * @return  Status CMZN_OK on success, any other value on failure.

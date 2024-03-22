@@ -1,8 +1,6 @@
 /*******************************************************************************
 FILE : spectrum_component.cpp
 
-Largely pillaged from graphics/element_group_component.c
-
 LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :

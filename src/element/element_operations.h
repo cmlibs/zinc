@@ -128,9 +128,8 @@ Global functions
 */
 
 /**
- * Changes the identifiers of all elements of dimension in fe_region, or
- * restricted to optional element_group. If sort_by_field is NULL, adds
- * element_offset to the identifiers.
+ * Changes the identifiers of all elements in mesh or mesh group.
+ * If sort_by_field is NULL, adds element_offset to the identifiers.
  * If sort_by_field is specified, it is evaluated at the centre of all elements
  * in the group and the elements are sorted by it - changing fastest with the
  * first component and keeping the current order where the field has the same

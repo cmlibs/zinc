@@ -132,7 +132,7 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 /**
  * @return  The dimension of the element shape, or 0 if error.
  */
-int get_FE_element_shape_dimension(struct FE_element_shape *element_shape);
+int get_FE_element_shape_dimension(const FE_element_shape *element_shape);
 
 /**
  * Return face_to_element map, a square matrix b + A xi for the face_number of
@@ -142,7 +142,7 @@ int get_FE_element_shape_dimension(struct FE_element_shape *element_shape);
  * Note: do not deallocate!
  */
 const FE_value *get_FE_element_shape_face_to_element(
-	struct FE_element_shape *element_shape, int face_number);
+	const FE_element_shape *element_shape, int face_number);
 
 /**
  * Finds face number corresponding to xi location in element, if any.
@@ -160,7 +160,7 @@ int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 	FE_value *xi, FE_value tolerance, int lastFaceNumber = -1);
 
 int get_FE_element_shape_xi_linkage_number(
-	struct FE_element_shape *element_shape, int xi_number1, int xi_number2,
+	const FE_element_shape *element_shape, int xi_number1, int xi_number2,
 	int *xi_linkage_number_address);
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
@@ -175,7 +175,7 @@ A value of zero indicates the dimensions are not linked.
 Note the first xi_number is 0.
 ==============================================================================*/
 
-int get_FE_element_shape_xi_shape_type(struct FE_element_shape *element_shape,
+int get_FE_element_shape_xi_shape_type(const FE_element_shape *element_shape,
 	int xi_number, enum FE_element_shape_type *shape_type_address);
 /*******************************************************************************
 LAST MODIFIED : 5 November 2002

@@ -51,13 +51,13 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 
 /**
  * Get a handle to a finite element mesh from its name. A mesh is the container
- * of elements of a fixed dimension. Valid names may be any element_group field,
- * or any of the following special names:
+ * of elements of a fixed dimension.
+ * Valid names may be any of the following default mesh names:
  * "mesh3d" = 3-D elements.
  * "mesh2d" = 2-D elements including faces of 3-D elements.
  * "mesh1d" = 1-D elements including faces (lines) of 2-D elements.
- * Note that the default names for element group fields created from a group
- * is GROUP_NAME.MESH_NAME, with mesh names as above.
+ * Mesh groups (subsets of the above meshes within a group field) are found
+ * from composite names "GROUP_NAME.MESH_NAME", if existing.
  *
  * @param fieldmodule  The field module the mesh belongs to.
  * @param name  The name of the finite element mesh.
@@ -203,7 +203,7 @@ ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id elemen
  * groups they are in. All handles to removed elements become invalid.
  * All affected element iterators for the mesh or groups are invalidated.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param mesh  Handle to the mesh to destroy elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
@@ -243,12 +243,22 @@ ZINC_API cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term);
 
 /**
- * Returns the number of dimensions of the mesh.
+ * Get the number of dimensions of the mesh.
  *
  * @param mesh  Handle to the mesh to query.
- * @return  dimension of mesh.
+ * @return  The dimension of mesh.
  */
 ZINC_API int cmzn_mesh_get_dimension(cmzn_mesh_id mesh);
+
+/**
+ * Get the face mesh owning face elements of elements in this mesh.
+ * This is always the master mesh even if a mesh group is supplied.
+ *
+ * @param mesh  The mesh to query.
+ * @return  Handle to face mesh, or null/invalid handle if invalid mesh or mesh
+ * is dimension 1 and has no face mesh.
+ */
+ZINC_API cmzn_mesh_id cmzn_mesh_get_face_mesh(cmzn_mesh_id mesh);
 
 /**
  * Returns handle to field module for region this mesh belongs to.
@@ -276,6 +286,16 @@ ZINC_API cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh);
  * free using cmzn_deallocate().
  */
 ZINC_API char *cmzn_mesh_get_name(cmzn_mesh_id mesh);
+
+/**
+ * Get the parent mesh owning elements this mesh may have face elements of.
+ * This is always the master mesh even if a mesh group is supplied.
+ *
+ * @param mesh  The mesh to query.
+ * @return  Handle to parent mesh, or null/invalid handle if invalid mesh or
+ * mesh is already highest supported dimension, 3.
+ */
+ZINC_API cmzn_mesh_id cmzn_mesh_get_parent_mesh(cmzn_mesh_id mesh);
 
 /**
  * Return the number of elements in the mesh.
@@ -321,13 +341,37 @@ ZINC_C_INLINE cmzn_mesh_id cmzn_mesh_group_base_cast(
 }
 
 /**
+ * Add adjacent elements to all the elements in this mesh group.
+ * Only works for elements with faces defined.
+ * Note: Currently only implemented for 3-D and 2-D meshes, and shared
+ * dimension 0 is only implemented for the top-level mesh on which fields are
+ * directly defined.
+ *
+ * @param mesh_group  Handle to mesh group to modify.
+ * @param shared_dimension  Either absolute dimension 0, 1 or 2, or relative
+ * dimension -1, -2, -3 compared to this mesh group's dimension, giving
+ * dimension of faces/lines/vertices which must be shared between elements
+ * to consider them adjacent.
+ * Note that 0-D mappings are found by traversing the face graph and
+ * including elements with a coordinate field mapping parameters from any
+ * node currently mapped to a coordinate field on any element already in
+ * the group.
+ * @return  Result OK on success, ERROR_ARGUMENT if either arguments is
+ * invalid, or any other error code for a more serious failure.
+ */
+ZINC_API int cmzn_mesh_group_add_adjacent_elements(
+	cmzn_mesh_group_id mesh_group, int shared_dimension);
+
+/**
  * Add specified element to mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
- * @param element  Handle to element to add. Must be from the group's master mesh.
- * @return  Status CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if element
- * was already in the group but otherwise successful, or any other error code on
- * more serious failure.
+ * @param element  Handle to element to add. Must be from the group's master
+ * mesh.
+ * @return  Result OK on success, ERROR_ALREADY_EXISTS if element was already
+ * in the group but otherwise successful, ERROR_ARGUMENT if either arguments
+ * are invalid or from different meshes, or any other error code for a more
+ * serious failure.
  */
 ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
@@ -336,7 +380,7 @@ ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
  * Ensure this mesh group contains all elements from the master mesh for which
  * the conditional field is true i.e. non-zero valued in the element.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element_group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param mesh_group  Handle to the mesh group to add elements to.
  * @param conditional_field  Field which if non-zero in an element indicates it
@@ -381,7 +425,7 @@ ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
  * Remove all elements from the mesh group for which the conditional field is
  * true i.e. non-zero valued in the element.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element_group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param mesh_group  Handle to the mesh group to remove elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it

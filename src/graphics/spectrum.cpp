@@ -809,7 +809,7 @@ Wrapper for accessing the component in <spectrum>.
 {
 	struct cmzn_spectrumcomponent *component;
 
-	ENTER(get_component_at_position_in_GT_element_group);
+	ENTER(cmzn_spectrum_get_component_at_position);
 	if (spectrum)
 	{
 		component=FIND_BY_IDENTIFIER_IN_LIST(cmzn_spectrumcomponent,
@@ -824,7 +824,7 @@ Wrapper for accessing the component in <spectrum>.
 	LEAVE;
 
 	return (component);
-} /* get_component_at_position_in_GT_element_group */
+}
 
 int Spectrum_set_simple_type(struct cmzn_spectrum *spectrum,
 	enum Spectrum_simple_type type)

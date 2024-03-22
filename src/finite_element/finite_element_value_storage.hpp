@@ -46,19 +46,27 @@ Global functions
 ----------------
 */
 
+/**
+ * @return  True if storage of time sequence of values is supported by this
+ * value type.
+ * Need to ensure consistent with get_Value_storage_size.
+ */
+inline bool Value_type_value_storage_supports_time_sequence(
+	Value_type value_type)
+{
+	return Value_type_is_numeric_simple(value_type);
+}
+
+/**
+ * Given the value type, returns the size in bytes of the memory required to
+ * store the following:
+ * - For non-array type, the actual data.
+ * - For array types, an integer storing the number of array values, and a
+ *   pointer to array values.
+ * - for time dependant types, a pointer to the values.
+ */
 int get_Value_storage_size(enum Value_type value_type,
 	struct FE_time_sequence *time_sequence);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2001
-
-DESCRIPTION :
-Given the value type, returns the size in bytes of the memory required to store
-the following:
-For non-array type, the actual data.
-For array types, an integer storing the number of array values, and a pointer to
-the array values.
-for time depedant types, a pointer to the values.
-==============================================================================*/
 
 int free_value_storage_array(Value_storage *values_storage,
 	enum Value_type value_type, struct FE_time_sequence *time_sequence,

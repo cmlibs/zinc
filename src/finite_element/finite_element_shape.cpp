@@ -1720,7 +1720,7 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 	return (face_shape);
 } /* get_FE_element_shape_of_face */
 
-int get_FE_element_shape_dimension(struct FE_element_shape *element_shape)
+int get_FE_element_shape_dimension(const FE_element_shape *element_shape)
 {
 	if (element_shape)
 		return element_shape->dimension;
@@ -1728,7 +1728,7 @@ int get_FE_element_shape_dimension(struct FE_element_shape *element_shape)
 }
 
 const FE_value *get_FE_element_shape_face_to_element(
-	struct FE_element_shape *element_shape, int face_number)
+	const FE_element_shape *element_shape, int face_number)
 {
 	if (element_shape && (0 <= face_number) &&
 		(face_number < element_shape->number_of_faces))
@@ -1777,7 +1777,7 @@ int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 }
 
 int get_FE_element_shape_xi_linkage_number(
-	struct FE_element_shape *element_shape, int xi_number1, int xi_number2,
+	const FE_element_shape *element_shape, int xi_number1, int xi_number2,
 	int *xi_linkage_number_address)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
@@ -1827,7 +1827,7 @@ Note the first xi_number is 0.
 	return (return_code);
 } /* get_FE_element_shape_xi_linkage_number */
 
-int get_FE_element_shape_xi_shape_type(struct FE_element_shape *element_shape,
+int get_FE_element_shape_xi_shape_type(const FE_element_shape *element_shape,
 	int xi_number, enum FE_element_shape_type *shape_type_address)
 /*******************************************************************************
 LAST MODIFIED : 25 February 2003

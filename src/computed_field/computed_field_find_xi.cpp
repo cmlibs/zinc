@@ -59,8 +59,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 	double a[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		b[MAXIMUM_ELEMENT_XI_DIMENSIONS], b2[MAXIMUM_ELEMENT_XI_DIMENSIONS], d, sum;
 	FE_value last_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, indx[MAXIMUM_ELEMENT_XI_DIMENSIONS], iterations, j, k,
-		number_of_xi_points_created[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code;
+	int i, indx[MAXIMUM_ELEMENT_XI_DIMENSIONS], iterations, j, k, return_code;
 	struct FE_element_shape *shape;
 
 	if (element && data)
@@ -79,26 +78,18 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 			}
 			else
 			{
-				/* Find a good estimate of the centre to start with */
-				int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 1, 1, 1 };
-				FE_value_triple *xi_points;
-				if (FE_element_shape_get_xi_points_cell_centres(shape,
-					number_in_xi, number_of_xi_points_created, &xi_points))
+				// start at centroid of xi chart
+				FE_value centroidXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+				if (CMZN_OK != FE_element_shape_get_xi_centroid(shape, centroidXi))
 				{
 					for (i = 0; i < number_of_xi; i++)
 					{
-						data->xi[i] = xi_points[0][i];
-						last_xi[i] = xi_points[0][i];
+						centroidXi[i] = 0.5;
 					}
-					DEALLOCATE(xi_points);
 				}
-				else
+				for (i = 0; i < number_of_xi; i++)
 				{
-					for (i = 0; i < number_of_xi; i++)
-					{
-						data->xi[i] = 0.5;
-						last_xi[i] = 0.5;
-					}
+					last_xi[i] = data->xi[i] = centroidXi[i];
 				}
 			}
 			FE_value maxDeltaXi = 0.2;  // reduced after certain iterations

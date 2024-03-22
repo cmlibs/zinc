@@ -1,6 +1,10 @@
 CHANGE LOG: Zinc Library
 
 v4.1.0
+Fix optimisation with conditional field applying partially to elements' nodes.
+Region read with single time is ignored with a warning for field value types not supporting time sequence.
+Add mesh group API to add adjacent elements sharing faces/lines/points with elements currently in mesh group.
+Fix define faces to match faces with same nodes, centroid and orientation, and better detect collapsed elements.
 Add API to selectively remove subobject and subregion groups from group field.
 
 v4.0.1

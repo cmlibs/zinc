@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "computed_field/computed_field_group.hpp"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "mesh/mesh_group.hpp"
 #include "mesh/nodeset_group.hpp"
@@ -496,6 +497,209 @@ bool cmzn_mesh_group::hasMembershipChanges() const
 		cmzn_field_group_base_cast(this->group)->manager_change_status) : false;
 }
 
+int cmzn_mesh_group::addAdjacentElements(int sharedDimension)
+{
+	const int thisDimension = this->getDimension();
+	if ((sharedDimension < -thisDimension) ||
+		(sharedDimension > (thisDimension - 1)))
+	{
+		display_message(ERROR_MESSAGE, "MeshGroup addAdjacentElements.  Invalid shared dimension");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (thisDimension == 1)
+	{
+		display_message(ERROR_MESSAGE, "MeshGroup addAdjacentElements.  Not implemented for 1-D mesh group");
+		return CMZN_ERROR_NOT_IMPLEMENTED;
+	}
+	const FE_mesh* faceMesh = this->feMesh->getFaceMesh();
+	const FE_mesh* lineMesh = (faceMesh) ? faceMesh->getFaceMesh() : nullptr;
+	const int absoluteSharedDimension = (sharedDimension < 0) ? thisDimension + sharedDimension : sharedDimension;
+	const bool sharePoints = absoluteSharedDimension == 0;
+	const bool addLineNeighbours = (lineMesh) && (absoluteSharedDimension < (thisDimension - 1));
+	const bool addFaceNeighbours = !addLineNeighbours;
+	int result = CMZN_OK;
+	// make new labels group for adjacent elements, later added to this group
+	DsLabelsGroup* newLabelsGroup = this->feMesh->createLabelsGroup();
+	DsLabelIterator* labelIterator = this->labelsGroup->createLabelIterator();
+	if ((!newLabelsGroup) || (!labelIterator))
+	{
+		result = CMZN_ERROR_MEMORY;
+	}
+	DsLabelsGroup* nodeLabelsGroup = nullptr;
+	if (sharePoints)
+	{
+		// make a list of nodes used by elements in current group to find adjacent elements sharing them
+		nodeLabelsGroup = this->feMesh->getNodeset()->createLabelsGroup();
+		cmzn_elementiterator* elementIter = this->createElementiterator();
+		if ((nodeLabelsGroup) && (elementIter))
+		{
+			cmzn_element* element = nullptr;
+			while ((result == CMZN_OK) && (element = elementIter->nextElement()))
+			{
+				result = cmzn_element_add_nodes_to_labels_group(element, *nodeLabelsGroup);
+			}
+		}
+		else
+		{
+			result = CMZN_ERROR_MEMORY;
+		}
+		cmzn::Deaccess(elementIter);
+	}
+	DsLabelIndex elementIndex;
+	while ((result == CMZN_OK) && ((elementIndex = labelIterator->nextIndex()) != DS_LABEL_INDEX_INVALID))
+	{
+		const FE_mesh::ElementShapeFaces* elementShapeFaces =
+			this->feMesh->getElementShapeFacesConst(elementIndex);
+		if (!elementShapeFaces)
+		{
+			continue;
+		}
+		const int facesCount = elementShapeFaces->getFaceCount();
+		const DsLabelIndex* faces = elementShapeFaces->getElementFaces(elementIndex);
+		if (!faces)
+		{
+			continue;
+		}
+		for (int f = 0; (f < facesCount) && (result == CMZN_OK); ++f)
+		{
+			const DsLabelIndex faceIndex = faces[f];
+			if (faceIndex >= 0)
+			{
+				if (addFaceNeighbours)
+				{
+					// add parents of all faces
+					const DsLabelIndex* faceParents = nullptr;
+					const int faceParentsCount = faceMesh->getElementParents(faceIndex, faceParents);
+					for (int fp = 0; fp < faceParentsCount; ++fp)
+					{
+						const int addResult = newLabelsGroup->setIndex(faceParents[fp], true);
+						if ((addResult != CMZN_OK) && (addResult != CMZN_ERROR_ALREADY_EXISTS))
+						{
+							result = addResult;
+							break;
+						}
+					}
+				}
+				else
+				{
+					// add parents' parents of all faces' faces
+					const FE_mesh::ElementShapeFaces* faceElementShapeFaces =
+						faceMesh->getElementShapeFacesConst(faceIndex);
+					if (!faceElementShapeFaces)
+					{
+						continue;
+					}
+					const int linesCount = faceElementShapeFaces->getFaceCount();
+					const DsLabelIndex* lines = faceElementShapeFaces->getElementFaces(faceIndex);
+					if (!lines)
+					{
+						continue;
+					}
+					for (int l = 0; (l < linesCount) && (result == CMZN_OK); ++l)
+					{
+						const DsLabelIndex lineIndex = lines[l];
+						if (lineIndex >= 0)
+						{
+							const DsLabelIndex* lineParents = nullptr;
+							const int lineParentsCount = lineMesh->getElementParents(lineIndex, lineParents);
+							for (int lp = 0; (lp < lineParentsCount) && (result == CMZN_OK); ++lp)
+							{
+								const DsLabelIndex* faceParents = nullptr;
+								const int faceParentsCount = faceMesh->getElementParents(lineParents[lp], faceParents);
+								for (int fp = 0; fp < faceParentsCount; ++fp)
+								{
+									const int addResult = newLabelsGroup->setIndex(faceParents[fp], true);
+									if ((addResult != CMZN_OK) && (addResult != CMZN_ERROR_ALREADY_EXISTS))
+									{
+										result = addResult;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	cmzn::Deaccess(labelIterator);
+	if (result == CMZN_OK)
+	{
+		if (sharePoints)
+		{
+			// traverse faces graph to find any element using nodes from nodeLabelsGroup
+			// but stop traversing at any element not sharing nodes
+			std::vector<DsLabelIdentifier> checkElementIndexes;  // used like a LIFO stack
+			checkElementIndexes.reserve(newLabelsGroup->getSize());
+			labelIterator = newLabelsGroup->createLabelIterator();
+			if (labelIterator)
+			{
+				while ((elementIndex = labelIterator->nextIndex()) != DS_LABEL_INDEX_INVALID)
+				{
+					checkElementIndexes.push_back(elementIndex);
+				}
+				cmzn::Deaccess(labelIterator);
+			}
+			else
+			{
+				result = CMZN_ERROR_MEMORY;
+			}
+			while ((result == CMZN_OK) && (checkElementIndexes.size() > 0))
+			{
+				elementIndex = checkElementIndexes.back();
+				checkElementIndexes.pop_back();
+				const FE_mesh::ElementShapeFaces* elementShapeFaces =
+					this->feMesh->getElementShapeFacesConst(elementIndex);
+				if (!elementShapeFaces)
+				{
+					continue;
+				}
+				const int facesCount = elementShapeFaces->getFaceCount();
+				const DsLabelIndex* faces = elementShapeFaces->getElementFaces(elementIndex);
+				if (!faces)
+				{
+					continue;
+				}
+				for (int f = 0; (f < facesCount) && (result == CMZN_OK); ++f)
+				{
+					const DsLabelIndex faceIndex = faces[f];
+					if (faceIndex >= 0)
+					{
+						const DsLabelIndex* faceParents = nullptr;
+						const int faceParentCount = faceMesh->getElementParents(faceIndex, faceParents);
+						for (int fp = 0; fp < faceParentCount; ++fp)
+						{
+							DsLabelIndex nearbyElementIndex = faceParents[fp];
+							if (newLabelsGroup->hasIndex(nearbyElementIndex))
+							{
+								continue;
+							}
+							// note following function does not inherit nodes from parent elements
+							if (this->feMesh->elementHasNodeInGroup(nearbyElementIndex, *nodeLabelsGroup))
+							{
+								result = newLabelsGroup->setIndex(nearbyElementIndex, true);
+								if (result != CMZN_OK)
+								{
+									break;
+								}
+								checkElementIndexes.push_back(nearbyElementIndex);
+							}
+						}
+					}
+				}
+			}
+		}
+		if (result == CMZN_OK)
+		{
+			newLabelsGroup->removeGroup(*this->labelsGroup);
+			result = this->addElementsInLabelsGroup(*newLabelsGroup);
+		}
+	}
+	cmzn::Deaccess(nodeLabelsGroup);
+	cmzn::Deaccess(newLabelsGroup);
+	return result;
+}
+
 int cmzn_mesh_group::addElement(cmzn_element* element)
 {
 	cmzn_region* region = this->getRegion();
@@ -947,6 +1151,16 @@ int cmzn_mesh_group_destroy(cmzn_mesh_group_id* mesh_group_address)
 	{
 		cmzn_mesh_group::deaccess(*mesh_group_address);
 		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_mesh_group_add_adjacent_elements(
+	cmzn_mesh_group_id mesh_group, int shared_dimension)
+{
+	if (mesh_group)
+	{
+		return mesh_group->addAdjacentElements(shared_dimension);
 	}
 	return CMZN_ERROR_ARGUMENT;
 }

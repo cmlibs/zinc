@@ -189,7 +189,7 @@ public:
 	 * @return  Value label, or INVALID if out of range. */
 	inline cmzn_node_value_label getValueLabelAndVersion(int valueIndex, int& version) const
 	{
-		if (valueIndex > 0)
+		if (valueIndex >= 0)
 		{
 			int index = valueIndex;
 			for (int d = 0; d < this->valueLabelsCount; ++d)

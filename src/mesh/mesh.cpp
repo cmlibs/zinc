@@ -282,6 +282,24 @@ int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
 	return 0;
 }
 
+cmzn_mesh_id cmzn_mesh_get_face_mesh(cmzn_mesh_id mesh)
+{
+	if (mesh)
+	{
+		cmzn_region* region = mesh->getRegion();
+		if (region)
+		{
+			// Future: would need to change if region owned multiple mesh sets.
+			cmzn_mesh* faceMesh = region->findMeshByDimension(mesh->getDimension() - 1);
+			if (faceMesh)
+			{
+				return faceMesh->access();
+			}
+		}
+	}
+	return nullptr;
+}
+
 cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh)
 {
 	if (mesh)
@@ -306,6 +324,24 @@ char* cmzn_mesh_get_name(cmzn_mesh_id mesh)
 	if (mesh)
 	{
 		return mesh->getName();
+	}
+	return nullptr;
+}
+
+cmzn_mesh_id cmzn_mesh_get_parent_mesh(cmzn_mesh_id mesh)
+{
+	if (mesh)
+	{
+		cmzn_region* region = mesh->getRegion();
+		if (region)
+		{
+			// Future: would need to change if region owned multiple mesh sets.
+			cmzn_mesh* parentMesh = region->findMeshByDimension(mesh->getDimension() + 1);
+			if (parentMesh)
+			{
+				return parentMesh->access();
+			}
+		}
 	}
 	return nullptr;
 }
