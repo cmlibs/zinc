@@ -173,8 +173,8 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 {
 	FE_value *blending_matrix, *inherited_value, *inherited_values,
 		*transformation, *value, **values_address;
-	int cn, **component_number_in_xi, *component_base_grid_offset,
-		*element_value_offsets, i, j, number_of_inherited_values,
+	int cn, ** component_number_in_xi, * component_base_grid_offset,
+		* element_value_offsets, i, j, number_of_inherited_values,
 		*number_of_values_address, row_size,
 		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
@@ -292,7 +292,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 				}
 
 				const FE_mesh_field_data *meshFieldData = fieldIn->getMeshFieldData(fieldElement->getMesh());
-				FE_basis *previous_basis = 0;
+				FE_basis *lastBasis = nullptr;
 				return_code=1;
 				int **component_grid_offset_in_xi = 0;
 				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
@@ -305,6 +305,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 						return_code = 0;
 						break;
 					}
+					FE_basis* basis = eft->getBasis();
 					if ((eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 						&& (0 != eft->getLegacyGridNumberInXi()))
 					{
@@ -473,8 +474,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 								break;
 							}
 							// transform values to standard basis functions if needed
-							FE_basis *basis = eft->getBasis();
-							const int blendedElementValuesCount = FE_basis_get_number_of_blended_functions(basis);
+							const int blendedElementValuesCount = basis->getNumberOfStandardBasisFunctions();
 							if (blendedElementValuesCount > 0)
 							{
 								FE_value *blendedElementValues = FE_basis_get_blended_element_values(basis, values);
@@ -526,24 +526,23 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 						}
 						if (!return_code)
 							break;
-						if (previous_basis == eft->getBasis())
+						if (basis == lastBasis)
 						{
 							*standard_basis_address = *(standard_basis_address - 1);
 							*standard_basis_arguments_address = *(standard_basis_arguments_address - 1);
 						}
 						else
 						{
-							previous_basis = eft->getBasis();
 							if (blending_matrix)
 							{
 								DEALLOCATE(blending_matrix);
 								blending_matrix = 0;
 							}
-							*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
+							*standard_basis_address = basis->getStandardBasisFunction();
 							if (fieldElementDimension > elementDimension)
 							{
 								if (!calculate_standard_basis_transformation(
-									previous_basis, coordinate_transformation,
+									basis, coordinate_transformation,
 									elementDimension, standard_basis_arguments_address,
 									&number_of_inherited_values, standard_basis_address,
 									&blending_matrix))
@@ -557,8 +556,9 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 								/* standard basis transformation is just a big identity matrix, so don't compute */
 								/* also use the real basis arguments */
 								*standard_basis_arguments_address =
-									const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
+									const_cast<int *>(FE_basis_get_standard_basis_function_arguments(basis));
 							}
+							lastBasis = basis;
 						}
 						if (fieldElement == element)
 						{
@@ -1475,10 +1475,11 @@ int FE_element_field_evaluation::get_monomial_component_info(int component_numbe
 	int *monomial_info) const
 {
 	int return_code = 0;
-	int i, *source_monomial_info;
+	int i;
 	if ((this->element) && (0 <= component_number) &&
 		(component_number < this->number_of_components) && (monomial_info))
 	{
+		const int* source_monomial_info;
 		if ((this->component_standard_basis_function_arguments)&&
 			(source_monomial_info = this->
 				component_standard_basis_function_arguments[component_number])&&

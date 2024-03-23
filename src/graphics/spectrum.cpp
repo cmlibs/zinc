@@ -809,7 +809,7 @@ Wrapper for accessing the component in <spectrum>.
 {
 	struct cmzn_spectrumcomponent *component;
 
-	ENTER(get_component_at_position_in_GT_element_group);
+	ENTER(cmzn_spectrum_get_component_at_position);
 	if (spectrum)
 	{
 		component=FIND_BY_IDENTIFIER_IN_LIST(cmzn_spectrumcomponent,
@@ -824,7 +824,7 @@ Wrapper for accessing the component in <spectrum>.
 	LEAVE;
 
 	return (component);
-} /* get_component_at_position_in_GT_element_group */
+}
 
 int Spectrum_set_simple_type(struct cmzn_spectrum *spectrum,
 	enum Spectrum_simple_type type)
@@ -1185,14 +1185,7 @@ position one greater than the last.
 } /* Spectrum_add_component */
 
 int cmzn_spectrum_remove_spectrumcomponent(cmzn_spectrum_id spectrum,
-	struct cmzn_spectrumcomponent *component)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1998
-
-DESCRIPTION :
-Removes the <component> from <spectrum> and decrements the position
-of all subsequent component.
-==============================================================================*/
+	cmzn_spectrumcomponent_id component)
 {
 	int return_code = 0;
 

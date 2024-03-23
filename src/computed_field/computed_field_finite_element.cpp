@@ -1908,7 +1908,7 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_finite_element */
 
-int Computed_field_get_type_finite_element(struct Computed_field *field,
+int Computed_field_get_type_finite_element(cmzn_field *field,
 	struct FE_field **fe_field)
 {
 	Computed_field_finite_element* core;
@@ -1918,6 +1918,16 @@ int Computed_field_get_type_finite_element(struct Computed_field *field,
 		return 1;
 	}
 	return 0;
+}
+
+FE_field* cmzn_field_finite_element_get_FE_field(cmzn_field* field)
+{
+	Computed_field_finite_element* core;
+	if (field && (0 != (core = dynamic_cast<Computed_field_finite_element*>(field->core))))
+	{
+		return core->fe_field;
+	}
+	return nullptr;
 }
 
 namespace {
@@ -3836,9 +3846,8 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 	// while the mesh field has changes the ranges are not used
 	// changes to groups are fine: deletion of elements immediately removes them from any groups, and their ranges from mesh field ranges
 	// Any elements added to groups won't have a range so will fallback to the original find xi algorithm
-	// the evaluated flag is cleared when FindMeshLocation field is notified of change to either mesh field or element group
-	//cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
-	if (meshField->isResultChanged()/* || ((elementGroupField) && cmzn_field_element_group_base_cast(elementGroupField)->isResultChanged())*/)
+	// the evaluated flag is cleared when FindMeshLocation field is notified of change to either mesh field or search mesh group
+	if (meshField->isResultChanged())
 	{
 		// mesh field ranges are invalid while mesh field has unnotified result changes
 		meshFieldRanges = nullptr;
@@ -4730,7 +4739,7 @@ int Computed_field_is_exterior::evaluateDerivative(cmzn_fieldcache& cache, RealF
 } // namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
-	struct cmzn_fieldmodule *fieldmodule)
+	cmzn_fieldmodule_id fieldmodule)
 {
 	cmzn_field *field = nullptr;
 	if (fieldmodule)
@@ -4871,7 +4880,7 @@ int Computed_field_is_on_face::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 } // namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
-	struct cmzn_fieldmodule *fieldmodule, cmzn_element_face_type face)
+	cmzn_fieldmodule_id fieldmodule, enum cmzn_element_face_type face)
 {
 	cmzn_field *field = nullptr;
 	if ((fieldmodule) && (ENUMERATOR_STRING(cmzn_element_face_type)(face)))

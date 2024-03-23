@@ -25,14 +25,13 @@ int create_FE_element_snake_from_data_points(
 	cmzn_nodeset_id data_nodeset,
 	int number_of_elements, FE_value density_factor, FE_value stiffness,
 	cmzn_nodeset_group_id nodeset_group, cmzn_mesh_group_id mesh_group);
-/*******************************************************************************
+/******************************************************************************
 LAST MODIFIED : 29 March 2006
 
 DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
-<element_manager> and <element_group>, nodes in <node_manager> and the node
-group of the same name in <node_group_manager>. The snake follows the data in
-<data_nodeset>; data is unmodified by this function.
+<fe_region>, optionally adding to mesh_group and nodes in nodeset_group. The
+snake follows the data in <data_nodeset>; data is unmodified by this function.
 The <fitting_fields> which must be defined on the data are fitted and
 defined on the created elements.  The <coordinate_field> is used to determine
 distances between points.  If specified, the <weight_field> is evaluated at 
@@ -45,6 +44,6 @@ A positive value of <stiffness> penalises solutions with large second
 derivatives; helps make smooth snakes from few data points.
 @param nodeset_group  Optional nodeset group to put snake nodes in.
 @param mesh_group  Optional mesh group to put snake elements in.
-==============================================================================*/
+=============================================================================*/
 
 #endif /* !defined (SNAKE_H) */

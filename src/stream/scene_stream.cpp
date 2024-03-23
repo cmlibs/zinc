@@ -405,7 +405,7 @@ enum cmzn_streaminformation_scene_io_data_type
 
 int cmzn_streaminformation_scene_set_io_data_type(
 	cmzn_streaminformation_scene_id streaminformation,
-	cmzn_streaminformation_scene_io_data_type data_type)
+	enum cmzn_streaminformation_scene_io_data_type data_type)
 {
 	if (streaminformation)
 	{

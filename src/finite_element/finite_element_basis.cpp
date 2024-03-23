@@ -1281,7 +1281,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 		*inherited_standard_basis_argument,*inherited_standard_basis_arguments,j,k,
 		l,m,need_reordering,number_of_inherited_values,number_of_polygon_verticies,
 		number_of_values,offset,order,p,polygon_offset,polygon_vertex,
-		*reorder_coordinate,*reorder_value,*reorder_values,return_code,row_size,
+		*reorder_coordinate,*reorder_value,*reorder_values,return_code,
 		*standard_basis_argument,*standard_basis_arguments;
 	Standard_basis_function *standard_basis_function;
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
@@ -1354,6 +1354,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 				}
 				else
 				{
+					// identity transformation
 					for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
 					{
 						transformation++;
@@ -1374,7 +1375,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 						*inherited_standard_basis_argument= *standard_basis_argument;
 					}
 				}
-				row_size=basis->number_of_standard_basis_functions;
+				const int total_row_count = basis->number_of_standard_basis_functions;
 				number_of_inherited_values=1;
 				inherited_standard_basis_argument=
 					inherited_standard_basis_arguments;
@@ -1384,17 +1385,17 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 					number_of_inherited_values *= (*inherited_standard_basis_argument)+1;
 				}
 				if (ALLOCATE(blending_matrix,FE_value,
-					row_size*number_of_inherited_values))
+					total_row_count * number_of_inherited_values))
 				{
-					value=blending_matrix;
-					*value=1;
-					for (i=row_size*number_of_inherited_values-1;i>0;i--)
+					value = blending_matrix;
+					*value = 1.0;
+					for (i = total_row_count * number_of_inherited_values - 1; i > 0; --i)
 					{
 						value++;
-						*value=0;
+						*value = 0.0;
 					}
 					standard_basis_argument=standard_basis_arguments;
-					row_size=1;
+					int row_step = 1;
 					transformation=expanded_coordinate_transformation+
 						(inherited_dimension+1);
 					for (i=basis_dimension;i>0;i--)
@@ -1409,15 +1410,15 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 								if (0!= *transformation)
 								{
 									/* loop over blending matrix rows */
-									value=blending_matrix+(j*row_size*number_of_inherited_values);
-									for (l=0;l<row_size;l++)
+									value = blending_matrix + (j * row_step * number_of_inherited_values);
+									for (l = 0; l < row_step; l++)
 									{
 										for (p=number_of_inherited_values-offset;p>0;p--)
 										{
 											if (0!= *value)
 											{
-												value[row_size*number_of_inherited_values+offset] +=
-													(*value)*(*transformation);
+												value[row_step * number_of_inherited_values + offset] +=
+													(*value) * (*transformation);
 											}
 											value++;
 										}
@@ -1437,7 +1438,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 							transformation -= inherited_dimension+1;
 						}
 						transformation += inherited_dimension+1;
-						row_size *= (order+1);
+						row_step *= (order+1);
 					}
 					*inherited_arguments_address=inherited_standard_basis_arguments;
 					*blending_matrix_address=blending_matrix;
@@ -1472,7 +1473,7 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 				ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
 				ALLOCATE(field_to_element,int,basis_dimension);
 				ALLOCATE(reorder_coordinate,int,inherited_dimension);
-				row_size=basis->number_of_standard_basis_functions;
+				int row_size=basis->number_of_standard_basis_functions;
 				ALLOCATE(blending_matrix,FE_value,row_size*row_size);
 				if (inherited_standard_basis_arguments&&field_to_element&&
 					reorder_coordinate&&blending_matrix)

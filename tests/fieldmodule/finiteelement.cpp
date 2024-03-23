@@ -978,19 +978,34 @@ TEST(ZincFieldEdgeDiscontinuity, invalidEvaluate)
 	EXPECT_NE(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
 }
 
+namespace {
+
+FieldFiniteElement createRCCoordinatesField(Fieldmodule& fieldmodule, int numberOfComponents)
+{
+	EXPECT_TRUE(numberOfComponents <= 3);
+	FieldFiniteElement coordinates = fieldmodule.createFieldFiniteElement(numberOfComponents);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	const char* componentNames[3] = { "x", "y", "z" };
+	for (int c = 0; c < numberOfComponents; ++c)
+	{
+		EXPECT_EQ(RESULT_OK, coordinates.setComponentName(c + 1, componentNames[c]));
+	}
+	return coordinates;
+}
+
+}
+
 // Test changing the basis used in an element
 TEST(ZincFieldFiniteElement, redefine_element_field)
 {
 	ZincTestSetupCpp zinc;
 	int result;
 
-	FieldFiniteElement coordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/2);
-	EXPECT_TRUE(coordinates.isValid());
-	EXPECT_EQ(RESULT_OK, result = coordinates.setName("coordinates"));
-	EXPECT_EQ(RESULT_OK, result = coordinates.setTypeCoordinate(true));
-	EXPECT_EQ(RESULT_OK, result = coordinates.setManaged(true));
-	EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(1, "x"));
-	EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(2, "y"));
+	FieldFiniteElement coordinates = createRCCoordinatesField(zinc.fm, 2);
 
 	FieldFiniteElement pressure = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/1);
 	EXPECT_TRUE(pressure.isValid());
@@ -2677,15 +2692,7 @@ TEST(ZincElementfieldtemplate, mergeExternalElementfieldtemplate)
 {
 	ZincTestSetupCpp zinc;
 
-	FieldFiniteElement coordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
-	EXPECT_TRUE(coordinates.isValid());
-	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
-	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
-	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
-	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
-	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
-	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
-	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+	FieldFiniteElement coordinates = createRCCoordinatesField(zinc.fm, 3);
 
 	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodes.isValid());
@@ -2919,6 +2926,276 @@ TEST(ZincFieldFiniteElement, readWithChangeCache)
 	Field xi = zinc.fm.findFieldByName("xi");
 	EXPECT_TRUE(xi.isValid());
 	zinc.fm.endChange();
+}
+
+void checkAllShapesFaces(Fieldmodule& fieldmodule)
+{
+	Mesh mesh3d = fieldmodule.findMeshByDimension(3);
+	const int elementsCount = mesh3d.getSize();
+	EXPECT_EQ(6, elementsCount);
+	Mesh mesh2d = fieldmodule.findMeshByDimension(2);
+	EXPECT_EQ(24, mesh2d.getSize());
+	Mesh mesh1d = fieldmodule.findMeshByDimension(1);
+	EXPECT_EQ(33, mesh1d.getSize());
+	Nodeset nodes = fieldmodule.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(16, nodes.getSize());
+}
+
+TEST(ZincFieldmodule, defineFacesAllShapes)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldmodule/allshapes.ex3").c_str()));
+	checkAllShapesFaces(zinc.fm);
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(RESULT_OK, mesh2d.destroyAllElements());
+	EXPECT_EQ(0, mesh2d.getSize());
+	EXPECT_EQ(0, mesh1d.getSize());
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	checkAllShapesFaces(zinc.fm);
+}
+
+TEST(ZincFieldmodule, defineFacesCollapsed)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement coordinates = createRCCoordinatesField(zinc.fm, 3);
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double x[3];
+	int nodeIdentifier = 1;
+	for (int k = 0; k < 2; ++k)
+	{
+		x[2] = static_cast<double>(k);
+		for (int j = 0; j < 2; ++j)
+		{
+			x[1] = static_cast<double>(j);
+			for (int i = 0; i < 2; ++i)
+			{
+				x[0] = static_cast<double>(i);
+				Node node = nodes.createNode(nodeIdentifier, nodetemplate);
+				EXPECT_TRUE(node.isValid());
+				EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+				EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(fieldcache, -1, Node::VALUE_LABEL_VALUE, 1, 3, x));
+				++nodeIdentifier;
+			}
+		}
+	}
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	Elementbasis trilinear = zinc.fm.createElementbasis(3, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	Elementfieldtemplate eft = mesh3d.createElementfieldtemplate(trilinear);
+	EXPECT_TRUE(eft.isValid());
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, -1, eft));
+
+	int elementNodeIdentifiers[2][8] =
+	{
+		{ 1, 2, 3, 4, 5, 2, 7, 4 },
+		{ 5, 2, 7, 4, 5, 6, 7, 8 }
+	};
+	int elementIdentifier = 1;
+	for (int e = 0; e < 2; ++e)
+	{
+		Element element = mesh3d.createElement(elementIdentifier, elementtemplate);
+		EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(eft, 8, elementNodeIdentifiers[e]));
+		++elementIdentifier;
+	}
+
+	const int elementsCount = mesh3d.getSize();
+	EXPECT_EQ(2, elementsCount);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(0, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(0, mesh1d.getSize());
+	EXPECT_EQ(8, nodes.getSize());
+
+	// test face/parent mesh API
+	EXPECT_EQ(mesh2d, mesh3d.getFaceMesh());
+	EXPECT_EQ(mesh1d, mesh2d.getFaceMesh());
+	EXPECT_FALSE(mesh1d.getFaceMesh().isValid());
+	EXPECT_EQ(mesh2d, mesh1d.getParentMesh());
+	EXPECT_EQ(mesh3d, mesh2d.getParentMesh());
+	EXPECT_FALSE(mesh3d.getParentMesh().isValid());
+
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	EXPECT_EQ(9, mesh2d.getSize());
+	EXPECT_EQ(14, mesh1d.getSize());
+
+	// test getting face elements
+	const int checkElementIdentifier = 2;
+	const int expectedFaceIdentifiers[6] = { -1, 6, 7, 8, 5, 9 };
+	const int expectedLineIdentifiers[6][4] =
+	{
+		{ -1, -1, -1, -1 },
+		{ 10, 11, 9, 12 },
+		{ 6, 13, -1, 10 },
+		{ 8, 14, -1, 11 },
+		{ 4, 9, 6, 8 },
+		{ 4, 12, 13, 14 }
+	};
+	Element element = mesh3d.findElementByIdentifier(checkElementIdentifier);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(Element::SHAPE_TYPE_CUBE, element.getShapeType());
+	EXPECT_EQ(6, element.getNumberOfFaces());
+	EXPECT_FALSE(element.getFaceElement(0).isValid());
+	EXPECT_FALSE(element.getFaceElement(7).isValid());
+	for (int f = 0; f < 6; ++f)
+	{
+		Element face = element.getFaceElement(f + 1);
+		if (expectedFaceIdentifiers[f] == -1)
+		{
+			EXPECT_FALSE(face.isValid());
+			continue;
+		}
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(Element::SHAPE_TYPE_SQUARE, face.getShapeType());
+		EXPECT_EQ(expectedFaceIdentifiers[f], face.getIdentifier());
+		EXPECT_EQ(4, face.getNumberOfFaces());
+		for (int l = 0; l < 4; ++l)
+		{
+			Element line = face.getFaceElement(l + 1);
+			if (expectedLineIdentifiers[f][l] == -1)
+			{
+				EXPECT_FALSE(line.isValid());
+				continue;
+			}
+			EXPECT_TRUE(line.isValid());
+			EXPECT_EQ(Element::SHAPE_TYPE_LINE, line.getShapeType());
+			EXPECT_EQ(expectedLineIdentifiers[f][l], line.getIdentifier());
+			EXPECT_EQ(0, line.getNumberOfFaces());
+		}
+	}
+
+	// test getting parent elements
+	const int checkParentLineIdentifier = 6;
+	Element line = mesh1d.findElementByIdentifier(checkParentLineIdentifier);
+	EXPECT_TRUE(line.isValid());
+	const int expectedParentFaceIdentifiers[3] = { 2, 5, 7 };
+	const int expectedParentElementIdentifiers[3][3] =
+	{
+		// first value is number of parents, followed by parent identifiers in order
+		{ 1, 1, -1 },
+		{ 2, 1, 2 },
+		{ 1, 2, -1 }
+	};
+	EXPECT_EQ(3, line.getNumberOfParents());
+	EXPECT_FALSE(line.getParentElement(0).isValid());
+	EXPECT_FALSE(line.getParentElement(4).isValid());
+	for (int f = 0; f < 3; ++f)
+	{
+		Element face = line.getParentElement(f + 1);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(expectedParentFaceIdentifiers[f], face.getIdentifier());
+		const int expectedNumberOfParentElements = expectedParentElementIdentifiers[f][0];
+		EXPECT_EQ(expectedNumberOfParentElements, face.getNumberOfParents());
+		for (int e = 0; e < expectedNumberOfParentElements; ++e)
+		{
+			Element element = face.getParentElement(e + 1);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(expectedParentElementIdentifiers[f][e + 1], element.getIdentifier());
+			EXPECT_EQ(0, element.getNumberOfParents());
+		}
+	}
+}
+
+TEST(ZincFieldmodule, defineFacesTetMesh)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(resourcePath("fieldio/tetmesh.ex2").c_str()));
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(102, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(232, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(167, mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(38, nodes.getSize());
+
+	// first test invalid element
+	Element invalidElement;
+	EXPECT_EQ(-1, invalidElement.getNumberOfFaces());
+	EXPECT_FALSE(invalidElement.getFaceElement(1).isValid());
+	EXPECT_EQ(-1, invalidElement.getNumberOfParents());
+	EXPECT_FALSE(invalidElement.getParentElement(1).isValid());
+
+	// test getting face elements
+	const int checkElementIdentifier = 102;
+	const int expectedFaceIdentifiers[4] = { 232, 187, 199, 182 };
+	const int expectedLineIdentifiers[4][3] =
+	{
+		{ 153, 144, 149 },
+		{ 153, 1, 145 },
+		{ 144, 145, 151 },
+		{ 151, 1, 149 }
+	};
+	Element element = mesh3d.findElementByIdentifier(checkElementIdentifier);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(Element::SHAPE_TYPE_TETRAHEDRON, element.getShapeType());
+	EXPECT_EQ(4, element.getNumberOfFaces());
+	EXPECT_FALSE(element.getFaceElement(0).isValid());
+	EXPECT_FALSE(element.getFaceElement(5).isValid());
+	for (int f = 0; f < 4; ++f)
+	{
+		Element face = element.getFaceElement(f + 1);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(Element::SHAPE_TYPE_TRIANGLE, face.getShapeType());
+		EXPECT_EQ(expectedFaceIdentifiers[f], face.getIdentifier());
+		EXPECT_EQ(3, face.getNumberOfFaces());
+		for (int l = 0; l < 3; ++l)
+		{
+			Element line = face.getFaceElement(l + 1);
+			EXPECT_TRUE(line.isValid());
+			EXPECT_EQ(Element::SHAPE_TYPE_LINE, line.getShapeType());
+			EXPECT_EQ(expectedLineIdentifiers[f][l], line.getIdentifier());
+			EXPECT_EQ(0, line.getNumberOfFaces());
+		}
+	}
+
+	// test getting parent elements
+	const int checkParentLineIdentifier = 144;
+	Element line = mesh1d.findElementByIdentifier(checkParentLineIdentifier);
+	EXPECT_TRUE(line.isValid());
+	const int expectedParentFaceIdentifiers[4] = { 161, 162, 199, 232 };
+	const int expectedParentElementIdentifiers[4][3] =
+	{
+		// first value is number of parents, followed by parent identifiers in order
+		{ 2, 55, 75 },
+		{ 1, 55, -1 },
+		{ 2, 75, 102 },
+		{ 1, 102, -1 }
+	};
+	EXPECT_EQ(4, line.getNumberOfParents());
+	EXPECT_FALSE(line.getParentElement(0).isValid());
+	EXPECT_FALSE(line.getParentElement(5).isValid());
+	for (int f = 0; f < 4; ++f)
+	{
+		Element face = line.getParentElement(f + 1);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(expectedParentFaceIdentifiers[f], face.getIdentifier());
+		const int expectedNumberOfParentElements = expectedParentElementIdentifiers[f][0];
+		EXPECT_EQ(expectedNumberOfParentElements, face.getNumberOfParents());
+		for (int e = 0; e < expectedNumberOfParentElements; ++e)
+		{
+			Element element = face.getParentElement(e + 1);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(expectedParentElementIdentifiers[f][e + 1], element.getIdentifier());
+			EXPECT_EQ(0, element.getNumberOfParents());
+		}
+	}
 }
 
 // Test that creating a finite element field while change cache active

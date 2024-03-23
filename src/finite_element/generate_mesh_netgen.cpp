@@ -345,11 +345,12 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		cmzn_field_set_type_coordinate(coordinate_field, true);
 	}
 
+	cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
+
 	/* create and fill nodes */
 	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
 	cmzn_nodetemplate_define_field(nodetemplate, coordinate_field);
-	cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 
 	FE_nodeset *fe_nodeset = nodeset->getFeNodeset();
 	const int number_of_nodes = Ng_GetNP(mesh);
@@ -364,12 +365,11 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		cmzn_field_assign_real(coordinate_field, fieldcache, 3, coordinates);
 		cmzn_node_destroy(&node);
 	}
-	cmzn_fieldcache_destroy(&fieldcache);
 	cmzn_nodetemplate_destroy(&nodetemplate);
 
 	// establish mode which automates creation of shared faces
-	FE_region_begin_define_faces(region->get_FE_region());
 	FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(region->get_FE_region(), 3);
+	FeMeshFaceMap* meshFaceMap = FeMeshFaceMap::create(fe_mesh, coordinate_field, fieldcache);
 
 	cmzn_mesh_id cmesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
 	cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(cmesh);
@@ -394,7 +394,7 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		};
 		cmzn_element_id element = cmzn_mesh_create_element(cmesh, /*identifier*/-1, elementtemplate);
 		cmzn_element_set_nodes_by_identifier(element, eft, 4, node_identifiers);
-		fe_mesh->defineElementFaces(get_FE_element_index(element));
+		fe_mesh->defineElementFaces(get_FE_element_index(element), *meshFaceMap);
 		cmzn_element_destroy(&element);
 	}
 	cmzn_elementfieldtemplate_destroy(&eft);
@@ -403,9 +403,10 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_mesh_destroy(&cmesh);
 
 	cmzn_nodeset_destroy(&nodeset);
+	cmzn_fieldcache_destroy(&fieldcache);
 	cmzn_field_destroy(&coordinate_field);
 
-	FE_region_end_define_faces(region->get_FE_region());
+	delete meshFaceMap;
 
 	cmzn_fieldmodule_end_change(fieldmodule);
 

@@ -57,7 +57,7 @@ Module functions
 ----------------
 */
 
-static int categorize_FE_element_shape(struct FE_element_shape *element_shape,
+static int categorize_FE_element_shape(const FE_element_shape *element_shape,
 	enum FE_element_shape_category *element_shape_category_address,
 	int *number_of_polygon_sides_address, int *linked_xi_directions,
 	int *line_direction_address)
@@ -282,6 +282,77 @@ public:
 Global functions
 ----------------
 */
+
+int FE_element_shape_get_xi_centroid(const FE_element_shape* elementShape,
+	FE_value* xiCentroidOut)
+{
+	if ((!elementShape) || (!xiCentroidOut))
+	{
+		display_message(ERROR_MESSAGE, "FE_element_shape_get_xi_centroid.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_element_shape_category element_shape_category;
+	int numberOfPolygonSides = 0;
+	int linkedXiDirections[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int lineDirection = 0;
+	if (!categorize_FE_element_shape(elementShape,
+		&element_shape_category, &numberOfPolygonSides, linkedXiDirections, &lineDirection))
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_get_xi_centroid.  Could not categorize element shape");
+		return CMZN_ERROR_NOT_IMPLEMENTED;
+	}
+	int return_code = CMZN_OK;
+	switch (element_shape_category)
+	{
+	case ELEMENT_CATEGORY_1D_LINE:
+	{
+		xiCentroidOut[0] = 0.5;
+	} break;
+	case ELEMENT_CATEGORY_2D_SQUARE:
+	{
+		xiCentroidOut[1] = xiCentroidOut[0] = 0.5;
+	} break;
+	case ELEMENT_CATEGORY_2D_TRIANGLE:
+	{
+		xiCentroidOut[1] = xiCentroidOut[0] = 1.0 / 3.0;
+	} break;
+	case ELEMENT_CATEGORY_2D_POLYGON:
+	{
+		xiCentroidOut[1] = xiCentroidOut[0] = 0.0;
+	} break;
+	case ELEMENT_CATEGORY_3D_CUBE:
+	{
+		xiCentroidOut[2] = xiCentroidOut[1] = xiCentroidOut[0] = 0.5;
+	} break;
+	case ELEMENT_CATEGORY_3D_TETRAHEDRON:
+	{
+		xiCentroidOut[2] = xiCentroidOut[1] = xiCentroidOut[0] = 0.25;
+	} break;
+	case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
+	{
+		xiCentroidOut[2] = xiCentroidOut[1] = xiCentroidOut[0] = 1.0 / 3.0;
+		xiCentroidOut[lineDirection] = 0.5;
+	} break;
+	case ELEMENT_CATEGORY_3D_POLYGON_LINE:
+	{
+		xiCentroidOut[2] = xiCentroidOut[1] = xiCentroidOut[0] = 0.0;
+		xiCentroidOut[lineDirection] = 0.5;
+	} break;
+	default:
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_get_xi_centroid.  Unknown element shape");
+		const int elementDimension = get_FE_element_shape_dimension(elementShape);
+		for (int d = 0; d < elementDimension; ++d)
+		{
+			xiCentroidOut[d] = 0.0;
+		}
+		return_code = CMZN_ERROR_NOT_IMPLEMENTED;
+	} break;
+	}
+	return return_code;
+}
 
 int FE_element_shape_get_xi_points_cell_centres(
 	struct FE_element_shape *element_shape, const int *number_in_xi,

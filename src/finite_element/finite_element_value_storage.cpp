@@ -29,17 +29,6 @@ Global functions
 
 int get_Value_storage_size(enum Value_type value_type,
 	struct FE_time_sequence *time_sequence)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2001
-
-DESCRIPTION :
-Given the value type, returns the size in bytes of the memory required to store
-the following:
-For non-array type, the actual data.
-For array types, an integer storing the number of array values, and a pointer to
-the array values.
-for time depedant types, a pointer to the values.
-==============================================================================*/
 {
 	int size;
 

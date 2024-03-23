@@ -146,6 +146,16 @@ public:
 		return Elementfieldtemplate(cmzn_element_get_elementfieldtemplate(this->id, field.getId(), componentNumber));
 	}
 
+	int getNumberOfFaces() const
+	{
+		return cmzn_element_get_number_of_faces(this->id);
+	}
+
+	Element getFaceElement(int faceNumber) const
+	{
+		return Element(cmzn_element_get_face_element(this->id, faceNumber));
+	}
+
 	int getIdentifier() const
 	{
 		return cmzn_element_get_identifier(id);
@@ -172,6 +182,16 @@ public:
 		const int *identifiersIn)
 	{
 		return cmzn_element_set_nodes_by_identifier(this->id, eft.getId(), identifiersCount, identifiersIn);
+	}
+
+	int getNumberOfParents() const
+	{
+		return cmzn_element_get_number_of_parents(this->id);
+	}
+
+	Element getParentElement(int parentNumber) const
+	{
+		return Element(cmzn_element_get_parent_element(this->id, parentNumber));
 	}
 
 	int getScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex, double *valueOut) const

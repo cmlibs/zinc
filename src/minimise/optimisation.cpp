@@ -619,7 +619,7 @@ int Minimisation::minimise_Newton()
 		return 0;
 	}
 	const int globalParameterCount = fieldparameters.getNumberOfParameters();
-	display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Parameters count %d\n", globalParameterCount);
+	//display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Parameters count %d", globalParameterCount);
 
 	Mesh highestDimensionMesh;
 	for (int d = 3; d >= 1; --d)
@@ -664,10 +664,10 @@ int Minimisation::minimise_Newton()
 				globalParameterIndex[conditionalIndex] = i;
 			}
 		}
-		display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Conditional parameters count %d\n", conditionalParameterCount);
+		//display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Conditional parameters count %d", conditionalParameterCount);
 		//for (int i = 0; i < conditionalParameterCount; ++i)
 		//{
-		//	display_message(INFORMATION_MESSAGE, "  Param[%d] = %d", i, globalParameterIndex[i]);
+		//	display_message(INFORMATION_MESSAGE, "  conditional %d --> global %d", i, globalParameterIndex[i]);
 		//}
 	}
 	int solveParameterCount = (conditionalFieldInternal) ? conditionalParameterCount : globalParameterCount;
@@ -780,8 +780,8 @@ int Minimisation::minimise_Newton()
 							globalHessian.element(row, col) += elementHessianRow[j];
 						}
 					}
-					elementHessianRow += elementParametersCount;
 				}
+				elementHessianRow += elementParametersCount;
 			}
 		}
 	}
@@ -805,6 +805,17 @@ int Minimisation::minimise_Newton()
 	if (LUmatrix.IsSingular())
 	{
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Solution is singular.");
+		display_message(INFORMATION_MESSAGE, "Main diagonal:");
+		for (int i = 0; i < solveParameterCount; ++i)
+		{
+			const int globalIndex = globalParameterIndex[i];
+			cmzn_node_value_label valueLabel;
+			int fieldComponent, version;
+			cmzn_node* node = fieldparametersInternal->getNodeParameter(globalIndex, fieldComponent, valueLabel, version);
+			display_message(INFORMATION_MESSAGE, "Parameter %d global %d (node %d, component %d, %s, version %d) = %g",
+				i, globalIndex, (node) ? node->getIdentifier() : -1, fieldComponent + 1,
+				cmzn_node_value_label_conversion::to_string(valueLabel), version + 1, globalHessian.element(i, i));
+		}
 		return 0;
 	}
 	NEWMAT::ColumnVector increment = LUmatrix.i()*globalJacobian;
@@ -825,11 +836,9 @@ int Minimisation::minimise_Newton()
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to add solution vector.");
 		return 0;
 	}
-
-    if (conditionalFieldInternal)
-    {
-        cmzn_field_destroy(&conditionalFieldInternal);
-    }
-
+	if (conditionalFieldInternal)
+	{
+		cmzn_field_destroy(&conditionalFieldInternal);
+	}
 	return 1;
 }

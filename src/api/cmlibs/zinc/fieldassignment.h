@@ -83,8 +83,8 @@ ZINC_API cmzn_field_id cmzn_fieldassignment_get_conditional_field(
  *
  * @param fieldassignment  The field assignment object to modify.
  * @param conditionalField  The conditional field to set, or invalid handle to
- * clear. This is commonly a generic or node group field, but may be any field
- * expression returning non-zero/true at domain locations of the target field
+ * clear. This is commonly a group field, but may be any field expression
+ * returning non-zero/true at domain locations of the target field
  * where values are to be assigned, zero/false where no assignment is done.
  * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */

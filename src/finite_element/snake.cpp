@@ -728,7 +728,7 @@ int create_FE_element_snake_from_data_points(
 				}
 				/* create the nodes in the snake as copies of the template, access them
 				   in the nodes array, set their coordinates and derivatives and add
-				   them to the manager and node_group */
+				   them to the nodeset and optional nodeset group */
 				cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 				for (j = 0; (j <= number_of_elements) && return_code; j++)
 				{

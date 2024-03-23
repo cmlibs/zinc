@@ -44,14 +44,14 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 
 /**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
- * container of nodes - i.e. cmzn_node objects. Valid names may be any
- * node_group field, or the following special names:
+ * container of nodes, which are 0-D points.
+ * Valid names are any of the following default nodeset names:
  * "nodes" = the primary set of nodes for a region, able to be indexed by
  * elements for storing or mapping to finite element field parameters.
  * "datapoints" = an additional set of nodes generally used to represent data
  * points, not for finite element field parameters.
- * Note that the default names for node group fields created from a group
- * is GROUP_NAME.NODESET_NAME, with nodeset names as above.
+ * Nodeset groups (subsets of the above nodesets within a group field) are
+ * found from composite names "GROUP_NAME.NODESET_NAME", if existing.
  *
  * @param fieldmodule  The field module the nodeset belongs to.
  * @param name  The name of the nodeset.
@@ -158,7 +158,7 @@ ZINC_API int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id nod
  * Nodes are only removed if not in use by elements in region.
  * All affected node iterators for the nodeset or groups are invalidated.
  * All handles to destroyed nodes become invalid.
- * Note that group and node group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param nodeset  Handle to the nodeset to destroy nodes from.
  * @param conditional_field  Field which if non-zero at any node indicates it
@@ -265,6 +265,7 @@ ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
 /**
  * Ensure this nodeset group contains all nodes from the master nodeset for
  * which the conditional field is true i.e. non-zero valued at the node.
+ * Note that group fields are valid conditional fields.
  *
  * @param nodeset_group  Handle to the nodeset group to add nodes to.
  * @param conditional_field  Field which if non-zero in a node indicates it
@@ -308,7 +309,7 @@ ZINC_API int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group,
 /**
  * Remove all nodes from the nodeset group for which the conditional field is
  * true i.e. non-zero valued in the node.
- * Note that group and node_group fields are valid conditional fields.
+ * Note that group fields are valid conditional fields.
  *
  * @param nodeset_group  Handle to the nodeset group to remove nodes from.
  * @param conditional_field  Field which if non-zero in the node indicates it

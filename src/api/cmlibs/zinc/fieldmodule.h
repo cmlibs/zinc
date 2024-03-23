@@ -125,8 +125,11 @@ ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier
  *
  * @param fieldmodule  Handle to the field module owning the meshes to define
  * faces for.
- * @return  Result OK on success, WARNING_PART_DONE if failed on some elements
- * due to not having nodes set, otherwise any other error.
+ * @return  Result OK on success, ERROR_ARGUMENT if no coordinate fields are
+ * available from which shared faces can be defined, WARNING_PART_DONE if some
+ * faces unable to be defined due to coordinate fields not being defined,
+ * ERROR_NOT_FOUND if no new faces defined for this reason, or any other
+ * error if failed in a more serious way.
  */
 ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule);
 

@@ -56,8 +56,12 @@ wrapper for an FE_field.
  * wrapped by it is returned, or 0 with no errors if not of correct type.
  * The returned fe_field is NOT accessed.
  */
-int Computed_field_get_type_finite_element(struct Computed_field *field,
+int Computed_field_get_type_finite_element(cmzn_field *field,
 	struct FE_field **fe_field);
+
+/** If field is finite element type, return non-accessed FE_field it wraps,
+ * otherwise nullptr. */
+FE_field* cmzn_field_finite_element_get_FE_field(cmzn_field* field);
 
 /*******************************************************************************
  * Iterator/conditional function returning true if <field> is the finite_element

@@ -457,3 +457,45 @@ TEST(FieldIO, subregionMerge)
     // leading to a crash from writing the null string for CMZN_NODE_VALUE_TYPE_INVALID
     EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
 }
+
+// Test reading EX file specifying a single time but with stored mesh location and stored string
+// fields which cannot be time-varying. These remain non-time-varying and warnings are written
+// that old values will be overwritten.
+TEST(FieldIO, read_non_time_capable_fields_at_time)
+{
+    ZincTestSetupCpp zinc;
+
+    StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+    EXPECT_TRUE(sir.isValid());
+    StreamresourceFile srf = sir.createStreamresourceFile(resourcePath("fieldio/non_time_capable_fields.exf").c_str());
+    EXPECT_TRUE(srf.isValid());
+    EXPECT_EQ(RESULT_OK, sir.setResourceAttributeReal(srf, StreaminformationRegion::ATTRIBUTE_TIME, 1.0));
+    EXPECT_EQ(RESULT_OK, zinc.root_region.read(sir));
+
+    Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+    EXPECT_TRUE(nodes.isValid());
+    FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+    EXPECT_TRUE(coordinates.isValid());
+    FieldStoredMeshLocation storedMeshLocation = zinc.fm.findFieldByName("stored mesh location").castStoredMeshLocation();
+    EXPECT_TRUE(storedMeshLocation.isValid());
+    FieldStoredString storedString = zinc.fm.findFieldByName("stored string").castStoredString();
+    EXPECT_TRUE(storedString.isValid());
+
+    Node node1 = nodes.findNodeByIdentifier(1);
+    EXPECT_TRUE(node1.isValid());
+    Nodetemplate nodetemplate1 = nodes.createNodetemplate();
+    EXPECT_TRUE(nodetemplate1.isValid());
+    EXPECT_EQ(RESULT_OK, nodetemplate1.defineFieldFromNode(coordinates, node1));
+    Timesequence timesequence = nodetemplate1.getTimesequence(coordinates);
+    EXPECT_EQ(1, timesequence.getNumberOfTimes());
+    EXPECT_DOUBLE_EQ(1.0, timesequence.getTime(1));
+
+    Node node5 = nodes.findNodeByIdentifier(5);
+    EXPECT_TRUE(node5.isValid());
+    Nodetemplate nodetemplate5 = nodes.createNodetemplate();
+    EXPECT_TRUE(nodetemplate5.isValid());
+    EXPECT_EQ(RESULT_OK, nodetemplate5.defineFieldFromNode(storedMeshLocation, node5));
+    EXPECT_FALSE(nodetemplate1.getTimesequence(storedMeshLocation).isValid());
+    EXPECT_EQ(RESULT_OK, nodetemplate5.defineFieldFromNode(storedString, node5));
+    EXPECT_FALSE(nodetemplate1.getTimesequence(storedString).isValid());
+}

@@ -155,7 +155,7 @@ FE_field::~FE_field()
 	{
 		/* free any arrays pointed to by field->values_storage */
 		free_value_storage_array(this->values_storage, this->value_type,
-			(struct FE_time_sequence *)NULL, this->number_of_values);
+			(struct FE_time_sequence*)NULL, this->number_of_values);
 		/* free the global values */
 		DEALLOCATE(this->values_storage);
 	}
@@ -169,7 +169,7 @@ FE_field::~FE_field()
 	}
 }
 
-FE_field *FE_field::create(const char *nameIn, FE_region *fe_regionIn)
+FE_field* FE_field::create(const char* nameIn, FE_region* fe_regionIn)
 {
 	if ((nameIn) && (fe_regionIn))
 		return new FE_field(nameIn, fe_regionIn);
@@ -213,8 +213,8 @@ bool FE_field::compareFullDefinition(const FE_field* otherField) const
 		// check component names match
 		for (int i = this->number_of_components; i <= 0; --i)
 		{
-			char *component_name1 = get_automatic_component_name(this->component_names, i);
-			char *component_name2 = get_automatic_component_name(otherField->component_names, i);
+			char* component_name1 = get_automatic_component_name(this->component_names, i);
+			char* component_name2 = get_automatic_component_name(otherField->component_names, i);
 			bool matching = (component_name1) && (component_name2) &&
 				(0 == strcmp(component_name1, component_name2));
 			DEALLOCATE(component_name2);
@@ -226,6 +226,45 @@ bool FE_field::compareFullDefinition(const FE_field* otherField) const
 	}
 	return false;
 }
+
+bool FE_field::isDefinedOnMeshes() const
+{
+	for (int d = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; d >= 0; --d)
+	{
+		if (this->meshFieldData[d])
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool FE_field::hasSameDefinitionOnMeshes(const FE_field* otherField) const
+{
+	if (!this->compareBasicDefinition(otherField))
+	{
+		return false;
+	}
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+	{
+		FE_mesh_field_data* thisMeshFieldData = this->meshFieldData[d];
+		FE_mesh_field_data* thatMeshFieldData = otherField->meshFieldData[d];
+		if ((thisMeshFieldData) && (thatMeshFieldData))
+		{
+			if (!thisMeshFieldData->hasMatchingMeshFieldTemplates(*thatMeshFieldData))
+			{
+				return false;
+			}
+		}
+		else if (((thisMeshFieldData) && (!thatMeshFieldData)) ||
+			((!thisMeshFieldData) && (thatMeshFieldData)))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 
 int FE_field::setName(const char *nameIn)
 {

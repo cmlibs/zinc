@@ -91,7 +91,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	EXPECT_TRUE(outputCoordinateField.isValid());
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setName("coordinates"));
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setManaged(true));
-	// put output into a node group
+	// put output into a nodeset group
 	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
 	FieldGroup nodeGroupField = outputFm.createFieldGroup();
@@ -267,7 +267,7 @@ TEST(cmzn_scene_convert_points_to_nodes,element_points_cpp)
 	EXPECT_TRUE(outputCoordinateField.isValid());
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setName("coordinates"));
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setManaged(true));
-	// put output into a node group
+	// put output into a nodeset group
 	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
 	FieldGroup nodeGroupField = outputFm.createFieldGroup();

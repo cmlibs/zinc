@@ -254,7 +254,7 @@ int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
 				}
 				if (return_code)
 				{
-					/* check no new numbers are in use by nodes not in node_group */
+					/* check no new numbers are in use by nodes not in nodeset */
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
 						if ((node_with_identifier = fe_nodeset->findNodeByIdentifier(

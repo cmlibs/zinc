@@ -298,7 +298,7 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	EXPECT_TRUE(element.isValid());
 	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
-	// make a node group containing the odd numbered nodes
+	// make a nodeset group containing the odd numbered nodes
 	NodesetGroup nodesetGroup = zinc.fm.createFieldGroup().createNodesetGroup(nodeset);
 	EXPECT_TRUE(nodesetGroup.isValid());
 	for (int i = 1; i <= 7; i += 2)

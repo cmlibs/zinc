@@ -478,7 +478,7 @@ int cmzn_region_write_file(cmzn_region_id region, const char *file_name)
 	return return_code;
 }
 
-cmzn_streaminformation_id cmzn_region_create_streaminformation_region(struct cmzn_region *region)
+cmzn_streaminformation_id cmzn_region_create_streaminformation_region(cmzn_region_id region)
 {
 	if (region)
 	{

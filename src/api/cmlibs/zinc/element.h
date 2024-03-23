@@ -188,6 +188,33 @@ ZINC_API cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 	cmzn_element_id element, cmzn_field_id field, int componentNumber);
 
 /**
+ * Get the number of faces for this element. This is how many faces its shape
+ * should have, irrespective of whether faces are defined or whether they are
+ * collapsed by a coordinate field.
+ * Note: 1-D line elements do not have faces and return 0 from this function.
+ *
+ * @param element  The element to query.
+ * @return  Number of faces for element's shape, including 0 if none, or -1
+ * if failed due to invalid element or if element shape is undefined.
+ */
+ZINC_API int cmzn_element_get_number_of_faces(cmzn_element_id element);
+
+/**
+ * Get the face element of dimension one less than this element at the
+ * given face number. Can be NULL/invalid if faces have not been defined, if it
+ * has been destroyed, or is undefined due to being collapsed for the
+ * coordinate field used when defining faces.
+ * Face elements belong to the face mesh of this element's owning mesh.
+ *
+ * @param element  The element to query.
+ * @param faceNumber  The face number from 1 to number of faces.
+ * @return  Handle to face element or NULL/invalid handle if none or invalid
+ * element or faceNumber is out of range.
+ */
+ZINC_API cmzn_element_id cmzn_element_get_face_element(cmzn_element_id element,
+	int faceNumber);
+
+/**
  * Returns the non-negative integer uniquely identifying the element in its
  * mesh.
  *
@@ -267,6 +294,31 @@ ZINC_API int cmzn_element_set_node(cmzn_element_id element,
 ZINC_API int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int identifiersCount,
 	const int *identifiersIn);
+
+/**
+ * Get the number of parent elements for this element. This is the number of
+ * elements which reference this element as a face.
+ *
+ * @param element  The element to query.
+ * @return  Number of parent elements of this element, 0 if none, or -1 if
+ * element is invalid.
+ */
+ZINC_API int cmzn_element_get_number_of_parents(cmzn_element_id element);
+
+/**
+ * Get a parent element of dimension one greater than this element at the given
+ * parent number. The ordering of parents gives the preferential order in which
+ * fields are inherited from parent elements, usually corresponding to the
+ * order in which faces were defined.
+ * Parent elements belong to the parent mesh of this element's owning mesh.
+ *
+ * @param element  The element to query.
+ * @param parentNumber  The parent number from 1 to number of parents.
+ * @return  Handle to parent element or NULL/invalid handle if invalid element
+ * or parentNumber is out of range.
+ */
+ZINC_API cmzn_element_id cmzn_element_get_parent_element(cmzn_element_id element,
+	int parentNumber);
 
 /**
  * Get a scale factor for the element field template in element.

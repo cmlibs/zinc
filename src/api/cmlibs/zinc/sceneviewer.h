@@ -392,24 +392,6 @@ ZINC_API int cmzn_sceneviewer_set_antialias_sampling(
 	cmzn_sceneviewer_id sceneviewer, int number_of_samples);
 
 /**
- * Get the depth of field and focal depth of the scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_get_depth_of_field(cmzn_sceneviewer_id sceneviewer,
-	double *depth_of_field, double *focal_depth);
-
-/**
- * Set a simulated <depth_of_field> for the scene viewer.
- * If <depth_of_field> is 0, then this is disabled, essentially an infinite depth.
- * Otherwise, <depth_of_field> is a normalised length in z space, so 1 is a
- * significant value, 0.1 is a small value causing significant distortion.
- * The <focal_depth> is depth in normalised device coordinates, -1 at near plane
- * and +1 at far plane.  At this <focal_depth> the image is in focus no matter
- * how small the <depth_of_field>.
- */
-ZINC_API int cmzn_sceneviewer_set_depth_of_field(cmzn_sceneviewer_id sceneviewer,
-	double depth_of_field, double focal_depth);
-
-/**
  * Query whether lines are perturbed to appear in front of surfaces at the same
  * depth to avoid visual stitching artefacts.
  *
@@ -524,19 +506,6 @@ ZINC_API int cmzn_sceneviewer_set_background_colour_rgba(
 	cmzn_sceneviewer_id sceneviewer, const double *valuesIn4);
 
 /**
- * If there is a background_texture in the scene viewer, these values specify the
- * top,left corner, in user coordinates, where it will be displayed, while the
- * next two parameters specify the size it will have in these coordinates.
- * If the bk_texture_undistort_on flag is set, radial distortion parameters from the background texture are un-distorted when the
- * texture is displayed. It does this by drawing it as a collection of polygons;
- * the last parameter controls the size of polygons used to do this.
- */
-ZINC_API int cmzn_sceneviewer_set_background_texture_info(cmzn_sceneviewer_id sceneviewer,
-	double bk_texture_left,double bk_texture_top,
-	double bk_texture_width,double bk_texture_height,
-	int bk_texture_undistort_on,double bk_texture_max_pixels_per_polygon);
-
-/**
  * Finds the x, y and z ranges from the scene and sets the view parameters so
  * that everything can be seen, and with window's std_view_angle. Also adjusts
  * near and far clipping planes; if specific values are required, should follow
@@ -610,39 +579,6 @@ ZINC_API int cmzn_sceneviewer_set_zoom_rate(cmzn_sceneviewer_id sceneviewer,
 	double zoom_rate);
 
 /**
- * Returns the scene viewer freespin tool tumble angle.
- */
-ZINC_API int cmzn_sceneviewer_get_freespin_tumble_angle(cmzn_sceneviewer_id sceneviewer,
-	double *tumble_angle);
-
-/**
- * Sets the scene viewer freespin tool tumble angle.
- */
-ZINC_API int cmzn_sceneviewer_set_freespin_tumble_angle(cmzn_sceneviewer_id sceneviewer,
-	double tumble_angle);
-
-/**
- * Gets the scene viewer tumble axis.  The <tumble_axis> is the vector
- * about which the scene is turning relative to its lookat point.
- */
-ZINC_API int cmzn_sceneviewer_get_freespin_tumble_axis(cmzn_sceneviewer_id sceneviewer,
-	double *tumble_axis);
-
-/**
- * Sets the scene viewer spinning in idle time.  The <tumble_axis> is the vector
- * about which the scene is turning relative to its lookat point and the
- * <tumble_angle> controls how much it turns on each redraw.
- */
-ZINC_API int cmzn_sceneviewer_start_freespin(cmzn_sceneviewer_id sceneviewer,
-	double *tumble_axis, double tumble_angle);
-
-/**
- * Tells the scene viewer to stop all automatic informations that it produces,
- * eg. automatic tumble.
- */
-ZINC_API int cmzn_sceneviewer_stop_animations(cmzn_sceneviewer_id sceneviewer);
-
-/**
  * Writes the view in the scene viewer to the specified filename.
  * If <preferred_width>, <preferred_height>, <preferred_antialias> or
  * <preferred_transparency_layers> are non zero then they attempt to override the
@@ -666,26 +602,6 @@ ZINC_API int cmzn_sceneviewer_set_NDC_info(cmzn_sceneviewer_id sceneviewer,
 	double NDC_left,double NDC_top,double NDC_width,double NDC_height);
 
 /**
- * Gets the viewing volume of the scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_get_viewing_volume(cmzn_sceneviewer_id sceneviewer,
-	double *left,double *right,double *bottom,double *top,double *near_plane,
-	double *far_plane);
-
-/**
- * Sets the viewing volume of the scene viewer. Unless the viewing volume is the
- * same shape as the window, taking into account the aspect, the scene viewer will
- * enlarge it to maintain the desired aspect ratio. Hence, the values specified
- * represent the minimum viewing volume. The left, right, bottom and top values
- * are at the lookat point, not on the near plane as OpenGL assumes. This gives a
- * similar sized viewing_volume for both parallel and perspective projections.
- * The viewing volume can be made unsymmetric to create special effects such as
- * rendering a higher resolution image in parts.
- */
-ZINC_API int cmzn_sceneviewer_set_viewing_volume(cmzn_sceneviewer_id sceneviewer,
-	double left,double right,double bottom,double top,double near_plane,double far_plane);
-
-/**
  * Returns the contents of the scene viewer as pixels.  <width> and <height>
  * will be respected if the window is drawn offscreen and they are non zero,
  * otherwise they are set in accordance with current size of the scene viewer.
@@ -698,15 +614,6 @@ ZINC_API int cmzn_sceneviewer_get_frame_pixels(cmzn_sceneviewer_id  sceneviewer,
 	enum cmzn_streaminformation_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
-
-/**
- * Destroys this handle to the scene viewer inpit, and sets it to NULL.
- *
- * @param input_address  The address to the handle of the input
- *    to be destroyed.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-//-- ZINC_API int cmzn_sceneviewerinput_destroy(cmzn_sceneviewerinput_id *input_address);
 
 /**
  * Manually calls the scene viewer's list of input callbacks with the supplied
@@ -759,11 +666,6 @@ ZINC_API cmzn_scenefilter_id cmzn_sceneviewer_get_scenefilter(
  */
 ZINC_API int cmzn_sceneviewer_set_scenefilter(cmzn_sceneviewer_id sceneviewer,
 	cmzn_scenefilter_id filter);
-
-/**
- * Returns a count of the number of scene viewer redraws.
- */
-ZINC_API unsigned int cmzn_sceneviewer_get_frame_count(cmzn_sceneviewer_id sceneviewer);
 
 /**
  * Returns a handle to a scene viewer object.  The scene viewer attributes for

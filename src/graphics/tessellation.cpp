@@ -1018,7 +1018,7 @@ int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-char *cmzn_tessellation_get_name(struct cmzn_tessellation *tessellation)
+char *cmzn_tessellation_get_name(cmzn_tessellation_id tessellation)
 {
 	char *name = NULL;
 	if (tessellation && tessellation->name)
@@ -1028,7 +1028,7 @@ char *cmzn_tessellation_get_name(struct cmzn_tessellation *tessellation)
 	return name;
 }
 
-int cmzn_tessellation_set_name(struct cmzn_tessellation *tessellation, const char *name)
+int cmzn_tessellation_set_name(cmzn_tessellation_id tessellation, const char *name)
 {
 	int return_code;
 
