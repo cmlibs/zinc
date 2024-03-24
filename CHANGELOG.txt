@@ -1,5 +1,9 @@
 CHANGE LOG: Zinc Library
 
+v4.1.1
+Fix empty classifiers for Python packaging.
+Drop support for OS X Mountain Lion and below (last released 2015).
+
 v4.1.0
 Fix optimisation with conditional field applying partially to elements' nodes.
 Region read with single time is ignored with a warning for field value types not supporting time sequence.
