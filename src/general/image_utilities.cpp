@@ -5643,7 +5643,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 				*number_of_components = 3;
 			}
 		}
-        *number_of_bytes_per_component = std::max(1, int(magick_image->depth/8));
+        *number_of_bytes_per_component = (magick_image->depth == 0) ? 0 : std::max(1, int(magick_image->depth/8));
 		DestroyExceptionInfo(magick_exception);
 		return_code = 1;
 	}
