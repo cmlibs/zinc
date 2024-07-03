@@ -11,6 +11,7 @@ Utilities for handling images.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include <algorithm>
 #include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -5642,7 +5643,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 				*number_of_components = 3;
 			}
 		}
-		*number_of_bytes_per_component = magick_image->depth/8;
+        *number_of_bytes_per_component = std::max(1, int(magick_image->depth/8));
 		DestroyExceptionInfo(magick_exception);
 		return_code = 1;
 	}
