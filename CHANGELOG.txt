@@ -1,5 +1,8 @@
 CHANGE LOG: Zinc Library
 
+v4.1.2
+Fix bug with loading images with that have a depth that are not integrals of a byte.
+
 v4.1.1
 Fix empty classifiers for Python packaging.
 Drop support for OS X Mountain Lion and below (last released 2015).
