@@ -73,19 +73,38 @@ TEST(cmzn_fieldmodule_create_image, read_png)
 
 TEST(ZincFieldImage, read_png)
 {
-	ZincTestSetupCpp zinc;
+    ZincTestSetupCpp zinc;
 
-	FieldImage im = zinc.fm.createFieldImage();
-	EXPECT_TRUE(im.isValid());
+    FieldImage im = zinc.fm.createFieldImage();
+    EXPECT_TRUE(im.isValid());
 
-	StreaminformationImage si = im.createStreaminformationImage();
-	EXPECT_TRUE(si.isValid());
+    StreaminformationImage si = im.createStreaminformationImage();
+    EXPECT_TRUE(si.isValid());
 
     std::string resource = resourcePath("image-1.png");
     Streamresource sr = si.createStreamresourceFile(resource.c_str());
-	EXPECT_TRUE(sr.isValid());
+    EXPECT_TRUE(sr.isValid());
 
-	EXPECT_EQ(CMZN_OK, im.read(si));
+    EXPECT_EQ(CMZN_OK, im.read(si));
+}
+
+TEST(ZincFieldImage, read_png_1_bit_depth)
+{
+    ZincTestSetupCpp zinc;
+
+    FieldImage im = zinc.fm.createFieldImage();
+    EXPECT_TRUE(im.isValid());
+
+    StreaminformationImage si = im.createStreaminformationImage();
+    EXPECT_TRUE(si.isValid());
+
+    std::string resource = resourcePath("AWA015_PTA_1_test.png");
+    Streamresource sr = si.createStreamresourceFile(resource.c_str());
+    EXPECT_TRUE(sr.isValid());
+
+    EXPECT_EQ(CMZN_OK, im.read(si));
+
+    EXPECT_EQ(8, im.getNumberOfBitsPerComponent());
 }
 
 TEST(ZincFieldImage, set_get_buffer)
@@ -106,7 +125,7 @@ TEST(ZincFieldImage, set_get_buffer)
 	int myArray[3] = {4,3,2};
 	EXPECT_EQ(CMZN_OK, im.setSizeInPixels(3, myArray));
 
-	unsigned int actualSize = 4 *3 * 2 * 2;
+    unsigned int actualSize = 4 * 3 * 2 * 2;
 	unsigned char *buffer = new unsigned char[actualSize];
 	for (unsigned int i = 0; i < actualSize; i++)
 	{

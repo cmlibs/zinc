@@ -5642,7 +5642,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 				*number_of_components = 3;
 			}
 		}
-		*number_of_bytes_per_component = magick_image->depth/8;
+        *number_of_bytes_per_component = (magick_image->depth + 7) / 8;
 		DestroyExceptionInfo(magick_exception);
 		return_code = 1;
 	}
