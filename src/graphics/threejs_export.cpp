@@ -1212,7 +1212,7 @@ void Threejs_export_point::writeIndexBufferWithoutIndex(int typeMask, int number
 		facesString += "\t\"faces\": [\n";
 		unsigned int number_of_triangles = number_of_points / 3;
 		int current_index = 0;
-		for (unsigned i = 0; i < number_of_triangles; i++)
+        for (unsigned i = 0; i < number_of_triangles; i++)
 		{
 			sprintf(temp,"\t\t%d", typeMask);
 			facesString += temp;
@@ -1234,7 +1234,9 @@ void Threejs_export_point::writeIndexBufferWithoutIndex(int typeMask, int number
 		unsigned int unused_points =  number_of_points - number_of_triangles * 3;
 		if (unused_points > 0)
 		{
-			facesString += ",";
+            if (number_of_triangles > 0) {
+                facesString += ",";
+            }
 			sprintf(temp,"\t\t%d", typeMask);
 			facesString += temp;
 			if (unused_points == 1)

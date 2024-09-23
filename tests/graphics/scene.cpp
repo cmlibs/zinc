@@ -1763,3 +1763,89 @@ TEST(cmzn_scene, wavefront_export_text)
     temp_char = strstr(memory_buffer, "f 21 22 23");
     EXPECT_NE(static_cast<char *>(0), temp_char);
 }
+
+TEST(cmzn_scene, threejs_export_simple_line_cpp)
+{
+    ZincTestSetupCpp zinc;
+
+    int result;
+
+    Materialmodule material_module = zinc.context.getMaterialmodule();
+    EXPECT_TRUE(material_module.isValid());
+    Spectrummodule spectrum_module = zinc.context.getSpectrummodule();
+    EXPECT_TRUE(spectrum_module.isValid());
+    Spectrum defaultSpectrum = spectrum_module.getDefaultSpectrum();
+    EXPECT_TRUE(defaultSpectrum.isValid());
+    Material material = material_module.createMaterial();
+    EXPECT_TRUE(material.isValid());
+    EXPECT_EQ(CMZN_OK, result =  material.setName("myyellow"));
+    EXPECT_EQ(CMZN_OK, result =  material.setManaged(true));
+    double double_value[3] = {0.9, 0.9, 0.0};
+
+    EXPECT_EQ(CMZN_OK, result =  material.setAttributeReal3(Material::ATTRIBUTE_AMBIENT, double_value));
+    EXPECT_EQ(CMZN_OK, result =  material.setAttributeReal3(Material::ATTRIBUTE_DIFFUSE, double_value));
+
+    EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(resourcePath("fieldmodule/simple_1d_element.exf").c_str()));
+
+    GraphicsLines lines = zinc.scene.createGraphicsLines();
+    EXPECT_TRUE(lines.isValid());
+
+    Field coordinateField = zinc.fm.findFieldByName("coordinates");
+    EXPECT_TRUE(coordinateField.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = lines.setCoordinateField(coordinateField));
+    EXPECT_EQ(CMZN_OK, result = lines.setMaterial(material));
+
+    EXPECT_EQ(CMZN_OK, result = lines.setDataField(coordinateField));
+    EXPECT_EQ(CMZN_OK, result = lines.setSpectrum(defaultSpectrum));
+
+    Graphicslineattributes lineAttr = lines.getGraphicslineattributes();
+    EXPECT_TRUE(lineAttr.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = lineAttr.setShapeType(lineAttr.ShapeType::SHAPE_TYPE_LINE ));
+
+    StreaminformationScene si = zinc.scene.createStreaminformationScene();
+    EXPECT_TRUE(si.isValid());
+
+    EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
+
+    EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
+
+    EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+    double double_result = 0.0;
+    EXPECT_EQ(0.0, double_result = si.getInitialTime());
+    EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+    StreamresourceMemory memory_sr = si.createStreamresourceMemory();
+    StreamresourceMemory memory_sr2 = si.createStreamresourceMemory();
+
+    EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+    char *memory_buffer = nullptr, *memory_buffer2 = nullptr;
+    unsigned int size = 0;
+
+    result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    char *temp_char = strstr ( memory_buffer, "Lines");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr ( memory_buffer, "MorphVertices");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    result = memory_sr2.getBuffer((const void**)&memory_buffer2, &size);
+    EXPECT_EQ(CMZN_OK, result);
+
+    temp_char = strstr ( memory_buffer2, "vertices");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr ( memory_buffer2, "faces");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr ( memory_buffer2, "colors");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+
+    temp_char = strstr ( memory_buffer2, "materials");
+    EXPECT_NE(static_cast<char *>(0), temp_char);
+}
