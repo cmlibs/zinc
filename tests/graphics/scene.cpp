@@ -1837,9 +1837,6 @@ TEST(cmzn_scene, threejs_export_simple_line_cpp)
     result = memory_sr2.getBuffer((const void**)&memory_buffer2, &size);
     EXPECT_EQ(CMZN_OK, result);
 
-    std::cout << "buffer" << std::endl;
-    std::cout << memory_buffer2 << std::endl;
-
     temp_char = strstr ( memory_buffer2, "vertices");
     EXPECT_NE(static_cast<char *>(0), temp_char);
 
