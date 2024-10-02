@@ -28,6 +28,8 @@
 #include "general/mystring.h"
 #include <algorithm>
 
+#include <iostream>
+
 /*
 Module types
 ------------
@@ -1045,9 +1047,9 @@ FE_mesh_field_template::~FE_mesh_field_template()
 {
 	if (this->mesh)
 	{
-		if (this->mapSize > 0)
+        if (this->mapSize > 0)
 		{
-			// decrement EFT element usage counts
+            // decrement EFT element usage counts
 			// iterate over mesh elements as efficiently as possible: in index order
 			const DsLabelIndex elementIndexLimit = this->getElementIndexLimit();
 			for (DsLabelIndex elementIndex = this->getElementIndexStart(); elementIndex < elementIndexLimit; ++elementIndex)
@@ -1063,8 +1065,8 @@ FE_mesh_field_template::~FE_mesh_field_template()
 				}
 			}
 		}
-		this->mesh->removeMeshFieldTemplate(this);
-	}
+        this->mesh->removeMeshFieldTemplate(this);
+    }
 }
 
 /** @return  Upper limit of element indexes for which EFT is set. Returned value
@@ -1557,16 +1559,28 @@ FE_mesh_field_template *FE_mesh::getOrCreateBlankMeshFieldTemplate()
 /** Only to be called by ~FE_mesh_field_template */
 void FE_mesh::removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate)
 {
-	for (std::list<FE_mesh_field_template*>::iterator iter = this->meshFieldTemplates.begin();
+std::cout << "removeMeshFieldTemplate: " << meshFieldTemplate << std::endl;
+std::cout << "                         " << &this->meshFieldTemplates << std::endl;
+std::cout << "                         " << this->meshFieldTemplates.size() << " - " << this->access_count << std::endl;
+std::list<FE_mesh_field_template*>::iterator iter = this->meshFieldTemplates.begin();
+std::cout << "    begin thing: " << *iter << std::endl;
+    for (std::list<FE_mesh_field_template*>::iterator iter = this->meshFieldTemplates.begin();
 		iter != this->meshFieldTemplates.end(); ++iter)
 	{
+std::cout << "considering this: " << *iter << std::endl;
 		if (*iter == meshFieldTemplate)
 		{
-			this->meshFieldTemplates.erase(iter);
+std::cout << "erasing this: " << this << std::endl;
+std::cout << "              " << &this->meshFieldTemplates << std::endl;
+std::cout << "              " << *iter << std::endl;
+            this->meshFieldTemplates.erase(iter);
+std::cout << "erased." << std::endl;
+
 			return;
 		}
 	}
-	display_message(ERROR_MESSAGE, "FE_mesh::removeFieldTemplate.  Field template not found");
+    std::cout << "error message problem???" << std::endl;
+    display_message(ERROR_MESSAGE, "FE_mesh::removeFieldTemplate.  Field template not found");
 }
 
 FE_mesh_embedded_node_field *FE_mesh::addEmbeddedNodeField(FE_field *field, FE_nodeset *nodeset)
