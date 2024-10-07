@@ -524,8 +524,12 @@ bool FE_region_is_FE_field_in_use(struct FE_region *fe_region,
 		if (IS_OBJECT_IN_LIST(FE_field)(fe_field, fe_region->fe_field_list))
 		{
 			for (int n = 0; n < 2; ++n)
+			{
 				if (fe_region->nodesets[n]->is_FE_field_in_use(fe_field))
+				{
 					return true;
+				}
+			}
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 			{
 				FE_mesh_field_data *meshFieldData = fe_field->getMeshFieldData(fe_region->meshes[dim]);
