@@ -536,6 +536,8 @@ private:
 
 	~FE_mesh_field_template();
 
+	void detach_from_FE_mesh();
+
 	FE_mesh_field_template(); //  not implemented
 	FE_mesh_field_template& operator=(const FE_mesh_field_template &source); // not implemented
 public:
@@ -557,7 +559,7 @@ public:
 		return CMZN_OK;
 	}
 
-	/** @return  Non-accessed mesh owning this mesh field template. */
+	/** @return  Non-accessed mesh owning this mesh field template, can be NULL during clean-up. */
 	FE_mesh *getMesh() const
 	{
 		return this->mesh;
@@ -569,10 +571,10 @@ public:
 		return this->access_count;
 	}
 
-	/** @return  True if no element field templates have been set */
-	bool isBlank() const
+	/** @return  Number of mapped elements; zero if template is blank */
+	int getMapSize() const
 	{
-		return (this->mapSize == 0);
+		return this->mapSize;
 	}
 
 	DsLabelIndex getElementIndexLimit() const;
@@ -1788,7 +1790,7 @@ public:
 
 	bool isDefinedOnElements()
 	{
-		return !this->components[0]->getMeshfieldtemplate()->isBlank();
+		return this->components[0]->getMeshfieldtemplate()->getMapSize() > 0;
 	}
 
 	/** @return  True if any element of any component uses a non-linear basis in any direction */

@@ -1067,6 +1067,15 @@ FE_mesh_field_template::~FE_mesh_field_template()
 	}
 }
 
+void FE_mesh_field_template::detach_from_FE_mesh()
+{
+	if (this->mapSize > 0)
+	{
+		display_message(WARNING_MESSAGE, "FE_mesh_field_template::detach_from_FE_mesh.  Detaching non-empty template");
+	}
+	this->mesh = nullptr;
+}
+
 /** @return  Upper limit of element indexes for which EFT is set. Returned value
   * is at least one greater than last index using EFT. */
 DsLabelIndex FE_mesh_field_template::getElementIndexLimit() const
@@ -1548,8 +1557,10 @@ FE_mesh_field_template *FE_mesh::getOrCreateBlankMeshFieldTemplate()
 {
 	for (std::list<FE_mesh_field_template*>::iterator iter = this->meshFieldTemplates.begin(); iter != this->meshFieldTemplates.end(); ++iter)
 	{
-		if ((*iter)->isBlank())
+		if ((*iter)->getMapSize() == 0)
+		{
 			return (*iter)->access();
+		}
 	}
 	return this->createBlankMeshFieldTemplate();
 }
@@ -1678,7 +1689,14 @@ void FE_mesh::clearElementFieldData()
 		FE_region_for_each_FE_field(this->fe_region, FE_field_clear_on_mesh_iterator, static_cast<void *>(this));
 	}
 	if (this->meshFieldTemplates.size() != 0)
-		display_message(ERROR_MESSAGE, "FE_mesh::clearElementFieldData.  Not all mesh field templates removed");
+	{
+		display_message(WARNING_MESSAGE, "FE_mesh::clearElementFieldData.  Not all mesh field templates removed");
+		for (std::list<FE_mesh_field_template*>::const_iterator iter = this->meshFieldTemplates.begin();
+			iter != this->meshFieldTemplates.end(); ++iter)
+		{
+			(*iter)->detach_from_FE_mesh();
+		}
+	}
 	// clear element-varying nodes, scale factors held with element field templates
 	// can't remove eft objects as may be present in element templates
 	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
@@ -1869,7 +1887,9 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 			{
 				// clear following to simplify merge algorithm below
 				for (int c = 0; c < elementFieldData->componentCount; ++c)
-					elementFieldData->setCacheComponentMeshFieldTemplate(c, 0);
+				{
+					elementFieldData->setCacheComponentMeshFieldTemplate(c, nullptr);
+				}
 				continue;
 			}
 		}
@@ -1892,11 +1912,14 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 	for (int f = 0; f < fieldCount; ++f)
 	{
 		FE_element_template::FE_field_data *elementFieldData = elementTemplate->fields[f];
+		bool all_undefined = elementFieldData->isUndefine();
 		for (int c = 0; c < elementFieldData->componentCount; ++c)
 		{
 			FE_mesh_field_template *mft = elementFieldData->getCacheComponentMeshFieldTemplate(c);
 			if (!mft)
+			{
 				continue; // already merged
+			}
 			FE_element_field_template *eft = elementFieldData->getComponentElementfieldtemplate(c);
 			FE_element_field_template *old_eft = mft->getElementfieldtemplate(elementIndex);
 			int eft_mft_match_count = 1;
@@ -1956,8 +1979,19 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 				}
 				c2 = 0;
 			}
+			if (new_mft->getMapSize() > 0)
+			{
+				all_undefined = false;
+			}
 			if (new_mft != mft)
+			{
 				FE_mesh_field_template::deaccess(new_mft);
+			}
+		}
+		if (all_undefined)
+		{
+			FE_field* field = elementFieldData->getField();
+			field->clearMeshFieldData(this);
 		}
 	}
 	return true;
