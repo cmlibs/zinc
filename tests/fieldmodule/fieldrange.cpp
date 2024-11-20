@@ -1025,6 +1025,7 @@ TEST(ZincFieldrange, allshapes_quadratic_deformed_3d)
 		{
 			EXPECT_EQ(RESULT_OK, fieldrange.getComponentMinimumValuesReal(c + 1, 3, minimumValues));
 			output << "\t\t\t{" << minimumValues[0] << ", " << minimumValues[1] << ", " << minimumValues[2] << "},\n";
+			output << "\t\t\tE: {" << expectedRanges[e].componentMinimumValues[c][0] << ", " << expectedRanges[e].componentMinimumValues[c][1] << ", " << expectedRanges[e].componentMinimumValues[c][2] << "},\n";
 			for (int d = 0; d < 3; ++d)
 			{
 				EXPECT_NEAR(expectedRanges[e].componentMinimumValues[c][d], minimumValues[d], TOL);
