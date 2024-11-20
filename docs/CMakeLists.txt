@@ -1,6 +1,4 @@
-message(STATUS "==========================")
-message(STATUS "SPHINX_FOUND: ${SPHINX_FOUND}")
-message(STATUS "Sphinx_FOUND: ${Sphinx_FOUND}")
+
 if(SPHINX_FOUND)
   set(SPHINX_DOCS_TARGET project_docs)
 
