@@ -371,6 +371,27 @@ ZINC_API int cmzn_sceneviewer_set_view_angle(cmzn_sceneviewer_id sceneviewer,
 	double view_angle);
 
 /**
+ * Gets the viewing volume of the scene viewer.
+ */
+ZINC_API int cmzn_sceneviewer_get_viewing_volume(cmzn_sceneviewer_id sceneviewer,
+	double* left, double* right, double* bottom, double* top, double* near_plane,
+	double* far_plane);
+
+/**
+ * Sets the viewing volume of the scene viewer. Unless the viewing volume is the
+ * same shape as the window, taking into account the aspect, the scene viewer will
+ * enlarge it to maintain the desired aspect ratio. Hence, the values specified
+ * represent the minimum viewing volume. The left, right, bottom and top values
+ * are at the lookat point, not on the near plane as OpenGL assumes. This gives a
+ * similar sized viewing_volume for both parallel and perspective projections.
+ * The viewing volume can be made unsymmetric to create special effects such as
+ * rendering a higher resolution image in parts.
+ */
+ZINC_API int cmzn_sceneviewer_set_viewing_volume(cmzn_sceneviewer_id sceneviewer,
+	double left, double right, double bottom, double top, double near_plane,
+	double far_plane);
+
+/**
  * Gets the number of jitter samples used to antialias the scene viewer.
  *
  * @param sceneviewer  The scene viewer to query.
