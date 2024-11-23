@@ -245,9 +245,9 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " radius %d", radius);
+        snprintf(temp_string, 40, " radius %d", radius);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " dilate_value %g", dilate_value);	
+        snprintf(temp_string, 40, " dilate_value %g", dilate_value);
 		append_string(&command_string, temp_string, &error);		
 }
 	else

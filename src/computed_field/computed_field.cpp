@@ -345,13 +345,13 @@ char *Computed_field_manager_get_unique_field_name(
 	ALLOCATE(fieldName, char, len + 20);
 	if (!fieldName)
 		return nullptr;
-	sprintf(fieldName, "%s%s", part1, part2);
+    snprintf(fieldName, len + 20, "%s%s", part1, part2);
 	int number = (startNumber < 0) ? NUMBER_IN_MANAGER(cmzn_field)(manager) + 1 : startNumber;
 	do
 	{
 		if (number != 0)
 		{
-			sprintf(fieldName + len, "%d", number);
+            snprintf(fieldName + len, 20, "%d", number);
 		}
 		++number;
 	}
@@ -1032,7 +1032,7 @@ int Computed_field_is_defined_at_node_conditional(struct cmzn_field *field,
 char *Computed_field_core::getComponentName(int componentNumber) const
 {
 	char name[24];
-	sprintf(name, "%d", componentNumber);
+    snprintf(name, 24, "%d", componentNumber);
 	return duplicate_string(name);
 }
 
@@ -2406,7 +2406,7 @@ Default listing of source fields and source values.
 			append_string(&command_string, " values", &error);
 			for (i = 0 ; i < field->number_of_source_values ; i++)
 			{
-				sprintf(temp_string, " %g", field->source_values[i]);
+                snprintf(temp_string, 40, " %g", field->source_values[i]);
 				append_string(&command_string, temp_string, &error);
 			}
 		}

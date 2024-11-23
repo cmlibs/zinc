@@ -128,7 +128,7 @@ public:
 		do
 		{
 			i++;
-			sprintf(temp_name, "temp%d",i);
+            snprintf(temp_name, 20, "temp%d", i);
 		}
 		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_shaderuniforms,name)(temp_name,
 			this->uniformsManager));
@@ -160,7 +160,7 @@ public:
 		do
 		{
 			i++;
-			sprintf(temp_name, "temp%d",i);
+            snprintf(temp_name, 20, "temp%d", i);
 		}
 		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_shaderprogram,name)(temp_name,
 			this->programManager));

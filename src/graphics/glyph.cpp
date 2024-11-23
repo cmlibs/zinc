@@ -432,7 +432,7 @@ Renders the label_bounds as lines and labels.
 
 					if (ALLOCATE(label_strings[number_of_labels], char, 50))
 					{
-						sprintf(label_strings[number_of_labels], "%1g",
+                        snprintf(label_strings[number_of_labels], 50, "%1g",
 							(ZnReal)j * minor_grid_size);
 					}
 					number_of_labels++;
@@ -1129,7 +1129,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				cmzn_material_destroy(&material);
 				last_object = glyph;
 
-				sprintf(glyph_name, "%s_arrow2", name);
+                snprintf(glyph_name, strlen(name) + 8, "%s_arrow2", name);
 				GT_object *arrow2 = create_GT_object_arrow_solid(glyph_name, /*primary_axis*/2,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
@@ -1145,7 +1145,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				last_object = arrow2;
 				DEACCESS(GT_object)(&arrow2);
 
-				sprintf(glyph_name, "%s_arrow3", name);
+                snprintf(glyph_name, strlen(name) + 8, "%s_arrow3", name);
 				GT_object *arrow3 = create_GT_object_arrow_solid(glyph_name, /*primary_axis*/3,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
@@ -1256,7 +1256,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				ALLOCATE(text[2],char,strlen(labels[2]) + 1)&&
 				ALLOCATE(glyph_name,char,strlen(name)+8))
 			{
-				sprintf(glyph_name,"%s_labels",name);
+                snprintf(glyph_name, strlen(name) + 8, "%s_labels", name);
 				points[0][0]=1.0+label_offset;
 				points[0][1]=0.0;
 				points[0][2]=0.0;
@@ -2225,7 +2225,7 @@ void cmzn_glyphmodule::addGlyph(cmzn_glyph *glyph)
 		do
 		{
 			i++;
-			sprintf(tempName, "temp%d",i);
+            snprintf(tempName, 20, "temp%d", i);
 		}
 		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(tempName, this->manager));
 		glyph->setName(tempName);
@@ -2245,7 +2245,7 @@ cmzn_glyph *cmzn_glyphmodule::createStaticGlyphFromGraphics(cmzn_graphics *graph
 			do
 			{
 				i++;
-				sprintf(temp_name, "temp%d",i);
+                snprintf(temp_name, 20, "temp%d",i);
 			}
 			while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(temp_name,
 				this->manager));

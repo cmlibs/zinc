@@ -440,7 +440,7 @@ Returns allocated command string for reproducing field. Includes type.
 		error = 0;
 		append_string(&command_string,
 			computed_field_cross_product_type_string, &error);
-		sprintf(temp_string, " dimension %d", field->number_of_components);
+        snprintf(temp_string, 40, " dimension %d", field->number_of_components);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " fields", &error);
 		for (i = 0 ; i < field->number_of_components - 1 ; i++)

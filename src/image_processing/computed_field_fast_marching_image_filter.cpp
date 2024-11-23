@@ -404,31 +404,31 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " stopping_value %g", stopping_value);
+        snprintf(temp_string, 40, " stopping_value %g", stopping_value);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " num_seed_points %d", num_seed_points);	
+        snprintf(temp_string, 40, " num_seed_points %d", num_seed_points);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " dimension %d", dimension);	
+        snprintf(temp_string, 40, " dimension %d", dimension);
 		append_string(&command_string, temp_string, &error);		
 
 		append_string(&command_string, " seed_points", &error);
 		for (i = 0; i < dimension*num_seed_points; i++)
 		{
-			sprintf(temp_string, " %g", seed_points[i]);
+            snprintf(temp_string, 40, " %g", seed_points[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 
 		append_string(&command_string, " seed_values", &error);
 		for (i = 0; i < num_seed_points; i++)
 		{
-			sprintf(temp_string, " %g", seed_values[i]);
+            snprintf(temp_string, 40, " %g", seed_values[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 
 		append_string(&command_string, " output_size", &error);
 		for (i = 0; i < dimension; i++)
 		{
-			sprintf(temp_string, " %d", output_size[i]);
+            snprintf(temp_string, 40, " %d", output_size[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 

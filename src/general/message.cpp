@@ -191,8 +191,8 @@ form of arguments is used.
 	if (return_code >= (MESSAGE_STRING_SIZE-1))
 	{
 		char error_string[100];
-		sprintf(error_string,"Overflow of message_string.  "
-			"Following is truncated to %d characters:",MESSAGE_STRING_SIZE-1);
+        snprintf(error_string, 100, "Overflow of message_string.  "
+            "Following is truncated to %d characters:", MESSAGE_STRING_SIZE - 1);
 		if (display_any_message_function)
 		{
 			return_code=(*display_any_message_function)(error_string, ERROR_MESSAGE,
@@ -225,13 +225,13 @@ A function for writing out commands to com file.
 	FILE *com_file;
 	ENTER(write_message_to_file);
 	va_start(ap,format);
-/*	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE,format,ap);*/
-	return_code=vsprintf(message_string,format,ap);
+    return_code=vsnprintf(message_string, MESSAGE_STRING_SIZE, format, ap);
+    // return_code=vsprintf(message_string,format,ap);
 	if (return_code >= (MESSAGE_STRING_SIZE-1))
 	{
 		char error_string[100];
-		sprintf(error_string,"Overflow of message_string.  "
-			"Following is truncated to %d characters:",return_code);
+        snprintf(error_string, 100, "Overflow of message_string.  "
+            "Following is truncated to %d characters:", return_code);
 		if (display_any_message_function)
 		{
 			return_code=(*display_any_message_function)(error_string, ERROR_MESSAGE,

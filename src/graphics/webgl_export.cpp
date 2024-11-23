@@ -56,23 +56,23 @@ string *Webgl_export::writeVertexBuffer(const char *output_variable_name,
 	{
 		char temp[1000];
 		string *buffer_string = new string();
-		sprintf(temp, "\t%s_buffer = gl.createBuffer();\n",
+        snprintf(temp, 1000, "\t%s_buffer = gl.createBuffer();\n",
 			output_variable_name);
 		*buffer_string += &temp[0];
-		sprintf(temp, "\tgl.bindBuffer(gl.ARRAY_BUFFER, %s_buffer);\n",
+        snprintf(temp, 1000, "\tgl.bindBuffer(gl.ARRAY_BUFFER, %s_buffer);\n",
 			output_variable_name);
 		*buffer_string += &temp[0];
-		sprintf(temp, "\tvar %s_vertices = [\n", output_variable_name);
+        snprintf(temp, 1000, "\tvar %s_vertices = [\n", output_variable_name);
 		*buffer_string += &temp[0];
 
 		GLfloat *currentVertex = vertex_buffer;
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
-			sprintf(temp, "\t\t%g", currentVertex[0]);
+            snprintf(temp, 1000, "\t\t%g", currentVertex[0]);
 			*buffer_string += &temp[0];
 			for (unsigned int k = 1; k < values_per_vertex; k++)
 			{
-				sprintf(temp, ", %g", currentVertex[k]);
+                snprintf(temp, 1000, ", %g", currentVertex[k]);
 				*buffer_string += &temp[0];
 			}
 			if (i != (vertex_count - 1))
@@ -86,12 +86,12 @@ string *Webgl_export::writeVertexBuffer(const char *output_variable_name,
 			currentVertex+=values_per_vertex;
 		}
 		*buffer_string += "\t];\n";
-		sprintf(temp,"\tgl.bufferData(gl.ARRAY_BUFFER, new Float32Array(%s_vertices), gl.STATIC_DRAW);\n",
+        snprintf(temp, 1000, "\tgl.bufferData(gl.ARRAY_BUFFER, new Float32Array(%s_vertices), gl.STATIC_DRAW);\n",
 			output_variable_name);
 		*buffer_string += &temp[0];
-		sprintf(temp,"\t%s_buffer.numItems = %d;\n", output_variable_name, vertex_count);
+        snprintf(temp, 1000, "\t%s_buffer.numItems = %d;\n", output_variable_name, vertex_count);
 		*buffer_string += &temp[0];
-		sprintf(temp,"\t%s_buffer.itemSize = %d;\n\n", output_variable_name, values_per_vertex);
+        snprintf(temp, 1000, "\t%s_buffer.itemSize = %d;\n\n", output_variable_name, values_per_vertex);
 		*buffer_string += &temp[0];
 		return buffer_string;
 	}
@@ -133,18 +133,18 @@ void Webgl_export::writeWebGLDrawingFunction(string *position_string,
 		fprintf(webgl_file, "\nfunction draw_%s()\n{\n", export_name);
 		fprintf(webgl_file, "\tmat4.translate(mvMatrix, [0.0, 0.0, 0.0]);\n");
 		fprintf(webgl_file, "\tmvPushMatrix();\n\n");
-		sprintf(temp, "%s_position_buffer", export_name);
+        snprintf(temp, 100, "%s_position_buffer", export_name);
 		fprintf(webgl_file, "\tgl.bindBuffer(gl.ARRAY_BUFFER, %s);\n", temp);
 		fprintf(webgl_file, "\tgl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, %s.itemSize, gl.FLOAT, false, 0, 0);\n\n",
 			temp);
-		sprintf(temp, "%s_colour_buffer", export_name);
+        snprintf(temp, 100, "%s_colour_buffer", export_name);
 		if (colour_string)
 		{
 			fprintf(webgl_file, "\tgl.bindBuffer(gl.ARRAY_BUFFER, %s);\n", temp);
 			fprintf(webgl_file, "\tgl.vertexAttribPointer(shaderProgram.vertexColorAttribute, %s.itemSize, gl.FLOAT, false, 0, 0);\n\n",
 				temp);
 		}
-		sprintf(temp, "%s_normal_buffer", export_name);
+        snprintf(temp, 100, "%s_normal_buffer", export_name);
 		if (normal_string)
 		{
 			fprintf(webgl_file, "\tgl.bindBuffer(gl.ARRAY_BUFFER, %s);\n", temp);
@@ -154,9 +154,9 @@ void Webgl_export::writeWebGLDrawingFunction(string *position_string,
 		fprintf(webgl_file, "\tsetMatrixUniforms();\n");
 		if (index_string)
 		{
-			sprintf(temp, "%s_index_buffer", export_name);
+            snprintf(temp, 100, "%s_index_buffer", export_name);
 			fprintf(webgl_file, "\tgl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, %s);\n", temp);
-			sprintf(temp, "%s_index_points_for_strip_array", export_name);
+            snprintf(temp, 100, "%s_index_points_for_strip_array", export_name);
 			fprintf(webgl_file, "\tvar i = 0;\n");
 			fprintf(webgl_file, "\tfor (var k = 0; k < %s.length; k++)\n\t{\n", temp);
 			fprintf(webgl_file, "\t\tgl.drawElements(gl.TRIANGLE_STRIP, %s[k], gl.UNSIGNED_SHORT, i * 2);\n", temp);
@@ -166,7 +166,7 @@ void Webgl_export::writeWebGLDrawingFunction(string *position_string,
 		//	fprintf(webgl_file, "%s", tex_coord_string->c_str());
 		fprintf(webgl_file, "\tmvPopMatrix();\n");
 		fprintf(webgl_file, "%s", "}\n");
-		sprintf(temp, "\tdraw_%s();\n", export_name);
+        snprintf(temp, 100, "\tdraw_%s();\n", export_name);
 		drawFunctionsString += temp;
 	}
 }
@@ -177,7 +177,7 @@ string *Webgl_export::writeIndexBuffer(struct GT_object *object, const char *exp
 	{
 		char variable_name[100];
 
-		sprintf(variable_name, "%s_index", export_name);
+        snprintf(variable_name, 100, "%s_index", export_name);
 		unsigned int *strip_counts_buffer, per_vertex, counts_buffer_count,
 			*strip_index_buffer, index_count, *points_per_strip_buffer,
 			points_count;
@@ -201,29 +201,29 @@ string *Webgl_export::writeIndexBuffer(struct GT_object *object, const char *exp
 			fprintf(webgl_file,"var %s_points_for_strip_array;\n", variable_name);
 
 			char temp[1000];
-			sprintf(temp, "\t%s_buffer = gl.createBuffer();\n",
+            snprintf(temp, 1000, "\t%s_buffer = gl.createBuffer();\n",
 				variable_name);
 			*buffer_string += &temp[0];
-			sprintf(temp, "\tgl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, %s_buffer);\n",
+            snprintf(temp, 1000, "\tgl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, %s_buffer);\n",
 				variable_name);
 			*buffer_string += &temp[0];
-			sprintf(temp, "\tvar %s_vertices = [\n", variable_name);
+            snprintf(temp, 1000, "\tvar %s_vertices = [\n", variable_name);
 			*buffer_string += &temp[0];
 			for (unsigned int i = 0; i < index_count; i++)
 			{
 				if ((i % 10) == 0)
 				{
-					sprintf(temp, "\t\t");
+                    snprintf(temp, 1000, "\t\t");
 					*buffer_string += &temp[0];
 				}
 				if ((index_count - 1) != i)
 				{
-					sprintf(temp, "%u, ", strip_index_buffer[i]);
+                    snprintf(temp, 1000, "%u, ", strip_index_buffer[i]);
 					buffer_string->append(temp);
 				}
 				else
 				{
-					sprintf(temp, "%u", strip_index_buffer[i]);
+                    snprintf(temp, 1000, "%u", strip_index_buffer[i]);
 					*buffer_string += &temp[0];
 				}
 				if ((i % 10) == 9)
@@ -232,30 +232,30 @@ string *Webgl_export::writeIndexBuffer(struct GT_object *object, const char *exp
 				}
 			}
 			*buffer_string += "\t];\n";
-			sprintf(temp,"\tgl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(%s_vertices), gl.STATIC_DRAW);\n",
+            snprintf(temp, 1000, "\tgl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(%s_vertices), gl.STATIC_DRAW);\n",
 				variable_name);
 			*buffer_string += &temp[0];
-			sprintf(temp,"\t%s_buffer.itemSize = 1;\n", variable_name);
+            snprintf(temp, 1000, "\t%s_buffer.itemSize = 1;\n", variable_name);
 			*buffer_string += &temp[0];
-			sprintf(temp,"\t%s_buffer.numItems = %d;\n\n", variable_name, index_count);
+            snprintf(temp, 1000, "\t%s_buffer.numItems = %d;\n\n", variable_name, index_count);
 			*buffer_string += &temp[0];
-			sprintf(temp, "\t%s_number_of_strips_array = [\n", variable_name);
+            snprintf(temp, 1000, "\t%s_number_of_strips_array = [\n", variable_name);
 			*buffer_string += &temp[0];
 			for (unsigned int i = 0; i < counts_buffer_count; i++)
 			{
 				if ((i % 10) == 0)
 				{
-					sprintf(temp, "\t\t");
+                    snprintf(temp, 1000, "\t\t");
 					*buffer_string += &temp[0];
 				}
 				if ((counts_buffer_count - 1) != i)
 				{
-					sprintf(temp, "%u, ", strip_counts_buffer[i]);
+                    snprintf(temp, 1000, "%u, ", strip_counts_buffer[i]);
 					buffer_string->append(temp);
 				}
 				else
 				{
-					sprintf(temp, "%u", strip_counts_buffer[i]);
+                    snprintf(temp, 1000, "%u", strip_counts_buffer[i]);
 					*buffer_string += &temp[0];
 				}
 				if ((i % 10) == 9)
@@ -264,23 +264,23 @@ string *Webgl_export::writeIndexBuffer(struct GT_object *object, const char *exp
 				}
 			}
 			*buffer_string += "\t];\n";
-			sprintf(temp, "\t%s_points_for_strip_array = [\n", variable_name);
+            snprintf(temp, 1000, "\t%s_points_for_strip_array = [\n", variable_name);
 			*buffer_string += &temp[0];
 			for (unsigned int i = 0; i < points_count; i++)
 			{
 				if ((i % 10) == 0)
 				{
-					sprintf(temp, "\t\t");
+                    snprintf(temp, 1000, "\t\t");
 					*buffer_string += &temp[0];
 				}
 				if ((points_count - 1) != i)
 				{
-					sprintf(temp, "%u, ", points_per_strip_buffer[i]);
+                    snprintf(temp, 1000, "%u, ", points_per_strip_buffer[i]);
 					buffer_string->append(temp);
 				}
 				else
 				{
-					sprintf(temp, "%u", points_per_strip_buffer[i]);
+                    snprintf(temp, 1000, "%u", points_per_strip_buffer[i]);
 					*buffer_string += &temp[0];
 				}
 				if ((i % 10) == 9)
@@ -319,7 +319,7 @@ int Webgl_export::exportGraphicsObject(struct GT_object *object,	const char *exp
 				&position_vertex_buffer, &position_values_per_vertex,
 				&position_vertex_count))
 			{
-				sprintf(variable_name, "%s_position", export_name);
+                snprintf(variable_name, 100, "%s_position", export_name);
 				position_string = writeVertexBuffer(variable_name,
 					position_vertex_buffer, position_values_per_vertex,
 					position_vertex_count);
@@ -334,7 +334,7 @@ int Webgl_export::exportGraphicsObject(struct GT_object *object,	const char *exp
 				&colour_values_per_vertex, &colour_vertex_count)
 				&& (colour_vertex_count == position_vertex_count))
 			{
-				sprintf(variable_name, "%s_colour", export_name);
+                snprintf(variable_name, 100, "%s_colour", export_name);
 				colour_string = writeVertexBuffer(variable_name,
 					colour_buffer, colour_values_per_vertex,
 					colour_vertex_count);
@@ -353,7 +353,7 @@ int Webgl_export::exportGraphicsObject(struct GT_object *object,	const char *exp
 				&normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
 				&& (3 == normal_values_per_vertex))
 			{
-				sprintf(variable_name, "%s_normal", export_name);
+                snprintf(variable_name, 100, "%s_normal", export_name);
 				normal_string = writeVertexBuffer(variable_name,
 					normal_buffer, normal_values_per_vertex,
 					normal_vertex_count);
@@ -370,7 +370,7 @@ int Webgl_export::exportGraphicsObject(struct GT_object *object,	const char *exp
 				&texture_coordinate0_vertex_count)
 				&& (texture_coordinate0_vertex_count == position_vertex_count))
 			{
-				sprintf(variable_name, "%s_texture_coord0", export_name);
+                snprintf(variable_name, 100, "%s_texture_coord0", export_name);
 				tex_coord_string = writeVertexBuffer(variable_name,
 					texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
 					texture_coordinate0_vertex_count);

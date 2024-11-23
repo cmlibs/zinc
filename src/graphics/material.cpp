@@ -1023,7 +1023,7 @@ cmzn_material* cmzn_materialmodule::createMaterial()
 	do
 	{
 		i++;
-		sprintf(temp_name, "temp%d", i);
+        snprintf(temp_name, 20, "temp%d", i);
 	} while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(temp_name,
 		this->manager));
 	material = cmzn_material_create_private();
@@ -2895,7 +2895,7 @@ Writes the properties of the <material> to the command window.
 		display_message(INFORMATION_MESSAGE,"material : ");
 		display_message(INFORMATION_MESSAGE,material->name);
 		display_message(INFORMATION_MESSAGE,"\n");
-		sprintf(line,"  access count = %i\n",material->access_count);
+        snprintf(line, 80, "  access count = %i\n", material->access_count);
 		if (material->program)
 		{
 			enum cmzn_shaderprogram_type type = cmzn_shaderprogram_get_type(material->program);
@@ -2917,25 +2917,25 @@ Writes the properties of the <material> to the command window.
 			display_message(INFORMATION_MESSAGE,"  Standard Gouraud Shading\n");
 		}
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  diffuse  red = %.3g, green = %.3g, blue = %.3g\n",
-			(material->diffuse).red,(material->diffuse).green,
+        snprintf(line, 80, "  diffuse  red = %.3g, green = %.3g, blue = %.3g\n",
+            (material->diffuse).red, (material->diffuse).green,
 			(material->diffuse).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  ambient  red = %.3g, green = %.3g, blue = %.3g\n",
-			(material->ambient).red,(material->ambient).green,
+        snprintf(line, 80, "  ambient  red = %.3g, green = %.3g, blue = %.3g\n",
+            (material->ambient).red, (material->ambient).green,
 			(material->ambient).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  alpha = %.3g\n",material->alpha);
+        snprintf(line, 80, "  alpha = %.3g\n", material->alpha);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  emission  red = %.3g, green = %.3g, blue = %.3g\n",
-			(material->emission).red,(material->emission).green,
+        snprintf(line, 80, "  emission  red = %.3g, green = %.3g, blue = %.3g\n",
+            (material->emission).red, (material->emission).green,
 			(material->emission).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  specular  red = %.3g, green = %.3g, blue = %.3g\n",
-			(material->specular).red,(material->specular).green,
+        snprintf(line, 80, "  specular  red = %.3g, green = %.3g, blue = %.3g\n",
+            (material->specular).red, (material->specular).green,
 			(material->specular).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  shininess = %.3g\n",material->shininess);
+        snprintf(line, 80, "  shininess = %.3g\n", material->shininess);
 		display_message(INFORMATION_MESSAGE,line);
 		if (material->image_texture.texture&&GET_NAME(Texture)(material->image_texture.texture,&name))
 		{
@@ -3030,25 +3030,25 @@ The command is started with the string pointed to by <command_prefix>.
 		{
 			display_message(INFORMATION_MESSAGE," normal_mode");
 		}
-		sprintf(line," ambient %g %g %g",
-			(material->ambient).red,(material->ambient).green,
+        snprintf(line, 100, " ambient %g %g %g",
+            (material->ambient).red, (material->ambient).green,
 			(material->ambient).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line," diffuse %g %g %g",
-			(material->diffuse).red,(material->diffuse).green,
+        snprintf(line, 100, " diffuse %g %g %g",
+            (material->diffuse).red, (material->diffuse).green,
 			(material->diffuse).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line," emission %g %g %g",
-			(material->emission).red,(material->emission).green,
+        snprintf(line, 100, " emission %g %g %g",
+            (material->emission).red, (material->emission).green,
 			(material->emission).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line," specular %g %g %g",
-			(material->specular).red,(material->specular).green,
+        snprintf(line, 100, " specular %g %g %g",
+            (material->specular).red, (material->specular).green,
 			(material->specular).blue);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line," alpha %g",material->alpha);
+        snprintf(line, 100, " alpha %g", material->alpha);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line," shininess %g",material->shininess);
+        snprintf(line, 100, " shininess %g", material->shininess);
 		display_message(INFORMATION_MESSAGE,line);
 		if (material->image_texture.texture&&GET_NAME(Texture)(material->image_texture.texture,&name))
 		{
@@ -3144,25 +3144,25 @@ The command is started with the string pointed to by <command_prefix>.
 		{
 			 write_message_to_file(INFORMATION_MESSAGE," normal_mode");
 		}
-		sprintf(line," ambient %g %g %g",
-			(material->ambient).red,(material->ambient).green,
+        snprintf(line, 100, " ambient %g %g %g",
+            (material->ambient).red, (material->ambient).green,
 			(material->ambient).blue);
 		write_message_to_file(INFORMATION_MESSAGE,line);
-		sprintf(line," diffuse %g %g %g",
-			(material->diffuse).red,(material->diffuse).green,
+        snprintf(line, 100, " diffuse %g %g %g",
+            (material->diffuse).red, (material->diffuse).green,
 			(material->diffuse).blue);
 		write_message_to_file(INFORMATION_MESSAGE,line);
-		sprintf(line," emission %g %g %g",
-			(material->emission).red,(material->emission).green,
+        snprintf(line, 100, " emission %g %g %g",
+            (material->emission).red, (material->emission).green,
 			(material->emission).blue);
 		write_message_to_file(INFORMATION_MESSAGE,line);
-		sprintf(line," specular %g %g %g",
-			(material->specular).red,(material->specular).green,
+        snprintf(line, 100, " specular %g %g %g",
+            (material->specular).red, (material->specular).green,
 			(material->specular).blue);
 		write_message_to_file	(INFORMATION_MESSAGE,line);
-		sprintf(line," alpha %g",material->alpha);
+        snprintf(line, 100, " alpha %g", material->alpha);
 		write_message_to_file	(INFORMATION_MESSAGE,line);
-		sprintf(line," shininess %g",material->shininess);
+        snprintf(line, 100, " shininess %g" ,material->shininess);
 		write_message_to_file(INFORMATION_MESSAGE,line);
 		if (material->image_texture.texture&&GET_NAME(Texture)(material->image_texture.texture,&name))
 		{

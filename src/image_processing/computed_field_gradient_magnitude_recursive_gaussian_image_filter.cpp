@@ -148,7 +148,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " sigma %g", sigma);
+        snprintf(temp_string, 40, " sigma %g", sigma);
 		append_string(&command_string, temp_string, &error);	
 	}
 	else

@@ -160,13 +160,13 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " variance %g", variance);
+        snprintf(temp_string, 40, " variance %g", variance);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " maximum_error %g", maximumError);
+        snprintf(temp_string, 40, " maximum_error %g", maximumError);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " upper_threshold %g", upperThreshold);
+        snprintf(temp_string, 40, " upper_threshold %g", upperThreshold);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " lower_threshold %g", lowerThreshold);
+        snprintf(temp_string, 40, " lower_threshold %g", lowerThreshold);
 		append_string(&command_string, temp_string, &error);		
 
 	}

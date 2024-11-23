@@ -1574,7 +1574,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_finite_element_type_string, &error);
 		number_of_components = get_FE_field_number_of_components(fe_field);
-		sprintf(temp_string, " number_of_components %d ", number_of_components);
+        snprintf(temp_string, 40, " number_of_components %d ", number_of_components);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, ENUMERATOR_STRING(CM_field_type)(
 			this->fe_field->get_CM_field_type()), &error);
@@ -2720,7 +2720,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " ", &error);
 		append_string(&command_string,
 			ENUMERATOR_STRING(cmzn_node_value_label)(this->nodeValueLabel), &error);
-		sprintf(temp_string, " version %d", this->versionNumber + 1);
+        snprintf(temp_string, 40, " version %d", this->versionNumber + 1);
 		append_string(&command_string, temp_string, &error);
 	}
 	else

@@ -128,7 +128,7 @@ such that they exist at the time they are to be used.
 		if (ALLOCATE(vrml_prototype,struct VRML_prototype,1)&&
 			ALLOCATE(vrml_prototype->name,char,strlen(name)+1))
 		{
-			sprintf(vrml_prototype->name,"%s",name);
+            snprintf(vrml_prototype->name, strlen(name)+1, "%s", name);
 			/* do not ACCESS objects as vrml_prototypes are temporary structures */
 			vrml_prototype->texture=texture;
 			vrml_prototype->material=material;
@@ -2121,11 +2121,11 @@ DESCRIPTION :
 		{
 			if (object_is_glyph)
 			{
-				sprintf(prototype_name,"glyph_%s%s_%s",parsed_name, num_string, material_name);
+                snprintf(prototype_name, strlen(parsed_name)+strlen(num_string)+10+strlen(material_name), "glyph_%s%s_%s", parsed_name, num_string, material_name);
 			}
 			else
 			{
-				sprintf(prototype_name,"object_%s%s_%s",parsed_name, num_string, material_name);
+                snprintf(prototype_name, strlen(parsed_name)+strlen(num_string)+10+strlen(material_name), "object_%s%s_%s", parsed_name, num_string, material_name);
 			}
 			/* Can't have certain characters (.: ) in a name */
 			while ((dot_pointer = strchr(prototype_name, '.'))

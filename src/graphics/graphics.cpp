@@ -1635,7 +1635,7 @@ char *cmzn_graphics_get_name_internal(struct cmzn_graphics *graphics)
 		else
 		{
 			char temp[30];
-			sprintf(temp, "%d", graphics->position);
+            snprintf(temp, 30, "%d", graphics->position);
 			name = duplicate_string(temp);
 		}
 	}
@@ -1672,11 +1672,11 @@ char *cmzn_graphics_get_summary_string(struct cmzn_graphics *graphics)
 	char temp_string[100];
 	if (graphics->name)
 	{
-		sprintf(temp_string, "%s. ", graphics->name);
+        snprintf(temp_string, 100, "%s. ", graphics->name);
 	}
 	else
 	{
-		sprintf(temp_string, "%i. ", graphics->position);
+        snprintf(temp_string, 100, "%i. ", graphics->position);
 	}
 	append_string(&graphics_string, temp_string, &error);
 	append_string(&graphics_string,
@@ -1712,11 +1712,11 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		{
 			if (graphics->name)
 			{
-				sprintf(temp_string,"%i. (%s) ",graphics->position, graphics->name);
+                snprintf(temp_string, 100, "%i. (%s) ", graphics->position, graphics->name);
 			}
 			else
 			{
-				sprintf(temp_string,"%i. ",graphics->position);
+                snprintf(temp_string, 100, "%i. ", graphics->position);
 			}
 			append_string(&graphics_string,temp_string,&error);
 		}
@@ -1731,7 +1731,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		append_string(&graphics_string, ENUMERATOR_STRING(cmzn_field_domain_type)(graphics->domain_type), &error);
 		if (graphics->name)
 		{
-			sprintf(temp_string," as %s", graphics->name);
+            snprintf(temp_string, 100, " as %s", graphics->name);
 			append_string(&graphics_string,temp_string,&error);
 		}
 		if (graphics->subgroup_field)
@@ -1792,12 +1792,12 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 
 		if ((graphics->render_line_width < 0.99999) || (1.00001 < graphics->render_line_width))
 		{
-			sprintf(temp_string, " line_width %g", graphics->render_line_width);
+            snprintf(temp_string, 100, " line_width %g", graphics->render_line_width);
 			append_string(&graphics_string,temp_string,&error);
 		}
 		if ((graphics->render_point_size < 0.99999) || (1.00001 < graphics->render_point_size))
 		{
-			sprintf(temp_string, " point_size %g", graphics->render_point_size);
+            snprintf(temp_string, 100, " point_size %g", graphics->render_point_size);
 			append_string(&graphics_string,temp_string,&error);
 		}
 
@@ -1811,7 +1811,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			else
 			{
-				sprintf(temp_string, " overlay %d", graphics->overlay_order);
+                snprintf(temp_string, 100, " overlay %d", graphics->overlay_order);
 				append_string(&graphics_string,temp_string,&error);
 			}
 		}
@@ -1837,29 +1837,29 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			if (graphics->isovalues)
 			{
-				sprintf(temp_string," iso_values");
+                snprintf(temp_string, 100, " iso_values");
 				append_string(&graphics_string,temp_string,&error);
 				for (i = 0 ; i < graphics->number_of_isovalues ; i++)
 				{
-					sprintf(temp_string, " %g", graphics->isovalues[i]);
+                    snprintf(temp_string, 100, " %g", graphics->isovalues[i]);
 					append_string(&graphics_string,temp_string,&error);
 				}
 			}
 			else
 			{
-				sprintf(temp_string," range_number_of_iso_values %d",
+                snprintf(temp_string, 100, " range_number_of_iso_values %d",
 					graphics->number_of_isovalues);
 				append_string(&graphics_string,temp_string,&error);
-				sprintf(temp_string," first_iso_value %g",
+                snprintf(temp_string, 100, " first_iso_value %g",
 					graphics->first_isovalue);
 				append_string(&graphics_string,temp_string,&error);
-				sprintf(temp_string," last_iso_value %g",
+                snprintf(temp_string, 100," last_iso_value %g",
 					graphics->last_isovalue);
 				append_string(&graphics_string,temp_string,&error);
 			}
 			if (graphics->decimation_threshold > 0.0)
 			{
-				sprintf(temp_string," decimation_threshold %g",
+                snprintf(temp_string, 100," decimation_threshold %g",
 					graphics->decimation_threshold);
 				append_string(&graphics_string,temp_string,&error);
 			}
@@ -1876,11 +1876,11 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			append_string(&graphics_string, " line_base_size ", &error);
 			if (graphics->line_base_size[1] == graphics->line_base_size[0])
 			{
-				sprintf(temp_string, "%g", graphics->line_base_size[0]);
+                snprintf(temp_string, 100, "%g", graphics->line_base_size[0]);
 			}
 			else
 			{
-				sprintf(temp_string, "\"%g*%g\"", graphics->line_base_size[0], graphics->line_base_size[1]);
+                snprintf(temp_string, 100, "\"%g*%g\"", graphics->line_base_size[0], graphics->line_base_size[1]);
 			}
 			append_string(&graphics_string, temp_string, &error);
 
@@ -1896,11 +1896,11 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 				append_string(&graphics_string, " line_scale_factors ", &error);
 				if (graphics->line_scale_factors[1] == graphics->line_scale_factors[0])
 				{
-					sprintf(temp_string,"%g", graphics->line_scale_factors[0]);
+                    snprintf(temp_string, 100, "%g", graphics->line_scale_factors[0]);
 				}
 				else
 				{
-					sprintf(temp_string,"\"%g*%g\"", graphics->line_scale_factors[0], graphics->line_scale_factors[1]);
+                    snprintf(temp_string, 100, "\"%g*%g\"", graphics->line_scale_factors[0], graphics->line_scale_factors[1]);
 				}
 				append_string(&graphics_string,temp_string,&error);
 			}
@@ -1926,10 +1926,10 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 				append_string(&graphics_string,
 					ENUMERATOR_STRING(cmzn_glyph_repeat_mode)(graphics->glyph_repeat_mode), &error);
 			}
-			sprintf(temp_string," size \"%g*%g*%g\"",graphics->point_base_size[0],
-				graphics->point_base_size[1],graphics->point_base_size[2]);
+            snprintf(temp_string, 100, " size \"%g*%g*%g\"", graphics->point_base_size[0],
+                graphics->point_base_size[1], graphics->point_base_size[2]);
 			append_string(&graphics_string,temp_string,&error);
-			sprintf(temp_string," offset %g,%g,%g",
+            snprintf(temp_string, 100, " offset %g,%g,%g",
 				graphics->point_offset[0], graphics->point_offset[1], graphics->point_offset[2]);
 			append_string(&graphics_string,temp_string,&error);
 			if (graphics->font)
@@ -1961,8 +1961,8 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			if (graphics->label_field || (last_glyph_number_with_label_text >= 0))
 			{
-				sprintf(temp_string," label_offset %g,%g,%g",graphics->label_offset[0],
-					graphics->label_offset[1],graphics->label_offset[2]);
+                snprintf(temp_string, 100, " label_offset %g,%g,%g", graphics->label_offset[0],
+                    graphics->label_offset[1], graphics->label_offset[2]);
 				append_string(&graphics_string,temp_string,&error);
 			}
 			if (last_glyph_number_with_label_text >= 0)
@@ -2018,7 +2018,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			if (graphics->point_orientation_scale_field || graphics->signed_scale_field)
 			{
-				sprintf(temp_string," scale_factors \"%g*%g*%g\"",
+                snprintf(temp_string, 100, " scale_factors \"%g*%g*%g\"",
 					graphics->point_scale_factors[0],
 					graphics->point_scale_factors[1],
 					graphics->point_scale_factors[2]);
@@ -2080,7 +2080,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		{
 			if (graphics->seed_element)
 			{
-				sprintf(temp_string, " seed_element %d", get_FE_element_identifier(graphics->seed_element));
+                snprintf(temp_string, 100, " seed_element %d", get_FE_element_identifier(graphics->seed_element));
 				append_string(&graphics_string, temp_string, &error);
 			}
 		}
@@ -2091,7 +2091,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
 			(CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION == graphics->sampling_mode))
 		{
-			sprintf(temp_string," xi %g,%g,%g",
+            snprintf(temp_string, 100," xi %g,%g,%g",
 				graphics->sample_location[0],graphics->sample_location[1],graphics->sample_location[2]);
 			append_string(&graphics_string,temp_string,&error);
 		}
@@ -2118,7 +2118,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			append_string(&graphics_string, " ", &error);
 			append_string(&graphics_string,
 				ENUMERATOR_STRING(cmzn_graphics_streamlines_track_direction)(graphics->streamlines_track_direction), &error);
-			sprintf(temp_string," length %g ", graphics->streamline_length);
+            snprintf(temp_string, 100, " length %g ", graphics->streamline_length);
 			append_string(&graphics_string,temp_string,&error);
 			append_string(&graphics_string,
 				ENUMERATOR_STRING(cmzn_graphics_streamlines_colour_data_type)(graphics->streamlines_colour_data_type),&error);
@@ -2703,7 +2703,7 @@ static char *cmzn_graphics_get_graphics_object_name(cmzn_graphics *graphics, con
 	}
 	append_string(&graphics_object_name, ".", &error);
 	char temp[20];
-	sprintf(temp, "%d", graphics->position);
+    snprintf(temp, 20, "%d", graphics->position);
 	append_string(&graphics_object_name, temp, &error);
 	if (graphics->name)
 	{
@@ -3878,7 +3878,7 @@ int cmzn_graphics_has_name(struct cmzn_graphics *graphics,
 		{
 			/* Compare with number if the graphics
 			 has no name or the name didn't match */
-			sprintf(temp_name, "%d", graphics->position);
+            snprintf(temp_name, 30, "%d", graphics->position);
 			return_code=!strcmp(name,temp_name);
 		}
 	}
@@ -4197,7 +4197,7 @@ int cmzn_graphics_list_contents(struct cmzn_graphics *graphics,
 			if ((GRAPHICS_STRING_COMPLETE_PLUS==list_data->graphics_string_detail)&&
 				(graphics->getAccessCount() != 1))
 			{
-				sprintf(line," (access count = %i)",graphics->getAccessCount());
+                snprintf(line, 40, " (access count = %i)", graphics->getAccessCount());
 				display_message(INFORMATION_MESSAGE,line);
 			}
 			display_message(INFORMATION_MESSAGE,"\n");

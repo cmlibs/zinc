@@ -184,12 +184,12 @@ Writes the properties of the <environment_map> to the command window.
 		{
 			if ((environment_map->face_material)[face_no])
 			{
-				sprintf(line,"  face %d : %s\n",face_no,
+                snprintf(line, 80, "  face %d : %s\n", face_no,
 					Graphical_material_name(environment_map->face_material[face_no]));
 			}
 			else
 			{
-				sprintf(line,"  face %d : no material\n",face_no);
+                snprintf(line, 80, "  face %d : no material\n", face_no);
 			}
 			display_message(INFORMATION_MESSAGE,line);
 		}

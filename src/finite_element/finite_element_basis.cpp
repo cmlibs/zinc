@@ -3656,7 +3656,7 @@ static char *FE_basis_type_array_to_string(const int *type_array)
 									{
 										append_string(&basis_string, ";", &error);
 									}
-									sprintf(temp, "%d", i);
+                                    snprintf(temp, 30, "%d", i);
 									append_string(&basis_string, temp, &error);
 								}
 								relation_type++;
@@ -3690,7 +3690,7 @@ static char *FE_basis_type_array_to_string(const int *type_array)
 										number_of_polygon_vertices = *relation_type;
 										if (number_of_polygon_vertices >= 3)
 										{
-											sprintf(temp, "(%d;%d)", number_of_polygon_vertices, i);
+                                            snprintf(temp, 30, "(%d;%d)", number_of_polygon_vertices, i);
 											append_string(&basis_string, temp, &error);
 										}
 										else

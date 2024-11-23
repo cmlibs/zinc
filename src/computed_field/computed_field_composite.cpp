@@ -387,7 +387,7 @@ If <commands> is set, field/components are made into valid tokens.
 			else
 			{
 				/* source value */
-				sprintf(tmp_string, "%g",
+                snprintf(tmp_string, 40, "%g",
 					field->source_values[source_value_numbers[i]]);
 				append_string(&source_string, tmp_string, &error);
 			}
@@ -897,7 +897,7 @@ Returned field is ACCESSed once.
 				if (ALLOCATE(component_field_name, char,
 					strlen(field->name) + strlen(component_name) + 2))
 				{
-					sprintf(component_field_name, "%s.%s", field->name, component_name);
+                    snprintf(component_field_name, strlen(field->name) + strlen(component_name) + 2, "%s.%s", field->name, component_name);
 					cmzn_region* region = Computed_field_get_region(field);
 					cmzn_fieldmodule *field_module = cmzn_fieldmodule_create(region);
 					cmzn_fieldmodule_begin_change(field_module);

@@ -529,7 +529,7 @@ public:
 			graphics);
 		char *graphicsName = cmzn_graphics_get_name_internal(graphics);
 		char startExportName[50];
-		sprintf(startExportName, "object_%d_graphics_", current_number);
+        snprintf(startExportName, 50, "object_%d_graphics_", current_number);
 		char *exportName = duplicate_string(startExportName);
 		int error = 0;
 		append_string(&exportName, graphicsName, &error);
@@ -667,7 +667,7 @@ public:
 					else
 					{
 						char temp[40];
-						sprintf(temp, "temp_%d.json", i+1);
+                        snprintf(temp, 40, "temp_%d.json", i+1);
 						graphics_json["URL"] = temp;
 					}
 				}
@@ -699,7 +699,7 @@ public:
 						else
 						{
 							char temp[40];
-							sprintf(temp, "temp_%d.json", i+1);
+                            snprintf(temp, 40, "temp_%d.json", i+1);
 							graphics_json["GlyphGeometriesURL"] = temp;
 							glyph_export->setGlyphGeometriesURLName(temp);
 						}

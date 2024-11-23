@@ -192,9 +192,9 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " variance %g", variance);
+        snprintf(temp_string, 40, " variance %g", variance);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " maxkernelwidth %d", maxKernelWidth);	
+        snprintf(temp_string, 40, " maxkernelwidth %d", maxKernelWidth);
 		append_string(&command_string, temp_string, &error);		
 	}
 	else
