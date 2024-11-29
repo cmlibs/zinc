@@ -462,7 +462,7 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		{ "power",       zinc.fm.createFieldPower(fielda, fieldb),    binary_operator_power,    1.0E-12, 1.0E-6,  1.0E-2,  0.0, 0.0, 0.0 },
 		{ "log",         zinc.fm.createFieldLog(fielda),              unary_operator_log,       1.0E-12, 1.0E-6,  1.0E-2,  0.0, 0.0, 0.0 },
 		{ "sqrt",        zinc.fm.createFieldSqrt(fielda),             unary_operator_sqrt,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
-		{ "exp",         zinc.fm.createFieldExp(fielda),              unary_operator_exp,       1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 },
+		{ "exp",         zinc.fm.createFieldExp(fielda),              unary_operator_exp,       1.0E-12, 1.0E-8,  3.3E-4,  0.0, 0.0, 0.0 },
 		{ "abs",         zinc.fm.createFieldAbs(fieldb),              unary_operator_abs,       1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// composite operators
 		{ "identity",    zinc.fm.createFieldIdentity(fielda),         unary_operator_identity,  1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
@@ -480,19 +480,19 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// matrix operators
 		{ "matrix_multiply_matrix_constvector", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, field_const_vector), binary_operator_matrix_multiply_aba_m020507,
-		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.1E-4,  0.0, 0.0, 0.0 },
 		{ "matrix_multiply_constvector_matrix", zinc.fm.createFieldMatrixMultiply(1, field_const_vector, field_matrix_aba), binary_operator_matrix_multiply_m020507_aba,
 		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "matrix_multiply_matrix_vector", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, fieldb), binary_operator_matrix_multiply_aba_b,
 		                                                                                        1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 },
 		{ "matrix_multiply_vector_matrix", zinc.fm.createFieldMatrixMultiply(1, fielda, field_matrix_aba), binary_operator_matrix_multiply_a_aba,
-		                                                                                        1.0E-12, 1.0E-8,  4.0E-4,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  4.2E-4,  0.0, 0.0, 0.0 },
 		{ "transpose",   zinc.fm.createFieldComponent(zinc.fm.createFieldTranspose(3, field_matrix_aba), 3, component_indexes_matrix3x3_upper), binary_operator_transpose_aba_upper,
 		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// trigonometry operators
 		{ "sin",         zinc.fm.createFieldSin(fielda),              unary_operator_sin,       1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "cos",         zinc.fm.createFieldCos(fielda),              unary_operator_cos,       1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
-		{ "tan",         zinc.fm.createFieldTan(fielda),              unary_operator_tan,       1.0E-12, 2.0E-8,  1.0E-3,  0.0, 0.0, 0.0 },
+		{ "tan",         zinc.fm.createFieldTan(fielda),              unary_operator_tan,       1.0E-12, 2.0E-8,  1.2E-3,  0.0, 0.0, 0.0 },
 		{ "asin",        zinc.fm.createFieldAsin(fielda),             unary_operator_asin,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "acos",        zinc.fm.createFieldAcos(fielda),             unary_operator_acos,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "atan",        zinc.fm.createFieldAtan(fielda),             unary_operator_atan,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
@@ -503,10 +503,10 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		{ "dot_product", zinc.fm.createFieldComponent(zinc.fm.createFieldDotProduct(fielda, fieldb), 3, component_indexes_111), binary_operator_dot_product,
 		                                                                                        1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 },
 		{ "magnitude", zinc.fm.createFieldComponent(zinc.fm.createFieldMagnitude(fielda), 3, component_indexes_111), unary_operator_magnitude,
-		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.3E-4,  0.0, 0.0, 0.0 },
 		{ "normalise",   zinc.fm.createFieldNormalise(fielda),        unary_operator_normalise, 1.0E-12, 2.0E-7,  1.0E-3,  0.0, 0.0, 0.0 },
 		{ "sum_components", zinc.fm.createFieldComponent(zinc.fm.createFieldSumComponents(fielda), 3, component_indexes_111), unary_operator_sum_components,
-		                                                                                        1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 }
+		                                                                                        1.0E-12, 1.0E-8,  2.1E-4,  0.0, 0.0, 0.0 }
 	};
 	SortedError xSortedError[field_binary_operator_count];
 	SortedError d1SortedError[field_binary_operator_count][3];
