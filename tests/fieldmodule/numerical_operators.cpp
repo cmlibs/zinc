@@ -293,6 +293,132 @@ void unary_operator_sum_components(int count, const double *a, const double *, d
 		result[i] = sum;
 }
 
+/** sorted errors with xi index */
+struct SortedError
+{
+	struct IndexError
+	{
+		int index;
+		double error;
+	};
+
+	std::vector<IndexError> indexErrors;
+
+	/**
+	 * Add index and error in order from highest to lowest error.
+	 * @param index  Point index starting at 0.
+	 * @param error  Non-negative error. */
+	void add(int index, double error)
+	{
+		IndexError indexError = { index, error };
+		for (std::vector<IndexError>::iterator iter = this->indexErrors.begin(); iter < indexErrors.end(); ++iter)
+		{
+			if (error > iter->error)
+			{
+				this->indexErrors.insert(iter, indexError);
+				return;
+			}
+		}
+		this->indexErrors.push_back(indexError);
+	}
+
+};
+
+namespace {
+
+/** from finite_element_basis.cpp */
+const double quartic_lagrange_blending_matrix[25] =
+{
+	1.0,-25.0/3.0,  70.0/3.0,-80.0/3.0,  32.0/3.0,
+	0.0,     16.0,-208.0/3.0,     96.0,-128.0/3.0,
+	0.0,    -12.0,      76.0,   -128.0,      64.0,
+	0.0, 16.0/3.0,-112.0/3.0,224.0/3.0,-128.0/3.0,
+	0.0,     -1.0,  22.0/3.0,    -16.0,  32.0/3.0
+};
+
+class Quartic_lagrange_interpolation
+{
+	double blendingMatrixDerivative1[25];
+	double blendingMatrixDerivative2[25];
+	const double* blendingMatrix[3];
+
+	void get_blending_matrix_derivative(const double* blendingMatrix, double* derivativeBlendingMatrix)
+	{
+		const double* monomialCoeff = blendingMatrix;
+		double* derivativeMonomialCoeff = derivativeBlendingMatrix;
+		for (int bf = 0; bf < 5; ++bf)
+		{
+			++monomialCoeff;
+			for (int mbf = 1; mbf < 5; ++mbf)
+			{
+				*derivativeMonomialCoeff = *monomialCoeff * mbf;
+				++monomialCoeff;
+				++derivativeMonomialCoeff;
+			}
+			*derivativeMonomialCoeff = 0.0;
+			++derivativeMonomialCoeff;
+		}
+	}
+
+public:
+
+	Quartic_lagrange_interpolation()
+	{
+		get_blending_matrix_derivative(quartic_lagrange_blending_matrix, this->blendingMatrixDerivative1);
+		get_blending_matrix_derivative(this->blendingMatrixDerivative1, this->blendingMatrixDerivative2);
+		this->blendingMatrix[0] = quartic_lagrange_blending_matrix;
+		this->blendingMatrix[1] = blendingMatrixDerivative1;
+		this->blendingMatrix[2] = blendingMatrixDerivative2;
+	}
+
+	/** Get 5 quartic lagrange basis function values at xi.
+	 * @param xi  Parametric coordinate nominally varying from 0.0 to 1.0 over line element.
+	 * @param derivative  0 for value, 1 for first derivative, 2 for second derivative
+	 * @param basisValues5  Array large enough to take 5 basis function values */
+	void evaluateBasis(double xi, int derivative, double *basisValues5)
+	{
+		double monomialBasisValue[5] = { 1.0, xi, xi * xi, xi * xi * xi, xi * xi * xi * xi };
+		const double* monomialCoeff = this->blendingMatrix[derivative];
+		for (int bf = 0; bf < 5; ++bf)
+		{
+			double basisValue = 0.0;
+			for (int mbf = 0; mbf < 5; ++mbf)
+			{
+				basisValue += (*monomialCoeff) * monomialBasisValue[mbf];
+				++monomialCoeff;
+			}
+			basisValues5[bf] = basisValue;
+		}
+	}
+
+};
+
+/** Perform basis interpolation with dot product.
+ * @param basisValuesCount  Number of basis function values.
+ * @param basisValues  Pointer to array of basisValuesCount quartic basis function values.
+ * @param nodeVectors  Pointer to array of basisValuesCount x 3 component values.
+ * @param result  Pointer to array of size 3 to receive interpolated vector.
+ */
+void basis_interpolate_vector3(int basisValuesCount, const double* basisValues, const double** nodeVectors, double* result)
+{
+	for (int c = 0; c < 3; ++c)
+	{
+		double sum = 0.0;
+		for (int f = 0; f < basisValuesCount; ++f)
+		{
+			sum += basisValues[f] * nodeVectors[f][c];
+		}
+		result[c] = sum;
+	}
+}
+
+inline double magnitude3(const double* vector3)
+{
+	return sqrt(vector3[0] * vector3[0] + vector3[1] * vector3[1] + vector3[2] * vector3[2]);
+}
+
+} // namespace
+
 TEST(ZincField, numerical_operators_with_derivatives)
 {
 	ZincTestSetupCpp zinc;
@@ -329,63 +455,75 @@ TEST(ZincField, numerical_operators_with_derivatives)
 	Field_binary_operator field_binary_operators[field_binary_operator_count] =
 	{
 		// arithmetic operators
-		{ "add",         zinc.fm.createFieldAdd(fielda, fieldb),      binary_operator_add,      1.0E-12, 1.0E-7,  2.5E-2,  0.0, 0.0, 0.0 },
-		{ "subtract",    zinc.fm.createFieldSubtract(fielda, fieldb), binary_operator_subtract, 1.0E-12, 1.0E-7,  2.5E-2,  0.0, 0.0, 0.0 },
-		{ "multiply",    zinc.fm.createFieldMultiply(fielda, fieldb), binary_operator_multiply, 1.0E-12, 1.0E-7,  2.0E-2,  0.0, 0.0, 0.0 },
-		{ "divide",      zinc.fm.createFieldDivide(fielda, fieldb),   binary_operator_divide,   1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
-		{ "power",       zinc.fm.createFieldPower(fielda, fieldb),    binary_operator_power,    1.0E-12, 1.0E-5,  2.0E-2,  0.0, 0.0, 0.0 },
-		{ "log",         zinc.fm.createFieldLog(fielda),              unary_operator_log,       1.0E-12, 1.0E-5,  3.0E-2,  0.0, 0.0, 0.0 },
-		{ "sqrt",        zinc.fm.createFieldSqrt(fielda),             unary_operator_sqrt,      1.0E-12, 2.0E-7,  2.0E-2,  0.0, 0.0, 0.0 },
-		{ "exp",         zinc.fm.createFieldExp(fielda),              unary_operator_exp,       1.0E-12, 2.0E-7,  7.0E-2,  0.0, 0.0, 0.0 },
-		{ "abs",         zinc.fm.createFieldAbs(fieldb),              unary_operator_abs,       1.0E-12, 1.0E-10, 1.0E-5,  0.0, 0.0, 0.0 },
+		{ "add",         zinc.fm.createFieldAdd(fielda, fieldb),      binary_operator_add,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "subtract",    zinc.fm.createFieldSubtract(fielda, fieldb), binary_operator_subtract, 1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "multiply",    zinc.fm.createFieldMultiply(fielda, fieldb), binary_operator_multiply, 1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "divide",      zinc.fm.createFieldDivide(fielda, fieldb),   binary_operator_divide,   1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "power",       zinc.fm.createFieldPower(fielda, fieldb),    binary_operator_power,    1.0E-12, 1.0E-6,  1.0E-2,  0.0, 0.0, 0.0 },
+		{ "log",         zinc.fm.createFieldLog(fielda),              unary_operator_log,       1.0E-12, 1.0E-6,  1.0E-2,  0.0, 0.0, 0.0 },
+		{ "sqrt",        zinc.fm.createFieldSqrt(fielda),             unary_operator_sqrt,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "exp",         zinc.fm.createFieldExp(fielda),              unary_operator_exp,       1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 },
+		{ "abs",         zinc.fm.createFieldAbs(fieldb),              unary_operator_abs,       1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// composite operators
-		{ "identity",    zinc.fm.createFieldIdentity(fielda),         unary_operator_identity,  1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
+		{ "identity",    zinc.fm.createFieldIdentity(fielda),         unary_operator_identity,  1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "component",   zinc.fm.createFieldComponent(fielda, 3, component_indexes_reverse), unary_operator_reverse,
-		                                                                                        1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "concatenate", zinc.fm.createFieldConcatenate(3, concatenate_fields_a2b3b1), binary_operator_concatenate_a2b3b1,
-		                                                                                        1.0E-12, 1.0E-7,  1.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// conditional operators
 		{ "if",          zinc.fm.createFieldIf(zinc.fm.createFieldLessThan(fieldb, zinc.fm.createFieldConstant(3, zero3)), fielda, fieldb), binary_operator_if_b_lt_zero,
-		                                                                                        1.0E-12, 5.0E-10, 4.0E-4,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// constant operators
-		{ "constant",    field_const_vector, constant_operator_m020507,                         1.0E-12, 1.0E-12, 1.0E-12, 0.0, 0.0, 0.0 },
+		{ "constant",    field_const_vector, constant_operator_m020507,                         1.0E-12, 1.0E-8,  1.0E-4, 0.0, 0.0, 0.0 },
 		// coordinate transformation
 		{ "coordinate_transformation_spherical_polar_to_rc", fieldCoordinateTransformation_spherical_polar_to_rc, unary_operator_coordinate_transformation_spherical_polar_to_rc,
-		                                                                                        1.0E-12, 6.0E-8,  3.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// matrix operators
 		{ "matrix_multiply_matrix_constvector", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, field_const_vector), binary_operator_matrix_multiply_aba_m020507,
-		                                                                                        1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "matrix_multiply_constvector_matrix", zinc.fm.createFieldMatrixMultiply(1, field_const_vector, field_matrix_aba), binary_operator_matrix_multiply_m020507_aba,
-		                                                                                        1.0E-12, 5.0E-8,  2.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "matrix_multiply_matrix_vector", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, fieldb), binary_operator_matrix_multiply_aba_b,
-		                                                                                        1.0E-12, 2.0E-7,  4.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 },
 		{ "matrix_multiply_vector_matrix", zinc.fm.createFieldMatrixMultiply(1, fielda, field_matrix_aba), binary_operator_matrix_multiply_a_aba,
-		                                                                                        1.0E-12, 3.0E-7,  1.0E-1,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  4.0E-4,  0.0, 0.0, 0.0 },
 		{ "transpose",   zinc.fm.createFieldComponent(zinc.fm.createFieldTranspose(3, field_matrix_aba), 3, component_indexes_matrix3x3_upper), binary_operator_transpose_aba_upper,
-		                                                                                        1.0E-12, 2.0E-8,  9.0E-3,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// trigonometry operators
-		{ "sin",         zinc.fm.createFieldSin(fielda),              unary_operator_sin,       1.0E-12, 3.0E-8,  2.0E-2,  0.0, 0.0, 0.0 },
-		{ "cos",         zinc.fm.createFieldCos(fielda),              unary_operator_cos,       1.0E-12, 6.0E-8,  3.0E-2,  0.0, 0.0, 0.0 },
-		{ "tan",         zinc.fm.createFieldTan(fielda),              unary_operator_tan,       1.0E-12, 8.0E-7,  2.0E-1,  0.0, 0.0, 0.0 },
-		{ "asin",        zinc.fm.createFieldAsin(fielda),             unary_operator_asin,      1.0E-12, 1.0E-8,  8.0E-4,  0.0, 0.0, 0.0 },
-		{ "acos",        zinc.fm.createFieldAcos(fielda),             unary_operator_acos,      1.0E-12, 1.0E-8,  8.0E-4,  0.0, 0.0, 0.0 },
-		{ "atan",        zinc.fm.createFieldAtan(fielda),             unary_operator_atan,      1.0E-12, 3.0E-8,  2.0E-2,  0.0, 0.0, 0.0 },
-		{ "atan2",       zinc.fm.createFieldAtan2(fielda, fieldb),    binary_operator_atan2,    1.0E-12, 3.0E-8,  2.0E-2,  0.0, 0.0, 0.0 },
+		{ "sin",         zinc.fm.createFieldSin(fielda),              unary_operator_sin,       1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "cos",         zinc.fm.createFieldCos(fielda),              unary_operator_cos,       1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "tan",         zinc.fm.createFieldTan(fielda),              unary_operator_tan,       1.0E-12, 2.0E-8,  1.0E-3,  0.0, 0.0, 0.0 },
+		{ "asin",        zinc.fm.createFieldAsin(fielda),             unary_operator_asin,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "acos",        zinc.fm.createFieldAcos(fielda),             unary_operator_acos,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "atan",        zinc.fm.createFieldAtan(fielda),             unary_operator_atan,      1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "atan2",       zinc.fm.createFieldAtan2(fielda, fieldb),    binary_operator_atan2,    1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		// vector operators
 		{ "cross_product", zinc.fm.createFieldCrossProduct(fielda, fieldb), binary_operator_cross_product,
-		                                                                                        1.0E-12, 5.0E-8,  2.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 5.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
 		{ "dot_product", zinc.fm.createFieldComponent(zinc.fm.createFieldDotProduct(fielda, fieldb), 3, component_indexes_111), binary_operator_dot_product,
-		                                                                                        1.0E-12, 2.0E-7,  5.0E-2,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 },
 		{ "magnitude", zinc.fm.createFieldComponent(zinc.fm.createFieldMagnitude(fielda), 3, component_indexes_111), unary_operator_magnitude,
-		                                                                                        1.0E-12, 1.0E-7,  4.0E-2,  0.0, 0.0, 0.0 },
-		{ "normalise",   zinc.fm.createFieldNormalise(fielda),        unary_operator_normalise, 1.0E-12, 1.0E-7,  8.0E-3,  0.0, 0.0, 0.0 },
+		                                                                                        1.0E-12, 1.0E-8,  1.0E-4,  0.0, 0.0, 0.0 },
+		{ "normalise",   zinc.fm.createFieldNormalise(fielda),        unary_operator_normalise, 1.0E-12, 2.0E-7,  1.0E-3,  0.0, 0.0, 0.0 },
 		{ "sum_components", zinc.fm.createFieldComponent(zinc.fm.createFieldSumComponents(fielda), 3, component_indexes_111), unary_operator_sum_components,
-		                                                                                        1.0E-12, 2.0E-7,  6.0E-2,  0.0, 0.0, 0.0 }
+		                                                                                        1.0E-12, 1.0E-8,  2.0E-4,  0.0, 0.0, 0.0 }
 	};
+	SortedError xSortedError[field_binary_operator_count];
+	SortedError d1SortedError[field_binary_operator_count][3];
+	SortedError d2SortedError[field_binary_operator_count][3][3];
 	// store values of d2 where max d2 error occurred for later check
 	double max_d2_error_mag[field_binary_operator_count];
+	// store maximum magnitude of v, d1, d2 to compare scale of tolerances
+	double max_mag_v[field_binary_operator_count];
+	double max_mag_d1[field_binary_operator_count];
+	double max_mag_d2[field_binary_operator_count];
 	for (int f = 0; f < field_binary_operator_count; ++f)
+	{
 		max_d2_error_mag[f] = 0.0;
+		max_mag_v[f] = 0.0;
+		max_mag_d1[f] = 0.0;
+		max_mag_d2[f] = 0.0;
+	}
 
 	Fieldcache fieldcache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(fieldcache.isValid());
@@ -409,24 +547,61 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		{ 1.0/3.0, 2.0/3.0, 1.0/3.0 },
 		{ 1.0/3.0, 1.0/3.0, 2.0/3.0 }
 	};
-	const double half_delta_xi = 0.5E-5;
-	const double delta_xi = 2.0*half_delta_xi;
-	const double delta_xi_squared = delta_xi*delta_xi;
-	const double delta_xi_offsets[3] = { -half_delta_xi, 0.0, half_delta_xi };
-	// sample 27 locations +/- half_delta_xi from location to numerically calculate derivatives
-	double samplea[27][3], sampleb[27][3], samplev[27][3], v[3], d1[3], d2[3], d1exp[3], d2exp[3];
-	const int sample_centre = 13;
-	const int sample_d1[3][2] = { { 12, 14 }, { 10, 16 }, { 4, 22 } };
-	// mixed derivatives 1-2, 1-3, 2-3
-	const int sample_mixed_d2[3][4] = { { 9, 11, 15, 17 }, { 3, 5, 21, 23 }, { 1, 7, 19, 25 } };
-	// which case to use for derivative [d = xi index 1][e = xi index 2]; -1 is not used
-	const int d2_ix[3][3] = { { -1, 0, 1 }, { 0, -1, 2 }, { 1, 2, -1 } };
+	// expected answers are obtaings by quartic interpolation of values sampled over delta_xi sized box around xi
+	const double delta_xi = 4.0E-4;
+	const double delta_xi_squared = delta_xi * delta_xi;
+	const double delta_xi_offsets[5] = { -0.5 * delta_xi, -0.25 * delta_xi, 0.0, 0.25 * delta_xi, 0.5 * delta_xi };
+	// sample 125 locations for quartic interpolation around point to numerically calculate derivatives
+	double samplea[125][3], sampleb[125][3], samplev[125][3], v[3], d1[3], d2[3], d1exp[3], d2exp[3];
+	const int sample_centre = 62;
+	Quartic_lagrange_interpolation quartic;
+	// test quartic basis
+	double basis[5];
+	const double BASIS_TOL = 1.0E-10;
+	for (int p = 0; p < 20; ++p)
+	{
+		double xi = p / 20.0;
+		quartic.evaluateBasis(xi, 0, basis);
+		double sum = 0.0;
+		for (int f = 0; f < 5; ++f)
+		{
+			sum += basis[f];
+		}
+		EXPECT_NEAR(1.0, sum, BASIS_TOL);  // basis functions sum to 1.0
+		if ((p % 5) == 0)
+		{
+			// on one of the 5 nodes: only that node's function is 1, all others are 0
+			const int f1 = p / 5;
+			for (int f = 0; f < 5; ++f)
+			{
+				if (f == f1)
+				{
+					EXPECT_NEAR(1.0, basis[f], BASIS_TOL);
+				}
+				else
+				{
+					EXPECT_NEAR(0.0, basis[f], BASIS_TOL);
+				}
+			}
+		}
+	}
+
+	double quarticBasisD1[5], quarticBasisD2[5], biquarticBasisD1D1[25];
+	quartic.evaluateBasis(0.5, 1, quarticBasisD1);
+	quartic.evaluateBasis(0.5, 2, quarticBasisD2);
+	for (int f = 0; f < 5; ++f)
+	{
+		for (int g = 0; g < 5; ++g)
+		{
+			biquarticBasisD1D1[f * 5 + g] = quarticBasisD1[f] * quarticBasisD1[g];
+		}
+	}
 	for (int p = 0; p < pointCount; ++p)
 	{
 		//std::cerr << p << ". xi " << xi[p][0] << ", " << xi[p][1] << ", " << xi[p][2] << "\n";
-		for (int s = 0; s < 27; ++s)
+		for (int s = 0; s < 125; ++s)
 		{
-			double xi_s[3] = { xi[p][0] + delta_xi_offsets[s % 3], xi[p][1] + delta_xi_offsets[(s/3) % 3], xi[p][2] + delta_xi_offsets[s/9] };
+			double xi_s[3] = { xi[p][0] + delta_xi_offsets[s % 5], xi[p][1] + delta_xi_offsets[(s/5) % 5], xi[p][2] + delta_xi_offsets[s/25] };
 			EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, xi_s));
 			EXPECT_EQ(RESULT_OK, fielda.evaluateReal(fieldcache, 3, samplea[s]));
 			EXPECT_EQ(RESULT_OK, fieldb.evaluateReal(fieldcache, 3, sampleb[s]));
@@ -476,9 +651,29 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			const double d1_tol = op.d1_tol;
 			const double d2_tol = op.d2_tol;
 
-			// Evaluate operator at the 27 sample locations
-			for (int s = 0; s < 27; ++s)
+			// Evaluate operator at the 125 sample locations
+			for (int s = 0; s < 125; ++s)
+			{
 				binary_operator(3, samplea[s], sampleb[s], samplev[s]);
+			}
+			// parameters for 1-D quartic interpolation of first and second squared derivatives
+			const double *samplev_d[3][5];
+			// parameters for 2-D biquartic interpolaton of mixed second derivatives 1-2, 2-3, 3-1
+			const double* samplev_dd[3][25];
+			for (int p = 0; p < 5; ++p)
+			{
+				samplev_d[0][p] = samplev[60 + p];
+				samplev_d[1][p] = samplev[52 + 5 * p];
+				samplev_d[2][p] = samplev[12 + 25 * p];
+				for (int q = 0; q < 5; ++q)
+				{
+					const int pq = p * 5 + q;
+					samplev_dd[0][pq] = samplev[50 + pq];
+					samplev_dd[1][pq] = samplev[2 + p * 25 + q * 5];
+					samplev_dd[2][pq] = samplev[10 + p + q * 25];
+				}
+			}
+
 			// Test value against centre sample location
 			EXPECT_EQ(RESULT_OK, v_field.evaluateReal(fieldcache, 3, v));
 			const double *vexp = samplev[sample_centre];
@@ -486,25 +681,44 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			EXPECT_NEAR(vexp[1], v[1], v_tol);
 			EXPECT_NEAR(vexp[2], v[2], v_tol);
 			const double v_diff[3] = { (v[0] - vexp[0]), (v[1] - vexp[1]), (v[2] - vexp[2]) };
-			const double v_error = sqrt(v_diff[0]*v_diff[0] + v_diff[1]*v_diff[1] + v_diff[2]*v_diff[2]);
+			const double v_error = magnitude3(v_diff);
 			if (v_error > op.max_v_error)
 				op.max_v_error = v_error;
+			const double mag_v = magnitude3(v);
+			if (mag_v > max_mag_v[f])
+				max_mag_v[f] = mag_v;
+			xSortedError[f].add(p, v_error);
+
+			double tmpBasis[5], vtmp[3];
+			quartic.evaluateBasis(0.5, 0, tmpBasis);
 
 			for (int d = 0; d < 3; ++d)
 			{
+				basis_interpolate_vector3(5, tmpBasis, samplev_d[d], vtmp);
+				EXPECT_NEAR(vtmp[0], v[0], v_tol);
+				EXPECT_NEAR(vtmp[1], v[1], v_tol);
+				EXPECT_NEAR(vtmp[2], v[2], v_tol);
+
 				FieldDerivative d1_field = zinc.fm.createFieldDerivative(v_field, d + 1);
 				EXPECT_TRUE(d1_field.isValid());
 				EXPECT_EQ(RESULT_OK, d1_field.evaluateReal(fieldcache, 3, d1));
-				// evaluate expected first derivatives by finite difference:
-				for (int i = 0; i < 3; ++i)
-					d1exp[i] = (samplev[sample_d1[d][1]][i] - samplev[sample_d1[d][0]][i])/delta_xi;
+				// evaluate expected first derivatives by quartic:
+				basis_interpolate_vector3(5, quarticBasisD1, samplev_d[d], d1exp);
+				for (int c = 0; c < 3; ++c)
+				{
+					d1exp[c] /= delta_xi;
+				}
 				EXPECT_NEAR(d1exp[0], d1[0], d1_tol);
 				EXPECT_NEAR(d1exp[1], d1[1], d1_tol);
 				EXPECT_NEAR(d1exp[2], d1[2], d1_tol);
 				const double d1_diff[3] = { (d1[0] - d1exp[0]), (d1[1] - d1exp[1]), (d1[2] - d1exp[2]) };
-				const double d1_error = sqrt(d1_diff[0]*d1_diff[0] + d1_diff[1]*d1_diff[1] + d1_diff[2]*d1_diff[2]);
+				const double d1_error = magnitude3(d1_diff);
 				if (d1_error > op.max_d1_error)
 					op.max_d1_error = d1_error;
+				const double mag_d1 = magnitude3(d1);
+				if (mag_d1 > max_mag_d1[f])
+					max_mag_d1[f] = mag_d1;
+				d1SortedError[f][d].add(p, d1_error);
 
 				for (int e = 0; e < 3; ++e)
 				{
@@ -514,25 +728,33 @@ TEST(ZincField, numerical_operators_with_derivatives)
 					// evaluate expected second derivatives by finite difference:
 					if (e == d)
 					{
-						for (int i = 0; i < 3; ++i)
-							d2exp[i] = 4.0*(samplev[sample_d1[d][1]][i] - 2.0*samplev[sample_centre][i] + samplev[sample_d1[d][0]][i])/delta_xi_squared;
+						basis_interpolate_vector3(5, quarticBasisD2, samplev_d[d], d2exp);
 					}
 					else
 					{
-						const int ix = d2_ix[d][e];
-						for (int i = 0; i < 3; ++i)
-							d2exp[i] = (samplev[sample_mixed_d2[ix][0]][i] - samplev[sample_mixed_d2[ix][1]][i] - samplev[sample_mixed_d2[ix][2]][i] + samplev[sample_mixed_d2[ix][3]][i])/delta_xi_squared;
+						const double** nodeVectors =
+							(((d == 0) && (e == 1)) || ((d == 1) && (e == 0))) ? samplev_dd[0] :
+							(((d == 1) && (e == 2)) || ((d == 2) && (e == 1))) ? samplev_dd[1] : samplev_dd[2];
+						basis_interpolate_vector3(25, biquarticBasisD1D1, nodeVectors, d2exp);
+					}
+					for (int c = 0; c < 3; ++c)
+					{
+						d2exp[c] /= delta_xi_squared;
 					}
 					EXPECT_NEAR(d2exp[0], d2[0], d2_tol);
 					EXPECT_NEAR(d2exp[1], d2[1], d2_tol);
 					EXPECT_NEAR(d2exp[2], d2[2], d2_tol);
 					const double d2_diff[3] = { (d2[0] - d2exp[0]), (d2[1] - d2exp[1]), (d2[2] - d2exp[2]) };
-					const double d2_error = sqrt(d2_diff[0]*d2_diff[0] + d2_diff[1]*d2_diff[1] + d2_diff[2]*d2_diff[2]);
+					const double d2_error = magnitude3(d2_diff);
+					const double mag_d2 = magnitude3(d2);
 					if (d2_error > op.max_d2_error)
 					{
 						op.max_d2_error = d2_error;
-						max_d2_error_mag[f] = sqrt(d2[0]*d2[0] + d2[1]*d2[1] + d2[2]*d2[2]);
+						max_d2_error_mag[f] = mag_d2;
 					}
+					if (mag_d2 > max_mag_d2[f])
+						max_mag_d2[f] = mag_d2;
+					d2SortedError[f][d][e].add(p, d2_error);
 				}
 			}
 		}
@@ -596,5 +818,27 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		EXPECT_STREQ(expectedClassName.c_str(), className);
 		cmzn_deallocate(className);
 		EXPECT_TRUE(field.hasClassName(expectedClassName.c_str()));
+		std::cerr << "    v max error " << op.max_v_error << " tol " << op.v_tol << " max mag " << max_mag_v[f] << "\n";
+		std::cerr << "    d1 max error " << op.max_d1_error << " tol " << op.d1_tol << " max mag " << max_mag_d1[f] << "\n";
+		std::cerr << "    d2 max error " << op.max_d2_error << " tol " << op.d2_tol << " max mag " << max_mag_d2[f] << "\n";
+		for (int d = 0; d < 3; ++d)
+		{
+			std::vector<SortedError::IndexError>& indexErrors = d1SortedError[f][d].indexErrors;
+			std::cerr << "    d1[" << d << "]: "
+				<< indexErrors[0].index << "=" << indexErrors[0].error << ","
+				<< indexErrors[1].index << "=" << indexErrors[1].error << ","
+				<< indexErrors[2].index << "=" << indexErrors[2].error << "\n";
+		}
+		for (int d = 0; d < 3; ++d)
+		{
+			for (int e = 0; e < 3; ++e)
+			{
+				std::vector<SortedError::IndexError>& indexErrors = d2SortedError[f][d][e].indexErrors;
+				std::cerr << "    d1[" << d << "][" << e << "]: "
+					<< indexErrors[0].index << "=" << indexErrors[0].error << ","
+					<< indexErrors[1].index << "=" << indexErrors[1].error << ","
+					<< indexErrors[2].index << "=" << indexErrors[2].error << "\n";
+			}
+		}
 	}
 }
