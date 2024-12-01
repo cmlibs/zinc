@@ -48,25 +48,34 @@ namespace {
 
 /* blending matrices for the monomial basis */
 
-const FE_value linear_lagrange_blending_matrix[]=
+const FE_value linear_lagrange_blending_matrix[4]=
 {
 	1,-1, /* phi1 = 1 - x */
 	0, 1  /* phi2 = x     */
 };
 
-const FE_value quadratic_lagrange_blending_matrix[]=
+const FE_value quadratic_lagrange_blending_matrix[9]=
 {
 	1,-3, 2, /* phi1 = 1 - 3x + 2xx */
 	0, 4,-4,
 	0,-1, 2
 };
 
-const FE_value cubic_lagrange_blending_matrix[]=
+const FE_value cubic_lagrange_blending_matrix[16]=
 {
 	1,-5.5,  9  , -4.5,
 	0, 9  ,-22.5, 13.5,
 	0,-4.5, 18  ,-13.5,
 	0, 1  , -4.5,  4.5
+};
+
+const FE_value quartic_lagrange_blending_matrix[25] =
+{
+	1.0,-25.0/3.0,  70.0/3.0,-80.0/3.0,  32.0/3.0,
+	0.0,     16.0,-208.0/3.0,     96.0,-128.0/3.0,
+	0.0,    -12.0,      76.0,   -128.0,      64.0,
+	0.0, 16.0/3.0,-112.0/3.0,224.0/3.0,-128.0/3.0,
+	0.0,     -1.0,  22.0/3.0,    -16.0,  32.0/3.0
 };
 
 // valid up to cubic
