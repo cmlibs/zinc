@@ -34,6 +34,8 @@
 #include <iostream>
 #include <string>
 
+namespace {
+
 typedef void (*Binary_operator)(int, const double *, const double *, double *);
 
 struct Field_binary_operator
@@ -324,8 +326,6 @@ struct SortedError
 
 };
 
-namespace {
-
 /** from finite_element_basis.cpp */
 const double quartic_lagrange_blending_matrix[25] =
 {
@@ -586,7 +586,8 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		}
 	}
 
-	double quarticBasisD1[5], quarticBasisD2[5], biquarticBasisD1D1[25];
+	double quarticBasisV[5], quarticBasisD1[5], quarticBasisD2[5], biquarticBasisD1D1[25];
+	quartic.evaluateBasis(0.5, 0, quarticBasisV);
 	quartic.evaluateBasis(0.5, 1, quarticBasisD1);
 	quartic.evaluateBasis(0.5, 2, quarticBasisD2);
 	for (int f = 0; f < 5; ++f)
@@ -688,16 +689,15 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			if (mag_v > max_mag_v[f])
 				max_mag_v[f] = mag_v;
 			xSortedError[f].add(p, v_error);
-
-			double tmpBasis[5], vtmp[3];
-			quartic.evaluateBasis(0.5, 0, tmpBasis);
+			double vInterp[3];
 
 			for (int d = 0; d < 3; ++d)
 			{
-				basis_interpolate_vector3(5, tmpBasis, samplev_d[d], vtmp);
-				EXPECT_NEAR(vtmp[0], v[0], v_tol);
-				EXPECT_NEAR(vtmp[1], v[1], v_tol);
-				EXPECT_NEAR(vtmp[2], v[2], v_tol);
+				// check quartic interpolation on each axis gives the expected centre value
+				basis_interpolate_vector3(5, quarticBasisV, samplev_d[d], vInterp);
+				EXPECT_NEAR(vexp[0], vInterp[0], v_tol);
+				EXPECT_NEAR(vexp[1], vInterp[1], v_tol);
+				EXPECT_NEAR(vexp[2], vInterp[2], v_tol);
 
 				FieldDerivative d1_field = zinc.fm.createFieldDerivative(v_field, d + 1);
 				EXPECT_TRUE(d1_field.isValid());
