@@ -3,6 +3,7 @@ include(CheckCXXCompilerFlag)
 get_property(IS_MULTI_CONFIG_ENV GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 find_package(Python COMPONENTS Interpreter)
+find_package(Sphinx)
 
 find_program(VALGRIND_EXE NAMES ${PREFERRED_VALGRIND_NAMES} valgrind)
 find_program(FIND_EXE NAMES ${PREFERRED_FIND_NAMES} find)

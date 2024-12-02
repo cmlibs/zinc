@@ -243,6 +243,8 @@ if(ZINC_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+add_subdirectory(docs)
+
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
 
