@@ -11,3 +11,9 @@ Zinc is under active development; see its `github repository <https://github.com
 
    install
    api
+
+.. toctree::
+   :hidden:
+
+   release_process
+
