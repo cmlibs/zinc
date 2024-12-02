@@ -544,6 +544,20 @@ public:
 		return cmzn_sceneviewer_set_view_angle(id, viewAngle);
 	}
 
+	int getViewingVolume(double* left, double* right, double* bottom, double* top,
+		double* near_plane, double* far_plane) const
+	{
+		return cmzn_sceneviewer_get_viewing_volume(id, left, right, bottom, top,
+			near_plane, far_plane);
+	}
+
+	int setViewingVolume(double left, double right, double bottom, double top,
+		double near_plane, double far_plane)
+	{
+		return cmzn_sceneviewer_set_viewing_volume(id, left, right, bottom, top,
+			near_plane, far_plane);
+	}
+
 	ViewportMode getViewportMode() const
 	{
 		return static_cast<ViewportMode>(cmzn_sceneviewer_get_viewport_mode(id));
