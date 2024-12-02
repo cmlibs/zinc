@@ -714,6 +714,41 @@ TEST(ZincSceneviewermodule, defaultBackgroundColour)
 	EXPECT_DOUBLE_EQ(newColour4[3], colour4[3]);
 }
 
+TEST(ZincSceneviewer, ViewingVolume)
+{
+	ZincTestSetupCpp z;
+	Sceneviewermodule svm = z.context.getSceneviewermodule();
+	Sceneviewer sv = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
+	Sceneviewer null_sv;
+
+	double left, right, bottom, top, near, far;
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, null_sv.getViewingVolume(&left, &right, &bottom, &top, &near, &far));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, sv.getViewingVolume(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr));
+
+	EXPECT_EQ(CMZN_OK, sv.getViewingVolume(&left, &right, &bottom, &top, &near, &far));
+	ASSERT_DOUBLE_EQ(-1.0, left);
+	ASSERT_DOUBLE_EQ(1.0, right);
+	ASSERT_DOUBLE_EQ(-1.0, bottom);
+	ASSERT_DOUBLE_EQ(1.0, top);
+	ASSERT_DOUBLE_EQ(0.1, near);
+	ASSERT_DOUBLE_EQ(1000.0, far);
+
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, null_sv.setViewingVolume(-1.1, 1.2, -1.3, 1.4, 0.2, 200.0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, sv.setViewingVolume(1.0, -1.0, -1.0, 1.0, 0.1, 1000.0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, sv.setViewingVolume(-1.0, 1.0, 1.0, -1.0, 0.1, 1000.0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, sv.setViewingVolume(-1.0, 1.0, -1.0, 1.0, -0.1, 1000.0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, sv.setViewingVolume(-1.0, 1.0, -1.0, 1.0, 2000.0, 1000.0));
+
+	EXPECT_EQ(CMZN_OK, sv.setViewingVolume(-1.1, 1.2, -1.3, 1.4, 0.2, 200.0));
+	EXPECT_EQ(CMZN_OK, sv.getViewingVolume(&left, &right, &bottom, &top, &near, &far));
+	ASSERT_DOUBLE_EQ(-1.1, left);
+	ASSERT_DOUBLE_EQ(1.2, right);
+	ASSERT_DOUBLE_EQ(-1.3, bottom);
+	ASSERT_DOUBLE_EQ(1.4, top);
+	ASSERT_DOUBLE_EQ(0.2, near);
+	ASSERT_DOUBLE_EQ(200.0, far);
+}
+
 TEST(ZincSceneviewer, ProjectionModeEnum)
 {
 	const char *enumNames[3] = { nullptr, "PARALLEL", "PERSPECTIVE" };
