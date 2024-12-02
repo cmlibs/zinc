@@ -302,20 +302,20 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " lower_threshold %g", lower_threshold);
+        snprintf(temp_string, 40, " lower_threshold %g", lower_threshold);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " upper_threshold %g", upper_threshold);
+        snprintf(temp_string, 40, " upper_threshold %g", upper_threshold);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " replace_value %g", replace_value);
+        snprintf(temp_string, 40, " replace_value %g", replace_value);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " num_seed_points %d", num_seed_points);
+        snprintf(temp_string, 40, " num_seed_points %d", num_seed_points);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " dimension %d", dimension);
+        snprintf(temp_string, 40, " dimension %d", dimension);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " seed_points", &error);
 		for (i = 0; i < dimension*num_seed_points; i++)
 		{
-			sprintf(temp_string, " %g", seed_points[i]);
+            snprintf(temp_string, 40, " %g", seed_points[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 

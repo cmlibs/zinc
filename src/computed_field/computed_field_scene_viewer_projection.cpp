@@ -413,7 +413,7 @@ Returns allocated command string for reproducing field. Includes type.
 		if (pane_number > -1)
 		{
 			char temp_string[40];
-			sprintf(temp_string, " pane_number %d ", pane_number + 1);
+            snprintf(temp_string, 40, " pane_number %d ", pane_number + 1);
 			append_string(&command_string, temp_string, &error);
 		}
 		append_string(&command_string, " from_coordinate_system ", &error);

@@ -348,6 +348,8 @@ be shared by multiple materials using the same program.
 ==============================================================================*/
 {
 	 int return_code;
+     const std::size_t tex_string_size = 1000;
+     char tex_string[tex_string_size];
 	ENTER(cmzn_shaderprogram_compile);
 	if (shader_program)
 	{
@@ -741,7 +743,7 @@ be shared by multiple materials using the same program.
 							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 							{
 								 char temp_string[100];
-								 sprintf(temp_string,
+                                 snprintf(temp_string, 100,
 										"uniform sampler%dD texture0;\n", colour_texture_dimension);
 								 append_string(&fragment_program_string,
 										temp_string, &error);
@@ -864,11 +866,10 @@ be shared by multiple materials using the same program.
 					 }
 					 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 					 {
-							char tex_string[100];
 							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 /* Load the colour texture */
-								 sprintf(tex_string,
+                                 snprintf(tex_string, tex_string_size,
 										"TEMP		tex;\n"
 										"TEX		tex, fragment.texcoord[0], texture[0], %dD;\n",
 										colour_texture_dimension);
@@ -880,7 +881,7 @@ be shared by multiple materials using the same program.
 								 /* Load the colour texture */
 								 if (colour_texture_dimension > 1)
 								 {
-										sprintf(tex_string,
+                                        snprintf(tex_string, tex_string_size,
 											 "  vec4 tex = texture%dD(texture0, %s(gl_TexCoord[0]));\n",
 											 colour_texture_dimension, colour_texture_string[colour_texture_dimension - 1]);
 								 }
@@ -1415,7 +1416,7 @@ be shared by multiple materials using the same program.
 									 if (number_of_inputs > 0 && number_of_inputs < 4)
 									 {
 											char new_string[1000];
-											sprintf(new_string,
+                                            snprintf(new_string, 1000,
 												 "uniform sampler%1dD texture1;\n", number_of_inputs);
 											append_string(&fragment_program_string,
 												 new_string, &error);
@@ -1487,7 +1488,6 @@ be shared by multiple materials using the same program.
 					if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 					{
 						int colour_texture_string_index = 0;
-						char tex_string[100];
 						if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 						{
 							 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & shader_program->type)
@@ -1535,7 +1535,7 @@ be shared by multiple materials using the same program.
 						}
 						if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 						{
-							 sprintf(tex_string,
+                             snprintf(tex_string, tex_string_size,
 									"  %s tex = %s(texture%dD(texture0, %s(gl_TexCoord[0])));\n",
 									colour_texture_string[colour_texture_string_index],
 									colour_texture_string[colour_texture_string_index],
@@ -1544,7 +1544,7 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
-							 sprintf(tex_string,
+                             snprintf(tex_string, tex_string_size,
 									"TEX		tex, fragment.texcoord[0], texture[0], %dD;\n",
 									colour_texture_dimension);
 						}
@@ -1933,10 +1933,9 @@ be shared by multiple materials using the same program.
 							 }
 							 if (!components_error)
 							 {
-									char tex_string[1000];
 									if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 									{
-										 sprintf(tex_string,
+                                         snprintf(tex_string, tex_string_size,
 												"#Offset and scale to counteract effect of linear interpolation\n"
 												"#starting at the middle of the first texel and finishing in the\n"
 												"#middle of the last texel\n"
@@ -1948,7 +1947,7 @@ be shared by multiple materials using the same program.
 									{
 										 if (number_of_inputs == 1)
 										 {
-												sprintf(tex_string,
+                                                snprintf(tex_string, tex_string_size,
 													 "  //Offset and scale to counteract effect of linear interpolation\n"
 													 "  //starting at the middle of the first texel and finishing in the\n"
 													 "  //middle of the last texel\n"
@@ -1958,7 +1957,7 @@ be shared by multiple materials using the same program.
 										 }
 										 else
 										 {
-												sprintf(tex_string,
+                                                snprintf(tex_string, tex_string_size,
 													 "  //Offset and scale to counteract effect of linear interpolation\n"
 													 "  //starting at the middle of the first texel and finishing in the\n"
 													 "  //middle of the last texel\n"
@@ -2035,7 +2034,6 @@ be shared by multiple materials using the same program.
 						}
 						else if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & shader_program->type)
 						{
-							 char tex_string[1000];
 							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									char lookup_one_component_string[] =
@@ -2052,7 +2050,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"rrrr", "r");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2060,7 +2058,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"gggg", "g");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2068,7 +2066,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"bbbb", "b");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2076,7 +2074,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"aaaa", "a");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2097,7 +2095,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"r", "r");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2105,7 +2103,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"g", "g");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2113,7 +2111,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"b", "b");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2121,7 +2119,7 @@ be shared by multiple materials using the same program.
 									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
 										 & shader_program->type)
 									{
-										 sprintf(tex_string, lookup_one_component_string,
+                                         snprintf(tex_string, tex_string_size, lookup_one_component_string,
 												"a", "a");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
@@ -2174,7 +2172,6 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
-							char tex_string[1000];
 							const char *component_labels[] = {"x", "y", "z"};
 							int i;
 
@@ -2219,7 +2216,7 @@ be shared by multiple materials using the same program.
 							{
 								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
-									 sprintf(tex_string,
+                                     snprintf(tex_string, tex_string_size,
 											 "PARAM stencil_%sup = {%d, %d, %d, %d};\n"
 											 "MAD      position_up, stencil_%sup, texture_scaling, fragment.texcoord[0];\n"
 											 "TEX		tex_up, position_up, texture[0], %dD;\n"
@@ -2246,7 +2243,7 @@ be shared by multiple materials using the same program.
 											 {
 													/* RGB or RGBA texture
 														 Take the magnitude of the differences */
-													sprintf(tex_string,
+                                                    snprintf(tex_string, tex_string_size,
 														 "SUB  tex_up, tex_up, tex_down;\n"
 														 "DP3	tex_up.w, tex_up, tex_up;\n"
 														 "RSQ  tex_up.w, tex_up.w;\n"
@@ -2259,7 +2256,7 @@ be shared by multiple materials using the same program.
 											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
 											 {
 													/* Intensity or IntensityAlpha texture */
-													sprintf(tex_string,
+                                                    snprintf(tex_string, tex_string_size,
 														 "SUB  normal.%s, tex_up.r, tex_down.r;\n"
 														 , component_labels[i]);
 													append_string(&fragment_program_string,
@@ -2269,7 +2266,7 @@ be shared by multiple materials using the same program.
 								 }
 								 else
 								 {
-										sprintf(tex_string,
+                                        snprintf(tex_string, tex_string_size,
 											 "  vec4 stencil_%sup = vec4(%d, %d, %d, %d);\n"
 											 "  position_up = stencil_%sup * texture_scaling + gl_TexCoord[0];\n"
 											 "  tex_up = texture%dD(texture0, vec%d(position_up));\n"
@@ -2299,7 +2296,7 @@ be shared by multiple materials using the same program.
 											 {
 													/* RGB or RGBA texture
 														 Take the magnitude of the differences */
-													sprintf(tex_string,
+                                                    snprintf(tex_string, tex_string_size,
 														 "  n.%s = sqrt(dot(vec3(tex_up - tex_down), vec3(tex_up - tex_down)));\n"
 														 , component_labels[i]);
 													append_string(&fragment_program_string,
@@ -2309,7 +2306,7 @@ be shared by multiple materials using the same program.
 											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
 											 {
 													/* Intensity or IntensityAlpha texture */
-													sprintf(tex_string,
+                                                    snprintf(tex_string, tex_string_size,
 														 "  n.%s = tex_up.r - tex_down.r;\n"
 														 , component_labels[i]);
 													append_string(&fragment_program_string,

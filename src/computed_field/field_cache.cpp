@@ -56,11 +56,11 @@ char *RealFieldValueCache::getAsString() const
 	{
 		if (0 < i)
 		{
-			sprintf(tmp_string, ", %g", values[i]);
+            snprintf(tmp_string, 50, ", %g", values[i]);
 		}
 		else
 		{
-			sprintf(tmp_string, "%g", values[i]);
+            snprintf(tmp_string, 50, "%g", values[i]);
 		}
 		append_string(&valueAsString, tmp_string, &error);
 	}
@@ -92,12 +92,12 @@ char *MeshLocationFieldValueCache::getAsString() const
 	char *valueAsString = 0;
 	int error = 0;
 	char tmp_string[50];
-	sprintf(tmp_string,"%d :", element->getIdentifier());
+    snprintf(tmp_string, 50, "%d :", element->getIdentifier());
 	append_string(&valueAsString, tmp_string, &error);
 	const int dimension = element->getDimension();
 	for (int i = 0; i < dimension; i++)
 	{
-		sprintf(tmp_string, " %g", xi[i]);
+        snprintf(tmp_string, 50, " %g", xi[i]);
 		append_string(&valueAsString, tmp_string, &error);
 	}
 	return valueAsString;

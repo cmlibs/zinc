@@ -230,7 +230,7 @@ Returns allocated command string for reproducing field. Includes type.
 		{
 			append_string(&command_string, " use_point_five_when_out_of_bounds", &error);
 		}
-		sprintf(temp_string, " element_dimension %d", cmzn_mesh_get_dimension(mesh));
+        snprintf(temp_string, 40, " element_dimension %d", cmzn_mesh_get_dimension(mesh));
 		append_string(&command_string, temp_string, &error);
 	}
 	else

@@ -1430,7 +1430,7 @@ char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape
 						else
 						{
 							char tmp_string[50];
-							sprintf(tmp_string, "(%d;%d)", number_of_polygon_vertices, next_xi_number + 1);
+                            snprintf(tmp_string, 50, "(%d;%d)", number_of_polygon_vertices, next_xi_number + 1);
 							append_string(&description, tmp_string, &error);
 						}
 					}
@@ -1467,7 +1467,7 @@ char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape
 									{
 										append_string(&description, ";", &error);
 									}
-									sprintf(tmp_string, "%d", next_xi_number + 1);
+                                    snprintf(tmp_string, 50, "%d", next_xi_number + 1);
 									append_string(&description, tmp_string, &error);
 								}
 								else

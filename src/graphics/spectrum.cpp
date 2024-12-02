@@ -146,7 +146,7 @@ public:
 		do
 		{
 			i++;
-			sprintf(temp_name, "spectrum%d",i);
+            snprintf(temp_name, 20, "spectrum%d", i);
 		}
 		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_spectrum,name)(temp_name,
 			this->spectrumManager));

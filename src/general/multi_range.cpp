@@ -861,12 +861,12 @@ eg. "1,3..7,22". Up to calling function to DEALLOCATE the returned string.
 			}
 			if (multi_range->range[i].stop > multi_range->range[i].start)
 			{
-				sprintf(temp_string,"%d..%d",multi_range->range[i].start,
+                snprintf(temp_string, 50, "%d..%d" ,multi_range->range[i].start,
 					multi_range->range[i].stop);
 			}
 			else
 			{
-				sprintf(temp_string,"%d",multi_range->range[i].start);
+                snprintf(temp_string, 50, " %d", multi_range->range[i].start);
 			}
 			append_string(&ranges_string,temp_string,&error);
 		}

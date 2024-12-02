@@ -1113,7 +1113,7 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 				if (length)
 				{
 					strncpy(local_buffer, index1, length);
-					sprintf(local_buffer + length, "%%n");
+					snprintf(local_buffer + length, 1000 - length, "%%n");
 					count = -1;
 
 #if defined IO_STREAM_SPEED_UP_SSCANF
@@ -1168,13 +1168,13 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 					{
 						length = index2 - index1;
 						strncpy(local_buffer, index1, length);
-						sprintf(local_buffer + length, "%%n");
+						snprintf(local_buffer + length, 1000 - length, "%%n");
 					}
 					else
 					{
 						/* scan to the end */
 						strcpy(local_buffer, index1);
-						sprintf(local_buffer + strlen(local_buffer), "%%n");
+						snprintf(local_buffer + strlen(local_buffer), 1000 - strlen(local_buffer), "%%n");
 					}
 					count = -1;
 					if (local_buffer[1] == '*')
@@ -1639,7 +1639,7 @@ suitable for use in diagnostic messages.
 				fseek(stream->file_handle,location,SEEK_SET);
 				if (ALLOCATE(string, char, strlen(stream->uri) + 30))
 				{
-					sprintf(string, "%s line %d", stream->uri, line_number);
+					snprintf(string, strlen(stream->uri) + 30, "%s line %d", stream->uri, line_number);
 				}
 			} break;
 			default:

@@ -1823,14 +1823,14 @@ Writes the properties of the <texture> to the command window.
 			display_message(INFORMATION_MESSAGE,texture->file_name);
 		}
 		display_message(INFORMATION_MESSAGE,"\n");
-		sprintf(line,"%.3g <= xi1 <= %.3g, %d divisions\n",(texture->ximin)[0],
-			(texture->ximax)[0],(texture->dimension)[0]);
+        snprintf(line, 80, "%.3g <= xi1 <= %.3g, %d divisions\n", (texture->ximin)[0],
+            (texture->ximax)[0], (texture->dimension)[0]);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"%.3g <= xi2 <= %.3g, %d divisions\n",(texture->ximin)[1],
-			(texture->ximax)[1],(texture->dimension)[1]);
+        snprintf(line, 80, "%.3g <= xi2 <= %.3g, %d divisions\n", (texture->ximin)[1],
+            (texture->ximax)[1], (texture->dimension)[1]);
 		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"%.3g <= xi3 <= %.3g, %d divisions\n",(texture->ximin)[2],
-			(texture->ximax)[2],(texture->dimension)[2]);
+        snprintf(line, 80, "%.3g <= xi3 <= %.3g, %d divisions\n", (texture->ximin)[2],
+            (texture->ximax)[2], (texture->dimension)[2]);
 		display_message(INFORMATION_MESSAGE,line);
 		display_message(INFORMATION_MESSAGE,"iso_surface %p\n", texture->mc_iso_surface);
 		display_message(INFORMATION_MESSAGE,"access_count = %d\n",

@@ -235,7 +235,7 @@ Returns allocated command string for reproducing field.
 		}
 		append_string(&command_string, " node ", &error);
 		node_number = get_FE_node_identifier(lookup_node);
-		sprintf(node_id,"%d",node_number);
+        snprintf(node_id, 10, "%d", node_number);
 		append_string(&command_string, " ", &error);
 		append_string(&command_string, node_id, &error);
 	}
@@ -554,7 +554,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, *field_name, node_id[10];
+	char *command_string, *field_name, node_id[20];
 	int error, node_number;
 
 	ENTER(Computed_field_quaternion_SLERP::get_command_string);
@@ -582,7 +582,7 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " node ", &error);
 		node_number = get_FE_node_identifier(nodal_lookup_node);
-		sprintf(node_id,"%d",node_number);
+        snprintf(node_id, 20, "%d", node_number);
 		append_string(&command_string, " ", &error);
 		append_string(&command_string, node_id, &error);
 	}

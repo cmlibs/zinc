@@ -36,7 +36,7 @@ void GraphicsJsonExport::addEntries()
 	if (order > 0)
 	{
 		char order_string[24];
-		sprintf(order_string, "%d", order);
+        snprintf(order_string, 24, "%d", order);
 		root[order_string] = graphicsSettings;
 	}
 	else

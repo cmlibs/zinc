@@ -560,11 +560,11 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " number_of_bins");
+		snprintf(temp_string, 40, " number_of_bins");
 		append_string(&command_string, temp_string, &error);	
 		for (i = 0 ; i < sourceNumberOfComponents ; i++)
 		{
-			sprintf(temp_string, " %d", numberOfBins[i]);
+			snprintf(temp_string, 40, " %d", numberOfBins[i]);
 			append_string(&command_string, temp_string, &error);	
 		}
 		if (histogramMinimum)
@@ -572,7 +572,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string,  " minimums", &error);	
 			for (i = 0 ; i < sourceNumberOfComponents ; i++)
 			{
-				sprintf(temp_string, " %g", histogramMinimum[i]);
+				snprintf(temp_string, 40, " %g", histogramMinimum[i]);
 				append_string(&command_string, temp_string, &error);	
 			}
 		}
@@ -581,11 +581,11 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string,  " maximums", &error);	
 			for (i = 0 ; i < sourceNumberOfComponents ; i++)
 			{
-				sprintf(temp_string, " %g", histogramMaximum[i]);
+				snprintf(temp_string, 40, " %g", histogramMaximum[i]);
 				append_string(&command_string, temp_string, &error);	
 			}
 		}
-		sprintf(temp_string, " marginal_scale  %g", marginalScale);
+		snprintf(temp_string, 40, " marginal_scale  %g", marginalScale);
 		append_string(&command_string, temp_string, &error);	
 	}
 	else

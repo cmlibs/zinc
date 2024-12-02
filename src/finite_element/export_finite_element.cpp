@@ -662,7 +662,7 @@ bool EXWriter::writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex element
 		else
 		{
 			char num_string[100];
-			sprintf(num_string, " %" FE_VALUE_STRING, xi[d]);
+            snprintf(num_string, 100, " %" FE_VALUE_STRING, xi[d]);
 			(*this->outStream) << num_string;
 		}
 	}
@@ -726,13 +726,13 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field, TimeSequ
 		case OBLATE_SPHEROIDAL:
 		{
 			char num_string[100];
-			sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
+            snprintf(num_string, 100, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
 			(*this->outStream) << ", oblate spheroidal, focus=" << num_string;
 		} break;
 		case PROLATE_SPHEROIDAL:
 		{
 			char num_string[100];
-			sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
+            snprintf(num_string, 100, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
 			(*this->outStream) << ", prolate spheroidal, focus=" << num_string;
 		} break;
 		case RECTANGULAR_CARTESIAN:
@@ -815,7 +815,7 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 				}
 				for (int k=0;k<number_of_values;k++)
 				{
-					sprintf(num_string, "%" FE_VALUE_STRING, fieldValues[k]);
+                    snprintf(num_string, 100, "%" FE_VALUE_STRING, fieldValues[k]);
 					(*this->outStream) << " " << num_string;
 				}
 			} break;
@@ -919,7 +919,7 @@ bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 {
 	++this->timeSequenceNumber;
 	char name[20];
-	sprintf(name, "times%d", this->timeSequenceNumber);
+    snprintf(name, 20, "times%d", this->timeSequenceNumber);
 	TimeSequence *timeSequence = new TimeSequence(name, feTimeSequence, this->singleTimeSet, this->singleTime);
 	if (!timeSequence)
 	{
@@ -934,7 +934,7 @@ bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 		char tmpString[100];
 		if (this->singleTimeSet)
 		{
-			sprintf(tmpString, "%" FE_VALUE_STRING, this->singleTime);
+            snprintf(tmpString, 100, "%" FE_VALUE_STRING, this->singleTime);
 			(*this->outStream) << tmpString << "\n";
 		}
 		else
@@ -944,7 +944,7 @@ bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 			for (int i = 0; i < size; ++i)
 			{
 				FE_time_sequence_get_time_for_index(feTimeSequence, i, &time);
-				sprintf(tmpString, " %" FE_VALUE_STRING, time);
+                snprintf(tmpString, 100, " %" FE_VALUE_STRING, time);
 				(*this->outStream) << tmpString;
 				if (0 == ((i + 1) % columnCount))
 					(*this->outStream) << "\n";
@@ -1323,7 +1323,7 @@ bool EXWriter::writeElementTemplate(cmzn_element *element)
 		// define element template
 		char name[20];
 		++this->elementTemplateNumber;
-		sprintf(name, "element%d", this->elementTemplateNumber);
+        snprintf(name, 20, "element%d", this->elementTemplateNumber);
 		this->elementTemplate = new ElementTemplate(name, element, this->writableFields);
 		this->elementTemplates.push_back(this->elementTemplate);
 
@@ -1437,7 +1437,7 @@ bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 		char tmpString[100];
 		for (int v = 0; v < valueCount; ++v)
 		{
-			sprintf(tmpString, " %" FE_VALUE_STRING, values[v]);
+            snprintf(tmpString, 100, " %" FE_VALUE_STRING, values[v]);
 			(*this->outStream) << tmpString;
 			if (0 == ((v + 1) % columnCount))
 				(*this->outStream) << "\n";
@@ -1611,7 +1611,7 @@ bool EXWriter::writeElement(cmzn_element *element)
 			for (int s = 0; s < scaleFactorCount; ++s)
 			{
 				++scaleFactorNumber;
-				sprintf(tmpString, "%" FE_VALUE_STRING, (scaleFactorIndexes) ? this->feMesh->getScaleFactor(scaleFactorIndexes[s]) : 0.0);
+                snprintf(tmpString, 100, "%" FE_VALUE_STRING, (scaleFactorIndexes) ? this->feMesh->getScaleFactor(scaleFactorIndexes[s]) : 0.0);
 				(*this->outStream) << " " << tmpString;
 				if ((0 < FE_VALUE_MAX_OUTPUT_COLUMNS)
 					&& (0 == (scaleFactorNumber % FE_VALUE_MAX_OUTPUT_COLUMNS)))
@@ -1859,7 +1859,7 @@ bool EXWriter::writeNodeTemplate(cmzn_node *node)
 		// define node template
 		char name[20];
 		++this->nodeTemplateNumber;
-		sprintf(name, "node%d", this->nodeTemplateNumber);
+        snprintf(name, 20, "node%d", this->nodeTemplateNumber);
 		this->nodeTemplate = new NodeTemplate(name, node);
 		this->nodeTemplates.push_back(this->nodeTemplate);
 
@@ -1979,7 +1979,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				}
 				for (int v = 0; v < valuesCount; ++v)
 				{
-					sprintf(tmpString, "%" FE_VALUE_STRING, values[v]);
+                    snprintf(tmpString, 100, "%" FE_VALUE_STRING, values[v]);
 					(*this->outStream) << " " << tmpString;
 				}
 				if (valuesCount)

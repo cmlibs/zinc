@@ -1417,7 +1417,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string,
 				computed_field_integration_type_string, &error);
 		}
-		sprintf(temp_string, " seed_element %d", get_FE_element_identifier(seed_element));
+        snprintf(temp_string, 40, " seed_element %d", get_FE_element_identifier(seed_element));
 		append_string(&command_string, temp_string, &error);
 		if (!xi_texture_coordinates)
 		{

@@ -1324,11 +1324,11 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 						{
 							if (0<i)
 							{
-								sprintf(temp_string,",%g",values[i]);
+                                snprintf(temp_string, 40, ",%g", values[i]);
 							}
 							else
 							{
-								sprintf(temp_string,"%g",values[i]);
+                                snprintf(temp_string, 40, "%g", values[i]);
 							}
 							append_string(out_string,temp_string,&error);
 						}
@@ -1356,11 +1356,11 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 						{
 							if (0<i)
 							{
-								sprintf(temp_string,",%d",values[i]);
+                                snprintf(temp_string, 40, ",%d", values[i]);
 							}
 							else
 							{
-								sprintf(temp_string,"%d",values[i]);
+                                snprintf(temp_string, 40, "%d", values[i]);
 							}
 							append_string(out_string,temp_string,&error);
 						}

@@ -1269,7 +1269,7 @@ Returns allocated command string for reproducing field. Includes type.
 		error = 0;
 		append_string(&command_string,
 			computed_field_matrix_multiply_type_string, &error);
-		sprintf(temp_string, " number_of_rows %d", this->numberOfRows);
+        snprintf(temp_string, 40, " number_of_rows %d", this->numberOfRows);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " fields ", &error);
 		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
@@ -1836,7 +1836,7 @@ Returns allocated command string for reproducing field. Includes type.
 		error = 0;
 		append_string(&command_string,
 			computed_field_transpose_type_string, &error);
-		sprintf(temp_string, " source_number_of_rows %d",
+        snprintf(temp_string, 40, " source_number_of_rows %d",
 			this->sourceNumberOfRows);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, " field ", &error);

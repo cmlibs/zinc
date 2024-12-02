@@ -2928,7 +2928,7 @@ Returns an allocated <string> of the identifier of <node>.
 	ENTER(FE_node_to_node_string);
 	if (node && string_address)
 	{
-		sprintf(tmp_string, "%d", get_FE_node_identifier(node));
+        snprintf(tmp_string, 50, "%d", get_FE_node_identifier(node));
 		*string_address = duplicate_string(tmp_string);
 		return_code = 1;
 	}
@@ -3641,11 +3641,11 @@ char *get_FE_nodal_value_as_string(struct FE_node *node, FE_field *field,
 				append_string(&returnString, "F", &error);
 			else
 				append_string(&returnString, "E", &error);
-			sprintf(temp_string, " %d", element->getIdentifier());
+            snprintf(temp_string, 40, " %d", element->getIdentifier());
 			append_string(&returnString, temp_string, &error);
 			for (int d = 0; d < dimension; ++d)
 			{
-				sprintf(temp_string, " %g", xi[d]);
+                snprintf(temp_string, 40, " %g", xi[d]);
 				append_string(&returnString, temp_string, &error);
 			}
 		}
@@ -3655,7 +3655,7 @@ char *get_FE_nodal_value_as_string(struct FE_node *node, FE_field *field,
 		FE_value value;
 		if (cmzn_node_get_field_parameters(node, field, componentNumber, valueLabel, version, time, &value))
 		{
-			sprintf(temp_string, "%g", value);
+            snprintf(temp_string, 40, "%g", value);
 			returnString = duplicate_string(temp_string);
 		}
 	} break;
@@ -3664,7 +3664,7 @@ char *get_FE_nodal_value_as_string(struct FE_node *node, FE_field *field,
 		int value;
 		if (cmzn_node_get_field_parameters(node, field, componentNumber, valueLabel, version, time, &value))
 		{
-			sprintf(temp_string, "%d", value);
+            snprintf(temp_string, 40, "%d", value);
 			returnString = duplicate_string(temp_string);
 		}
 	} break;

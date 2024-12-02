@@ -717,7 +717,7 @@ function.
 				case PROLATE_SPHEROIDAL:
 				case OBLATE_SPHEROIDAL:
 				{
-					sprintf(global_temp_string," focus %g",
+					snprintf(global_temp_string, 1000, " focus %g",
 						coordinate_system->parameters.focus);
 					append_string(&coordinate_system_string,global_temp_string,&error);
 				} break;

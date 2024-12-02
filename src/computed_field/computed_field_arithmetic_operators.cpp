@@ -983,7 +983,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " scale_factors %g %g",
+        snprintf(temp_string, 80, " scale_factors %g %g",
 			field->source_values[0], field->source_values[1]);
 		append_string(&command_string, temp_string, &error);
 	}
@@ -1271,7 +1271,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " scale_factors", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			sprintf(temp_string, " %g", field->source_values[i]);
+            snprintf(temp_string, 40, " %g", field->source_values[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}
@@ -1526,7 +1526,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " maximums", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			sprintf(temp_string, " %g", field->source_values[i]);
+            snprintf(temp_string, 40, " %g", field->source_values[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}
@@ -1782,7 +1782,7 @@ DESCRIPTION :
 		append_string(&command_string, " minimums", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			sprintf(temp_string, " %g", field->source_values[i]);
+            snprintf(temp_string, 40, " %g", field->source_values[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}
@@ -2019,7 +2019,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " offsets", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			sprintf(temp_string, " %g", field->source_values[i]);
+            snprintf(temp_string, 40, " %g", field->source_values[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}
@@ -2269,7 +2269,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " edit_mask", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			sprintf(temp_string, " %g", field->source_values[i]);
+            snprintf(temp_string, 40, " %g", field->source_values[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}

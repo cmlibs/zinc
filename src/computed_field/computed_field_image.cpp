@@ -628,7 +628,7 @@ Returns allocated command string for reproducing field. Includes type.
 				make_valid_token(&field_name);
 				append_string(&command_string, field_name, &error);
 				DEALLOCATE(field_name);
-				sprintf(temp_string, " number_of_bytes_per_component %d", number_of_bytes_per_component);
+                snprintf(temp_string, 40, " number_of_bytes_per_component %d", number_of_bytes_per_component);
 				append_string(&command_string, temp_string, &error);
 			}
 		}
@@ -642,9 +642,9 @@ Returns allocated command string for reproducing field. Includes type.
 				DEALLOCATE(texture_name);
 			}
 		}
-		sprintf(temp_string, " minimum %f", minimum);
+        snprintf(temp_string, 40, " minimum %f", minimum);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " maximum %f", maximum);
+        snprintf(temp_string, 40, " maximum %f", maximum);
 		append_string(&command_string, temp_string, &error);
 	}
 	else

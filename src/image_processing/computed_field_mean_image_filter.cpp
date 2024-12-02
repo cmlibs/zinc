@@ -166,7 +166,7 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, " radius_sizes", &error);
 		for (i = 0 ; i < dimension ; i++)
 		{
-			sprintf(temp_string, " %d", radius_sizes[i]);
+            snprintf(temp_string, 40, " %d", radius_sizes[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}

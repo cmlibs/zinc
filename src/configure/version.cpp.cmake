@@ -45,11 +45,11 @@ char *cmzn_context_get_version_string(cmzn_context_id context)
 	if (context)
 	{
 		char versionString[100];
-		sprintf(versionString, "%d.%d.%d",
+		snprintf(versionString, 100, "%d.%d.%d",
 			ZINC_MAJOR_VERSION, ZINC_MINOR_VERSION, ZINC_PATCH_VERSION);
 		if (0 == strcmp(ZINC_BUILD_TYPE, "debug"))
 		{
-			sprintf(versionString + strlen(versionString), ".Debug");
+		    snprintf(versionString + strlen(versionString), 100, ".Debug");
 		}
 		return duplicate_string(versionString);
 	}

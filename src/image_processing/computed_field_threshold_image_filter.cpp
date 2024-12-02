@@ -404,7 +404,7 @@ Returns allocated command string for reproducing field. Includes type.
 				append_string(&command_string, field_name, &error);
 				DEALLOCATE(field_name);
 			}
-			sprintf(temp_string, " %s outside_value %g",
+            snprintf(temp_string, 60, " %s outside_value %g",
 				ENUMERATOR_STRING(cmzn_field_imagefilter_threshold_condition)(condition), outsideValue);
 			append_string(&command_string, temp_string, &error);
 
@@ -412,15 +412,15 @@ Returns allocated command string for reproducing field. Includes type.
 			{
 				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_BELOW:
 				{
-					sprintf(temp_string, " below_value %g", lowerValue);
+                    snprintf(temp_string, 60, " below_value %g", lowerValue);
 				} break;
 				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_ABOVE:
 				{
-					sprintf(temp_string, " above_value %g", upperValue);
+                    snprintf(temp_string, 60, " above_value %g", upperValue);
 				} break;
 				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE:
 				{
-					sprintf(temp_string, " below_value %g above_value %g",
+                    snprintf(temp_string, 60, " below_value %g above_value %g",
 						lowerValue, upperValue);
 				} break;
 				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_INVALID:

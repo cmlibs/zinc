@@ -36,14 +36,14 @@ cmzn_field *findWrapperField(cmzn_field *sourceField1, const char *suffix, cmzn_
 {
 	const size_t length = strlen(sourceField1->getName()) + strlen(suffix);
 	char *name = new char[length + 10];
-	sprintf(name, "%s%s", sourceField1->getName(), suffix);
+    snprintf(name, length + 10, "%s%s", sourceField1->getName(), suffix);
 	int i = 0;
 	cmzn_field *wrapperField = nullptr;
 	while (true)
 	{
 		if (i > 0)
 		{
-			sprintf(name + length, "%d", i);
+            snprintf(name + length, 10, "%d", i);
 		}
 		wrapperField = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(name, sourceField1->getManager());
 		if (!wrapperField)
