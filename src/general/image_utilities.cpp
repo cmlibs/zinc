@@ -6773,7 +6773,7 @@ and other parameters for formats that require them.
 							}
 						} break;
 					}
-                    snprintf(magick_image_info->filename, 4096, "%s%s",
+                    snprintf(magick_image_info->filename, MagickPathExtent, "%s%s",
 						file_name_prefix, file_name);
 					if ((0 < width) && (0 < height))
 					{
@@ -7172,11 +7172,11 @@ that the images be adjoined in the single file.
 						if (RGB_FILE_FORMAT == cmgui_image_information->image_file_format)
 						{
 							/* rgb is used in cmgui to denote the sgi rgb format */
-                            snprintf(magick_file_name, 4096, "sgi:%s", file_name);
+                            snprintf(magick_file_name, MagickPathExtent, "sgi:%s", file_name);
 						}
 						else
 						{
-                            snprintf(magick_file_name, 4096, "%s:%s",
+                            snprintf(magick_file_name, MagickPathExtent, "%s:%s",
 								Image_file_format_extension(
 									cmgui_image_information->image_file_format), file_name);
 						}
@@ -7231,11 +7231,11 @@ that the images be adjoined in the single file.
 					if (RGB_FILE_FORMAT == cmgui_image_information->image_file_format)
 					{
 						/* rgb is used in cmgui to denote the sgi rgb format */
-                        snprintf(magick_file_name, 4096, "sgi:%s", "memory_temp");
+                        snprintf(magick_file_name, MagickPathExtent, "sgi:%s", "memory_temp");
 					}
 					else
 					{
-                        snprintf(magick_file_name, 4096, "%s:%s",
+                        snprintf(magick_file_name, MagickPathExtent, "%s:%s",
                             Image_file_format_extension(
 								cmgui_image_information->image_file_format), "memory_temp");
 					}

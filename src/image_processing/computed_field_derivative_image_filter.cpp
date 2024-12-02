@@ -156,6 +156,7 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
         snprintf(temp_string, 40, " order %d", order);
+        append_string(&command_string, temp_string, &error);
         snprintf(temp_string, 40, " direction %d", direction);
 		append_string(&command_string, temp_string, &error);	
 	}

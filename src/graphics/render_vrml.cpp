@@ -125,10 +125,9 @@ such that they exist at the time they are to be used.
 	ENTER(CREATE(VRML_prototype));
 	if (name)
 	{
-		if (ALLOCATE(vrml_prototype,struct VRML_prototype,1)&&
-			ALLOCATE(vrml_prototype->name,char,strlen(name)+1))
+		if (ALLOCATE(vrml_prototype,struct VRML_prototype,1))
 		{
-            snprintf(vrml_prototype->name, strlen(name)+1, "%s", name);
+            vrml_prototype->name = duplicate_string(name);
 			/* do not ACCESS objects as vrml_prototypes are temporary structures */
 			vrml_prototype->texture=texture;
 			vrml_prototype->material=material;
@@ -2116,16 +2115,17 @@ DESCRIPTION :
 		{
 			temp_string[0] = '_';
 		}
+        const std::size_t size = strlen(parsed_name) + strlen(num_string) + strlen(material_name) + 10;
 		if (GET_NAME(cmzn_material)(default_material, &material_name)&&
-			ALLOCATE(prototype_name,char,strlen(parsed_name)+strlen(num_string)+10+strlen(material_name)))
+			ALLOCATE(prototype_name, char, size))
 		{
 			if (object_is_glyph)
 			{
-                snprintf(prototype_name, strlen(parsed_name)+strlen(num_string)+10+strlen(material_name), "glyph_%s%s_%s", parsed_name, num_string, material_name);
+                snprintf(prototype_name, size, "glyph_%s%s_%s", parsed_name, num_string, material_name);
 			}
 			else
 			{
-                snprintf(prototype_name, strlen(parsed_name)+strlen(num_string)+10+strlen(material_name), "object_%s%s_%s", parsed_name, num_string, material_name);
+                snprintf(prototype_name, size, "object_%s%s_%s", parsed_name, num_string, material_name);
 			}
 			/* Can't have certain characters (.: ) in a name */
 			while ((dot_pointer = strchr(prototype_name, '.'))

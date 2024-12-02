@@ -504,7 +504,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 			{
 				width = analyzeObject.getWidth();
 				height = analyzeObject.getHeight();
-                snprintf(magick_image_info->filename, 4096, "%s%s",
+                snprintf(magick_image_info->filename, MagickPathExtent, "%s%s",
 					file_name_prefix, file_name);
 				size_t filename_len = strlen(magick_image_info->filename);
 				// We have to change the file suffix of the Analyze header file
