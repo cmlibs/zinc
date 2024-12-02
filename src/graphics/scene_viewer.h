@@ -136,8 +136,6 @@ and the functions given their public names.
 #define Scene_viewer_get_freespin_tumble_axis cmzn_sceneviewer_get_freespin_tumble_axis
 #define Scene_viewer_start_freespin cmzn_sceneviewer_start_freespin
 #define Scene_viewer_stop_animations cmzn_sceneviewer_stop_animations
-#define Scene_viewer_get_viewing_volume cmzn_sceneviewer_get_viewing_volume
-#define Scene_viewer_set_viewing_volume cmzn_sceneviewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info cmzn_sceneviewer_set_background_texture_info
 #define Scene_viewer_get_frame_count cmzn_sceneviewer_get_frame_count
 
@@ -951,16 +949,6 @@ int Scene_viewer_set_view_simple(struct Scene_viewer *scene_viewer,
 	double centre_x,double centre_y,double centre_z,double radius,
 	double view_angle,double clip_distance);
 
-int Scene_viewer_get_viewing_volume(struct Scene_viewer *scene_viewer,
-	double *left,double *right,double *bottom,double *top,double *near,
-	double *far);
-/*******************************************************************************
-LAST MODIFIED : 18 November 1997
-
-DESCRIPTION :
-Gets the viewing volume of the Scene_viewer.
-==============================================================================*/
-
 /***************************************************************************//**
  * This function handle cases when scene viewer or/and print out images is/are
  * is non square. This calculation will help cmgui to determine
@@ -987,25 +975,9 @@ Gets the viewing volume of the Scene_viewer.
  *   the rescaled NDC height
  * @return  1 if successfully get the view volume and NDC info, otherwise 0.
  */
-int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(struct Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_get_viewing_volume_and_NDC_info_for_specified_size(cmzn_sceneviewer *scene_viewer,
 	int target_width, int target_height, int source_width, int source_height, double *left,
 	double *right, double *bottom, double *top, double *scaled_NDC_width, double *scaled_NDC_height);
-
-int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
-	double left,double right,double bottom,double top,double near,double far);
-/*******************************************************************************
-LAST MODIFIED : 15 December 1997
-
-DESCRIPTION :
-Sets the viewing volume of the Scene_viewer. Unless the viewing volume is the
-same shape as the window, taking into account the aspect, the Scene_viewer will
-enlarge it to maintain the desired aspect ratio. Hence, the values specified
-represent the minimum viewing volume. The left, right, bottom and top values
-are at the lookat point, not on the near plane as OpenGL assumes. This gives a
-similar sized viewing_volume for both parallel and perspective projections.
-The viewing volume can be made unsymmetric to create special effects such as
-rendering a higher resolution image in parts.
-==============================================================================*/
 
 int Scene_viewer_get_viewport_info(struct Scene_viewer *scene_viewer,
 	double *viewport_left,double *viewport_top,double *viewport_pixels_per_unit_x,

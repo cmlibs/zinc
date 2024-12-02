@@ -5579,53 +5579,41 @@ int Scene_viewer_set_view_simple(struct Scene_viewer *scene_viewer,
 	return (return_code);
 } /* Scene_viewer_set_view_simple */
 
-int Scene_viewer_get_viewing_volume(struct Scene_viewer *scene_viewer,
-	double *left,double *right,double *bottom,double *top,
+int cmzn_sceneviewer_get_viewing_volume(cmzn_sceneviewer_id scene_viewer,
+	double *left, double *right, double *bottom, double *top,
 	double *near_plane, double *far_plane)
-/*******************************************************************************
-LAST MODIFIED : 21 November 1997
-
-DESCRIPTION :
-Gets the viewing volume of the Scene_viewer.
-==============================================================================*/
 {
 	int return_code;
-
-	ENTER(Scene_viewer_get_viewing_volume);
-	if (scene_viewer&&left&&right&&bottom&&top&&near_plane&&far_plane)
+	if ((scene_viewer) && (left) && (right) && (bottom) && (top) && (near_plane) && (far_plane))
 	{
-		*left=scene_viewer->left;
-		*right=scene_viewer->right;
-		*bottom=scene_viewer->bottom;
-		*top=scene_viewer->top;
-		*near_plane=scene_viewer->near_plane;
-		*far_plane=scene_viewer->far_plane;
-		return_code=1;
+		*left = scene_viewer->left;
+		*right = scene_viewer->right;
+		*bottom = scene_viewer->bottom;
+		*top = scene_viewer->top;
+		*near_plane = scene_viewer->near_plane;
+		*far_plane = scene_viewer->far_plane;
+		return_code = CMZN_OK;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_viewing_volume.  Invalid argument(s)");
-		return_code=0;
+			"cmzn_sceneviewer_get_viewing_volume.  Invalid argument(s)");
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
+	return return_code;
+}
 
-	return (return_code);
-} /* Scene_viewer_get_viewing_volume */
-
-int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_get_viewing_volume_and_NDC_info_for_specified_size(cmzn_sceneviewer *scene_viewer,
 	int target_width, int target_height, int source_width, int source_height, double *left,
 	double *right, double *bottom, double *top, double *scaled_NDC_width, double *scaled_NDC_height)
 {
-	int return_code = 0;
-
-	ENTER(Scene_viewer_get_viewing_volume_for_specified_size);
+	int return_code = CMZN_ERROR_GENERAL;
 	if (scene_viewer && left && right && bottom && top && scaled_NDC_width && scaled_NDC_height)
 	{
-		*left=scene_viewer->left;
-		*right=scene_viewer->right;
-		*bottom=scene_viewer->bottom;
-		*top=scene_viewer->top;
+		*left = scene_viewer->left;
+		*right = scene_viewer->right;
+		*bottom = scene_viewer->bottom;
+		*top = scene_viewer->top;
 		*scaled_NDC_width = scene_viewer->NDC_width;
 		*scaled_NDC_height = scene_viewer->NDC_height;
 
@@ -5707,110 +5695,53 @@ int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer
 			*bottom = centre_y - y_size;
 			*top = centre_y + y_size;
 		}
-		return_code = 1;
+		return_code = CMZN_OK;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_viewing_volume_for_specified_size.  Invalid argument(s)");
-		return_code=0;
+			"cmzn_sceneviewer_get_viewing_volume_and_NDC_info_for_specified_size.  Invalid argument(s)");
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-
-	LEAVE;
-
-	return (return_code);
-}
-#ifdef FUTURE_API
-/**
- * Gets the viewing volume of the scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_get_viewing_volume(cmzn_sceneviewer_id sceneviewer,
-	double* left, double* right, double* bottom, double* top, double* near_plane,
-	double* far_plane);
-
-/**
- * Sets the viewing volume of the scene viewer. Unless the viewing volume is the
- * same shape as the window, taking into account the aspect, the scene viewer will
- * enlarge it to maintain the desired aspect ratio. Hence, the values specified
- * represent the minimum viewing volume. The left, right, bottom and top values
- * are at the lookat point, not on the near plane as OpenGL assumes. This gives a
- * similar sized viewing_volume for both parallel and perspective projections.
- * The viewing volume can be made unsymmetric to create special effects such as
- * rendering a higher resolution image in parts.
- */
-ZINC_API int cmzn_sceneviewer_set_viewing_volume(cmzn_sceneviewer_id sceneviewer,
-	double left, double right, double bottom, double top, double near_plane,
-	double far_plane);
-
-// C++
-int getViewingVolume(double* left, double* right, double* bottom, double* top,
-	double* near_plane, double* far_plane) const
-{
-	return cmzn_sceneviewer_get_viewing_volume(id, left, right, bottom, top,
-		near_plane, far_plane);
+	return return_code;
 }
 
-int setViewingVolume(double left, double right, double bottom, double top,
+int cmzn_sceneviewer_set_viewing_volume(cmzn_sceneviewer_id scene_viewer,
+	double left, double right, double bottom, double top,
 	double near_plane, double far_plane)
 {
-	return cmzn_sceneviewer_set_viewing_volume(id, left, right, bottom, top,
-		near_plane, far_plane);
-}
-#endif
-
-int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
-	double left,double right,double bottom,double top,
-	double near_plane,double far_plane)
-/*******************************************************************************
-LAST MODIFIED : 15 December 1997
-
-DESCRIPTION :
-Sets the viewing volume of the Scene_viewer. Unless the viewing volume is the
-same shape as the window, taking into account the aspect, the Scene_viewer will
-enlarge it to maintain the desired aspect ratio. Hence, the values specified
-represent the minimum viewing volume. The left, right, bottom and top values
-are at the lookat point, not on the near plane as OpenGL assumes. This gives a
-similar sized viewing_volume for both parallel and perspective projections.
-The viewing volume can be made unsymmetric to create special effects such as
-rendering a higher resolution image in parts.
-==============================================================================*/
-{
 	int return_code;
-
-	ENTER(Scene_viewer_set_viewing_volume);
 	if (scene_viewer)
 	{
-		if ((right>left)&&(top>bottom)&&(0<near_plane)&&
-		   (near_plane<far_plane))
+		if ((right > left) && (top > bottom) && (0 < near_plane) &&
+		   (near_plane < far_plane))
 		{
-			scene_viewer->left=left;
-			scene_viewer->right=right;
-			scene_viewer->bottom=bottom;
-			scene_viewer->top=top;
-			scene_viewer->near_plane=near_plane;
+			scene_viewer->left = left;
+			scene_viewer->right = right;
+			scene_viewer->bottom = bottom;
+			scene_viewer->top = top;
+			scene_viewer->near_plane = near_plane;
 			scene_viewer->near_plane_fly_debt = 0.0;
-			scene_viewer->far_plane=far_plane;
+			scene_viewer->far_plane = far_plane;
 			scene_viewer->far_plane_fly_debt = 0.0;
 			scene_viewer->setChangedTransform();
-			return_code=1;
+			return_code = CMZN_OK;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_viewer_set_viewing_volume.  Invalid viewing volume");
-			return_code=0;
+				"cmzn_sceneviewer_set_viewing_volume.  Invalid viewing volume");
+			return_code = CMZN_ERROR_ARGUMENT;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_viewing_volume.  Missing scene_viewer");
-		return_code=0;
+			"cmzn_sceneviewer_set_viewing_volume.  Missing scene_viewer");
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_viewing_volume */
+	return return_code;
+}
 
 int Scene_viewer_get_viewport_info(struct Scene_viewer *scene_viewer,
 	double *viewport_left,double *viewport_top,double *viewport_pixels_per_unit_x,
@@ -6373,7 +6304,7 @@ graphics window on screen.
 				double original_NDC_left = 0.0, original_NDC_top = 0.0, original_NDC_width = 0.0, original_NDC_height = 0.0;
 				if ((tiles_across > 1) || (tiles_down > 1))
 				{
-					Scene_viewer_get_viewing_volume(scene_viewer,
+					cmzn_sceneviewer_get_viewing_volume(scene_viewer,
 						&original_left, &original_right, &original_bottom, &original_top,
 						&original_near_plane, &original_far_plane);
 					Scene_viewer_get_NDC_info(scene_viewer,
@@ -6381,7 +6312,7 @@ graphics window on screen.
 					Scene_viewer_get_viewport_info(scene_viewer,
 						&original_viewport_left, &original_viewport_top,
 						&original_viewport_pixels_per_x, &original_viewport_pixels_per_y);
-					Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(scene_viewer,
+					cmzn_sceneviewer_get_viewing_volume_and_NDC_info_for_specified_size(scene_viewer,
 							frame_width, frame_height, panel_width, panel_height, &real_left,
 						&real_right, &real_bottom, &real_top, &scaled_NDC_width, &scaled_NDC_height);
 					NDC_width = scaled_NDC_width / fraction_across;
@@ -6410,7 +6341,7 @@ graphics window on screen.
 								original_NDC_width / fraction_across;
 							viewport_left = i * tile_width / viewport_pixels_per_x;
 
-							Scene_viewer_set_viewing_volume(scene_viewer,
+							cmzn_sceneviewer_set_viewing_volume(scene_viewer,
 								left, right, bottom, top,
 								original_near_plane, original_far_plane);
 							Scene_viewer_set_NDC_info(scene_viewer,
@@ -6471,7 +6402,7 @@ graphics window on screen.
 				}
 				if ((tiles_across > 1) || (tiles_down > 1))
 				{
-					Scene_viewer_set_viewing_volume(scene_viewer,
+					cmzn_sceneviewer_set_viewing_volume(scene_viewer,
 						original_left, original_right, original_bottom, original_top,
 						original_near_plane, original_far_plane);
 					Scene_viewer_set_NDC_info(scene_viewer,
@@ -7036,7 +6967,7 @@ double cmzn_sceneviewer_get_far_clipping_plane(cmzn_sceneviewer_id sceneviewer)
 
 	if (sceneviewer)
 	{
-		Scene_viewer_get_viewing_volume(sceneviewer,
+		cmzn_sceneviewer_get_viewing_volume(sceneviewer,
 		  &left, &right, &bottom, &top, &near_plane, &far_plane);
 	}
 
@@ -7049,7 +6980,7 @@ double cmzn_sceneviewer_get_near_clipping_plane(cmzn_sceneviewer_id sceneviewer)
 
 	if (sceneviewer)
 	{
-		Scene_viewer_get_viewing_volume(sceneviewer,
+		cmzn_sceneviewer_get_viewing_volume(sceneviewer,
 		  &left, &right, &bottom, &top, &near_plane, &far_plane);
 	}
 
@@ -7063,10 +6994,10 @@ int cmzn_sceneviewer_set_far_clipping_plane(cmzn_sceneviewer_id sceneviewer,
 
 	if (sceneviewer)
 	{
-		if (Scene_viewer_get_viewing_volume(sceneviewer,
+		if (CMZN_OK == cmzn_sceneviewer_get_viewing_volume(sceneviewer,
 			&left, &right, &bottom, &top, &near_plane, &old_far))
 		{
-			return Scene_viewer_set_viewing_volume(sceneviewer,
+			return cmzn_sceneviewer_set_viewing_volume(sceneviewer,
 				left, right, bottom, top, near_plane, far_clipping_plane);
 		}
 	}
@@ -7081,10 +7012,10 @@ int cmzn_sceneviewer_set_near_clipping_plane(cmzn_sceneviewer_id sceneviewer,
 
 	if (sceneviewer)
 	{
-		if (Scene_viewer_get_viewing_volume(sceneviewer,
+		if (CMZN_OK == cmzn_sceneviewer_get_viewing_volume(sceneviewer,
 			&left, &right, &bottom, &top, &old_near, &far_plane))
 		{
-			return Scene_viewer_set_viewing_volume(sceneviewer,
+			return cmzn_sceneviewer_set_viewing_volume(sceneviewer,
 				left, right, bottom, top, near_clipping_plane, far_plane);
 		}
 	}
