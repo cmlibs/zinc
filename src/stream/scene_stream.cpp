@@ -59,7 +59,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					else
 					{
 						char temp_string[50];
-						sprintf(temp_string, "memory_resource_%d", current_index + 1);
+                        snprintf(temp_string, 50, "memory_resource_%d", current_index + 1);
 						resource_names[current_index] = duplicate_string(temp_string);
 					}
 					current_index++;

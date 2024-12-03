@@ -878,7 +878,7 @@ FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
 		values = parameterGenerator.getRecordValues();
 		for (int d = 0; d < denseSize; ++d)
 		{
-			sprintf(tmpValueString, valueFormat, values[d]);
+            snprintf(tmpValueString, 50, valueFormat, values[d]);
 			stringStream << tmpValueString;
 		}
 		stringStream << "\n";
@@ -998,7 +998,7 @@ template <typename VALUETYPE> FmlObjectHandle FieldMLWriter::defineParametersFro
 					}
 					for (int i = 0; i < denseSize; ++i)
 					{
-						sprintf(tmpValueString, valueFormat, denseValues[i]);
+                        snprintf(tmpValueString, 50, valueFormat, denseValues[i]);
 						stringStream << tmpValueString;
 					}
 					stringStream << "\n";
@@ -1259,8 +1259,8 @@ int FieldMLWriter::setMinimumNodeVersions(int minimumNodeVersions)
 		char nodeVersionConstantName[30];
 		for (int v = currentMaximumNodeVersions; v < minimumNodeVersions; ++v)
 		{
-			sprintf(idString, "%d", v + 1);
-			sprintf(nodeVersionConstantName, "node_versions.%d", v + 1);
+            snprintf(idString, 30, "%d", v + 1);
+            snprintf(nodeVersionConstantName, 30, "node_versions.%d", v + 1);
 			FmlObjectHandle fmlNodeVersionConstant = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeVersionConstantName, idString, this->fmlNodeVersionsType);
 			if (fmlNodeVersionConstant == FML_INVALID_OBJECT_HANDLE)
 			{
@@ -1298,7 +1298,7 @@ int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfE
 		char idString[30];
 		for (int d = 0; d < 8; ++d)
 		{
-			sprintf(idString, "%d", d + 1);
+            snprintf(idString, 30, "%d", d + 1);
 			std::string nodeDerivativeConstantName = nodeDerivativesTypeName + "." + derivativeNames[d];
 			FmlObjectHandle fmlNodeDerivativeConstant = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeDerivativeConstantName.c_str(), idString, this->fmlNodeDerivativesType);
 			if (fmlNodeDerivativeConstant == FML_INVALID_OBJECT_HANDLE)
@@ -1416,7 +1416,7 @@ FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_
 	char idString[50];
 	for (int n = 0; n < nodeCount; ++n)
 	{
-		sprintf(idString, "%d", n + 1);
+        snprintf(idString, 50, "%d", n + 1);
 		std::string eftNodeIndexConstantName = name + ".nodes." + idString;
 		fmlEftNodeIndexConstants[n] = Fieldml_CreateConstantEvaluator(this->fmlSession, eftNodeIndexConstantName.c_str(), idString, fmlEftNodes);
 		if (fmlEftNodeIndexConstants[n] == FML_INVALID_OBJECT_HANDLE)
@@ -1444,7 +1444,7 @@ FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_
 		std::vector<FmlObjectHandle> fmlEftScaleFactorIndexConstants(scaleFactorCount, FML_INVALID_OBJECT_HANDLE);
 		for (int s = 0; s < scaleFactorCount; ++s)
 		{
-			sprintf(idString, "%d", s + 1);
+            snprintf(idString, 50, "%d", s + 1);
 			std::string eftScaleFactorIndexConstantName = name + ".scalefactorsindexes." + idString;
 			fmlEftScaleFactorIndexConstants[s] = Fieldml_CreateConstantEvaluator(this->fmlSession, eftScaleFactorIndexConstantName.c_str(), idString, fmlEftScaleFactorIndexes);
 			if (fmlEftScaleFactorIndexConstants[s] == FML_INVALID_OBJECT_HANDLE)
@@ -1491,7 +1491,7 @@ FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_
 					return FML_INVALID_OBJECT_HANDLE;
 				}
 				const int versionIndex = eft->getTermNodeVersion(f, t);
-				sprintf(idString, ".nodeparameters.node%d.%s.v%d", localNodeIndex + 1, derivativeNames[derivativeIndex], versionIndex + 1);
+                snprintf(idString, 50, ".nodeparameters.node%d.%s.v%d", localNodeIndex + 1, derivativeNames[derivativeIndex], versionIndex + 1);
 				std::string nodeParameterName = name + idString;
 				FmlObjectHandle fmlNodeParameter = Fieldml_GetObjectByName(this->fmlSession, nodeParameterName.c_str());
 				if (fmlNodeParameter == FML_INVALID_OBJECT_HANDLE)
@@ -2087,7 +2087,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
     const int eftsSize = static_cast<int>(efts.size());
     for (int e = 0; e < eftsSize; ++e)
     {
-        sprintf(idString, ".eft%d", e + 1);
+        snprintf(idString, 30, ".eft%d", e + 1);
         FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(efts[e]);
         fmlMeshElementEvaluators[e] = this->writeMeshElementEvaluator(mesh, meshEFTData, meshName + idString);
         if (FML_INVALID_OBJECT_HANDLE == fmlMeshElementEvaluators[e])
@@ -2102,7 +2102,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
     const int mftsSize = static_cast<int>(mfts.size());
     for (int m = 0; m < mftsSize; ++m)
     {
-        sprintf(idString, ".fieldtemplate%d", m + 1);
+        snprintf(idString, 30, ".fieldtemplate%d", m + 1);
         FmlObjectHandle fmlMft = this->writeMeshfieldtemplate(mesh, mfts[m], meshName + idString,
             mftIsDense[m], mftEftCounts[m], fmlEftIndexes,
             static_cast<int>(efts.size()), outputEftIndexes, fmlMeshElementEvaluators);

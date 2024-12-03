@@ -616,7 +616,7 @@ public:
 			do
 			{
 				i++;
-				sprintf(temp_name, "temp%d",i);
+                snprintf(temp_name, 20, "temp%d",i);
 			}
 			while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_scenefilter,name)(temp_name,
 				scenefilterManager));

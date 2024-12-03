@@ -5016,7 +5016,7 @@ Clears 'valid' flag if fails.
 			file_number_increment);
 		if (ALLOCATE(temp_file_names, char *, new_number_of_file_names))
 		{
-			sprintf(format, "%%0%dd", pattern_width);
+            snprintf(format, 20, "%%0%dd", pattern_width);
 			prefix = file_name_template;
 			*pattern_position = '\0';
 			if ('\0' == *prefix)
@@ -5039,7 +5039,7 @@ Clears 'valid' flag if fails.
 					{
 						append_string(&temp_file_name, prefix, &error);
 					}
-					sprintf(file_number_string, format, file_number);
+                    snprintf(file_number_string, 20 + pattern_width, format, file_number);
 					append_string(&temp_file_name, file_number_string, &error);
 					if (suffix)
 					{
@@ -6773,11 +6773,11 @@ and other parameters for formats that require them.
 							}
 						} break;
 					}
-					sprintf(magick_image_info->filename, "%s%s",
+                    snprintf(magick_image_info->filename, MagickPathExtent, "%s%s",
 						file_name_prefix, file_name);
 					if ((0 < width) && (0 < height))
 					{
-						sprintf(magick_size, "%dx%d", width, height);
+                        snprintf(magick_size, 41, "%dx%d", width, height);
 						magick_image_info->size = magick_size;
 					}
 					if ((1 == cmgui_image_information->number_of_components) ||
@@ -7172,11 +7172,11 @@ that the images be adjoined in the single file.
 						if (RGB_FILE_FORMAT == cmgui_image_information->image_file_format)
 						{
 							/* rgb is used in cmgui to denote the sgi rgb format */
-							sprintf(magick_file_name, "sgi:%s", file_name);
+                            snprintf(magick_file_name, MagickPathExtent, "sgi:%s", file_name);
 						}
 						else
 						{
-							sprintf(magick_file_name, "%s:%s",
+                            snprintf(magick_file_name, MagickPathExtent, "%s:%s",
 								Image_file_format_extension(
 									cmgui_image_information->image_file_format), file_name);
 						}
@@ -7231,12 +7231,12 @@ that the images be adjoined in the single file.
 					if (RGB_FILE_FORMAT == cmgui_image_information->image_file_format)
 					{
 						/* rgb is used in cmgui to denote the sgi rgb format */
-						sprintf(magick_file_name, "sgi:%s", "memory_temp");
+                        snprintf(magick_file_name, MagickPathExtent, "sgi:%s", "memory_temp");
 					}
 					else
 					{
-						sprintf(magick_file_name, "%s:%s",
-							Image_file_format_extension(
+                        snprintf(magick_file_name, MagickPathExtent, "%s:%s",
+                            Image_file_format_extension(
 								cmgui_image_information->image_file_format), "memory_temp");
 					}
 					magick_image_info->adjoin = MagickFalse;

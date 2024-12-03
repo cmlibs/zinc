@@ -1445,6 +1445,90 @@ TEST(ZincNodetemplate, define_undefineField)
 	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
 }
 
+TEST(ZincElementtemplate, undefineField)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(OK, zinc.root_region.readFile(resourcePath("fieldmodule/lines_2fields.exf").c_str()));
+
+	Mesh mesh = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(2, mesh.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(3, nodes.getSize());
+	Element element1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	const double xi[] = { 0.5 };
+	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element1, 1, xi));
+	int result;
+	double x[3];
+	result = coordinates.evaluateReal(fieldcache, 3, x);
+	EXPECT_EQ(RESULT_OK, result);
+
+	Elementtemplate elementtemplate = mesh.createElementtemplate();
+	EXPECT_EQ(RESULT_OK, elementtemplate.undefineField(coordinates));
+	EXPECT_EQ(RESULT_OK, element1.merge(elementtemplate));
+
+	result = coordinates.evaluateReal(fieldcache, 3, x);
+	EXPECT_EQ(RESULT_ERROR_GENERAL, result);
+}
+
+Mesh getHighestDimension(Fieldmodule fm)
+{
+	int highest_dimension = 3;
+	while (highest_dimension &&
+		(fm.findMeshByDimension(highest_dimension).getSize() == 0))
+	{
+		--highest_dimension;
+	}
+	return fm.findMeshByDimension(highest_dimension);
+}
+
+void undefineFieldOnElements(Field field, Mesh mesh)
+{
+	auto elementTemplate = mesh.createElementtemplate();
+	elementTemplate.undefineField(field);
+	auto elementIterator = mesh.createElementiterator();
+	auto element = elementIterator.next();
+	while (element.isValid()) {
+		element.merge(elementTemplate);
+		element = elementIterator.next();
+	}
+}
+
+void undefineField(Field field)
+{
+	auto fm = field.getFieldmodule();
+	auto mesh = getHighestDimension(fm);
+	auto nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+
+	for (int i = mesh.getDimension(); i > 0; --i) {
+		auto meshOfDimension = fm.findMeshByDimension(i);
+		undefineFieldOnElements(field, meshOfDimension);
+	}
+
+	auto nodeTemplate = nodes.createNodetemplate();
+	nodeTemplate.undefineField(field);
+	auto nodeIterator = nodes.createNodeiterator();
+	auto node = nodeIterator.next();
+	while (node.isValid()) {
+		node.merge(nodeTemplate);
+		node = nodeIterator.next();
+	}
+}
+
+TEST(ZincElementtemplate, undefineField_whole_model)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(OK, zinc.root_region.readFile(resourcePath("fieldmodule/simple_1d_element.exf").c_str()));
+	auto coordinate_field = zinc.fm.findFieldByName("coordinates");
+	undefineField(coordinate_field);
+}
+
 // Find mesh location was caching wrong xi for modified field between begin/end change
 // Also, convergence was difficult for far away points with high curvature elements.
 // This test loads a curved heart surface mesh and finds nearest xi to 4 quite distant points.

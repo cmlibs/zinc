@@ -25,10 +25,10 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 4.1.2 LANGUAGES C CXX)
+project(Zinc VERSION 4.2.0 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
-set(Zinc_DEVELOPER_VERSION "")
+set(Zinc_VERSION_DEVELOPER "")
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
@@ -243,6 +243,8 @@ if(ZINC_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+add_subdirectory(docs)
+
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
 
@@ -321,7 +323,7 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
     message(STATUS "=====================================================")
     message(STATUS "Zinc has been configured with the following settings:")
     message(STATUS "")
-    message(STATUS "             Version: '${Zinc_VERSION}${Zinc_DEVELOPER_VERSION}'")
+    message(STATUS "             Version: '${Zinc_VERSION}${Zinc_VERSION_DEVELOPER}'")
     message(STATUS "     Source revision: '${ZINC_REVISION}'")
     message(STATUS "         Target type: '${ZINC_BUILD_STRING}'")
     message(STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")

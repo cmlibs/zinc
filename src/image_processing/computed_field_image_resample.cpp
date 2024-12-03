@@ -517,31 +517,31 @@ Returns allocated command string for reproducing field.
 		append_string(&command_string, " sizes ", &error);
 		for (i = 0 ; i < dimension ; i++)
 		{
-			sprintf(temp_string, " %d", sizes[i]);
+            snprintf(temp_string, 40, " %d", sizes[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 		append_string(&command_string, " input_coordinates_min ", &error);
 		for (i = 0 ; i < dimension ; i++)
 		{
-			sprintf(temp_string, " %g", input_coordinates_min[i]);
+            snprintf(temp_string, 40, " %g", input_coordinates_min[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 		append_string(&command_string, " input_coordinates_max ", &error);
 		for (i = 0 ; i < dimension ; i++)
 		{
-			sprintf(temp_string, " %g", input_coordinates_max[i]);
+            snprintf(temp_string, 40, " %g", input_coordinates_max[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 		append_string(&command_string, " lookup_coordinates_min ", &error);
 		for (i = 0 ; i < dimension ; i++)
 		{
-			sprintf(temp_string, " %g", lookup_coordinates_min[i]);
+            snprintf(temp_string, 40, " %g", lookup_coordinates_min[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 		append_string(&command_string, " lookup_coordinates_max ", &error);
 		for (i = 0 ; i < dimension ; i++)
 		{
-			sprintf(temp_string, " %g", lookup_coordinates_max[i]);
+            snprintf(temp_string, 40, " %g", lookup_coordinates_max[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 	}

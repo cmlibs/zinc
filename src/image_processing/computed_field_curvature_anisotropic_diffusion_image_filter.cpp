@@ -158,12 +158,12 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " timeStep %g", timeStep);
+        snprintf(temp_string, 40, " timeStep %g", timeStep);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string, " conductance %g", conductance);
+        snprintf(temp_string, 40, " conductance %g", conductance);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " numIterations %d", numIterations);
+        snprintf(temp_string, 40, " numIterations %d", numIterations);
 		append_string(&command_string, temp_string, &error);
 	}
 	else

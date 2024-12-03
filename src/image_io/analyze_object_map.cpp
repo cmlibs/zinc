@@ -504,7 +504,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 			{
 				width = analyzeObject.getWidth();
 				height = analyzeObject.getHeight();
-				sprintf(magick_image_info->filename, "%s%s",
+                snprintf(magick_image_info->filename, MagickPathExtent, "%s%s",
 					file_name_prefix, file_name);
 				size_t filename_len = strlen(magick_image_info->filename);
 				// We have to change the file suffix of the Analyze header file
@@ -515,7 +515,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 				magick_image_info->orientation = static_cast<OrientationType>(0);
 				if ((0 < width) && (0 < height))
 				{
-					sprintf(magick_size, "%dx%d", width, height);
+                    snprintf(magick_size, 41, "%dx%d", width, height);
 					magick_image_info->size = magick_size;
 				}
 				int number_of_components = analyzeObject.getNumberOfComponents();

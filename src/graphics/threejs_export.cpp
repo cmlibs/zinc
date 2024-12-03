@@ -121,7 +121,7 @@ void Threejs_export::writeIntegerBuffer(const char *output_variable_name,
 		if (number_of_valid_output > 3)
 			number_of_valid_output = 3;
 		int *currentVertex = vertex_buffer;
-		sprintf(temp, "\t\"%s\" : [", output_variable_name);
+        snprintf(temp, 200, "\t\"%s\" : [", output_variable_name);
 		outputString += temp;
 
 		for (unsigned int i = 0; i < vertex_count; i++)
@@ -130,7 +130,7 @@ void Threejs_export::writeIntegerBuffer(const char *output_variable_name,
 				outputString += "\n\t\t";
 			for (unsigned int k = 0; k < number_of_valid_output; k++)
 			{
-				sprintf(temp, "%d", currentVertex[k]);
+                snprintf(temp, 200, "%d", currentVertex[k]);
 				outputString += temp;
 				if (0 == ((k == number_of_valid_output - 1) && (i == vertex_count - 1)))
 				{
@@ -160,18 +160,18 @@ void Threejs_export::writeMorphIntegerBuffer(const char *output_variable_name,
 			number_of_valid_output = 3;
 		int *currentVertex = vertex_buffer;
 		char temp[300];
-		sprintf(temp, "\t{ \"name\": \"%s_color_%03d\", \"%s\": [", filename, time_step, output_variable_name);
+        snprintf(temp, 300, "\t{ \"name\": \"%s_color_%03d\", \"%s\": [", filename, time_step, output_variable_name);
 		(*output) += temp;
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
 			if (((i % 10) == 0))
 			{
-				sprintf(temp,"\n\t\t");
+                snprintf(temp, 300, "\n\t\t");
 				(*output) += temp;
 			}
 			for (unsigned int k = 0; k < number_of_valid_output; k++)
 			{
-				sprintf(temp, "%d", currentVertex[k]);
+                snprintf(temp, 300, "%d", currentVertex[k]);
 				(*output) += temp;
 				if (0 == ((k == number_of_valid_output - 1) && (i == vertex_count - 1)))
 				{
@@ -200,7 +200,7 @@ void Threejs_export::writeVertexBuffer(const char *output_variable_name,
 		unsigned int number_of_valid_output = 3;
 		GLfloat *currentVertex = vertex_buffer;
 		char new_string[100];
-		sprintf(new_string, "\t\"%s\" : [", output_variable_name);
+        snprintf(new_string, 100, "\t\"%s\" : [", output_variable_name);
 		outputString += new_string;
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
@@ -213,7 +213,7 @@ void Threejs_export::writeVertexBuffer(const char *output_variable_name,
 					outputString += "0.0";
 				else
 				{
-					sprintf(new_string, "%f", currentVertex[k]);
+                    snprintf(new_string, 100, "%f", currentVertex[k]);
 					outputString += new_string;
 				}
 				if (0 == ((k == number_of_valid_output - 1) && (i == vertex_count - 1)))
@@ -250,22 +250,22 @@ void Threejs_export::writeMorphVertexBuffer(const char *output_variable_name,
 		GLfloat *currentVertex = vertex_buffer;
 
 		char temp[300];
-		sprintf(temp, "\t{ \"name\": \"%s_%03d\", \"%s\": [", filename, time_step, output_variable_name);
+        snprintf(temp, 300, "\t{ \"name\": \"%s_%03d\", \"%s\": [", filename, time_step, output_variable_name);
 		(*output) += temp;
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
 			if (((i % 10) == 0))
 			{
-				sprintf(temp,"\n\t\t");
+                snprintf(temp, 300, "\n\t\t");
 				(*output) += temp;
 			}
 			for (unsigned int k = 0; k < number_of_valid_output; k++)
 			{
 				if ((number_of_valid_output > values_per_vertex) &&
 					(k >= values_per_vertex))
-					sprintf(temp, "0.0");
+                    snprintf(temp, 300, "0.0");
 				else
-					sprintf(temp, "%f", currentVertex[k]);
+                    snprintf(temp, 300, "%f", currentVertex[k]);
 				(*output) += temp;
 				if (0 == ((k == number_of_valid_output - 1) && (i == vertex_count - 1)))
 				{
@@ -293,22 +293,22 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 	if (material)
 	{
 		char new_string[1024];
-		sprintf(new_string, "\t\"materials\" : [ {\n");
+        snprintf(new_string, 1024, "\t\"materials\" : [ {\n");
 		outputString += new_string;
-		sprintf(new_string, "\t\"DbgColor\" : 15658734,\n");
+        snprintf(new_string, 1024, "\t\"DbgColor\" : 15658734,\n");
 		outputString += new_string;
-		sprintf(new_string, "\t\"DbgIndex\" : 0,\n");
+        snprintf(new_string, 1024, "\t\"DbgIndex\" : 0,\n");
 		outputString += new_string;
-		sprintf(new_string, "\t\"DbgName\" : \"my_material\",\n");
+        snprintf(new_string, 1024, "\t\"DbgName\" : \"my_material\",\n");
 		outputString += new_string;
 		double values[3];
 		cmzn_material_get_attribute_real3(material,
 			CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &values[0]);
-		sprintf(new_string, "\t\"colorDiffuse\" : [%g, %g, %g],\n", values[0], values[1], values[2]);
+        snprintf(new_string, 1024, "\t\"colorDiffuse\" : [%g, %g, %g],\n", values[0], values[1], values[2]);
 		outputString += new_string;
 		cmzn_material_get_attribute_real3(material,
 			CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &values[0]);
-		sprintf(new_string, "\t\"colorSpecular\" : [%g, %g, %g],\n", values[0], values[1], values[2]);
+        snprintf(new_string, 1024, "\t\"colorSpecular\" : [%g, %g, %g],\n", values[0], values[1], values[2]);
 		outputString += new_string;
 
 		struct Texture *texture = Graphical_material_get_texture(material);
@@ -318,16 +318,16 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 			const char *textureName = Texture_get_image_file_name(texture);
 			if (!textureName)
 				textureName = "my_texture.png";
-			sprintf(new_string, "\t\"mapDiffuse\" : \"%s\",\n", textureName);
+            snprintf(new_string, 1024, "\t\"mapDiffuse\" : \"%s\",\n", textureName);
 			outputString += new_string;
 			enum Texture_wrap_mode mode = Texture_get_wrap_mode(texture);
 			if (mode == TEXTURE_MIRRORED_REPEAT_WRAP)
 			{
-				sprintf(new_string, "\t\"mapDiffuseWrap\" : [\"mirror\", \"mirror\"],\n");
+                snprintf(new_string, 1024, "\t\"mapDiffuseWrap\" : [\"mirror\", \"mirror\"],\n");
 			}
 			else
 			{
-				sprintf(new_string, "\t\"mapDiffuseWrap\" : [\"repeat\", \"repeat\"],\n");
+                snprintf(new_string, 1024, "\t\"mapDiffuseWrap\" : [\"repeat\", \"repeat\"],\n");
 			}
 			outputString += new_string;
 		}
@@ -338,31 +338,31 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 			const char *textureName = Texture_get_image_file_name(texture);
 			if (!textureName)
 				textureName = "normal_texture.png";
-			sprintf(new_string, "\t\"mapNormal\" : \"%s\",\n", textureName);
+            snprintf(new_string, 1024, "\t\"mapNormal\" : \"%s\",\n", textureName);
 			outputString += new_string;
 			enum Texture_wrap_mode mode = Texture_get_wrap_mode(texture);
 			if (mode == TEXTURE_MIRRORED_REPEAT_WRAP)
 			{
-				sprintf(new_string, "\t\"mapNormalWrap\" : [\"mirror\", \"mirror\"],\n");
+                snprintf(new_string, 1024, "\t\"mapNormalWrap\" : [\"mirror\", \"mirror\"],\n");
 			}
 			else
 			{
-				sprintf(new_string, "\t\"mapNormalWrap\" : [\"repeat\", \"repeat\"],\n");
+                snprintf(new_string, 1024, "\t\"mapNormalWrap\" : [\"repeat\", \"repeat\"],\n");
 			}
 			outputString += new_string;
 		}
-		sprintf(new_string, "\t\"shading\" : \"Phong\",\n");
+        snprintf(new_string, 1024, "\t\"shading\" : \"Phong\",\n");
 		outputString += new_string;
 		double shininess = cmzn_material_get_attribute_real(material,
 			CMZN_MATERIAL_ATTRIBUTE_SHININESS);
-		sprintf(new_string, "\t\"specularCoef\" : %d,\n", (int)(shininess * 100));
+        snprintf(new_string, 1024, "\t\"specularCoef\" : %d,\n", (int)(shininess * 100));
 		outputString += new_string;
 		double alpha = cmzn_material_get_attribute_real(material, CMZN_MATERIAL_ATTRIBUTE_ALPHA);
-		sprintf(new_string, "\t\"opacity\" : %g,\n", alpha);
+        snprintf(new_string, 1024, "\t\"opacity\" : %g,\n", alpha);
 		outputString += new_string;
-		sprintf(new_string, "\t\"vertexColors\" : true\n");
+        snprintf(new_string, 1024, "\t\"vertexColors\" : true\n");
 		outputString += new_string;
-		sprintf(new_string, "\t}],\n\n");
+        snprintf(new_string, 1024, "\t}],\n\n");
 		outputString += new_string;
 	}
 }
@@ -379,23 +379,23 @@ void Threejs_export::writeIndexBufferWithoutIndex(int typeMask, int number_of_po
 		int current_index = 0;
 		for (unsigned i = 0; i < number_of_triangles; i++)
 		{
-			sprintf(temp,"\t\t%d", typeMask);
+            snprintf(temp, 100, "\t\t%d", typeMask);
 			facesString += temp;
-			sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+            snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 			facesString += temp;
 			if (typeMask & THREEJS_TYPE_VERTEX_TEX_COORD)
 			{
-				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+                snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 				facesString += temp;
 			}
 			if (typeMask & THREEJS_TYPE_VERTEX_NORMAL)
 			{
-				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+                snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 				facesString += temp;
 			}
 			if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
 			{
-				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+                snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 				facesString += temp;
 			}
 			current_index += 3;
@@ -436,37 +436,37 @@ void Threejs_export::writeIndexBuffer(struct GT_object *object, int typeMask, in
 				points_per_strip = number_buffer[i];
 				for (unsigned int j =0; j< points_per_strip - 2; j++)
 				{
-					sprintf(temp,"\t\t%d", typeMask);
+                    snprintf(temp, 100, "\t\t%d", typeMask);
 					facesString += temp;
 					if (0 == (j % 2))
 					{
-						sprintf(temp," ,%d,%d,%d",
+                        snprintf(temp, 100, " ,%d,%d,%d",
 							indices[current_index+j]+offset, indices[current_index+j+1]+offset,
 							indices[current_index+j+2]+offset);
 						facesString += temp;
 						if (typeMask & THREEJS_TYPE_VERTEX_TEX_COORD)
 						{
-							sprintf(temp," ,%d,%d,%d",
+                            snprintf(temp, 100, " ,%d,%d,%d",
 								indices[current_index+j]+offset, indices[current_index+j+1]+offset,
 								indices[current_index+j+2]+offset);
 							facesString += temp;
 						}
 						if (typeMask & THREEJS_TYPE_VERTEX_NORMAL)
 						{
-							sprintf(temp," ,%d,%d,%d",
+                            snprintf(temp, 100, " ,%d,%d,%d",
 								indices[current_index+j]+offset, indices[current_index+j+1]+offset,
 								indices[current_index+j+2]+offset);
 							facesString += temp;
 						}
 						if (typeMask & THREEJS_TYPE_FACE_COLOR)
 						{
-							sprintf(temp," ,%d",	face_colour_index);
+                            snprintf(temp, 100, " ,%d",	face_colour_index);
 							facesString += temp;
 							face_colour_index++;
 						}
 						if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
 						{
-							sprintf(temp," ,%d,%d,%d",
+                            snprintf(temp, 100, " ,%d,%d,%d",
 								indices[current_index+j]+offset, indices[current_index+j+1]+offset,
 								indices[current_index+j+2]+offset);
 							facesString += temp;
@@ -474,33 +474,33 @@ void Threejs_export::writeIndexBuffer(struct GT_object *object, int typeMask, in
 					}
 					else
 					{
-						sprintf(temp," ,%d,%d,%d",
+                        snprintf(temp, 100, " ,%d,%d,%d",
 							indices[current_index+j+1]+offset, indices[current_index+j]+offset,
 							indices[current_index+j+2]+offset);
 						facesString += temp;
 						if (typeMask & THREEJS_TYPE_VERTEX_TEX_COORD)
 						{
-							sprintf(temp," ,%d,%d,%d",
+                            snprintf(temp, 100, " ,%d,%d,%d",
 								indices[current_index+j+1]+offset, indices[current_index+j]+offset,
 								indices[current_index+j+2]+offset);
 							facesString += temp;
 						}
 						if (typeMask & THREEJS_TYPE_VERTEX_NORMAL)
 						{
-							sprintf(temp," ,%d,%d,%d",
+                            snprintf(temp, 100, " ,%d,%d,%d",
 								indices[current_index+j+1]+offset, indices[current_index+j]+offset,
 								indices[current_index+j+2]+offset);
 							facesString += temp;
 						}
 						if (typeMask & THREEJS_TYPE_FACE_COLOR)
 						{
-							sprintf(temp," ,%d",	face_colour_index);
+                            snprintf(temp, 100, " ,%d", face_colour_index);
 							facesString += temp;
 							face_colour_index++;
 						}
 						if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
 						{
-							sprintf(temp," ,%d,%d,%d",
+                            snprintf(temp, 100, " ,%d,%d,%d",
 								indices[current_index+j+1]+offset, indices[current_index+j]+offset,
 								indices[current_index+j+2]+offset);
 							facesString += temp;
@@ -540,7 +540,7 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 					outputString += "\n\t\t";
 				for (unsigned int k = 0; k < values_per_vertex; k++)
 				{
-					sprintf(num_string, "%f", currentVertex[k]);
+                    snprintf(num_string, 100, "%f", currentVertex[k]);
 					outputString += num_string;
 					if (0 == ((k == values_per_vertex - 1) && (i == vertex_count - 1)))
 					{
@@ -591,7 +591,7 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 							GLfloat average = (currentVertex[index[0] * values_per_vertex + k] +
 								currentVertex[index[1] * values_per_vertex + k] +
 								currentVertex[index[2] * values_per_vertex + k]) / 3;
-							sprintf(num_string, "%f", average);
+                            snprintf(num_string, 100, "%f", average);
 							outputString += num_string;
 							if (!((i == number_count - 1) && (k == values_per_vertex - 1) &&
 								 (j == points_per_strip - 3)))
@@ -617,7 +617,7 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 						GLfloat average = (currentVertex[k] + currentVertex[k + values_per_vertex] +
 							currentVertex[k + values_per_vertex * 2]) / 3;
 						char num_string[100];
-						sprintf(num_string, "%f", average);
+                        snprintf(num_string, 100, "%f", average);
 						outputString += num_string;
 						if (0 == ((k == values_per_vertex - 1) && (i == vertex_count - 1)))
 						{
@@ -639,23 +639,23 @@ void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values
 	{
 		GLfloat *currentVertex = texture_buffer;
 		char new_string[100];
-		sprintf(new_string, "\t\"uvs\" : [[");
+        snprintf(new_string, 100, "\t\"uvs\" : [[");
 		outputString += new_string;
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
 			if ((i % 10) == 0)
 				outputString += "\n\t\t";
 			if (textureSizes[0] > 0.0)
-				sprintf(new_string, "%f,", currentVertex[0]/textureSizes[0]);
+                snprintf(new_string, 100, "%f,", currentVertex[0]/textureSizes[0]);
 			else
-				sprintf(new_string, "%f,", currentVertex[0]);
+                snprintf(new_string, 100, "%f,", currentVertex[0]);
 			outputString += new_string;
 			if (values_per_vertex  == 1)
-				sprintf(new_string, "%f", 0.0);
+                snprintf(new_string, 100, "%f", 0.0);
 			else if ((values_per_vertex > 1) && textureSizes[1] > 0.0 )
-				sprintf(new_string, "%f", currentVertex[1]/textureSizes[1]);
+                snprintf(new_string, 100, "%f", currentVertex[1]/textureSizes[1]);
 			else
-				sprintf(new_string, "%f", currentVertex[1]);
+                snprintf(new_string, 100, "%f", currentVertex[1]);
 			outputString += new_string;
 			if (i < vertex_count - 1)
 			{
@@ -1057,7 +1057,7 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 
 		if (time_step == 0 || ((number_of_time_steps > 1) && (morphVertices || morphColours)))
 		{
-			sprintf(temp_string, "%d", time_step);
+            snprintf(temp_string, 50, "%d", time_step);
 			for (unsigned int i = 0; i < number_of_vertices; i++)
 			{
 				if (time_step == 0 || ((number_of_time_steps > 1) && morphVertices))
@@ -1212,15 +1212,15 @@ void Threejs_export_point::writeIndexBufferWithoutIndex(int typeMask, int number
 		facesString += "\t\"faces\": [\n";
 		unsigned int number_of_triangles = number_of_points / 3;
 		int current_index = 0;
-		for (unsigned i = 0; i < number_of_triangles; i++)
+        for (unsigned i = 0; i < number_of_triangles; i++)
 		{
-			sprintf(temp,"\t\t%d", typeMask);
+            snprintf(temp, 100, "\t\t%d", typeMask);
 			facesString += temp;
-			sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+            snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 			facesString += temp;
 			if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
 			{
-				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+                snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 				facesString += temp;
 			}
 			current_index += 3;
@@ -1234,26 +1234,28 @@ void Threejs_export_point::writeIndexBufferWithoutIndex(int typeMask, int number
 		unsigned int unused_points =  number_of_points - number_of_triangles * 3;
 		if (unused_points > 0)
 		{
-			facesString += ",";
-			sprintf(temp,"\t\t%d", typeMask);
+            if (number_of_triangles > 0) {
+                facesString += ",";
+            }
+            snprintf(temp, 100, "\t\t%d", typeMask);
 			facesString += temp;
 			if (unused_points == 1)
 			{
-				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
+                snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
 				facesString += temp;
 				if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
 				{
-					sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
+                    snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
 					facesString += temp;
 				}
 			}
 			else
 			{
-				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
+                snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
 				facesString += temp;
 				if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
 				{
-					sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
+                    snprintf(temp, 100, " ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
 					facesString += temp;
 				}
 			}

@@ -251,7 +251,7 @@ private:
 		append_string(&command_string, Computed_field_dummy_real_type_string, &error);
 		append_string(&command_string, " number_of_components ", &error);
 		char tmp[20];
-		sprintf(tmp, "%d", this->field->number_of_components);
+        snprintf(tmp, 20, "%d", this->field->number_of_components);
 		append_string(&command_string, tmp, &error);
 		return command_string;
 	}
@@ -776,7 +776,7 @@ char *Computed_field_argument_real::get_command_string()
 	append_string(&command_string, Computed_field_argument_real_type_string, &error);
 	append_string(&command_string, " number_of_components ", &error);
 	char tmp[20];
-	sprintf(tmp, "%d", this->field->number_of_components);
+    snprintf(tmp, 20, "%d", this->field->number_of_components);
 	append_string(&command_string, tmp, &error);
 	return command_string;
 }

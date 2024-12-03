@@ -465,7 +465,7 @@ void Computed_field_mesh_integral::appendNumbersOfPointsString(char **theString,
 		{
 			if (i)
 				append_string(theString, "*", error);
-			sprintf(temp, "%d", this->numbersOfPoints[i]);
+            snprintf(temp, 20, "%d", this->numbersOfPoints[i]);
 			append_string(theString, temp, error);
 		}
 	}

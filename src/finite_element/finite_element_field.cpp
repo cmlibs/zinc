@@ -63,7 +63,7 @@ It is up to the calling function to deallocate the returned string.
 		}
 		else
 		{
-			sprintf(temp_string,"%i",component_no+1);
+            snprintf(temp_string, 20, "%i", component_no + 1);
 			source_name=temp_string;
 		}
 		component_name = duplicate_string(source_name);

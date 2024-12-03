@@ -1,0 +1,56 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node template: node1
+Node: 1457
+  3.736439895629883e+01
+ -2.124891204833984e+02
+  1.020281555175781e+03
+Node: 1435
+  1.220113067626953e+02
+ -6.937643432617188e+01
+  1.124542358398438e+03
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ y. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ z. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+Element template: element1
+Element: 1211
+ Nodes:
+ 1435 1457
+Group name: Anterior branch of lateral cutaneous branch of left eighth intercostal nerve
+!#nodeset nodes
+Node group:
+1435,1457
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Element group:
+1211
+

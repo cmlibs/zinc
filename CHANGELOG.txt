@@ -1,5 +1,14 @@
 CHANGE LOG: Zinc Library
 
+v4.2.0
+Fix bug for export of single element line to webGL.
+Fix undefined element field segfault.
+Add docs target for building the documentation with Sphinx.
+Rename Zinc_DEVELOPER_VERSION to Zinc_VERSION_DEVELOPER.
+Upgrade numerical derivative test answers to a quartic interpolation.
+Re-introduce viewing volume API.
+Replace use of sprintf with snprintf.
+
 v4.1.2
 Fix bug with loading images with that have a depth that are not integrals of a byte.
 

@@ -270,7 +270,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 				cmzn_field_set_managed(xi_field, true);
 				break;
 			}
-			sprintf(xi_field_name, "%s%d", default_xi_field_name, i++);
+			snprintf(xi_field_name, 26, "%s%d", default_xi_field_name, i++);
 		}
 	}
 	return xi_field;

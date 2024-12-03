@@ -161,13 +161,13 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " minimum %g", min);
+        snprintf(temp_string, 40, " minimum %g", min);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " maximum %g", max);	
+        snprintf(temp_string, 40, " maximum %g", max);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " alpha %g", alpha);	
+        snprintf(temp_string, 40, " alpha %g", alpha);
 		append_string(&command_string, temp_string, &error);		
-		sprintf(temp_string, " beta %g", beta);	
+        snprintf(temp_string, 40, " beta %g", beta);
 		append_string(&command_string, temp_string, &error);		
 	}
 	else

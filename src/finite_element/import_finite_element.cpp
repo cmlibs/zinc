@@ -4012,7 +4012,7 @@ bool EXReader::readElementHeaderField()
 					for (int d = 0; d < dimension; ++d)
 					{
 						char xiToken[20];
-						sprintf(xiToken, "#xi%d", d + 1);
+                        snprintf(xiToken, 20, "#xi%d", d + 1);
 						const char *gridNumberInXiString = keyValueMap.getKeyValue(xiToken);
 						if (gridNumberInXiString && isIntegerString(gridNumberInXiString))
 						{

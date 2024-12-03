@@ -1,0 +1,87 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+2) coordinates2, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node template: node1
+Node: 1
+ 0.0
+ 0.0
+ 0.0
+ 0.1
+ 0.2
+ 0.3
+Node: 2
+ 1.0
+ 0.0
+ 0.0
+ 1.1
+ 1.2
+ 1.3
+Node: 3
+ 2.0
+ 0.0
+ 0.0
+ 2.1
+ 2.2
+ 2.3
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=2
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ y. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ z. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+2) coordinates2, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ y. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+ z. l.Lagrange, no modify, standard node based.
+  #Nodes=2
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+Element template: element1
+Element: 1
+ Nodes:
+ 1 2
+Element: 2
+ Nodes:
+ 2 3

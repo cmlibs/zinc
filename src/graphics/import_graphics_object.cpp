@@ -701,11 +701,11 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 		{
 			if(graphics_object_name)
 			{
-				sprintf(objname, "%s", graphics_object_name);
+                snprintf(objname, 100, "%s", graphics_object_name);
 			}
 			else
 			{
-				sprintf(objname, "%s", file_name);
+                snprintf(objname, 100, "%s", file_name);
 			}
 			cmzn_glyph_id glyph = cmzn_glyphmodule_find_glyph_by_name(glyphmodule, objname);
 			obj = 0;
