@@ -25,10 +25,10 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 4.1.2 LANGUAGES C CXX)
+project(Zinc VERSION 4.2.0 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
-set(Zinc_VERSION_DEVELOPER ".dev0")
+set(Zinc_VERSION_DEVELOPER "-rc.1")
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
