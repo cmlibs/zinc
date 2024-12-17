@@ -16,7 +16,7 @@ foreach(P ${POLICIES})
 endforeach()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 4.2.0 LANGUAGES C CXX)
+project(Zinc VERSION 4.2.1 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
 set(Zinc_VERSION_DEVELOPER "-rc.1")
