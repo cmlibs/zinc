@@ -8,8 +8,6 @@
 cmake_minimum_required(VERSION 3.18.0)
 cmake_policy(VERSION 3.18.0)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "12" CACHE STRING "Minimum OS X deployment version.")
-
 set(POLICIES CMP0072 CMP0074 CMP0078 CMP0086 CMP0126)
 foreach(P ${POLICIES})
     if(POLICY ${P})
