@@ -42,7 +42,7 @@ ELSEIF( APPLE )
     SET( CPACK_RESOURCE_FILE_WELCOME "${CMAKE_CURRENT_SOURCE_DIR}/distrib/osx/welcome.txt" )
     LIST( LENGTH LENGTH_ARCHS CMAKE_OSX_ARCHITECTURES )
 
-    SET( ZINC_ARCHITECTURE "universal" )
+    SET( ZINC_ARCHITECTURE "${CMAKE_HOST_SYSTEM_PROCESSOR}" )
     SET( CPACK_GENERATOR  "TGZ" "productbuild" )
 ELSEIF( UNIX )
     # Preserve the CMAKE_INSTALL_PREFIX for the project and work with absolute install

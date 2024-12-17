@@ -5,27 +5,18 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.10.0)
-cmake_policy(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.18.0)
+cmake_policy(VERSION 3.18.0)
 
-if(POLICY CMP0072)
-    cmake_policy(SET CMP0072 NEW)
-endif()
-
-if(POLICY CMP0074)
-    cmake_policy(SET CMP0074 NEW)
-endif()
-
-if(POLICY CMP0078)
-    cmake_policy(SET CMP0078 NEW)
-endif()
-
-if(POLICY CMP0086)
-    cmake_policy(SET CMP0086 NEW)
-endif()
+set(POLICIES CMP0072 CMP0074 CMP0078 CMP0086 CMP0126)
+foreach(P ${POLICIES})
+    if(POLICY ${P})
+        cmake_policy(SET ${P} NEW)
+    endif()
+endforeach()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 4.2.0 LANGUAGES C CXX)
+project(Zinc VERSION 4.2.1 LANGUAGES C CXX)
 
 # Set this to the development release or release candidate version.
 set(Zinc_VERSION_DEVELOPER "")
