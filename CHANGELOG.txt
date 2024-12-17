@@ -1,5 +1,9 @@
 CHANGE LOG: Zinc Library
 
+v4.2.1
+Update minimum version of CMake required to 3.18.
+CI infrastructure fixes.
+
 v4.2.0
 Fix bug for export of single element line to webGL.
 Fix undefined element field segfault.
