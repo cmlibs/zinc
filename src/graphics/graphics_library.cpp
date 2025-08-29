@@ -23,6 +23,9 @@ Functions for interfacing with the graphics library.
 #    if defined (DARWIN)
 #      include <OpenGL/OpenGL.h>
 #    elif defined (GLEW_OSMESA)
+#      ifndef APIENTRY
+#        define APIENTRY
+#      endif
 #      ifndef GLAPI 
 #        define GLAPI extern
 #      endif
