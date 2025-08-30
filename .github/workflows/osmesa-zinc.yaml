@@ -47,7 +47,7 @@ jobs:
       - name: 4. Configure Zinc build with CMake
         run: |
           # We use Ninja for faster, parallel builds.
-          cmake -S zinc/ \
+          cmake -S . \
                 -B build-zinc-release \
                 -G "Ninja" \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -81,7 +81,7 @@ jobs:
           echo "ARTIFACT_PATH=${{ github.workspace }}/${ARTIFACT_NAME}" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> $GITHUB_ENV
 
-      - name: 8. Add Archive to Cache
+      - name: 8. Add packaged library to ache
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.ARTIFACT_PATH }}
