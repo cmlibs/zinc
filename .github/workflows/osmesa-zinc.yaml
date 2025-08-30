@@ -1,0 +1,89 @@
+
+name: Build and Release Zinc C++ Library using OSMESA
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'The git tag of the release to upload the build to (e.g., osmesa).'
+        required: true
+        type: string
+
+jobs:
+  build-and-release-zinc-linux:
+    name: Build Zinc using OSMESA for Linux and Upload to Release
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - name: 1. Checkout Zinc repository
+        uses: actions/checkout@v4
+
+      - name: 2. Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: 3. Download and Extract CMLibs Dependencies
+        run: |
+          # The name "Linux" is derived from the ubuntu runner as requested.
+          DEPS_OS_NAME="linux"
+          DEPS_URL="https://github.com/cmlibs-dependencies/prebuilt-library-cache/releases/download/cache/superbuild-osmesa-libs-${DEPS_OS_NAME}.tar.gz"
+          
+          echo "Downloading dependencies from ${DEPS_URL}"
+          curl -L -o dependencies.tar.gz "${DEPS_URL}"
+          
+          echo "Extracting dependencies..."
+          # We assume the tarball's root contains the 'install' directory needed by the build.
+          tar -xzf dependencies.tar.gz
+          
+          # Verify that the required 'install' directory exists after extraction.
+          if [ ! -d "install" ]; then
+            echo "Error: 'install' directory not found after extracting dependencies."
+            exit 1
+          fi
+          echo "Dependencies successfully extracted to '${{ github.workspace }}/install'"
+
+      - name: 4. Configure Zinc build with CMake
+        run: |
+          # We use Ninja for faster, parallel builds.
+          cmake -S zinc/ \
+                -B build-zinc-release \
+                -G "Ninja" \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DZINC_USE_OSMESA=TRUE \
+                -DCMLIBSDEPENDENCIES_DIR=${{ github.workspace }}/install
+
+      - name: 5. Build Zinc library
+        run: |
+          # Run the build using the number of available processor cores for speed.
+          cmake --build build-zinc-release --config Release --parallel
+
+      - name: 6. Install Zinc library
+        run: |
+          # Create a clean directory for the installed library files.
+          INSTALL_DIR=${{ github.workspace }}/zinc-install-osmesa
+          
+          # Install the built artifacts into the specified prefix directory.
+          cmake --install build-zinc-release --prefix ${INSTALL_DIR}
+
+      - name: 7. Package installed library
+        id: package
+        run: |
+          INSTALL_DIR=${{ github.workspace }}/zinc-install-osmesa
+          ARTIFACT_NAME="zinc-osmesa-linux.tar.gz"
+          
+          # Create a tarball of the installed files.
+          # The -C flag changes directory before archiving, ensuring clean paths in the tarball.
+          tar -czf ${ARTIFACT_NAME} -C ${INSTALL_DIR} .
+          
+          # Make the artifact name available to subsequent steps.
+          echo "ARTIFACT_PATH=${{ github.workspace }}/${ARTIFACT_NAME}" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> $GITHUB_ENV
+
+      - name: 8. Add Archive to Cache
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARTIFACT_PATH }}
+          tag_name: osmesa
+
