@@ -87,5 +87,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.ARTIFACT_PATH }}
-          tag_name: osmesa
+          tag_name: ${{ inputs.release_tag }}
 
