@@ -23,6 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build
+          sudo apt install libosmesa6-dev libgl1-mesa-dev libglu1-mesa-dev
 
       - name: 3. Download and Extract CMLibs Dependencies
         run: |
