@@ -9,6 +9,7 @@ on:
         description: 'The git tag of the release to upload the build to (e.g., osmesa).'
         required: true
         type: string
+        default: osmesa
 
 jobs:
   build-and-release-zinc-linux:
