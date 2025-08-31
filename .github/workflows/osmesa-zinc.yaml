@@ -14,6 +14,7 @@ on:
 jobs:
   build-and-release-zinc-linux:
     name: Build Zinc using OSMESA for Linux and Upload to Release
+    if: github.repository == 'cmlibs/zinc'
     runs-on: ubuntu-24.04
     
     steps:
